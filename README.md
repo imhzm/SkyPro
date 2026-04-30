@@ -1,107 +1,140 @@
-# سيندر برو - Sender Pro
+<div align="center">
 
-تطبيق تسويق إلكتروني احترافي لأتمتة المتصفح عبر 18+ منصة
+![Sky Pro Banner](https://img.shields.io/badge/🚀%20Sky%20Pro-Sender%20Desktop-6366f1?style=for-the-badge&labelColor=1a1a2e)
 
-## Tech Stack
+### أقوى أداة تسويق آلي لمنصات التواصل الاجتماعي
+**18+ منصة | أتمتة كاملة | حماية متقدمة**
 
-- **Frontend**: React 19 + TypeScript + Tailwind CSS v4 + Vite
-- **Backend**: Electron 41 + Node.js + Playwright
-- **Database**: SQLite (محلي) + MySQL (Hostinger للمفاتيح)
-- **Automation**: Playwright with Chrome
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Electron](https://img.shields.io/badge/Electron-41-47848F?logo=electron&logoColor=white)](https://www.electronjs.org/)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Playwright](https://img.shields.io/badge/Playwright-Automation-2EAD33?logo=playwright&logoColor=white)](https://playwright.dev/)
 
-## المتطلبات
+[🌐 الموقع](https://skypro.skywaveads.com) · [📦 تحميل](https://skypro.skywaveads.com/download) · [💬 تواصل](mailto:support@skywaveads.com)
 
-- Node.js 20+
-- npm
-- Chrome مثبت (Playwright يثبته تلقائياً)
+</div>
 
-## التشغيل
+---
+
+## 🎯 نظرة عامة
+
+سيندر برو هو تطبيق سطح مكتب احترافي لأتمتة التسويق على منصات التواصل الاجتماعي. يتيح لك استخراج بيانات العملاء المحتملين، إرسال رسائل جماعية، وإدارة حسابات متعددة — كل ذلك من تطبيق واحد.
+
+## ✨ المنصات المدعومة
+
+| المنصة | المميزات |
+|--------|----------|
+| 📘 فيسبوك | استخراج الأعضاء/المعجبين/التعليقات، النشر في الجروبات، إرسال رسائل |
+| 💬 واتساب | إرسال رسائل جماعية، استخراج المجموعات، تصفية الأرقام |
+| 📸 انستغرام | استخراج المتابعين، إرسال رسائل، متابع تلقائي، إشارة |
+| 🐦 تويتر / X | تغريدات، استخراج المتابعين، جدولة، إعادة تغريد |
+| 💼 لينكد إن | بحث شركات، إرسال رسائل، استخراج بيانات |
+| ✈️ تيليجرام | إرسال رسائل، استخراج أعضاء، إضافة مستخدمين |
+| 🎵 تيك توك | استخراج متابعين، إعجاب تلقائي |
+| 📌 بنترست | تثبيت تلقائي، استخراج بيانات |
+| 👻 سناب شات | إرسال رسائل، إضافة أصدقاء |
+| 🧵 ثريدز | نشر تلقائي، استخراج متابعين |
+| 🔴 ريديت | نشر تلقائي، استخراج بيانات |
+| 📍 خرائط جوجل | استخراج أعمال، بيانات اتصال |
+| 📧 إيميلات | إرسال جماعي، قوالب، SMTP مخصص |
+| 🎯 أوتو بوينت | نقاط تلقائية، إدارة حسابات |
+| 🛡️ الحماية | مضاد الحظر، بروكسي، تغيير بصمة |
+
+## 🏗️ البنية التقنية
+
+```
+sender-pro-desktop/
+├── electron/
+│   ├── main.cjs          # العمليات الرئيسية + Playwright + IPC
+│   └── preload.cjs       # الجسر الآمن بين العمليات
+├── src/
+│   ├── main.tsx          # نقطة الدخول
+│   ├── App.tsx           # الهيكل + التوجيه
+│   ├── components/
+│   │   ├── layout/      # الهيكل، الشريط الجانبي، شريط العنوان
+│   │   └── common/       # التفعيل، البروكسي، الجداول، الحماية
+│   ├── modules/          # 18+ وحدة منصة
+│   ├── hooks/           # usePlatform, usePersistentState
+│   ├── stores/          # Zustand state management
+│   ├── services/api/    # Activation API
+│   └── types/           # TypeScript definitions
+├── sender-pro-api/       # PHP API (Hostinger)
+└── scripts/              # أدوات التطوير والنشر
+```
+
+## 🚀 البدء السريع
+
+### المتطلبات
+- Node.js 18+
+- npm أو yarn
+
+### التثبيت
 
 ```bash
+# استنساخ المشروع
+git clone https://github.com/imhzm/SkyPro.git
+cd SkyPro
+
+# تثبيت التبعيات
 npm install
-npm run dev          # وضع التطوير
-npm run build        # بناء الواجهة فقط
-npm run build:desktop # بناء التطبيق الكامل
+
+# تشغيل في وضع التطوير
+npm run dev
+
+# بناء للإنتاج
+npm run build:desktop
 ```
 
-## المميزات
+### التشغيل
 
-### المنصات المدعومة
-- Facebook (تسجيل دخول، بحث، استخراج، نشر، رسائل)
-- WhatsApp Web (إرسال، استخراج مجموعات، فلترة أرقام)
-- Instagram (تسجيل دخول، استخراج متابعين/تعليقات/هاشتاج، متابعة تلقائية)
-- Twitter/X (تسجيل دخول، تغريد، استخراج متابعين، جدولة، ريتويت)
-- LinkedIn (تسجيل دخول، بحث، استخراج شركات، رسائل)
-- Telegram Web (تسجيل دخول، استخراج أعضاء، إضافة مستخدمين)
-- TikTok (استخراج تعليقات/متابعين)
-- Pinterest (تسجيل دخول، بحث، استخراج)
-- Snapchat Web
-- Threads (استخراج، منشن)
-- Reddit (تسجيل دخول، بحث، نشر)
-- VK (تسجيل دخول، بحث، استخراج أعضاء)
-- X Plus
-- Google Maps (استخراج أعمال)
-- OLX (استخراج إعلانات)
-- إرسال إيميلات عبر SMTP
-- Auto Point (تفاعل تلقائي)
-
-### الأدوات المساعدة
-- إدارة بروكسيات (حفظ، اختبار)
-- جدولة الحملات (تنفيذ تلقائي)
-- تصدير CSV/Excel
-- نظام مفاتيح تفعيل
-
-## تنشيط التطبيق
-
-### التحقق المحلي (افتراضي)
-مفاتيح صالحة: `SKY1-PRO2-0001-2026` حتى `SKY1-PRO2-0010-2026`
-السعر: 2000 جنيه مصري/سنة
-الصلاحية: حتى 2027-04-23
-
-### التحقق عبر Hostinger API
-1. ارفع ملفات `sender-pro-api/` إلى `/var/www/html/sender-pro-api/`
-2. أنشئ قاعدة البيانات MySQL واستورد `sender_pro_database.sql`
-3. عدّل `sender-pro-api/config.php` ببيانات قاعدة البيانات
-4. غيّر `USE_LOCAL_VALIDATION = false` في `src/services/api/activation.ts`
-
-## Hostinger Upload Guide
-
-### الاتصال بالسيرفر
 ```bash
-ssh root@147.79.66.116
-# Password: Newjoker2k333
+# وضع التطوير (مع Hot Reload)
+npm run dev
+
+# بناء الإصدار النهائي
+npm run build:desktop
 ```
 
-### رفع ملفات API
-```bash
-# من جهازك (Windows PowerShell):
-scp -r sender-pro-api/*.php root@147.79.66.116:/var/www/html/sender-pro-api/
+## 🔑 نظام التفعيل
 
-# أو استخدم WinSCP/FileZilla برفع المجلد كاملاً
-```
+- اشتراك سنوي بقيمة **2,000 ج.م**
+- كل مفتاح يسمح بجهاز واحد كحد أقصى
+- إمكانية إعادة التعيين مرتين سنوياً
+- التحقق عبر السيرفر مع fallback محلي
+- فترة تجريبية يومين من [الموقع](https://skypro.skywaveads.com)
 
-### إعداد قاعدة البيانات
-```bash
-# داخل السيرفر:
-mysql -u root -p
-CREATE DATABASE senderpro CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE senderpro;
-SOURCE /var/www/html/sender-pro-api/sender_pro_database.sql;
-```
+## 🛡️ الحماية والأمان
 
-### إنشاء مفاتيح جديدة
-```bash
-curl -X POST http://147.79.66.116/sender-pro-api/generate_keys.php \
-  -H "Content-Type: application/json" \
-  -d '{"count":10,"admin_key":"skypro-admin-2026"}'
-```
+| الميزة | التفاصيل |
+|--------|----------|
+| عزل العمليات | `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true` |
+| حماية الويب | `webSecurity: true`, CSP meta tag |
+| كلمات المرور | bcrypt hash في العمليات الرئيسية فقط |
+| قاعدة البيانات | SQLite مع allowed tables whitelist |
+| حماية SQL | Parameterized queries + input sanitization |
+| منع التكرار | `requestSingleInstanceLock()` |
+| إغلاق آمن | `db.close()` + `safeSend()` checks |
 
-## ملاحظات هامة
+## 🌐 الربط مع السيرفر
 
-- Playwright selectors قد تحتاج تحديثاً مع تغيير مواقع التواصل
-- يُنصح باستخدام بروكسي لتجنب الحظر
-- `signAndEditExecutable: false` مفعّل لتجنب مشاكل Windows symlinks
+التطبيق يتصل بـ `https://skypro.skywaveads.com` للتحقق من:
+- صلاحية مفتاح التفعيل
+- بصمة الجهاز (Device Fingerprinting)
+- حالة الاشتراك
 
-## License
+مع **fallback محلي** عند انقطاع الاتصال.
 
-Proprietary - SkyPro
+## 📞 التواصل
+
+- 📧 البريد: [support@skywaveads.com](mailto:support@skywaveads.com)
+- 📱 واتساب: +20 106 789 4321
+- 🌐 الموقع: [skypro.skywaveads.com](https://skypro.skywaveads.com)
+
+---
+
+<div align="center">
+
+**صُنع بـ ❤️ في مصر 🇪🇬**
+
+</div>
