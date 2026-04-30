@@ -1,0 +1,462 @@
+export const executiveStats = [
+	{
+		label: "المنصات الأساسية",
+		value: "10+"
+	},
+	{
+		label: "الوحدات التشغيلية",
+		value: "35+"
+	},
+	{
+		label: "مسارات الأتمتة",
+		value: "24/7"
+	},
+	{
+		label: "جاهزية الديسكتوب",
+		value: "ويندوز أولاً"
+	}
+];
+export const strategicPillars = [
+	{
+		title: "ذكاء البيانات",
+		description: "تجميع البيانات، تصنيف العملاء، وتحويل الإشارات الخام إلى فرص قابلة للتنفيذ."
+	},
+	{
+		title: "أتمتة الحملات",
+		description: "تشغيل حملات داخلية منظمة من خلال واجهة موحدة ومسارات عمل واضحة."
+	},
+	{
+		title: "وضوح الأداء",
+		description: "تقارير لحظية، لوحات متابعة، ومؤشرات تشغيل تساعد في اتخاذ القرار بسرعة."
+	}
+];
+export const executionRoadmap = [
+	"هيكل ديسكتوب أساسي مع بنية إلكترون مستقرة وقابلة للتوسعة.",
+	"نظام واجهات احترافي مع تبويبات مستقلة لكل منصة سوشيال.",
+	"طبقة وحدات داخل كل تاب لتقسيم الاستخراج، الرسائل، والتحليلات.",
+	"مرحلة الربط الخلفي لاحقًا عبر واجهات برمجة التطبيقات وخدمات مرخصة ومتوافقة مع سياسات المنصات."
+];
+export const platformRecords = [
+	{
+		id: "facebook",
+		name: "فيسبوك",
+		segment: "ذكاء العملاء المحتملين",
+		tagline: "اكتشاف الجمهور وتحليل الملفات الشخصية",
+		theme: "linear-gradient(135deg, #175cff 0%, #2f95ff 100%)",
+		summary: "واجهة مخصصة لعرض وحدات استكشاف البيانات، تصنيف الشرائح، وإدارة الرؤى التسويقية الخاصة بفيسبوك داخل مساحة عمل واحدة.",
+		stats: [
+			{
+				label: "إشارات العملاء",
+				value: "12 حقلاً"
+			},
+			{
+				label: "الشرائح",
+				value: "فلاتر ذكية"
+			},
+			{
+				label: "جاهزية التصدير",
+				value: "CSV / إكسل"
+			}
+		],
+		modules: [
+			{
+				title: "عدسة الملفات",
+				description: "عرض حقول الهوية، الاهتمامات، والمعلومات الأساسية داخل بطاقات منظمة."
+			},
+			{
+				title: "بناء الاستهداف",
+				description: "إنشاء شرائح جمهور قابلة للحفظ اعتمادًا على المدينة، الوظيفة، أو التخصص."
+			},
+			{
+				title: "تدفق الفرص",
+				description: "لوحة فرص تعرض الحالات الأعلى أولوية للمتابعة داخل التطبيق."
+			}
+		],
+		workflow: [
+			"جمع",
+			"تنظيم",
+			"تقسيم",
+			"ترتيب الأولويات"
+		]
+	},
+	{
+		id: "whatsapp",
+		name: "واتساب",
+		segment: "مركز المراسلة",
+		tagline: "تدفق الحملات والقوائم والإرسال الآمن",
+		theme: "linear-gradient(135deg, #059669 0%, #34d399 100%)",
+		summary: "تاب مستقل لإدارة قوائم التواصل، نماذج الرسائل، جداول الإرسال، ومتابعة حالة الحملات بطريقة تنفيذية سهلة.",
+		stats: [
+			{
+				label: "أنماط التشغيل",
+				value: "بث + فردي"
+			},
+			{
+				label: "القوالب",
+				value: "قابلة لإعادة الاستخدام"
+			},
+			{
+				label: "التحكم",
+				value: "توقيت آمن"
+			}
+		],
+		modules: [
+			{
+				title: "محرر الحملات",
+				description: "تحرير الرسائل والنصوص والوسائط وربطها بقوائم مخصصة."
+			},
+			{
+				title: "تنقية الجمهور",
+				description: "تنظيف الأرقام، تنظيم القوائم، وربط العملاء بحملات محددة."
+			},
+			{
+				title: "تشغيل المجموعات",
+				description: "متابعة المسارات الخاصة بالمجموعات، النشر، والإدارة من شاشة موحدة."
+			}
+		],
+		workflow: [
+			"تجهيز",
+			"تحقق",
+			"جدولة",
+			"متابعة"
+		]
+	},
+	{
+		id: "telegram",
+		name: "تيليجرام",
+		segment: "إدارة المجتمعات",
+		tagline: "الأعضاء والمجموعات والتوزيع المنظم",
+		theme: "linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)",
+		summary: "مساحة تشغيل خاصة بالتليجرام لعرض المجتمعات، قوائم الأعضاء، التنقل بين القنوات، ومؤشرات التفاعل.",
+		stats: [
+			{
+				label: "مكتبة المجموعات",
+				value: "+20 ألف"
+			},
+			{
+				label: "نقل الجمهور",
+				value: "موجّه"
+			},
+			{
+				label: "التقارير",
+				value: "حالة لحظية"
+			}
+		],
+		modules: [
+			{
+				title: "أطلس المجتمعات",
+				description: "فهرسة المجموعات والقنوات داخل عرض بصري قابل للبحث."
+			},
+			{
+				title: "توجيه الجمهور",
+				description: "نقل وتوزيع الأعضاء بين مسارات العمل المختلفة داخل النظام."
+			},
+			{
+				title: "مخطط التسلسل",
+				description: "جدولة الرسائل والمتابعات داخل مخطط زمني يومي واضح."
+			}
+		],
+		workflow: [
+			"استكشاف",
+			"رسم",
+			"جدولة",
+			"تقرير"
+		]
+	},
+	{
+		id: "snapchat",
+		name: "سناب شات",
+		segment: "إشارات التفاعل",
+		tagline: "المستخدمون المهتمون وظهور العروض",
+		theme: "linear-gradient(135deg, #eab308 0%, #fde047 100%)",
+		summary: "واجهة مركزة على شرائح التفاعل والاهتمام، مع نظرة سريعة على الحسابات النشطة وسيناريوهات الترويج.",
+		stats: [
+			{
+				label: "إشارات الاهتمام",
+				value: "سلوكية"
+			},
+			{
+				label: "التنبيهات",
+				value: "مدمجة"
+			},
+			{
+				label: "مسارات العرض",
+				value: "صورة + رابط"
+			}
+		],
+		modules: [
+			{
+				title: "خريطة الاهتمام",
+				description: "تحليل سلوك المستخدمين وتجميع الشرائح القابلة للاستهداف."
+			},
+			{
+				title: "حزم الترويج",
+				description: "قوالب عروض مرئية ورسائل مختصرة للسيناريوهات المختلفة."
+			},
+			{
+				title: "حماية الاستخدام",
+				description: "نصائح تشغيل وحماية ضمن الواجهة لتقليل الأخطاء التشغيلية."
+			}
+		],
+		workflow: [
+			"تحديد",
+			"تصميم",
+			"إرسال",
+			"مراجعة"
+		]
+	},
+	{
+		id: "linkedin",
+		name: "لينكدإن",
+		segment: "مسار الأعمال بين الشركات",
+		tagline: "الشركات وأصحاب القرار والتواصل الاحترافي",
+		theme: "linear-gradient(135deg, #0f5bd5 0%, #38bdf8 100%)",
+		summary: "تاب B2B احترافي لإدارة الشركات، جهات الاتصال، الجامعات، وفرص التواصل على مستوى الأعمال.",
+		stats: [
+			{
+				label: "الحسابات",
+				value: "دخول آمن"
+			},
+			{
+				label: "الكيانات",
+				value: "أشخاص + شركات"
+			},
+			{
+				label: "التصدير",
+				value: "جاهز لملفات إكسل"
+			}
+		],
+		modules: [
+			{
+				title: "مكتب الحسابات",
+				description: "لوحة تسجيل وإدارة الحسابات ومسارات العمل الخاصة بها."
+			},
+			{
+				title: "خريطة الشركات",
+				description: "عرض الشركات والجامعات والقطاعات في شبكة قابلة للتصفية."
+			},
+			{
+				title: "قائمة أصحاب القرار",
+				description: "قائمة أولويات للمتابعة مع أصحاب القرار والجهات المؤثرة."
+			}
+		],
+		workflow: [
+			"دخول",
+			"بحث",
+			"تأهيل",
+			"تواصل"
+		]
+	},
+	{
+		id: "instagram",
+		name: "إنستجرام",
+		segment: "استوديو المنشئين والرسائل",
+		tagline: "المتابعون والتفاعلات ومسارات العمل المحمية",
+		theme: "linear-gradient(135deg, #7c3aed 0%, #f43f5e 100%)",
+		summary: "واجهة مرنة لإدارة الحسابات، تحليل التفاعل، واستكشاف الشرائح المؤثرة داخل تجربة استخدام سريعة.",
+		stats: [
+			{
+				label: "الحسابات",
+				value: "إدارة متعددة"
+			},
+			{
+				label: "الرؤى",
+				value: "هاشتاجات + خصائص سكانية"
+			},
+			{
+				label: "الحماية",
+				value: "طبقة مضادة للحظر"
+			}
+		],
+		modules: [
+			{
+				title: "خزنة الحسابات",
+				description: "إدارة عدة حسابات مع حالة واضحة لكل حساب داخل الواجهة."
+			},
+			{
+				title: "رادار التأثير",
+				description: "متابعة الهاشتاجات، المؤثرين، ومستوى النشاط بسهولة."
+			},
+			{
+				title: "منصة الرسائل الخاصة",
+				description: "منطقة رسائل خاصة مع قوالب قابلة لإعادة الاستخدام."
+			}
+		],
+		workflow: [
+			"إدارة",
+			"تحليل",
+			"حماية",
+			"تفعيل"
+		]
+	},
+	{
+		id: "tiktok",
+		name: "تيك توك",
+		segment: "إشارات النمو",
+		tagline: "التعليقات والاتجاهات والأنشطة المجدولة",
+		theme: "linear-gradient(135deg, #111827 0%, #ec4899 100%)",
+		summary: "شاشة تحليل تنافسي وسلوكي لتيك توك مع إبراز التعليقات، الاتجاهات، ونقاط النمو المحتملة.",
+		stats: [
+			{
+				label: "عدسة الاتجاهات",
+				value: "عرض لحظي"
+			},
+			{
+				label: "التفاعل",
+				value: "إعجابات + تعليقات"
+			},
+			{
+				label: "الجدولة",
+				value: "توقيت آمن"
+			}
+		],
+		modules: [
+			{
+				title: "نبض الاتجاهات",
+				description: "متابعة المنافسين والمواضيع الرائجة داخل بطاقات واضحة."
+			},
+			{
+				title: "ذكاء التعليقات",
+				description: "تحويل التعليقات إلى إشارات اهتمام وفرص محتملة."
+			},
+			{
+				title: "تقويم الأنشطة",
+				description: "تنظيم الأنشطة داخل تقويم يومي وأسبوعي."
+			}
+		],
+		workflow: [
+			"رصد",
+			"مقارنة",
+			"تخطيط",
+			"توسيع"
+		]
+	},
+	{
+		id: "x",
+		name: "إكس / تويتر",
+		segment: "محرك النشر",
+		tagline: "التغريدات والاتجاهات والوصول المباشر",
+		theme: "linear-gradient(135deg, #111111 0%, #4b5563 100%)",
+		summary: "لوحة تنفيذ للنشر المجدول، متابعة الاتجاهات، وإدارة الحسابات والتقارير الخاصة بمنصة إكس.",
+		stats: [
+			{
+				label: "طابور التغريدات",
+				value: "حجم مرتفع"
+			},
+			{
+				label: "مسارات الرسائل",
+				value: "جماعي + فردي"
+			},
+			{
+				label: "فحص الحالة",
+				value: "نشط / غير نشط"
+			}
+		],
+		modules: [
+			{
+				title: "لوحة الاتجاهات",
+				description: "تجميع الاتجاهات والمنافسين في جدول تنفيذي سريع القراءة."
+			},
+			{
+				title: "منصة النشر",
+				description: "منطقة لصناعة وجدولة المحتوى على دفعات."
+			},
+			{
+				title: "مراقبة الوصول",
+				description: "قياس الأداء ونشاط الحسابات داخل مؤشرات لحظية."
+			}
+		],
+		workflow: [
+			"استماع",
+			"صياغة",
+			"نشر",
+			"متابعة"
+		]
+	},
+	{
+		id: "pinterest",
+		name: "بنترست",
+		segment: "الاكتشاف البصري",
+		tagline: "اللوحات والملفات ونظام إعادة النشر",
+		theme: "linear-gradient(135deg, #dc2626 0%, #fb7185 100%)",
+		summary: "تاب بصري لإدارة الحسابات، اللوحات، وتحليل الاهتمامات مع تجربة مناسبة للمحتوى المرئي.",
+		stats: [
+			{
+				label: "اللوحات",
+				value: "عرض متعدد"
+			},
+			{
+				label: "الملفات",
+				value: "تحليل التخصص"
+			},
+			{
+				label: "النشر",
+				value: "جاهز للنشر التلقائي"
+			}
+		],
+		modules: [
+			{
+				title: "مصفوفة اللوحات",
+				description: "استعراض اللوحات والمحتوى داخل شبكة غنية بالمعلومات."
+			},
+			{
+				title: "مستكشف النيتش",
+				description: "تحديد الجماهير المهتمة حسب النيتش أو المجال."
+			},
+			{
+				title: "تدفق إعادة النشر",
+				description: "إدارة إعادة النشر وتكرار المحتوى في مسار واضح."
+			}
+		],
+		workflow: [
+			"تنسيق",
+			"تصنيف",
+			"نشر",
+			"إعادة تدوير"
+		]
+	},
+	{
+		id: "addons",
+		name: "الأدوات الذكية",
+		segment: "طبقة الأدوات",
+		tagline: "الهاشتاجات والمراجعات والأدوات الممتدة",
+		theme: "linear-gradient(135deg, #14b8a6 0%, #3b82f6 100%)",
+		summary: "تاب موحد للأدوات الإضافية مثل الهاشتاجات، المراجعات، جهات الاتصال، والتوسعات الذكية الأخرى.",
+		stats: [
+			{
+				label: "مصادر الهاشتاج",
+				value: "عبر المنصات"
+			},
+			{
+				label: "المراجعات",
+				value: "جاهزة للأتمتة"
+			},
+			{
+				label: "الأدوات",
+				value: "قابلة للتوسعة"
+			}
+		],
+		modules: [
+			{
+				title: "مختبر الهاشتاج",
+				description: "جمع وتحليل الهاشتاجات الأكثر ارتباطًا بكل حملة."
+			},
+			{
+				title: "محرك المراجعات",
+				description: "تنظيم تدفقات المراجعات والتقييمات بشكل تشغيلي."
+			},
+			{
+				title: "أدوات النمو",
+				description: "أدوات إضافية للفرز والتجهيز والتحسين المستمر."
+			}
+		],
+		workflow: [
+			"جمع",
+			"إثراء",
+			"توجيه",
+			"تحسين"
+		]
+	}
+];
+
+//# sourceMappingURL=data:application/json;base64,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OlsicGxhdGZvcm1zLnRzIl0sInZlcnNpb24iOjMsInNvdXJjZXNDb250ZW50IjpbImV4cG9ydCB0eXBlIFBsYXRmb3JtU3RhdCA9IHtcbiAgbGFiZWw6IHN0cmluZ1xuICB2YWx1ZTogc3RyaW5nXG59XG5cbmV4cG9ydCB0eXBlIFBsYXRmb3JtTW9kdWxlID0ge1xuICB0aXRsZTogc3RyaW5nXG4gIGRlc2NyaXB0aW9uOiBzdHJpbmdcbn1cblxuZXhwb3J0IHR5cGUgUGxhdGZvcm1SZWNvcmQgPSB7XG4gIGlkOiBzdHJpbmdcbiAgbmFtZTogc3RyaW5nXG4gIHNlZ21lbnQ6IHN0cmluZ1xuICB0YWdsaW5lOiBzdHJpbmdcbiAgdGhlbWU6IHN0cmluZ1xuICBzdW1tYXJ5OiBzdHJpbmdcbiAgc3RhdHM6IFBsYXRmb3JtU3RhdFtdXG4gIG1vZHVsZXM6IFBsYXRmb3JtTW9kdWxlW11cbiAgd29ya2Zsb3c6IHN0cmluZ1tdXG59XG5cbmV4cG9ydCBjb25zdCBleGVjdXRpdmVTdGF0cyA9IFtcbiAgeyBsYWJlbDogJ9in2YTZhdmG2LXYp9iqINin2YTYo9iz2KfYs9mK2KknLCB2YWx1ZTogJzEwKycgfSxcbiAgeyBsYWJlbDogJ9in2YTZiNit2K/Yp9iqINin2YTYqti02LrZitmE2YrYqScsIHZhbHVlOiAnMzUrJyB9LFxuICB7IGxhYmVsOiAn2YXYs9in2LHYp9iqINin2YTYo9iq2YXYqtipJywgdmFsdWU6ICcyNC83JyB9LFxuICB7IGxhYmVsOiAn2KzYp9mH2LLZitipINin2YTYr9mK2LPZg9iq2YjYqCcsIHZhbHVlOiAn2YjZitmG2K/ZiNiyINij2YjZhNin2YsnIH0sXG5dXG5cbmV4cG9ydCBjb25zdCBzdHJhdGVnaWNQaWxsYXJzID0gW1xuICB7XG4gICAgdGl0bGU6ICfYsNmD2KfYoSDYp9mE2KjZitin2YbYp9iqJyxcbiAgICBkZXNjcmlwdGlvbjogJ9iq2KzZhdmK2Lkg2KfZhNio2YrYp9mG2KfYqtiMINiq2LXZhtmK2YEg2KfZhNi52YXZhNin2KHYjCDZiNiq2K3ZiNmK2YQg2KfZhNil2LTYp9ix2KfYqiDYp9mE2K7Yp9mFINil2YTZiSDZgdix2LUg2YLYp9io2YTYqSDZhNmE2KrZhtmB2YrYsC4nLFxuICB9LFxuICB7XG4gICAgdGl0bGU6ICfYo9iq2YXYqtipINin2YTYrdmF2YTYp9iqJyxcbiAgICBkZXNjcmlwdGlvbjogJ9iq2LTYutmK2YQg2K3ZhdmE2KfYqiDYr9in2K7ZhNmK2Kkg2YXZhti42YXYqSDZhdmGINiu2YTYp9mEINmI2KfYrNmH2Kkg2YXZiNit2K/YqSDZiNmF2LPYp9ix2KfYqiDYudmF2YQg2YjYp9i22K3YqS4nLFxuICB9LFxuICB7XG4gICAgdGl0bGU6ICfZiNi22YjYrSDYp9mE2KPYr9in2KEnLFxuICAgIGRlc2NyaXB0aW9uOiAn2KrZgtin2LHZitixINmE2K3YuNmK2KnYjCDZhNmI2K3Yp9iqINmF2KrYp9io2LnYqdiMINmI2YXYpNi02LHYp9iqINiq2LTYutmK2YQg2KrYs9in2LnYryDZgdmKINin2KrYrtin2LAg2KfZhNmC2LHYp9ixINio2LPYsdi52KkuJyxcbiAgfSxcbl1cblxuZXhwb3J0IGNvbnN0IGV4ZWN1dGlvblJvYWRtYXAgPSBbXG4gICfZh9mK2YPZhCDYr9mK2LPZg9iq2YjYqCDYo9iz2KfYs9mKINmF2Lkg2KjZhtmK2Kkg2KXZhNmD2KrYsdmI2YYg2YXYs9iq2YLYsdipINmI2YLYp9io2YTYqSDZhNmE2KrZiNiz2LnYqS4nLFxuICAn2YbYuNin2YUg2YjYp9is2YfYp9iqINin2K3Yqtix2KfZgdmKINmF2Lkg2KrYqNmI2YrYqNin2Kog2YXYs9iq2YLZhNipINmE2YPZhCDZhdmG2LXYqSDYs9mI2LTZitin2YQuJyxcbiAgJ9i32KjZgtipINmI2K3Yr9in2Kog2K/Yp9iu2YQg2YPZhCDYqtin2Kgg2YTYqtmC2LPZitmFINin2YTYp9iz2KrYrtix2KfYrNiMINin2YTYsdiz2KfYptmE2Iwg2YjYp9mE2KrYrdmE2YrZhNin2KouJyxcbiAgJ9mF2LHYrdmE2Kkg2KfZhNix2KjYtyDYp9mE2K7ZhNmB2Yog2YTYp9it2YLZi9inINi52KjYsSDZiNin2KzZh9in2Kog2KjYsdmF2KzYqSDYp9mE2KrYt9io2YrZgtin2Kog2YjYrtiv2YXYp9iqINmF2LHYrti12Kkg2YjZhdiq2YjYp9mB2YLYqSDZhdi5INiz2YrYp9iz2KfYqiDYp9mE2YXZhti12KfYqi4nLFxuXVxuXG5leHBvcnQgY29uc3QgcGxhdGZvcm1SZWNvcmRzOiBQbGF0Zm9ybVJlY29yZFtdID0gW1xuICB7XG4gICAgaWQ6ICdmYWNlYm9vaycsXG4gICAgbmFtZTogJ9mB2YrYs9io2YjZgycsXG4gICAgc2VnbWVudDogJ9iw2YPYp9ihINin2YTYudmF2YTYp9ihINin2YTZhdit2KrZhdmE2YrZhicsXG4gICAgdGFnbGluZTogJ9in2YPYqti02KfZgSDYp9mE2KzZhdmH2YjYsSDZiNiq2K3ZhNmK2YQg2KfZhNmF2YTZgdin2Kog2KfZhNi02K7YtdmK2KknLFxuICAgIHRoZW1lOiAnbGluZWFyLWdyYWRpZW50KDEzNWRlZywgIzE3NWNmZiAwJSwgIzJmOTVmZiAxMDAlKScsXG4gICAgc3VtbWFyeTpcbiAgICAgICfZiNin2KzZh9ipINmF2K7Ytdi12Kkg2YTYudix2LYg2YjYrdiv2KfYqiDYp9iz2KrZg9i02KfZgSDYp9mE2KjZitin2YbYp9iq2Iwg2KrYtdmG2YrZgSDYp9mE2LTYsdin2KbYrdiMINmI2KXYr9in2LHYqSDYp9mE2LHYpNmJINin2YTYqtiz2YjZitmC2YrYqSDYp9mE2K7Yp9i12Kkg2KjZgdmK2LPYqNmI2YMg2K/Yp9iu2YQg2YXYs9in2K3YqSDYudmF2YQg2YjYp9it2K/YqS4nLFxuICAgIHN0YXRzOiBbXG4gICAgICB7IGxhYmVsOiAn2KXYtNin2LHYp9iqINin2YTYudmF2YTYp9ihJywgdmFsdWU6ICcxMiDYrdmC2YTYp9mLJyB9LFxuICAgICAgeyBsYWJlbDogJ9in2YTYtNix2KfYptitJywgdmFsdWU6ICfZgdmE2KfYqtixINiw2YPZitipJyB9LFxuICAgICAgeyBsYWJlbDogJ9is2KfZh9iy2YrYqSDYp9mE2KrYtdiv2YrYsScsIHZhbHVlOiAnQ1NWIC8g2KXZg9iz2YQnIH0sXG4gICAgXSxcbiAgICBtb2R1bGVzOiBbXG4gICAgICB7XG4gICAgICAgIHRpdGxlOiAn2LnYr9iz2Kkg2KfZhNmF2YTZgdin2KonLFxuICAgICAgICBkZXNjcmlwdGlvbjogJ9i52LHYtiDYrdmC2YjZhCDYp9mE2YfZiNmK2KnYjCDYp9mE2KfZh9iq2YXYp9mF2KfYqtiMINmI2KfZhNmF2LnZhNmI2YXYp9iqINin2YTYo9iz2KfYs9mK2Kkg2K/Yp9iu2YQg2KjYt9in2YLYp9iqINmF2YbYuNmF2KkuJyxcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIHRpdGxlOiAn2KjZhtin2KEg2KfZhNin2LPYqtmH2K/Yp9mBJyxcbiAgICAgICAgZGVzY3JpcHRpb246ICfYpdmG2LTYp9ihINi02LHYp9im2K0g2KzZhdmH2YjYsSDZgtin2KjZhNipINmE2YTYrdmB2Lgg2KfYudiq2YXYp9iv2YvYpyDYudmE2Ykg2KfZhNmF2K/ZitmG2KnYjCDYp9mE2YjYuNmK2YHYqdiMINij2Ygg2KfZhNiq2K7Ytdi1LicsXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICB0aXRsZTogJ9iq2K/ZgdmCINin2YTZgdix2LUnLFxuICAgICAgICBkZXNjcmlwdGlvbjogJ9mE2YjYrdipINmB2LHYtSDYqti52LHYtiDYp9mE2K3Yp9mE2KfYqiDYp9mE2KPYudmE2Ykg2KPZiNmE2YjZitipINmE2YTZhdiq2KfYqNi52Kkg2K/Yp9iu2YQg2KfZhNiq2LfYqNmK2YIuJyxcbiAgICAgIH0sXG4gICAgXSxcbiAgICB3b3JrZmxvdzogWyfYrNmF2LknLCAn2KrZhti42YrZhScsICfYqtmC2LPZitmFJywgJ9iq2LHYqtmK2Kgg2KfZhNij2YjZhNmI2YrYp9iqJ10sXG4gIH0sXG4gIHtcbiAgICBpZDogJ3doYXRzYXBwJyxcbiAgICBuYW1lOiAn2YjYp9iq2LPYp9ioJyxcbiAgICBzZWdtZW50OiAn2YXYsdmD2LIg2KfZhNmF2LHYp9iz2YTYqScsXG4gICAgdGFnbGluZTogJ9iq2K/ZgdmCINin2YTYrdmF2YTYp9iqINmI2KfZhNmC2YjYp9im2YUg2YjYp9mE2KXYsdiz2KfZhCDYp9mE2KLZhdmGJyxcbiAgICB0aGVtZTogJ2xpbmVhci1ncmFkaWVudCgxMzVkZWcsICMwNTk2NjkgMCUsICMzNGQzOTkgMTAwJSknLFxuICAgIHN1bW1hcnk6XG4gICAgICAn2KrYp9ioINmF2LPYqtmC2YQg2YTYpdiv2KfYsdipINmC2YjYp9im2YUg2KfZhNiq2YjYp9i12YTYjCDZhtmF2KfYsNisINin2YTYsdiz2KfYptmE2Iwg2KzYr9in2YjZhCDYp9mE2KXYsdiz2KfZhNiMINmI2YXYqtin2KjYudipINit2KfZhNipINin2YTYrdmF2YTYp9iqINio2LfYsdmK2YLYqSDYqtmG2YHZitiw2YrYqSDYs9mH2YTYqS4nLFxuICAgIHN0YXRzOiBbXG4gICAgICB7IGxhYmVsOiAn2KPZhtmF2KfYtyDYp9mE2KrYtNi62YrZhCcsIHZhbHVlOiAn2KjYqyArINmB2LHYr9mKJyB9LFxuICAgICAgeyBsYWJlbDogJ9in2YTZgtmI2KfZhNioJywgdmFsdWU6ICfZgtin2KjZhNipINmE2KXYudin2K/YqSDYp9mE2KfYs9iq2K7Yr9in2YUnIH0sXG4gICAgICB7IGxhYmVsOiAn2KfZhNiq2K3Zg9mFJywgdmFsdWU6ICfYqtmI2YLZitiqINii2YXZhicgfSxcbiAgICBdLFxuICAgIG1vZHVsZXM6IFtcbiAgICAgIHtcbiAgICAgICAgdGl0bGU6ICfZhdit2LHYsSDYp9mE2K3ZhdmE2KfYqicsXG4gICAgICAgIGRlc2NyaXB0aW9uOiAn2KrYrdix2YrYsSDYp9mE2LHYs9in2KbZhCDZiNin2YTZhti12YjYtSDZiNin2YTZiNiz2KfYpti3INmI2LHYqNi32YfYpyDYqNmC2YjYp9im2YUg2YXYrti12LXYqS4nLFxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgdGl0bGU6ICfYqtmG2YLZitipINin2YTYrNmF2YfZiNixJyxcbiAgICAgICAgZGVzY3JpcHRpb246ICfYqtmG2LjZitmBINin2YTYo9ix2YLYp9mF2Iwg2KrZhti42YrZhSDYp9mE2YLZiNin2KbZhdiMINmI2LHYqNi3INin2YTYudmF2YTYp9ihINio2K3ZhdmE2KfYqiDZhdit2K/Yr9ipLicsXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICB0aXRsZTogJ9iq2LTYutmK2YQg2KfZhNmF2KzZhdmI2LnYp9iqJyxcbiAgICAgICAgZGVzY3JpcHRpb246ICfZhdiq2KfYqNi52Kkg2KfZhNmF2LPYp9ix2KfYqiDYp9mE2K7Yp9i12Kkg2KjYp9mE2YXYrNmF2YjYudin2KrYjCDYp9mE2YbYtNix2Iwg2YjYp9mE2KXYr9in2LHYqSDZhdmGINi02KfYtNipINmF2YjYrdiv2KkuJyxcbiAgICAgIH0sXG4gICAgXSxcbiAgICB3b3JrZmxvdzogWyfYqtis2YfZitiyJywgJ9iq2K3ZgtmCJywgJ9is2K/ZiNmE2KknLCAn2YXYqtin2KjYudipJ10sXG4gIH0sXG4gIHtcbiAgICBpZDogJ3RlbGVncmFtJyxcbiAgICBuYW1lOiAn2KrZitmE2YrYrNix2KfZhScsXG4gICAgc2VnbWVudDogJ9il2K/Yp9ix2Kkg2KfZhNmF2KzYqtmF2LnYp9iqJyxcbiAgICB0YWdsaW5lOiAn2KfZhNij2LnYttin2KEg2YjYp9mE2YXYrNmF2YjYudin2Kog2YjYp9mE2KrZiNiy2YrYuSDYp9mE2YXZhti42YUnLFxuICAgIHRoZW1lOiAnbGluZWFyLWdyYWRpZW50KDEzNWRlZywgIzAyODRjNyAwJSwgIzM4YmRmOCAxMDAlKScsXG4gICAgc3VtbWFyeTpcbiAgICAgICfZhdiz2KfYrdipINiq2LTYutmK2YQg2K7Yp9i12Kkg2KjYp9mE2KrZhNmK2KzYsdin2YUg2YTYudix2LYg2KfZhNmF2KzYqtmF2LnYp9iq2Iwg2YLZiNin2KbZhSDYp9mE2KPYudi22KfYodiMINin2YTYqtmG2YLZhCDYqNmK2YYg2KfZhNmC2YbZiNin2KrYjCDZiNmF2KTYtNix2KfYqiDYp9mE2KrZgdin2LnZhC4nLFxuICAgIHN0YXRzOiBbXG4gICAgICB7IGxhYmVsOiAn2YXZg9iq2KjYqSDYp9mE2YXYrNmF2YjYudin2KonLCB2YWx1ZTogJysyMCDYo9mE2YEnIH0sXG4gICAgICB7IGxhYmVsOiAn2YbZgtmEINin2YTYrNmF2YfZiNixJywgdmFsdWU6ICfZhdmI2KzZkdmHJyB9LFxuICAgICAgeyBsYWJlbDogJ9in2YTYqtmC2KfYsdmK2LEnLCB2YWx1ZTogJ9it2KfZhNipINmE2K3YuNmK2KknIH0sXG4gICAgXSxcbiAgICBtb2R1bGVzOiBbXG4gICAgICB7XG4gICAgICAgIHRpdGxlOiAn2KPYt9mE2LMg2KfZhNmF2KzYqtmF2LnYp9iqJyxcbiAgICAgICAgZGVzY3JpcHRpb246ICfZgdmH2LHYs9ipINin2YTZhdis2YXZiNi52KfYqiDZiNin2YTZgtmG2YjYp9iqINiv2KfYrtmEINi52LHYtiDYqNi12LHZiiDZgtin2KjZhCDZhNmE2KjYrdirLicsXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICB0aXRsZTogJ9iq2YjYrNmK2Ycg2KfZhNis2YXZh9mI2LEnLFxuICAgICAgICBkZXNjcmlwdGlvbjogJ9mG2YLZhCDZiNiq2YjYstmK2Lkg2KfZhNij2LnYttin2KEg2KjZitmGINmF2LPYp9ix2KfYqiDYp9mE2LnZhdmEINin2YTZhdiu2KrZhNmB2Kkg2K/Yp9iu2YQg2KfZhNmG2LjYp9mFLicsXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICB0aXRsZTogJ9mF2K7Yt9i3INin2YTYqtiz2YTYs9mEJyxcbiAgICAgICAgZGVzY3JpcHRpb246ICfYrNiv2YjZhNipINin2YTYsdiz2KfYptmEINmI2KfZhNmF2KrYp9io2LnYp9iqINiv2KfYrtmEINmF2K7Yt9i3INiy2YXZhtmKINmK2YjZhdmKINmI2KfYttitLicsXG4gICAgICB9LFxuICAgIF0sXG4gICAgd29ya2Zsb3c6IFsn2KfYs9iq2YPYtNin2YEnLCAn2LHYs9mFJywgJ9is2K/ZiNmE2KknLCAn2KrZgtix2YrYsSddLFxuICB9LFxuICB7XG4gICAgaWQ6ICdzbmFwY2hhdCcsXG4gICAgbmFtZTogJ9iz2YbYp9ioINi02KfYqicsXG4gICAgc2VnbWVudDogJ9il2LTYp9ix2KfYqiDYp9mE2KrZgdin2LnZhCcsXG4gICAgdGFnbGluZTogJ9in2YTZhdiz2KrYrtiv2YXZiNmGINin2YTZhdmH2KrZhdmI2YYg2YjYuNmH2YjYsSDYp9mE2LnYsdmI2LYnLFxuICAgIHRoZW1lOiAnbGluZWFyLWdyYWRpZW50KDEzNWRlZywgI2VhYjMwOCAwJSwgI2ZkZTA0NyAxMDAlKScsXG4gICAgc3VtbWFyeTpcbiAgICAgICfZiNin2KzZh9ipINmF2LHZg9iy2Kkg2LnZhNmJINi02LHYp9im2K0g2KfZhNiq2YHYp9i52YQg2YjYp9mE2KfZh9iq2YXYp9mF2Iwg2YXYuSDZhti42LHYqSDYs9ix2YrYudipINi52YTZiSDYp9mE2K3Ys9in2KjYp9iqINin2YTZhti02LfYqSDZiNiz2YrZhtin2LHZitmI2YfYp9iqINin2YTYqtix2YjZitisLicsXG4gICAgc3RhdHM6IFtcbiAgICAgIHsgbGFiZWw6ICfYpdi02KfYsdin2Kog2KfZhNin2YfYqtmF2KfZhScsIHZhbHVlOiAn2LPZhNmI2YPZitipJyB9LFxuICAgICAgeyBsYWJlbDogJ9in2YTYqtmG2KjZitmH2KfYqicsIHZhbHVlOiAn2YXYr9mF2KzYqScgfSxcbiAgICAgIHsgbGFiZWw6ICfZhdiz2KfYsdin2Kog2KfZhNi52LHYticsIHZhbHVlOiAn2LXZiNix2KkgKyDYsdin2KjYtycgfSxcbiAgICBdLFxuICAgIG1vZHVsZXM6IFtcbiAgICAgIHtcbiAgICAgICAgdGl0bGU6ICfYrtix2YrYt9ipINin2YTYp9mH2KrZhdin2YUnLFxuICAgICAgICBkZXNjcmlwdGlvbjogJ9iq2K3ZhNmK2YQg2LPZhNmI2YMg2KfZhNmF2LPYqtiu2K/ZhdmK2YYg2YjYqtis2YXZiti5INin2YTYtNix2KfYptitINin2YTZgtin2KjZhNipINmE2YTYp9iz2KrZh9iv2KfZgS4nLFxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgdGl0bGU6ICfYrdiy2YUg2KfZhNiq2LHZiNmK2KwnLFxuICAgICAgICBkZXNjcmlwdGlvbjogJ9mC2YjYp9mE2Kgg2LnYsdmI2LYg2YXYsdim2YrYqSDZiNix2LPYp9im2YQg2YXYrtiq2LXYsdipINmE2YTYs9mK2YbYp9ix2YrZiNmH2KfYqiDYp9mE2YXYrtiq2YTZgdipLicsXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICB0aXRsZTogJ9it2YXYp9mK2Kkg2KfZhNin2LPYqtiu2K/Yp9mFJyxcbiAgICAgICAgZGVzY3JpcHRpb246ICfZhti12KfYptitINiq2LTYutmK2YQg2YjYrdmF2KfZitipINi22YXZhiDYp9mE2YjYp9is2YfYqSDZhNiq2YLZhNmK2YQg2KfZhNij2K7Yt9in2KEg2KfZhNiq2LTYutmK2YTZitipLicsXG4gICAgICB9LFxuICAgIF0sXG4gICAgd29ya2Zsb3c6IFsn2KrYrdiv2YrYrycsICfYqti12YXZitmFJywgJ9il2LHYs9in2YQnLCAn2YXYsdin2KzYudipJ10sXG4gIH0sXG4gIHtcbiAgICBpZDogJ2xpbmtlZGluJyxcbiAgICBuYW1lOiAn2YTZitmG2YPYr9il2YYnLFxuICAgIHNlZ21lbnQ6ICfZhdiz2KfYsSDYp9mE2KPYudmF2KfZhCDYqNmK2YYg2KfZhNi02LHZg9in2KonLFxuICAgIHRhZ2xpbmU6ICfYp9mE2LTYsdmD2KfYqiDZiNij2LXYrdin2Kgg2KfZhNmC2LHYp9ixINmI2KfZhNiq2YjYp9i12YQg2KfZhNin2K3Yqtix2KfZgdmKJyxcbiAgICB0aGVtZTogJ2xpbmVhci1ncmFkaWVudCgxMzVkZWcsICMwZjViZDUgMCUsICMzOGJkZjggMTAwJSknLFxuICAgIHN1bW1hcnk6XG4gICAgICAn2KrYp9ioIEIyQiDYp9it2KrYsdin2YHZiiDZhNil2K/Yp9ix2Kkg2KfZhNi02LHZg9in2KrYjCDYrNmH2KfYqiDYp9mE2KfYqti12KfZhNiMINin2YTYrNin2YXYudin2KrYjCDZiNmB2LHYtSDYp9mE2KrZiNin2LXZhCDYudmE2Ykg2YXYs9iq2YjZiSDYp9mE2KPYudmF2KfZhC4nLFxuICAgIHN0YXRzOiBbXG4gICAgICB7IGxhYmVsOiAn2KfZhNit2LPYp9io2KfYqicsIHZhbHVlOiAn2K/YrtmI2YQg2KLZhdmGJyB9LFxuICAgICAgeyBsYWJlbDogJ9in2YTZg9mK2KfZhtin2KonLCB2YWx1ZTogJ9ij2LTYrtin2LUgKyDYtNix2YPYp9iqJyB9LFxuICAgICAgeyBsYWJlbDogJ9in2YTYqti12K/ZitixJywgdmFsdWU6ICfYrNin2YfYsiDZhNmF2YTZgdin2Kog2KXZg9iz2YQnIH0sXG4gICAgXSxcbiAgICBtb2R1bGVzOiBbXG4gICAgICB7XG4gICAgICAgIHRpdGxlOiAn2YXZg9iq2Kgg2KfZhNit2LPYp9io2KfYqicsXG4gICAgICAgIGRlc2NyaXB0aW9uOiAn2YTZiNit2Kkg2KrYs9is2YrZhCDZiNil2K/Yp9ix2Kkg2KfZhNit2LPYp9io2KfYqiDZiNmF2LPYp9ix2KfYqiDYp9mE2LnZhdmEINin2YTYrtin2LXYqSDYqNmH2KcuJyxcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIHRpdGxlOiAn2K7YsdmK2LfYqSDYp9mE2LTYsdmD2KfYqicsXG4gICAgICAgIGRlc2NyaXB0aW9uOiAn2LnYsdi2INin2YTYtNix2YPYp9iqINmI2KfZhNis2KfZhdi52KfYqiDZiNin2YTZgti32KfYudin2Kog2YHZiiDYtNio2YPYqSDZgtin2KjZhNipINmE2YTYqti12YHZitipLicsXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICB0aXRsZTogJ9mC2KfYptmF2Kkg2KPYtdit2KfYqCDYp9mE2YLYsdin2LEnLFxuICAgICAgICBkZXNjcmlwdGlvbjogJ9mC2KfYptmF2Kkg2KPZiNmE2YjZitin2Kog2YTZhNmF2KrYp9io2LnYqSDZhdi5INij2LXYrdin2Kgg2KfZhNmC2LHYp9ixINmI2KfZhNis2YfYp9iqINin2YTZhdik2KvYsdipLicsXG4gICAgICB9LFxuICAgIF0sXG4gICAgd29ya2Zsb3c6IFsn2K/YrtmI2YQnLCAn2KjYrdirJywgJ9iq2KPZh9mK2YQnLCAn2KrZiNin2LXZhCddLFxuICB9LFxuICB7XG4gICAgaWQ6ICdpbnN0YWdyYW0nLFxuICAgIG5hbWU6ICfYpdmG2LPYqtis2LHYp9mFJyxcbiAgICBzZWdtZW50OiAn2KfYs9iq2YjYr9mK2Ygg2KfZhNmF2YbYtNim2YrZhiDZiNin2YTYsdiz2KfYptmEJyxcbiAgICB0YWdsaW5lOiAn2KfZhNmF2KrYp9io2LnZiNmGINmI2KfZhNiq2YHYp9i52YTYp9iqINmI2YXYs9in2LHYp9iqINin2YTYudmF2YQg2KfZhNmF2K3ZhdmK2KknLFxuICAgIHRoZW1lOiAnbGluZWFyLWdyYWRpZW50KDEzNWRlZywgIzdjM2FlZCAwJSwgI2Y0M2Y1ZSAxMDAlKScsXG4gICAgc3VtbWFyeTpcbiAgICAgICfZiNin2KzZh9ipINmF2LHZhtipINmE2KXYr9in2LHYqSDYp9mE2K3Ys9in2KjYp9iq2Iwg2KrYrdmE2YrZhCDYp9mE2KrZgdin2LnZhNiMINmI2KfYs9iq2YPYtNin2YEg2KfZhNi02LHYp9im2K0g2KfZhNmF2KTYq9ix2Kkg2K/Yp9iu2YQg2KrYrNix2KjYqSDYp9iz2KrYrtiv2KfZhSDYs9ix2YrYudipLicsXG4gICAgc3RhdHM6IFtcbiAgICAgIHsgbGFiZWw6ICfYp9mE2K3Ys9in2KjYp9iqJywgdmFsdWU6ICfYpdiv2KfYsdipINmF2KrYudiv2K/YqScgfSxcbiAgICAgIHsgbGFiZWw6ICfYp9mE2LHYpNmJJywgdmFsdWU6ICfZh9in2LTYqtin2KzYp9iqICsg2K7Ytdin2KbYtSDYs9mD2KfZhtmK2KknIH0sXG4gICAgICB7IGxhYmVsOiAn2KfZhNit2YXYp9mK2KknLCB2YWx1ZTogJ9i32KjZgtipINmF2LbYp9iv2Kkg2YTZhNit2LjYsScgfSxcbiAgICBdLFxuICAgIG1vZHVsZXM6IFtcbiAgICAgIHtcbiAgICAgICAgdGl0bGU6ICfYrtiy2YbYqSDYp9mE2K3Ys9in2KjYp9iqJyxcbiAgICAgICAgZGVzY3JpcHRpb246ICfYpdiv2KfYsdipINi52K/YqSDYrdiz2KfYqNin2Kog2YXYuSDYrdin2YTYqSDZiNin2LbYrdipINmE2YPZhCDYrdiz2KfYqCDYr9in2K7ZhCDYp9mE2YjYp9is2YfYqS4nLFxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgdGl0bGU6ICfYsdin2K/Yp9ixINin2YTYqtij2KvZitixJyxcbiAgICAgICAgZGVzY3JpcHRpb246ICfZhdiq2KfYqNi52Kkg2KfZhNmH2KfYtNiq2KfYrNin2KrYjCDYp9mE2YXYpNir2LHZitmG2Iwg2YjZhdiz2KrZiNmJINin2YTZhti02KfYtyDYqNiz2YfZiNmE2KkuJyxcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIHRpdGxlOiAn2YXZhti12Kkg2KfZhNix2LPYp9im2YQg2KfZhNiu2KfYtdipJyxcbiAgICAgICAgZGVzY3JpcHRpb246ICfZhdmG2LfZgtipINix2LPYp9im2YQg2K7Yp9i12Kkg2YXYuSDZgtmI2KfZhNioINmC2KfYqNmE2Kkg2YTYpdi52KfYr9ipINin2YTYp9iz2KrYrtiv2KfZhS4nLFxuICAgICAgfSxcbiAgICBdLFxuICAgIHdvcmtmbG93OiBbJ9il2K/Yp9ix2KknLCAn2KrYrdmE2YrZhCcsICfYrdmF2KfZitipJywgJ9iq2YHYudmK2YQnXSxcbiAgfSxcbiAge1xuICAgIGlkOiAndGlrdG9rJyxcbiAgICBuYW1lOiAn2KrZitmDINiq2YjZgycsXG4gICAgc2VnbWVudDogJ9il2LTYp9ix2KfYqiDYp9mE2YbZhdmIJyxcbiAgICB0YWdsaW5lOiAn2KfZhNiq2LnZhNmK2YLYp9iqINmI2KfZhNin2KrYrNin2YfYp9iqINmI2KfZhNij2YbYtNi32Kkg2KfZhNmF2KzYr9mI2YTYqScsXG4gICAgdGhlbWU6ICdsaW5lYXItZ3JhZGllbnQoMTM1ZGVnLCAjMTExODI3IDAlLCAjZWM0ODk5IDEwMCUpJyxcbiAgICBzdW1tYXJ5OlxuICAgICAgJ9i02KfYtNipINiq2K3ZhNmK2YQg2KrZhtin2YHYs9mKINmI2LPZhNmI2YPZiiDZhNiq2YrZgyDYqtmI2YMg2YXYuSDYpdio2LHYp9iyINin2YTYqti52YTZitmC2KfYqtiMINin2YTYp9iq2KzYp9mH2KfYqtiMINmI2YbZgtin2Lcg2KfZhNmG2YXZiCDYp9mE2YXYrdiq2YXZhNipLicsXG4gICAgc3RhdHM6IFtcbiAgICAgIHsgbGFiZWw6ICfYudiv2LPYqSDYp9mE2KfYqtis2KfZh9in2KonLCB2YWx1ZTogJ9i52LHYtiDZhNit2LjZiicgfSxcbiAgICAgIHsgbGFiZWw6ICfYp9mE2KrZgdin2LnZhCcsIHZhbHVlOiAn2KXYudis2KfYqNin2KogKyDYqti52YTZitmC2KfYqicgfSxcbiAgICAgIHsgbGFiZWw6ICfYp9mE2KzYr9mI2YTYqScsIHZhbHVlOiAn2KrZiNmC2YrYqiDYotmF2YYnIH0sXG4gICAgXSxcbiAgICBtb2R1bGVzOiBbXG4gICAgICB7XG4gICAgICAgIHRpdGxlOiAn2YbYqNi2INin2YTYp9iq2KzYp9mH2KfYqicsXG4gICAgICAgIGRlc2NyaXB0aW9uOiAn2YXYqtin2KjYudipINin2YTZhdmG2KfZgdiz2YrZhiDZiNin2YTZhdmI2KfYttmK2Lkg2KfZhNix2KfYptis2Kkg2K/Yp9iu2YQg2KjYt9in2YLYp9iqINmI2KfYttit2KkuJyxcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIHRpdGxlOiAn2LDZg9in2KEg2KfZhNiq2LnZhNmK2YLYp9iqJyxcbiAgICAgICAgZGVzY3JpcHRpb246ICfYqtit2YjZitmEINin2YTYqti52YTZitmC2KfYqiDYpdmE2Ykg2KXYtNin2LHYp9iqINin2YfYqtmF2KfZhSDZiNmB2LHYtSDZhdit2KrZhdmE2KkuJyxcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIHRpdGxlOiAn2KrZgtmI2YrZhSDYp9mE2KPZhti02LfYqScsXG4gICAgICAgIGRlc2NyaXB0aW9uOiAn2KrZhti42YrZhSDYp9mE2KPZhti02LfYqSDYr9in2K7ZhCDYqtmC2YjZitmFINmK2YjZhdmKINmI2KPYs9io2YjYudmKLicsXG4gICAgICB9LFxuICAgIF0sXG4gICAgd29ya2Zsb3c6IFsn2LHYtdivJywgJ9mF2YLYp9ix2YbYqScsICfYqtiu2LfZiti3JywgJ9iq2YjYs9mK2LknXSxcbiAgfSxcbiAge1xuICAgIGlkOiAneCcsXG4gICAgbmFtZTogJ9il2YPYsyAvINiq2YjZitiq2LEnLFxuICAgIHNlZ21lbnQ6ICfZhdit2LHZgyDYp9mE2YbYtNixJyxcbiAgICB0YWdsaW5lOiAn2KfZhNiq2LrYsdmK2K/Yp9iqINmI2KfZhNin2KrYrNin2YfYp9iqINmI2KfZhNmI2LXZiNmEINin2YTZhdio2KfYtNixJyxcbiAgICB0aGVtZTogJ2xpbmVhci1ncmFkaWVudCgxMzVkZWcsICMxMTExMTEgMCUsICM0YjU1NjMgMTAwJSknLFxuICAgIHN1bW1hcnk6XG4gICAgICAn2YTZiNit2Kkg2KrZhtmB2YrYsCDZhNmE2YbYtNixINin2YTZhdis2K/ZiNmE2Iwg2YXYqtin2KjYudipINin2YTYp9iq2KzYp9mH2KfYqtiMINmI2KXYr9in2LHYqSDYp9mE2K3Ys9in2KjYp9iqINmI2KfZhNiq2YLYp9ix2YrYsSDYp9mE2K7Yp9i12Kkg2KjZhdmG2LXYqSDYpdmD2LMuJyxcbiAgICBzdGF0czogW1xuICAgICAgeyBsYWJlbDogJ9i32KfYqNmI2LEg2KfZhNiq2LrYsdmK2K/Yp9iqJywgdmFsdWU6ICfYrdis2YUg2YXYsdiq2YHYuScgfSxcbiAgICAgIHsgbGFiZWw6ICfZhdiz2KfYsdin2Kog2KfZhNix2LPYp9im2YQnLCB2YWx1ZTogJ9is2YXYp9i52YogKyDZgdix2K/ZiicgfSxcbiAgICAgIHsgbGFiZWw6ICfZgdit2LUg2KfZhNit2KfZhNipJywgdmFsdWU6ICfZhti02LcgLyDYutmK2LEg2YbYtNi3JyB9LFxuICAgIF0sXG4gICAgbW9kdWxlczogW1xuICAgICAge1xuICAgICAgICB0aXRsZTogJ9mE2YjYrdipINin2YTYp9iq2KzYp9mH2KfYqicsXG4gICAgICAgIGRlc2NyaXB0aW9uOiAn2KrYrNmF2YrYuSDYp9mE2KfYqtis2KfZh9in2Kog2YjYp9mE2YXZhtin2YHYs9mK2YYg2YHZiiDYrNiv2YjZhCDYqtmG2YHZitiw2Yog2LPYsdmK2Lkg2KfZhNmC2LHYp9ih2KkuJyxcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIHRpdGxlOiAn2YXZhti12Kkg2KfZhNmG2LTYsScsXG4gICAgICAgIGRlc2NyaXB0aW9uOiAn2YXZhti32YLYqSDZhNi12YbYp9i52Kkg2YjYrNiv2YjZhNipINin2YTZhdit2KrZiNmJINi52YTZiSDYr9mB2LnYp9iqLicsXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICB0aXRsZTogJ9mF2LHYp9mC2KjYqSDYp9mE2YjYtdmI2YQnLFxuICAgICAgICBkZXNjcmlwdGlvbjogJ9mC2YrYp9izINin2YTYo9iv2KfYoSDZiNmG2LTYp9i3INin2YTYrdiz2KfYqNin2Kog2K/Yp9iu2YQg2YXYpNi02LHYp9iqINmE2K3YuNmK2KkuJyxcbiAgICAgIH0sXG4gICAgXSxcbiAgICB3b3JrZmxvdzogWyfYp9iz2KrZhdin2LknLCAn2LXZitin2LrYqScsICfZhti02LEnLCAn2YXYqtin2KjYudipJ10sXG4gIH0sXG4gIHtcbiAgICBpZDogJ3BpbnRlcmVzdCcsXG4gICAgbmFtZTogJ9io2YbYqtix2LPYqicsXG4gICAgc2VnbWVudDogJ9in2YTYp9mD2KrYtNin2YEg2KfZhNio2LXYsdmKJyxcbiAgICB0YWdsaW5lOiAn2KfZhNmE2YjYrdin2Kog2YjYp9mE2YXZhNmB2KfYqiDZiNmG2LjYp9mFINil2LnYp9iv2Kkg2KfZhNmG2LTYsScsXG4gICAgdGhlbWU6ICdsaW5lYXItZ3JhZGllbnQoMTM1ZGVnLCAjZGMyNjI2IDAlLCAjZmI3MTg1IDEwMCUpJyxcbiAgICBzdW1tYXJ5OlxuICAgICAgJ9iq2KfYqCDYqNi12LHZiiDZhNil2K/Yp9ix2Kkg2KfZhNit2LPYp9io2KfYqtiMINin2YTZhNmI2K3Yp9iq2Iwg2YjYqtit2YTZitmEINin2YTYp9mH2KrZhdin2YXYp9iqINmF2Lkg2KrYrNix2KjYqSDZhdmG2KfYs9io2Kkg2YTZhNmF2K3YqtmI2Ykg2KfZhNmF2LHYptmKLicsXG4gICAgc3RhdHM6IFtcbiAgICAgIHsgbGFiZWw6ICfYp9mE2YTZiNit2KfYqicsIHZhbHVlOiAn2LnYsdi2INmF2KrYudiv2K8nIH0sXG4gICAgICB7IGxhYmVsOiAn2KfZhNmF2YTZgdin2KonLCB2YWx1ZTogJ9iq2K3ZhNmK2YQg2KfZhNiq2K7Ytdi1JyB9LFxuICAgICAgeyBsYWJlbDogJ9in2YTZhti02LEnLCB2YWx1ZTogJ9is2KfZh9iyINmE2YTZhti02LEg2KfZhNiq2YTZgtin2KbZiicgfSxcbiAgICBdLFxuICAgIG1vZHVsZXM6IFtcbiAgICAgIHtcbiAgICAgICAgdGl0bGU6ICfZhdi12YHZiNmB2Kkg2KfZhNmE2YjYrdin2KonLFxuICAgICAgICBkZXNjcmlwdGlvbjogJ9in2LPYqti52LHYp9i2INin2YTZhNmI2K3Yp9iqINmI2KfZhNmF2K3YqtmI2Ykg2K/Yp9iu2YQg2LTYqNmD2Kkg2LrZhtmK2Kkg2KjYp9mE2YXYudmE2YjZhdin2KouJyxcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIHRpdGxlOiAn2YXYs9iq2YPYtNmBINin2YTZhtmK2KrYtCcsXG4gICAgICAgIGRlc2NyaXB0aW9uOiAn2KrYrdiv2YrYryDYp9mE2KzZhdin2YfZitixINin2YTZhdmH2KrZhdipINit2LPYqCDYp9mE2YbZitiq2LQg2KPZiCDYp9mE2YXYrNin2YQuJyxcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIHRpdGxlOiAn2KrYr9mB2YIg2KXYudin2K/YqSDYp9mE2YbYtNixJyxcbiAgICAgICAgZGVzY3JpcHRpb246ICfYpdiv2KfYsdipINil2LnYp9iv2Kkg2KfZhNmG2LTYsSDZiNiq2YPYsdin2LEg2KfZhNmF2K3YqtmI2Ykg2YHZiiDZhdiz2KfYsSDZiNin2LbYrS4nLFxuICAgICAgfSxcbiAgICBdLFxuICAgIHdvcmtmbG93OiBbJ9iq2YbYs9mK2YInLCAn2KrYtdmG2YrZgScsICfZhti02LEnLCAn2KXYudin2K/YqSDYqtiv2YjZitixJ10sXG4gIH0sXG4gIHtcbiAgICBpZDogJ2FkZG9ucycsXG4gICAgbmFtZTogJ9in2YTYo9iv2YjYp9iqINin2YTYsNmD2YrYqScsXG4gICAgc2VnbWVudDogJ9i32KjZgtipINin2YTYo9iv2YjYp9iqJyxcbiAgICB0YWdsaW5lOiAn2KfZhNmH2KfYtNiq2KfYrNin2Kog2YjYp9mE2YXYsdin2KzYudin2Kog2YjYp9mE2KPYr9mI2KfYqiDYp9mE2YXZhdiq2K/YqScsXG4gICAgdGhlbWU6ICdsaW5lYXItZ3JhZGllbnQoMTM1ZGVnLCAjMTRiOGE2IDAlLCAjM2I4MmY2IDEwMCUpJyxcbiAgICBzdW1tYXJ5OlxuICAgICAgJ9iq2KfYqCDZhdmI2K3YryDZhNmE2KPYr9mI2KfYqiDYp9mE2KXYttin2YHZitipINmF2KvZhCDYp9mE2YfYp9i02KrYp9is2KfYqtiMINin2YTZhdix2KfYrNi52KfYqtiMINis2YfYp9iqINin2YTYp9iq2LXYp9mE2Iwg2YjYp9mE2KrZiNiz2LnYp9iqINin2YTYsNmD2YrYqSDYp9mE2KPYrtix2YkuJyxcbiAgICBzdGF0czogW1xuICAgICAgeyBsYWJlbDogJ9mF2LXYp9iv2LEg2KfZhNmH2KfYtNiq2KfYrCcsIHZhbHVlOiAn2LnYqNixINin2YTZhdmG2LXYp9iqJyB9LFxuICAgICAgeyBsYWJlbDogJ9in2YTZhdix2KfYrNi52KfYqicsIHZhbHVlOiAn2KzYp9mH2LLYqSDZhNmE2KPYqtmF2KrYqScgfSxcbiAgICAgIHsgbGFiZWw6ICfYp9mE2KPYr9mI2KfYqicsIHZhbHVlOiAn2YLYp9io2YTYqSDZhNmE2KrZiNiz2LnYqScgfSxcbiAgICBdLFxuICAgIG1vZHVsZXM6IFtcbiAgICAgIHtcbiAgICAgICAgdGl0bGU6ICfZhdiu2KrYqNixINin2YTZh9in2LTYqtin2KwnLFxuICAgICAgICBkZXNjcmlwdGlvbjogJ9is2YXYuSDZiNiq2K3ZhNmK2YQg2KfZhNmH2KfYtNiq2KfYrNin2Kog2KfZhNij2YPYq9ixINin2LHYqtio2KfYt9mL2Kcg2KjZg9mEINit2YXZhNipLicsXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICB0aXRsZTogJ9mF2K3YsdmDINin2YTZhdix2KfYrNi52KfYqicsXG4gICAgICAgIGRlc2NyaXB0aW9uOiAn2KrZhti42YrZhSDYqtiv2YHZgtin2Kog2KfZhNmF2LHYp9is2LnYp9iqINmI2KfZhNiq2YLZitmK2YXYp9iqINio2LTZg9mEINiq2LTYutmK2YTZii4nLFxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgdGl0bGU6ICfYo9iv2YjYp9iqINin2YTZhtmF2YgnLFxuICAgICAgICBkZXNjcmlwdGlvbjogJ9ij2K/ZiNin2Kog2KXYttin2YHZitipINmE2YTZgdix2LIg2YjYp9mE2KrYrNmH2YrYsiDZiNin2YTYqtit2LPZitmGINin2YTZhdiz2KrZhdixLicsXG4gICAgICB9LFxuICAgIF0sXG4gICAgd29ya2Zsb3c6IFsn2KzZhdi5JywgJ9il2KvYsdin2KEnLCAn2KrZiNis2YrZhycsICfYqtit2LPZitmGJ10sXG4gIH0sXG5dXG4iXX0=
