@@ -1,32 +1,32 @@
-const API_BASE_URL = 'https://www.skywaveads.com/sender-pro-api'
+const SERVER_API_URL = 'https://skypro.skywaveads.com/api'
 
 export interface ActivationResponse {
   success: boolean
   message: string
   data?: {
     key: string
-    status: 'active' | 'expired' | 'pending' | 'invalid'
+    status: 'active' | 'expired' | 'pending' | 'invalid' | 'available' | 'revoked' | 'assigned'
     expiryDate: string
     deviceId?: string
+    maxDevices?: number
+    expiresAt?: string
   }
 }
 
 export const activationApi = {
-  validateKey: async (key: string, deviceId: string): Promise<ActivationResponse> => {
-    if (window.electronAPI?.validateKey) {
+  activateKey: async (key: string, deviceId: string): Promise<ActivationResponse> => {
+    if (window.electronAPI?.activateKey) {
       try {
-        const result = await window.electronAPI.validateKey({ key, deviceId })
+        const result = await window.electronAPI.activateKey({ key, deviceId })
         if (result) return result
-      } catch (e) {
-        console.error('IPC validateKey failed:', e)
-      }
+      } catch (e) { console.error('IPC activateKey failed:', e) }
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/validate`, {
+      const response = await fetch(`${SERVER_API_URL}/keys/activate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key, deviceId }),
+        body: JSON.stringify({ key, deviceFingerprint: deviceId })
       })
       return response.json()
     } catch {
@@ -34,21 +34,19 @@ export const activationApi = {
     }
   },
 
-  activateKey: async (key: string, deviceId: string): Promise<ActivationResponse> => {
-    if (window.electronAPI?.activateKey) {
+  validateKey: async (key: string, deviceId: string): Promise<ActivationResponse> => {
+    if (window.electronAPI?.validateKey) {
       try {
-        const result = await window.electronAPI.activateKey({ key, deviceId })
+        const result = await window.electronAPI.validateKey({ key, deviceId })
         if (result) return result
-      } catch (e) {
-        console.error('IPC activateKey failed:', e)
-      }
+      } catch (e) { console.error('IPC validateKey failed:', e) }
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/activate`, {
+      const response = await fetch(`${SERVER_API_URL}/auth/verify-device`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key, deviceId }),
+        body: JSON.stringify({ key, deviceFingerprint: deviceId })
       })
       return response.json()
     } catch {
@@ -61,16 +59,43 @@ export const activationApi = {
       try {
         const result = await window.electronAPI.checkKeyStatus({ key })
         if (result) return result
-      } catch (e) {
-        console.error('IPC checkStatus failed:', e)
-      }
+      } catch (e) { console.error('IPC checkStatus failed:', e) }
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/status?key=${encodeURIComponent(key)}`)
+      const response = await fetch(`${SERVER_API_URL}/keys/status?key=${encodeURIComponent(key)}`)
       return response.json()
     } catch {
       return { success: false, message: 'فشل الاتصال بالخادم' }
     }
   },
+
+  resetDevice: async (key: string, deviceId: string): Promise<ActivationResponse> => {
+    if (window.electronAPI?.resetDevice) {
+      try {
+        const result = await window.electronAPI.resetDevice({ key })
+        if (result) return result
+      } catch (e) { console.error('IPC resetDevice failed:', e) }
+    }
+
+    try {
+      const response = await fetch(`${SERVER_API_URL}/auth/reset-device`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key, deviceFingerprint: deviceId })
+      })
+      return response.json()
+    } catch {
+      return { success: false, message: 'فشل الاتصال بالخادم' }
+    }
+  },
+
+  getDeviceInfo: async () => {
+    if (window.electronAPI?.getDeviceInfo) {
+      try {
+        return await window.electronAPI.getDeviceInfo()
+      } catch (e) { console.error('IPC getDeviceInfo failed:', e) }
+    }
+    return null
+  }
 }

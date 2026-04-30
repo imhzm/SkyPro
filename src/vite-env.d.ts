@@ -14,6 +14,8 @@ declare global {
       activateKey: (data: any) => Promise<any>
       validateKey: (data: any) => Promise<any>
       checkKeyStatus: (data: any) => Promise<any>
+      resetDevice: (data: any) => Promise<any>
+      getDeviceInfo: () => Promise<any>
 
       // Facebook
       facebookLogin: (data: any) => Promise<any>
