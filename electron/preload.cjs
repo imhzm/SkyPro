@@ -5,6 +5,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   activateKey: (data) => ipcRenderer.invoke('activate-key', data),
   validateKey: (data) => ipcRenderer.invoke('validate-key', data),
   checkKeyStatus: (data) => ipcRenderer.invoke('check-key-status', data),
+  resetDevice: (data) => ipcRenderer.invoke('reset-device', data),
+  getDeviceInfo: () => ipcRenderer.invoke('get-device-info'),
 
   // Browser
   launchBrowser: (options) => ipcRenderer.invoke('launch-browser', options),

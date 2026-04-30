@@ -114,7 +114,7 @@ export interface BrowserSession {
 
 export interface ActivationData {
   key: string
-  status: 'active' | 'expired' | 'pending' | 'invalid'
+  status: 'active' | 'expired' | 'pending' | 'invalid' | 'available' | 'revoked' | 'assigned'
   expiryDate: string
   deviceId?: string
 }

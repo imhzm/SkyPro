@@ -312,6 +312,7 @@ async function safeClose(sessionId) {
 }
 
 // ==================== IPC: AUTHENTICATION ====================
+const SERVER_API_URL = 'https://skypro.skywaveads.com/api'
 const KEY_EXPIRY = '2027-04-23'
 const VALID_KEYS = [
   'SKY1-PRO2-0001-2026', 'SKY1-PRO2-0002-2026', 'SKY1-PRO2-0003-2026',
@@ -319,6 +320,33 @@ const VALID_KEYS = [
   'SKY1-PRO2-0007-2026', 'SKY1-PRO2-0008-2026', 'SKY1-PRO2-0009-2026',
   'SKY1-PRO2-0010-2026',
 ]
+
+const os = require('os')
+const crypto = require('crypto')
+
+function generateDeviceFingerprint() {
+  const components = [
+    os.hostname(),
+    os.platform(),
+    os.arch(),
+    os.cpus()[0]?.model || '',
+    String(os.totalmem()),
+  ]
+  const raw = components.join('|')
+  return crypto.createHash('sha256').update(raw).digest('hex')
+}
+
+function getDeviceCapabilities() {
+  return {
+    fingerprint: generateDeviceFingerprint(),
+    hostname: os.hostname(),
+    platform: os.platform(),
+    arch: os.arch(),
+    cpu: os.cpus()[0]?.model || 'Unknown',
+    cpuCores: os.cpus().length,
+    ram: `${Math.round(os.totalmem() / 1024 / 1024 / 1024)}GB`,
+  }
+}
 
 function isKeyValid(key) {
   const k = key.toUpperCase()
@@ -328,30 +356,49 @@ function isKeyValid(key) {
 }
 
 ipcm('activate-key', async (e, { key, deviceId }) => {
+  const deviceInfo = getDeviceCapabilities()
+  try {
+    const response = await fetch(`${SERVER_API_URL}/auth/verify-device`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key, deviceFingerprint: deviceInfo.fingerprint, deviceInfo })
+    })
+    const result = await response.json()
+    if (result.success) return result
+    if (result.error) return { success: false, message: result.error }
+  } catch (err) { console.error('Server verification failed:', err.message) }
   const check = isKeyValid(key)
   if (check.valid) {
-    return {
-      success: true,
-      message: 'تم تفعيل الاشتراك بنجاح!',
-      data: { key: check.key, status: 'active', expiryDate: check.expiryDate, deviceId },
-    }
+    return { success: true, message: 'تم التفعيل بنجاح!', data: { key: check.key, status: 'active', expiryDate: check.expiryDate, deviceId: deviceInfo.fingerprint } }
   }
   return { success: false, message: check.message }
 })
 
 ipcm('validate-key', async (e, { key, deviceId }) => {
+  const deviceInfo = getDeviceCapabilities()
+  try {
+    const response = await fetch(`${SERVER_API_URL}/auth/verify-device`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key, deviceFingerprint: deviceInfo.fingerprint, deviceInfo })
+    })
+    const result = await response.json()
+    if (result.success) return result
+    if (result.error) return { success: false, message: result.error }
+  } catch (err) { console.error('Server validation failed:', err.message) }
   const check = isKeyValid(key)
   if (check.valid) {
-    return {
-      success: true,
-      message: 'مفتاح التفعيل صالح!',
-      data: { key: check.key, status: 'active', expiryDate: check.expiryDate, deviceId },
-    }
+    return { success: true, message: 'مفتاح التفعيل صالح!', data: { key: check.key, status: 'active', expiryDate: check.expiryDate, deviceId: deviceInfo.fingerprint } }
   }
   return { success: false, message: check.message }
 })
 
 ipcm('check-key-status', async (e, { key }) => {
+  try {
+    const response = await fetch(`${SERVER_API_URL}/keys/status?key=${encodeURIComponent(key)}`)
+    const result = await response.json()
+    if (result.success) return result
+  } catch (err) { console.error('Server key status failed:', err.message) }
   const check = isKeyValid(key)
   return {
     success: check.valid,
@@ -360,6 +407,25 @@ ipcm('check-key-status', async (e, { key }) => {
       ? { key: check.key, status: 'active', expiryDate: check.expiryDate }
       : undefined,
   }
+})
+
+ipcm('get-device-info', async () => {
+  return getDeviceCapabilities()
+})
+
+ipcm('reset-device', async (e, { key }) => {
+  const deviceInfo = getDeviceCapabilities()
+  try {
+    const response = await fetch(`${SERVER_API_URL}/auth/reset-device`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key, deviceFingerprint: deviceInfo.fingerprint })
+    })
+    const result = await response.json()
+    if (result.success) return result
+    if (result.error) return { success: false, message: result.error }
+  } catch (err) { console.error('Server reset device failed:', err.message) }
+  return { success: false, message: 'فشل الاتصال بالخادم' }
 })
 
 // ==================== IPC: BROWSER ====================
