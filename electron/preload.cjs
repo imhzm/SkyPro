@@ -7,6 +7,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   checkKeyStatus: (data) => ipcRenderer.invoke('check-key-status', data),
   resetDevice: (data) => ipcRenderer.invoke('reset-device', data),
   getDeviceInfo: () => ipcRenderer.invoke('get-device-info'),
+  login: (data) => ipcRenderer.invoke('login', data),
+  getRememberedLogin: () => ipcRenderer.invoke('get-remembered-login'),
+  saveRememberedLogin: (data) => ipcRenderer.invoke('save-remembered-login', data),
+  clearRememberedLogin: () => ipcRenderer.invoke('clear-remembered-login'),
 
   // Browser
   launchBrowser: (options) => ipcRenderer.invoke('launch-browser', options),

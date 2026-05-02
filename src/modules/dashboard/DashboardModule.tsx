@@ -2,6 +2,21 @@ import { useState, useEffect, useCallback } from 'react'
 import { useAppStore } from '../../stores/appStore'
 import { platforms } from '../../data/platforms'
 import type { PlatformId } from '../../types'
+
+interface RecentLead {
+  platform: string
+  name: string
+  source: string
+  date: string
+  created_at?: string
+}
+
+interface ActivationResult {
+  serial: string
+  key: string
+  expiryDate: string
+  emailSent?: boolean
+}
 import {
   Activity,
   Globe,
@@ -11,7 +26,13 @@ import {
   Sparkles,
   Rocket,
   BarChart3,
+  Mail,
+  Send,
+  AlertCircle,
+  CheckCircle,
+  X,
 } from 'lucide-react'
+import { activationApi } from '../../services/api/activation'
 
 const platformGradients: Record<string, string> = {
   facebook: 'linear-gradient(135deg, #1877f2, #0A6CF1)',
@@ -43,6 +64,39 @@ export default function DashboardModule() {
 
   const socialPlatforms = platforms.slice(1)
 
+  const [showActivateModal, setShowActivateModal] = useState(false)
+  const [clientEmail, setClientEmail] = useState('')
+  const [months, setMonths] = useState(12)
+  const [actLoading, setActLoading] = useState(false)
+  const [actError, setActError] = useState('')
+  const [actSuccess, setActSuccess] = useState('')
+  const [activationResult, setActivationResult] = useState<ActivationResult | null>(null)
+
+  const handleRequestActivation = async () => {
+    if (!clientEmail.trim()) {
+      setActError('يرجى إدخال بريد العميل')
+      return
+    }
+    setActLoading(true)
+    setActError('')
+    setActSuccess('')
+    setActivationResult(null)
+    try {
+      const result = await activationApi.requestActivation(clientEmail.trim(), months)
+      if (result.success && result.data) {
+        setActSuccess('تم إنشاء بيانات التفعيل بنجاح')
+        setActivationResult(result.data)
+        setClientEmail('')
+      } else {
+        setActError(result.message || 'فشل إنشاء بيانات التفعيل')
+      }
+    } catch {
+      setActError('فشل الاتصال بخادم التفعيل')
+    } finally {
+      setActLoading(false)
+    }
+  }
+
   const loadData = useCallback(async () => {
     try {
       const [leadsRes, accountsRes, campaignsRes] = await Promise.all([
@@ -59,7 +113,7 @@ export default function DashboardModule() {
         campaigns: campaigns.length,
       })
       if (leads.length > 0) {
-        setRecentLeads(leads.slice(0, 6).map((l: any) => ({
+        setRecentLeads(leads.slice(0, 6).map((l: RecentLead) => ({
           platform: l.platform || 'facebook',
           name: l.name || 'مستخدم',
           source: l.source || '-',
@@ -78,7 +132,7 @@ export default function DashboardModule() {
     { label: 'المنصات', value: '18+', icon: Globe, gradient: 'linear-gradient(135deg, #0A6CF1, #8B2CF5)' },
     { label: 'الحسابات', value: stats.accounts.toString(), icon: Users, gradient: 'linear-gradient(135deg, #22c55e, #16a34a)' },
     { label: 'السجلات', value: stats.leads.toString(), icon: Database, gradient: 'linear-gradient(135deg, #f59e0b, #ef4444)' },
-    { label: 'الحمليات', value: stats.campaigns.toString(), icon: BarChart3, gradient: 'linear-gradient(135deg, #8B2CF5, #FF4FD8)' },
+    { label: 'الحملات', value: stats.campaigns.toString(), icon: BarChart3, gradient: 'linear-gradient(135deg, #8B2CF5, #FF4FD8)' },
   ]
 
   if (loading) {
@@ -106,7 +160,7 @@ export default function DashboardModule() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-2">
               <div className="sw-status-dot" />
-              <span className="text-[11px] font-semibold" style={{ color: 'rgba(234, 243, 255, 0.6)' }}>Sky Wave Pro</span>
+              <span className="text-[11px] font-semibold" style={{ color: 'rgba(234, 243, 255, 0.6)' }}>SkyPro</span>
             </div>
             <h1 className="text-xl font-bold text-white mb-1">مرحباً بك</h1>
             <p className="text-sm leading-relaxed max-w-lg" style={{ color: 'rgba(234, 243, 255, 0.6)' }}>
@@ -116,6 +170,14 @@ export default function DashboardModule() {
               <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold text-white" style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.15)' }}>18+ منصة</span>
               <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold text-white" style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.15)' }}>أتمتة كاملة</span>
               <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold text-white" style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.15)' }}>استخراج بيانات</span>
+              <button
+                onClick={() => { setShowActivateModal(true); setActError(''); setActSuccess(''); setActivationResult(null) }}
+                className="px-3 py-1 rounded-full text-[11px] font-semibold text-white transition-all hover:shadow-lg"
+                style={{ background: 'linear-gradient(135deg, #10b981, #059669)', boxShadow: '0 2px 10px rgba(16, 185, 129, 0.3)' }}
+              >
+                <Send size={12} className="inline mr-1" />
+                إنشاء تفعيل
+              </button>
             </div>
           </div>
           <div
@@ -233,6 +295,112 @@ export default function DashboardModule() {
           </div>
         </div>
       </div>
+
+      {/* Activation Section */}
+      <div className="rounded-xl p-4" style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}>
+              <Mail size={20} className="text-white" />
+            </div>
+            <div>
+              <h3 className="font-bold text-secondary-900 text-sm">إنشاء تفعيل للعميل</h3>
+              <p className="text-sm text-secondary-500">أدخل بريد العميل وسيتم إرسال بيانات التفعيل إليه</p>
+            </div>
+          </div>
+          <button
+            onClick={() => { setShowActivateModal(true); setActError(''); setActSuccess(''); setActivationResult(null) }}
+            className="btn-primary"
+            style={{ background: 'linear-gradient(135deg, #10b981, #059669)', boxShadow: '0 4px 20px rgba(16, 185, 129, 0.3)' }}
+          >
+            <Send size={16} className="inline ml-2" />
+            إرسال التفعيل
+          </button>
+        </div>
+        {actError && (
+          <div className="flex items-center gap-2 p-3 rounded-xl text-sm" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}>
+            <AlertCircle size={18} /> {actError}
+          </div>
+        )}
+        {actSuccess && (
+          <div className="flex items-center gap-2 p-3 rounded-xl text-sm" style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)', color: '#4ade80' }}>
+            <CheckCircle size={18} /> {actSuccess}
+          </div>
+        )}
+        {activationResult && (
+          <div className="mt-3 p-4 rounded-xl" style={{ background: 'rgba(255,255,255,0.5)' }}>
+            <h4 className="font-bold text-secondary-900 mb-2">بيانات التفعيل:</h4>
+            <div className="space-y-1 text-sm">
+              <p><span className="font-medium">السيريال:</span> <span className="font-mono">{activationResult.serial}</span></p>
+              <p><span className="font-medium">مفتاح التفعيل:</span> <span className="font-mono">{activationResult.key}</span></p>
+              <p><span className="font-medium">تاريخ الانتهاء:</span> {activationResult.expiryDate}</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Activation Modal */}
+      {showActivateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.5)' }}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-secondary-900">إنشاء تفعيل جديد</h3>
+              <button onClick={() => setShowActivateModal(false)} className="text-secondary-400 hover:text-secondary-600">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-secondary-700 mb-1">البريد الإلكتروني</label>
+                <div className="relative">
+                  <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400" />
+                  <input
+                    type="email"
+                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-secondary-200 text-right"
+                    placeholder="client@example.com"
+                    value={clientEmail}
+                    onChange={(e) => { setClientEmail(e.target.value); setActError('') }}
+                    onKeyDown={(e) => e.key === 'Enter' && handleRequestActivation()}
+                    dir="ltr"
+                    autoFocus
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-secondary-700 mb-1">مدة الاشتراك (بالشهور)</label>
+                <input
+                  type="number"
+                  className="w-full px-4 py-3 rounded-xl border border-secondary-200 text-right"
+                  value={months}
+                  onChange={(e) => setMonths(parseInt(e.target.value) || 12)}
+                  min="1"
+                  max="36"
+                />
+              </div>
+              {actError && (
+                <div className="flex items-center gap-2 p-3 rounded-xl text-sm" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}>
+                  <AlertCircle size={16} /> {actError}
+                </div>
+              )}
+              <div className="flex gap-3">
+                <button
+                  onClick={handleRequestActivation}
+                  disabled={actLoading || !clientEmail.trim()}
+                  className="btn-primary flex-1"
+                >
+                  {actLoading ? <Loader2 size={18} className="animate-spin mx-auto" /> : 'إرسال'}
+                </button>
+                <button
+                  onClick={() => setShowActivateModal(false)}
+                  className="px-4 py-3 rounded-xl border border-secondary-200 text-secondary-600 hover:bg-secondary-50"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,9 +1,14 @@
-const { app, BrowserWindow, shell, ipcMain } = require('electron')
+const { app, BrowserWindow, shell, ipcMain, safeStorage } = require('electron')
 const path = require('path')
 const fs = require('fs')
+const { fileURLToPath } = require('url')
 const { chromium } = require('playwright')
 const Database = require('better-sqlite3')
 const { autoUpdater } = require('electron-updater')
+const { randomUA, randomDelay, getSecuritySettings, setDb } = require('./anti-ban.cjs')
+const { initDatabase } = require('./db-init.cjs')
+const BrowserManager = require('./browser-manager.cjs')
+const { registerAuthIPC } = require('./ipc-auth.cjs')
 
 const isDev = Boolean(process.env.VITE_DEV_SERVER_URL)
 
@@ -12,6 +17,13 @@ let bm = null
 const cancelFlags = new Map()
 let jobIdCounter = 0
 const ipcHandlers = {}
+const SECRET_PREFIX = 'enc:v1:'
+const SECRET_COLUMNS = {
+  accounts: ['password'],
+  proxies: ['password'],
+  smtp_settings: ['password'],
+}
+const REMEMBERED_LOGIN_FILE = 'remembered-login.json'
 
 // Auto updater logging
 autoUpdater.logger = console
@@ -31,266 +43,170 @@ autoUpdater.on('update-downloaded', (info) => {
   setTimeout(() => autoUpdater.quitAndInstall(), 5000)
 })
 
-
-
-// ==================== DATABASE SCHEMA ====================
-function initDatabase() {
-  if (!db) return
-  db.exec(`
-  CREATE TABLE IF NOT EXISTS leads (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    platform TEXT,
-    name TEXT,
-    email TEXT,
-    phone TEXT,
-    source TEXT,
-    url TEXT,
-    extra_data TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-  CREATE TABLE IF NOT EXISTS accounts (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    platform TEXT,
-    username TEXT,
-    password TEXT,
-    proxy TEXT,
-    notes TEXT,
-    status TEXT DEFAULT 'active',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-  CREATE TABLE IF NOT EXISTS campaigns (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT,
-    platform TEXT,
-    type TEXT,
-    status TEXT DEFAULT 'pending',
-    results TEXT,
-    scheduled_at TEXT,
-    data TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-  CREATE TABLE IF NOT EXISTS smtp_settings (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    email TEXT,
-    password TEXT,
-    host TEXT,
-    port INTEGER,
-    ssl TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-  CREATE TABLE IF NOT EXISTS proxies (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    label TEXT,
-    host TEXT,
-    port TEXT,
-    protocol TEXT,
-    username TEXT,
-    password TEXT,
-    status TEXT DEFAULT 'active',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-  `)
-  try { db.exec(`ALTER TABLE campaigns ADD COLUMN scheduled_at TEXT`) } catch (e) { /* column may already exist */ }
-  try { db.exec(`ALTER TABLE campaigns ADD COLUMN data TEXT`) } catch (e) { /* column may already exist */ }
-  try { db.exec(`ALTER TABLE accounts ADD COLUMN notes TEXT`) } catch (e) { /* column may already exist */ }
-
-  db.exec(`CREATE TABLE IF NOT EXISTS security_settings (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    enabled INTEGER DEFAULT 1,
-    randomDelays INTEGER DEFAULT 1,
-    minDelay INTEGER DEFAULT 2000,
-    maxDelay INTEGER DEFAULT 8000,
-    maxActionsPerHour INTEGER DEFAULT 50,
-    rotateUserAgent INTEGER DEFAULT 1,
-    randomizeViewport INTEGER DEFAULT 1,
-    useStealthMode INTEGER DEFAULT 1,
-    maxRetries INTEGER DEFAULT 3
-  )`)
-}
-
-// ==================== ANTI-BAN HELPERS ====================
-const USER_AGENTS = [
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36 Edg/123.0.0.0',
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0',
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Safari/605.1.15',
-]
-
-function randomUA() { return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)] }
-function randomDelay(min = 1500, max = 4000) { return Math.floor(Math.random() * (max - min + 1)) + min }
-
-function getSecuritySettings() {
-  try {
-    if (!db) return null
-    const rows = db.prepare('SELECT * FROM security_settings ORDER BY id DESC LIMIT 1').all()
-    if (rows.length > 0) return rows[0]
-  } catch (e) { console.error('getSecuritySettings error:', e.message) }
-  return null
-}
-
-// ==================== BROWSER MANAGER ====================
-class BrowserManager {
-  constructor() {
-    this.browsers = new Map()
-  }
-
-  getProfileDir(platform, profileId) {
-    const base = profileId || platform || 'default'
-    return path.join(app.getPath('userData'), 'browser-profiles', base)
-  }
-
-  async launch(options = {}) {
-    const { headless = false, proxy, sessionId = `session-${Date.now()}`, antiBan = true, platform, profileId } = options
-    try {
-      // If profileId is provided, allow multiple sessions per platform (one per account)
-      // Without profileId, reuse existing browser for this platform (legacy behavior)
-      if (platform && !profileId) {
-        for (const [id, session] of this.browsers) {
-          if (session.platform === platform) {
-            console.log(`Reusing existing browser for ${platform}, sessionId=${id}`)
-            return { success: true, sessionId: id, message: 'المتصفح مفتوح بالفعل' }
-          }
-        }
-      }
-      const dir = this.getProfileDir(platform, profileId)
-      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
-
-      const args = [
-        '--disable-blink-features=AutomationControlled',
-        '--disable-features=IsolateOrigins,site-per-process',
-        '--window-size=1366,768',
-        '--disable-infobars',
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
-        '--disable-gpu',
-        '--disable-extensions',
-        '--disable-background-networking',
-        '--disable-background-timer-throttling',
-        '--disable-backgrounding-occluded-windows',
-        '--disable-breakpad',
-        '--disable-component-extensions-with-background-pages',
-        '--disable-features=TranslateUI',
-        '--disable-ipc-flooding-protection',
-        '--disable-renderer-backgrounding',
-        '--enable-features=NetworkService,NetworkServiceInProcess',
-        '--force-color-profile=srgb',
-        '--metrics-recording-only',
-        '--no-first-run',
-        '--password-store=basic',
-        '--use-mock-keychain',
-        '--lang=ar-SA',
-      ]
-
-      const sec = antiBan ? getSecuritySettings() : null
-      const ua = (antiBan && sec && sec.rotateUserAgent) ? randomUA() : (!antiBan ? USER_AGENTS[0] : randomUA())
-      const vpWidth = sec && sec.randomizeViewport ? [1280, 1366, 1440, 1536, 1600][Math.floor(Math.random() * 5)] : 1366
-      const vpHeight = sec && sec.randomizeViewport ? [720, 768, 800, 900][Math.floor(Math.random() * 4)] : 768
-
-      const context = await chromium.launchPersistentContext(dir, {
-        headless,
-        args,
-        proxy: proxy ? { server: proxy } : undefined,
-        userAgent: ua,
-        viewport: { width: vpWidth, height: vpHeight },
-        locale: 'ar-SA',
-        timezoneId: 'Asia/Riyadh',
-        geolocation: { latitude: 24.7136, longitude: 46.6753 },
-        permissions: ['geolocation'],
-        colorScheme: 'light',
-        extraHTTPHeaders: {
-          'Accept-Language': 'ar-SA,ar;q=0.9,en-US;q=0.8,en;q=0.7',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-          'sec-ch-ua': '"Chromium";v="124", "Google Chrome";v="124"',
-          'sec-ch-ua-mobile': '?0',
-          'sec-ch-ua-platform': '"Windows"',
-        },
-      })
-
-      // Stealth: remove webdriver property + other anti-detection
-      await context.addInitScript(() => {
-        Object.defineProperty(navigator, 'webdriver', { get: () => undefined })
-        Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] })
-        window.chrome = { runtime: {} }
-        Object.defineProperty(navigator, 'languages', { get: () => ['ar-SA', 'ar', 'en-US', 'en'] })
-        Object.defineProperty(navigator, 'deviceMemory', { get: () => 8 })
-        Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 4 })
-        Object.defineProperty(navigator, 'maxTouchPoints', { get: () => 0 })
-        Object.defineProperty(navigator, 'vendor', { get: () => 'Google Inc.' })
-        // Remove automation flags from window
-        delete window.__proto__.cdc_adoQpoasnfa76pfcZLmcfl_
-        delete window.__proto__.cdc_adoQpoasnfa76pfcZLmcfl_Array
-        delete window.__proto__.cdc_adoQpoasnfa76pfcZLmcfl_Object
-        delete window.__proto__.cdc_adoQpoasnfa76pfcZLmcfl_Promise
-        // Override permissions
-        const originalQuery = window.navigator.permissions.query
-        window.navigator.permissions.query = (parameters) => (
-          parameters.name === 'notifications'
-            ? Promise.resolve({ state: Notification.permission })
-            : originalQuery(parameters)
-        )
-      })
-
-      const page = context.pages()[0] || await context.newPage()
-      if (antiBan) {
-        page.setDefaultTimeout(30000)
-        page.setDefaultNavigationTimeout(60000)
-      }
-      this.browsers.set(sessionId, { context, page, antiBan, platform, profileId })
-      return { success: true, sessionId, message: 'تم تشغيل المتصفح بنجاح' }
-    } catch (error) {
-      return { success: false, error: error.message }
-    }
-  }
-
-  async close(sessionId) {
-    const session = this.browsers.get(sessionId)
-    if (!session) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
-    try {
-      await session.context.close()
-      this.browsers.delete(sessionId)
-      return { success: true, message: 'تم إغلاق المتصفح' }
-    } catch (error) {
-      return { success: false, error: error.message }
-    }
-  }
-
-  async closeAll() {
-    for (const [id, session] of this.browsers) {
-      try { await session.context.close() } catch (e) { console.error('Error closing browser session:', e.message) }
-    }
-    this.browsers.clear()
-    return { success: true, message: 'تم إغلاق كل المتصفحات' }
-  }
-
-  getPage(sessionId) {
-    return this.browsers.get(sessionId)?.page
-  }
-
-  getBrowser(sessionId) {
-    return this.browsers.get(sessionId)
-  }
-
-  async humanDelay(sessionId, min = 1500, max = 4000) {
-    const session = this.browsers.get(sessionId)
-    if (session && session.antiBan) {
-      await new Promise(r => setTimeout(r, randomDelay(min, max)))
-    }
-  }
-
-  async humanScroll(page, times = 3) {
-    for (let i = 0; i < times; i++) {
-      await page.evaluate(() => window.scrollTo(0, Math.random() * document.body.scrollHeight))
-      await new Promise(r => setTimeout(r, randomDelay(800, 2000)))
-    }
-  }
-}
-
-
-
 // ==================== HELPERS ====================
+function encryptSecret(value) {
+  if (value === null || value === undefined || value === '') return value
+  const text = String(value)
+  if (text.startsWith(SECRET_PREFIX)) return text
+  if (!safeStorage.isEncryptionAvailable()) {
+    throw new Error('Secure local storage is not available. Refusing to save secrets in plaintext.')
+  }
+  return `${SECRET_PREFIX}${safeStorage.encryptString(text).toString('base64')}`
+}
+
+function decryptSecret(value) {
+  if (value === null || value === undefined || value === '') return value
+  const text = String(value)
+  if (!text.startsWith(SECRET_PREFIX)) return text
+  if (!safeStorage.isEncryptionAvailable()) return ''
+  try {
+    return safeStorage.decryptString(Buffer.from(text.slice(SECRET_PREFIX.length), 'base64'))
+  } catch (err) {
+    console.error('Failed to decrypt local secret:', err.message)
+    return ''
+  }
+}
+
+function emptyRememberedLogin() {
+  return { email: '', password: '', serial: '', remember: false }
+}
+
+function normalizeRememberedLogin(input = {}) {
+  return {
+    email: typeof input.email === 'string' ? input.email.trim().slice(0, 254) : '',
+    password: typeof input.password === 'string' ? input.password.slice(0, 512) : '',
+    serial: typeof input.serial === 'string' ? input.serial.trim().toUpperCase().slice(0, 120) : '',
+    remember: input.remember === true,
+  }
+}
+
+function encryptRequiredSecret(value) {
+  if (!safeStorage.isEncryptionAvailable()) {
+    throw new Error('Secure storage is not available on this device')
+  }
+  const text = String(value)
+  return `${SECRET_PREFIX}${safeStorage.encryptString(text).toString('base64')}`
+}
+
+function getRememberedLoginPath() {
+  return path.join(app.getPath('userData'), REMEMBERED_LOGIN_FILE)
+}
+
+function readRememberedLogin() {
+  try {
+    const filePath = getRememberedLoginPath()
+    if (!fs.existsSync(filePath)) return emptyRememberedLogin()
+    const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8'))
+    const decrypted = decryptSecret(parsed.data || '')
+    if (!decrypted) return emptyRememberedLogin()
+    const data = normalizeRememberedLogin(JSON.parse(decrypted))
+    return data.remember ? data : emptyRememberedLogin()
+  } catch (err) {
+    console.error('Failed to read remembered login:', err.message)
+    return emptyRememberedLogin()
+  }
+}
+
+function writeRememberedLogin(input) {
+  const data = normalizeRememberedLogin(input)
+  if (!data.remember) {
+    clearRememberedLogin()
+    return
+  }
+  const encrypted = encryptRequiredSecret(JSON.stringify(data))
+  fs.writeFileSync(
+    getRememberedLoginPath(),
+    JSON.stringify({ data: encrypted, updatedAt: new Date().toISOString() }),
+    { mode: 0o600 },
+  )
+}
+
+function clearRememberedLogin() {
+  try {
+    fs.rmSync(getRememberedLoginPath(), { force: true })
+  } catch (err) {
+    console.error('Failed to clear remembered login:', err.message)
+  }
+}
+
+function protectRow(table, data = {}) {
+  const columns = SECRET_COLUMNS[table]
+  if (!columns) return { ...data }
+  const protectedData = { ...data }
+  for (const column of columns) {
+    if (Object.prototype.hasOwnProperty.call(protectedData, column)) {
+      protectedData[column] = encryptSecret(protectedData[column])
+    }
+  }
+  return protectedData
+}
+
+function unprotectRow(table, row) {
+  const columns = SECRET_COLUMNS[table]
+  if (!columns || !row) return row
+  const unprotected = { ...row }
+  for (const column of columns) {
+    if (Object.prototype.hasOwnProperty.call(unprotected, column)) {
+      unprotected[column] = decryptSecret(unprotected[column])
+    }
+  }
+  return unprotected
+}
+
+function unprotectRows(table, rows) {
+  return Array.isArray(rows) ? rows.map((row) => unprotectRow(table, row)) : []
+}
+
+function migrateStoredSecrets() {
+  if (!db || !safeStorage.isEncryptionAvailable()) return
+  for (const [table, columns] of Object.entries(SECRET_COLUMNS)) {
+    for (const column of columns) {
+      const rows = db.prepare(`SELECT id, ${column} FROM ${table} WHERE ${column} IS NOT NULL AND ${column} != '' AND ${column} NOT LIKE ?`).all(`${SECRET_PREFIX}%`)
+      const update = db.prepare(`UPDATE ${table} SET ${column} = ? WHERE id = ?`)
+      const tx = db.transaction((items) => {
+        for (const item of items) update.run(encryptSecret(item[column]), item.id)
+      })
+      tx(rows)
+    }
+  }
+}
+
+function saveAccount(platform, username, password, status = 'active') {
+  if (!db) return
+  db.prepare('INSERT OR REPLACE INTO accounts (platform, username, password, status) VALUES (?, ?, ?, ?)')
+    .run(platform, username, encryptSecret(password), status)
+}
+
+function openExternalUrl(rawUrl) {
+  try {
+    const parsed = new URL(rawUrl)
+    if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
+      shell.openExternal(parsed.toString()).catch(() => {})
+    }
+  } catch {}
+}
+
+function isTrustedRendererUrl(rawUrl) {
+  try {
+    const parsed = new URL(rawUrl)
+    if (parsed.protocol === 'file:') {
+      const rendererRoot = path.resolve(__dirname, '..', 'dist', 'renderer')
+      const filePath = path.resolve(fileURLToPath(parsed))
+      const relative = path.relative(rendererRoot, filePath)
+      return relative === '' || (!!relative && !relative.startsWith('..') && !path.isAbsolute(relative))
+    }
+    if (isDev && process.env.VITE_DEV_SERVER_URL) {
+      return parsed.origin === new URL(process.env.VITE_DEV_SERVER_URL).origin
+    }
+  } catch {}
+  return false
+}
+
+function isTrustedIpcSender(event) {
+  const senderUrl = event.senderFrame?.url || event.sender?.getURL?.() || ''
+  return isTrustedRendererUrl(senderUrl)
+}
+
 function saveLeads(platform, source, data) {
   if (!Array.isArray(data) || !db) return
   const stmt = db.prepare('INSERT INTO leads (platform, name, email, phone, source, url, extra_data) VALUES (?, ?, ?, ?, ?, ?, ?)')
@@ -311,121 +227,27 @@ async function safeClose(sessionId) {
   try { await bm.close(sessionId) } catch (e) { console.error('safeClose error:', e.message) }
 }
 
-// ==================== IPC: AUTHENTICATION ====================
-const SERVER_API_URL = 'https://skypro.skywaveads.com/api'
-const KEY_EXPIRY = '2027-04-23'
-const VALID_KEYS = [
-  'SKY1-PRO2-0001-2026', 'SKY1-PRO2-0002-2026', 'SKY1-PRO2-0003-2026',
-  'SKY1-PRO2-0004-2026', 'SKY1-PRO2-0005-2026', 'SKY1-PRO2-0006-2026',
-  'SKY1-PRO2-0007-2026', 'SKY1-PRO2-0008-2026', 'SKY1-PRO2-0009-2026',
-  'SKY1-PRO2-0010-2026',
-]
 
-const os = require('os')
-const crypto = require('crypto')
 
-function generateDeviceFingerprint() {
-  const components = [
-    os.hostname(),
-    os.platform(),
-    os.arch(),
-    os.cpus()[0]?.model || '',
-    String(os.totalmem()),
-  ]
-  const raw = components.join('|')
-  return crypto.createHash('sha256').update(raw).digest('hex')
-}
 
-function getDeviceCapabilities() {
-  return {
-    fingerprint: generateDeviceFingerprint(),
-    hostname: os.hostname(),
-    platform: os.platform(),
-    arch: os.arch(),
-    cpu: os.cpus()[0]?.model || 'Unknown',
-    cpuCores: os.cpus().length,
-    ram: `${Math.round(os.totalmem() / 1024 / 1024 / 1024)}GB`,
-  }
-}
 
-function isKeyValid(key) {
-  const k = key.toUpperCase()
-  if (!VALID_KEYS.includes(k)) return { valid: false, message: 'مفتاح التفعيل غير صالح' }
-  if (new Date(KEY_EXPIRY) < new Date()) return { valid: false, message: 'انتهت صلاحية مفتاح التفعيل' }
-  return { valid: true, key: k, expiryDate: KEY_EXPIRY }
-}
-
-ipcm('activate-key', async (e, { key, deviceId }) => {
-  const deviceInfo = getDeviceCapabilities()
-  try {
-    const response = await fetch(`${SERVER_API_URL}/auth/verify-device`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key, deviceFingerprint: deviceInfo.fingerprint, deviceInfo })
-    })
-    const result = await response.json()
-    if (result.success) return result
-    if (result.error) return { success: false, message: result.error }
-  } catch (err) { console.error('Server verification failed:', err.message) }
-  const check = isKeyValid(key)
-  if (check.valid) {
-    return { success: true, message: 'تم التفعيل بنجاح!', data: { key: check.key, status: 'active', expiryDate: check.expiryDate, deviceId: deviceInfo.fingerprint } }
-  }
-  return { success: false, message: check.message }
+// ==================== IPC: SECURE LOCAL PREFERENCES ====================
+ipcm('get-remembered-login', async () => {
+  return { success: true, data: readRememberedLogin() }
 })
 
-ipcm('validate-key', async (e, { key, deviceId }) => {
-  const deviceInfo = getDeviceCapabilities()
+ipcm('save-remembered-login', async (e, data) => {
   try {
-    const response = await fetch(`${SERVER_API_URL}/auth/verify-device`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key, deviceFingerprint: deviceInfo.fingerprint, deviceInfo })
-    })
-    const result = await response.json()
-    if (result.success) return result
-    if (result.error) return { success: false, message: result.error }
-  } catch (err) { console.error('Server validation failed:', err.message) }
-  const check = isKeyValid(key)
-  if (check.valid) {
-    return { success: true, message: 'مفتاح التفعيل صالح!', data: { key: check.key, status: 'active', expiryDate: check.expiryDate, deviceId: deviceInfo.fingerprint } }
-  }
-  return { success: false, message: check.message }
-})
-
-ipcm('check-key-status', async (e, { key }) => {
-  try {
-    const response = await fetch(`${SERVER_API_URL}/keys/status?key=${encodeURIComponent(key)}`)
-    const result = await response.json()
-    if (result.success) return result
-  } catch (err) { console.error('Server key status failed:', err.message) }
-  const check = isKeyValid(key)
-  return {
-    success: check.valid,
-    message: check.valid ? 'مفتاح صالح' : check.message,
-    data: check.valid
-      ? { key: check.key, status: 'active', expiryDate: check.expiryDate }
-      : undefined,
+    writeRememberedLogin(data)
+    return { success: true }
+  } catch (err) {
+    return { success: false, error: err.message || 'Failed to save remembered login' }
   }
 })
 
-ipcm('get-device-info', async () => {
-  return getDeviceCapabilities()
-})
-
-ipcm('reset-device', async (e, { key }) => {
-  const deviceInfo = getDeviceCapabilities()
-  try {
-    const response = await fetch(`${SERVER_API_URL}/auth/reset-device`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key, deviceFingerprint: deviceInfo.fingerprint })
-    })
-    const result = await response.json()
-    if (result.success) return result
-    if (result.error) return { success: false, message: result.error }
-  } catch (err) { console.error('Server reset device failed:', err.message) }
-  return { success: false, message: 'فشل الاتصال بالخادم' }
+ipcm('clear-remembered-login', async () => {
+  clearRememberedLogin()
+  return { success: true }
 })
 
 // ==================== IPC: BROWSER ====================
@@ -630,7 +452,7 @@ ipcm('facebook-login', async (e, { username, password, headless = false, proxy }
         return !!(document.querySelector('[data-testid="blue_bar"]') || document.querySelector('[role="navigation"]') || document.querySelector('div[role="main"]') || document.querySelector('[aria-label="Facebook"]') || document.querySelector('a[aria-label="Home"]'))
       }).catch(() => false)
       if (loggedIn) {
-        if (db) db.prepare('INSERT OR REPLACE INTO accounts (platform, username, password, status) VALUES (?, ?, ?, ?)').run('facebook', username, password || 'saved', 'active')
+        saveAccount('facebook', username, password || 'saved')
         return { success: true, message: 'تم تسجيل الدخول بنجاح - الجلسة محفوظة', sessionId }
       }
     }
@@ -661,7 +483,7 @@ ipcm('facebook-login', async (e, { username, password, headless = false, proxy }
     await page.waitForTimeout(randomDelay(1000, 2000))
     const finalUrl = page.url()
     if (!finalUrl.includes('login') && !finalUrl.includes('checkpoint')) {
-      if (db) db.prepare('INSERT OR REPLACE INTO accounts (platform, username, password, status) VALUES (?, ?, ?, ?)').run('facebook', username, password, 'active')
+      saveAccount('facebook', username, password)
       return { success: true, message: 'تم تسجيل الدخول بنجاح', sessionId }
     }
     if (finalUrl.includes('checkpoint')) {
@@ -2004,7 +1826,7 @@ ipcm('cycle-accounts', async (e, { platform, accounts, task, settings = {} }) =>
                   loginSuccess = true
 
                   // Save to DB
-                  if (db) db.prepare('INSERT OR REPLACE INTO accounts (platform, username, password, status) VALUES (?, ?, ?, ?)').run(platform, account.username, account.password, 'active')
+                  saveAccount(platform, account.username, account.password)
                 }
               }
             }
@@ -2294,7 +2116,7 @@ ipcm('instagram-login', async (e, { username, password, headless = false, proxy 
     await page.waitForTimeout(randomDelay(1000, 2000))
     const currentUrl = page.url()
     if (!currentUrl.includes('login') && !currentUrl.includes('challenge')) {
-      if (db) db.prepare('INSERT OR REPLACE INTO accounts (platform, username, password, status) VALUES (?, ?, ?, ?)').run('instagram', username, password, 'active')
+      saveAccount('instagram', username, password)
       return { success: true, message: 'تم تسجيل الدخول بنجاح', sessionId }
     }
     if (currentUrl.includes('challenge')) {
@@ -2473,7 +2295,7 @@ ipcm('twitter-login', async (e, { username, password, headless = false, proxy })
     await page.waitForTimeout(randomDelay(5000, 8000))
     const currentUrl = page.url()
     if (!currentUrl.includes('login') && !currentUrl.includes('challenge')) {
-      if (db) db.prepare('INSERT OR REPLACE INTO accounts (platform, username, password, status) VALUES (?, ?, ?, ?)').run('twitter', username, password, 'active')
+      saveAccount('twitter', username, password)
       return { success: true, message: 'تم تسجيل الدخول', sessionId }
     }
     return { success: false, error: 'فشل تسجيل الدخول', sessionId }
@@ -2617,7 +2439,7 @@ ipcm('linkedin-login', async (e, { username, password, headless = false, proxy }
     await page.waitForTimeout(randomDelay(5000, 8000))
     const currentUrl = page.url()
     if (!currentUrl.includes('login') && !currentUrl.includes('challenge')) {
-      if (db) db.prepare('INSERT OR REPLACE INTO accounts (platform, username, password, status) VALUES (?, ?, ?, ?)').run('linkedin', username, password, 'active')
+      saveAccount('linkedin', username, password)
       return { success: true, message: 'تم تسجيل الدخول', sessionId }
     }
     return { success: false, error: 'فشل تسجيل الدخول', sessionId }
@@ -2917,7 +2739,7 @@ ipcm('pinterest-login', async (e, { username, password, headless = false, proxy 
     await page.waitForTimeout(randomDelay(5000, 8000))
     const currentUrl = page.url()
     if (!currentUrl.includes('login')) {
-      if (db) db.prepare('INSERT OR REPLACE INTO accounts (platform, username, password, status) VALUES (?, ?, ?, ?)').run('pinterest', username, password, 'active')
+      saveAccount('pinterest', username, password)
       return { success: true, message: 'تم تسجيل الدخول', sessionId }
     }
     return { success: false, error: 'فشل تسجيل الدخول' }
@@ -3004,7 +2826,7 @@ ipcm('threads-login', async (e, { username, password, headless = false, proxy })
       'div[role="button"]:has-text("Log in")', 'button:has-text("Log In")'
     ], 'login')
     await page.waitForTimeout(randomDelay(5000, 8000))
-    if (db) db.prepare('INSERT OR REPLACE INTO accounts (platform, username, password, status) VALUES (?, ?, ?, ?)').run('threads', username, password, 'active')
+      saveAccount('threads', username, password)
     return { success: true, message: 'تم تسجيل الدخول', sessionId }
   } catch (err) {
     return { success: false, error: err.message, sessionId }
@@ -3090,7 +2912,7 @@ ipcm('reddit-login', async (e, { username, password, headless = false, proxy }) 
     await page.waitForTimeout(randomDelay(6000, 10000))
     const currentUrl = page.url()
     if (!currentUrl.includes('login')) {
-      if (db) db.prepare('INSERT OR REPLACE INTO accounts (platform, username, password, status) VALUES (?, ?, ?, ?)').run('reddit', username, password, 'active')
+      saveAccount('reddit', username, password)
       return { success: true, message: 'تم تسجيل الدخول', sessionId }
     }
     return { success: false, error: 'فشل تسجيل الدخول - تحقق من البيانات', sessionId }
@@ -3367,7 +3189,7 @@ ipcm('save-proxy', async (e, { label, host, port, protocol, username, password }
   if (!db) return { success: false, error: 'قاعدة البيانات غير جاهزة' }
   try {
     const stmt = db.prepare('INSERT INTO proxies (label, host, port, protocol, username, password) VALUES (?, ?, ?, ?, ?, ?)')
-    const result = stmt.run(label, host, port, protocol, username, password)
+    const result = stmt.run(label, host, port, protocol, username, encryptSecret(password))
     return { success: true, id: result.lastInsertRowid }
   } catch (err) {
     return { success: false, error: err.message }
@@ -3378,7 +3200,7 @@ ipcm('get-proxies', async () => {
   if (!db) return { success: false, error: 'قاعدة البيانات غير جاهزة' }
   try {
     const rows = db.prepare('SELECT * FROM proxies ORDER BY id DESC').all()
-    return { success: true, data: rows }
+    return { success: true, data: unprotectRows('proxies', rows) }
   } catch (err) {
     return { success: false, error: err.message }
   }
@@ -3440,7 +3262,7 @@ ipcm('snapchat-login', async (e, { username, password, headless = false, proxy }
       'a[href*="login"]', 'button[data-testid="login-button"]'
     ], 'login')
     await page.waitForTimeout(randomDelay(6000, 10000))
-    if (db) db.prepare('INSERT OR REPLACE INTO accounts (platform, username, password, status) VALUES (?, ?, ?, ?)').run('snapchat', username, password, 'active')
+      saveAccount('snapchat', username, password)
     return { success: true, message: 'تم تسجيل الدخول', sessionId }
   } catch (err) {
     return { success: false, error: err.message, sessionId }
@@ -3484,7 +3306,7 @@ ipcm('send-smtp-email', async (e, { smtp, to, subject, body, attachments }) => {
       auth: { user: smtp.email, pass: smtp.password },
     })
     const info = await transporter.sendMail({
-      from: `"سيندر برو" <${smtp.email}>`,
+      from: `"SkyPro" <${smtp.email}>`,
       to: Array.isArray(to) ? to.join(', ') : to,
       subject,
       html: body,
@@ -3500,7 +3322,7 @@ ipcm('get-smtp-settings', async () => {
   if (!db) return { success: false, error: 'قاعدة البيانات غير جاهزة' }
   try {
     const rows = db.prepare('SELECT * FROM smtp_settings ORDER BY id DESC').all()
-    return { success: true, data: rows }
+    return { success: true, data: unprotectRows('smtp_settings', rows) }
   } catch (err) {
     return { success: false, error: err.message }
   }
@@ -3585,11 +3407,26 @@ ipcm('delete-campaign', async (e, { id }) => {
 
 // ==================== IPC: DB / EXPORT ====================
 const ALLOWED_TABLES = ['leads', 'accounts', 'campaigns', 'proxies', 'smtp_settings']
+const ALLOWED_TABLE_COLUMNS = {
+  leads: ['id', 'platform', 'name', 'email', 'phone', 'source', 'url', 'extra_data', 'created_at'],
+  accounts: ['id', 'platform', 'username', 'password', 'proxy', 'notes', 'status', 'created_at'],
+  campaigns: ['id', 'name', 'platform', 'type', 'status', 'results', 'scheduled_at', 'data', 'created_at'],
+  proxies: ['id', 'label', 'host', 'port', 'protocol', 'username', 'password', 'status', 'created_at'],
+  smtp_settings: ['id', 'email', 'password', 'host', 'port', 'ssl', 'created_at'],
+}
+const READONLY_COLUMNS = ['id', 'created_at']
 const ALLOWED_OPS = ['=', '!=', '<', '>', '<=', '>=', 'LIKE', 'IN']
 
 function validateTable(table) {
   if (!ALLOWED_TABLES.includes(table)) throw new Error(`Invalid table: ${table}`)
   return table
+}
+
+function validateColumn(table, column, options = {}) {
+  if (!/^[a-z_][a-z0-9_]*$/i.test(column)) throw new Error(`Invalid column: ${column}`)
+  if (!ALLOWED_TABLE_COLUMNS[table]?.includes(column)) throw new Error(`Invalid column for ${table}: ${column}`)
+  if (options.write && READONLY_COLUMNS.includes(column)) throw new Error(`Column is read-only: ${column}`)
+  return column
 }
 
 ipcm('db-query', async (e, { table, where, filters, limit }) => {
@@ -3600,27 +3437,33 @@ ipcm('db-query', async (e, { table, where, filters, limit }) => {
     if (filters && Array.isArray(filters)) {
       const clauses = []
       for (const f of filters) {
-        if (!f.column || !/^[a-z_][a-z0-9_]*$/i.test(f.column)) return { success: false, error: 'Invalid column name' }
-        if (!ALLOWED_OPS.includes(String(f.op).toUpperCase())) return { success: false, error: 'Invalid operator' }
-        if (f.op.toUpperCase() === 'IN' && Array.isArray(f.value)) {
+        if (!f.column) return { success: false, error: 'Invalid column name' }
+        validateColumn(table, f.column)
+        const op = String(f.op || '').toUpperCase()
+        if (!ALLOWED_OPS.includes(op)) return { success: false, error: 'Invalid operator' }
+        if (op === 'IN') {
+          if (!Array.isArray(f.value) || f.value.length === 0 || f.value.length > 100) return { success: false, error: 'Invalid IN filter' }
           const placeholders = f.value.map(() => '?').join(', ')
           clauses.push(`${f.column} IN (${placeholders})`)
           params.push(...f.value)
         } else {
-          clauses.push(`${f.column} ${f.op} ?`)
+          clauses.push(`${f.column} ${op} ?`)
           params.push(f.value)
         }
       }
       sql = clauses.length ? `SELECT * FROM ${table} WHERE ${clauses.join(' AND ')}` : `SELECT * FROM ${table}`
     } else if (where) {
-      if (/[;'"()|&]/.test(where)) return { success: false, error: 'Invalid query parameter' }
-      sql = `SELECT * FROM ${table} WHERE ${where}`
+      return { success: false, error: 'Raw where clauses are disabled. Use structured filters.' }
     } else {
       sql = `SELECT * FROM ${table}`
     }
     sql += ` ORDER BY id DESC`
-    if (limit && Number.isInteger(Number(limit))) sql += ` LIMIT ${Number(limit)}`
-    return { success: true, data: db.prepare(sql).all(...params) || [] }
+    if (limit && Number.isInteger(Number(limit))) {
+      const safeLimit = Math.min(Math.max(Number(limit), 1), 5000)
+      sql += ` LIMIT ${safeLimit}`
+    }
+    const rows = db.prepare(sql).all(...params) || []
+    return { success: true, data: unprotectRows(table, rows) }
   } catch (err) {
     return { success: false, error: 'فشل الاستعلام عن البيانات' }
   }
@@ -3630,11 +3473,14 @@ ipcm('db-insert', async (e, { table, data }) => {
   try {
     if (!db) return { success: false, error: 'قاعدة البيانات غير جاهزة' }
     validateTable(table)
-    const keys = Object.keys(data)
-    if (keys.some(k => !/^[a-z_][a-z0-9_]*$/i.test(k))) return { success: false, error: 'Invalid column name' }
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return { success: false, error: 'Invalid data' }
+    const safeData = protectRow(table, data)
+    const keys = Object.keys(safeData)
+    if (keys.length === 0) return { success: false, error: 'No data to insert' }
+    for (const key of keys) validateColumn(table, key, { write: true })
     const placeholders = keys.map(() => '?').join(', ')
     const stmt = db.prepare(`INSERT INTO ${table} (${keys.join(', ')}) VALUES (${placeholders})`)
-    const result = stmt.run(...keys.map(k => data[k]))
+    const result = stmt.run(...keys.map(k => safeData[k]))
     return { success: true, id: result.lastInsertRowid }
   } catch (err) {
     return { success: false, error: 'فشل إدخال البيانات' }
@@ -3658,12 +3504,14 @@ ipcm('db-update', async (e, { table, id, data }) => {
     if (!db) return { success: false, error: 'قاعدة البيانات غير جاهزة' }
     validateTable(table)
     if (!Number.isInteger(id) || id < 1) return { success: false, error: 'Invalid id' }
-    const keys = Object.keys(data)
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return { success: false, error: 'Invalid data' }
+    const safeData = protectRow(table, data)
+    const keys = Object.keys(safeData)
     if (keys.length === 0) return { success: false, error: 'No data to update' }
-    if (keys.some(k => !/^[a-z_][a-z0-9_]*$/i.test(k))) return { success: false, error: 'Invalid column name' }
+    for (const key of keys) validateColumn(table, key, { write: true })
     const setClause = keys.map(k => `${k} = ?`).join(', ')
     const sql = `UPDATE ${table} SET ${setClause} WHERE id = ?`
-    const values = keys.map(k => data[k])
+    const values = keys.map(k => safeData[k])
     const stmt = db.prepare(sql)
     const result = stmt.run(...values, id)
     if (result.changes === 0) {
@@ -3718,11 +3566,13 @@ ipcm('get-app-version', () => ({ success: true, version: app.getVersion() }))
 
 // ==================== WINDOW CONTROLS ====================
 ipcMain.on('window:minimize', (event) => {
+  if (!isTrustedIpcSender(event)) return
   const win = BrowserWindow.fromWebContents(event.sender)
   if (win) win.minimize()
 })
 
 ipcMain.on('window:toggle-maximize', (event) => {
+  if (!isTrustedIpcSender(event)) return
   const win = BrowserWindow.fromWebContents(event.sender)
   if (win) {
     if (win.isMaximized()) win.unmaximize()
@@ -3731,6 +3581,7 @@ ipcMain.on('window:toggle-maximize', (event) => {
 })
 
 ipcMain.on('window:close', (event) => {
+  if (!isTrustedIpcSender(event)) return
   const win = BrowserWindow.fromWebContents(event.sender)
   if (win) win.close()
 })
@@ -3810,7 +3661,7 @@ async function executeCampaign(task) {
             auth: { user: data.smtp.email, pass: data.smtp.password },
           })
           await transporter.sendMail({
-            from: `"سيندر برو" <${data.smtp.email}>`,
+            from: `"SkyPro" <${data.smtp.email}>`,
             to: Array.isArray(data.to) ? data.to.join(', ') : data.to,
             subject: data.subject || 'رسالة مجدولة',
             html: data.body || '',
@@ -3843,11 +3694,13 @@ function createWindow() {
   const mainWindow = new BrowserWindow({
     width: 1600, height: 980, minWidth: 1240, minHeight: 760,
     frame: false,
-    backgroundColor: '#001A3A', autoHideMenuBar: true, title: 'Sky Wave Pro',
+    backgroundColor: '#001A3A', autoHideMenuBar: true, title: 'SkyPro',
     icon: path.join(__dirname, '..', 'public', 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true, nodeIntegration: false, sandbox: true,
+      webSecurity: true, allowRunningInsecureContent: false, webviewTag: false,
+      devTools: isDev,
     },
   })
   if (isDev) {
@@ -3859,7 +3712,18 @@ function createWindow() {
   mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDesc) => {
     console.error('Failed to load:', errorCode, errorDesc)
   })
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => { if (url && url.startsWith('http')) shell.openExternal(url); return { action: 'deny' } })
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    openExternalUrl(url)
+    return { action: 'deny' }
+  })
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    if (isTrustedRendererUrl(url)) return
+    event.preventDefault()
+    openExternalUrl(url)
+  })
+  mainWindow.webContents.on('will-attach-webview', (event) => {
+    event.preventDefault()
+  })
 }
 
 const gotTheLock = app.requestSingleInstanceLock()
@@ -3882,13 +3746,17 @@ app.whenReady().then(() => {
   try {
     const dbPath = path.join(userDataPath, 'sender-pro.db')
     db = new Database(dbPath)
-    initDatabase()
+    setDb(db)
+    initDatabase(db)
+    migrateStoredSecrets()
     console.log('Database opened:', dbPath)
   } catch (e) {
     console.error('Failed to open database:', e)
   }
 
   bm = new BrowserManager()
+
+  registerAuthIPC({ ipcm, bm, db })
 
   createWindow()
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow() })
@@ -3909,6 +3777,9 @@ function ipcm(channel, handler) {
   ipcHandlers[channel] = handler
   ipcMain.handle(channel, async (event, ...args) => {
     try {
+      if (!isTrustedIpcSender(event)) {
+        return { success: false, error: 'Untrusted IPC sender' }
+      }
       return await handler(event, ...args)
     } catch (err) {
       console.error(`IPC error [${channel}]:`, err)
@@ -3917,7 +3788,9 @@ function ipcm(channel, handler) {
   })
 }
 
-ipcMain.on('cancel-extraction', (event, { jobId }) => {
+ipcMain.on('cancel-extraction', (event, payload = {}) => {
+  if (!isTrustedIpcSender(event)) return
+  const jobId = typeof payload.jobId === 'string' ? payload.jobId.slice(0, 120) : ''
   if (jobId) cancelFlags.set(jobId, true)
 })
 

@@ -445,15 +445,15 @@ skypro-web/
 ### متغيرات البيئة (.env)
 
 ```env
-DATABASE_URL="mysql://user:password@localhost:3306/skypro"
-NEXTAUTH_SECRET="<generated-secret>"
+DATABASE_URL="mysql://<DB_USER>:<DB_PASSWORD>@<DB_HOST>:3306/skypro"
+NEXTAUTH_SECRET="<generate-with-openssl-rand-base64-32>"
 NEXTAUTH_URL="https://skypro.skywaveads.com"
 GOOGLE_CLIENT_ID="<google-cloud-client-id>"
 GOOGLE_CLIENT_SECRET="<google-cloud-client-secret>"
 SMTP_HOST="smtp.hostinger.com"
 SMTP_PORT=465
-SMTP_USER="noreply@skywaveads.com"
-SMTP_PASS="<smtp-password>"
+SMTP_USER="admin@skywaveads.com"
+SMTP_PASS="<SMTP_APP_PASSWORD>"
 APP_URL="https://skypro.skywaveads.com"
 DESKTOP_APP_DOWNLOAD_URL="https://skypro.skywaveads.com/download"
 DEFAULT_TRIAL_DAYS=2
