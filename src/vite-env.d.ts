@@ -16,6 +16,10 @@ declare global {
       checkKeyStatus: (data: any) => Promise<any>
       resetDevice: (data: any) => Promise<any>
       getDeviceInfo: () => Promise<any>
+      login: (data: any) => Promise<any>
+      getRememberedLogin: () => Promise<any>
+      saveRememberedLogin: (data: any) => Promise<any>
+      clearRememberedLogin: () => Promise<any>
 
       // Facebook
       facebookLogin: (data: any) => Promise<any>

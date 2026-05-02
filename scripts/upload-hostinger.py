@@ -2,10 +2,10 @@ import paramiko
 import os
 import sys
 
-HOST = '147.79.66.116'
-PORT = 22
-USER = 'root'
-PASSWORD = 'Newjoker2k333'
+HOST = os.environ.get('SKYPRO_SSH_HOST', '147.79.66.116')
+PORT = int(os.environ.get('SKYPRO_SSH_PORT', '22'))
+USER = os.environ.get('SKYPRO_SSH_USER', 'root')
+PASSWORD = os.environ.get('SKYPRO_SSH_PASSWORD')
 LOCAL_DIR = os.path.join(os.getcwd(), 'sender-pro-api')
 REMOTE_DIR = '/var/www/html/sender-pro-api'
 
@@ -34,6 +34,8 @@ def main():
     print(f'Connecting to {HOST}:{PORT} as {USER}...')
     
     transport = paramiko.Transport((HOST, PORT))
+    if not PASSWORD:
+        raise RuntimeError('Set SKYPRO_SSH_PASSWORD before running this script.')
     transport.connect(username=USER, password=PASSWORD)
     
     sftp = paramiko.SFTPClient.from_transport(transport)

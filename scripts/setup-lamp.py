@@ -1,10 +1,16 @@
 import paramiko
 import os
 
-HOST = '147.79.66.116'
-PORT = 22
-USER = 'root'
-PASSWORD = 'Newjoker2k333'
+HOST = os.getenv('SKYPRO_HOST', '')
+PORT = int(os.getenv('SKYPRO_PORT', '22'))
+USER = os.getenv('SKYPRO_USER', '')
+PASSWORD = os.getenv('SKYPRO_PASSWORD', '')
+DB_ROOT_PASSWORD = os.getenv('SKYPRO_DB_ROOT_PASSWORD', '')
+
+if not HOST or not USER or not PASSWORD or not DB_ROOT_PASSWORD:
+    raise SystemExit(
+        'Missing required env vars: SKYPRO_HOST, SKYPRO_USER, SKYPRO_PASSWORD, SKYPRO_DB_ROOT_PASSWORD'
+    )
 
 def run_command(ssh, command, timeout=120):
     stdin, stdout, stderr = ssh.exec_command(command, timeout=timeout)
@@ -59,7 +65,7 @@ print(out.encode('ascii', 'replace').decode('ascii'))
 print()
 
 # Secure MySQL and set root password
-out, err = run_command(ssh, 'mysql -u root -e "ALTER USER \'root\'@\'localhost\' IDENTIFIED WITH mysql_native_password BY \'Newjoker2k333\'; FLUSH PRIVILEGES;" 2>&1')
+out, err = run_command(ssh, f'mysql -u root -e "ALTER USER \'root\'@\'localhost\' IDENTIFIED WITH mysql_native_password BY \'{DB_ROOT_PASSWORD}\'; FLUSH PRIVILEGES;" 2>&1')
 print('MySQL root password set:')
 print(out.encode('ascii', 'replace').decode('ascii') if out else 'OK')
 if err:
@@ -68,7 +74,7 @@ if err:
 print()
 
 # Create database
-out, err = run_command(ssh, 'mysql -u root -pNewjoker2k333 -e "CREATE DATABASE IF NOT EXISTS senderpro CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" 2>&1')
+out, err = run_command(ssh, f'mysql -u root -p{DB_ROOT_PASSWORD} -e "CREATE DATABASE IF NOT EXISTS senderpro CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" 2>&1')
 print('Database creation:')
 print(out.encode('ascii', 'replace').decode('ascii') if out else 'OK')
 if err:
@@ -77,7 +83,7 @@ if err:
 print()
 
 # Import SQL
-out, err = run_command(ssh, 'mysql -u root -pNewjoker2k333 senderpro < /var/www/html/sender-pro-api/sender_pro_database.sql 2>&1')
+out, err = run_command(ssh, f'mysql -u root -p{DB_ROOT_PASSWORD} senderpro < /var/www/html/sender-pro-api/sender_pro_database.sql 2>&1')
 print('SQL import:')
 print(out.encode('ascii', 'replace').decode('ascii') if out else 'OK')
 if err:

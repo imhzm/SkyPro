@@ -13,15 +13,21 @@ export default function ActivationPage() {
   const handleActivate = async () => {
     if (!key.trim()) { setError('يرجى إدخال مفتاح التفعيل'); return }
     setLoading(true); setError(''); setSuccess('')
-    const deviceId = `device-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     try {
-      const result = await activationApi.activateKey(key.trim(), deviceId)
+      const deviceInfo = await activationApi.getDeviceInfo()
+      const deviceId = deviceInfo?.fingerprint || deviceInfo?.hostname || `device-${Date.now()}`
+      const result = await activationApi.activateKey(key.trim(), deviceId, deviceInfo)
       if (result.success && result.data) {
-        setActivation({ key: result.data.key, status: result.data.status, expiryDate: result.data.expiryDate || '2027-04-23', deviceId: result.data.deviceId || deviceId })
-        setSuccess('تم تفعيل الاشتراك بنجاح! جاري التحميل...')
-        setTimeout(() => window.location.reload(), 1500)
+        setSuccess('تم تفعيل الاشتراك بنجاح!')
+        setActivation({
+          key: result.data.key,
+          status: result.data.status || 'active',
+          expiryDate: result.data.expiryDate || '',
+          deviceId: result.data.deviceId || deviceId
+        })
+        // No reload needed - React will re-render and redirect automatically
       } else { setError(result.message || 'مفتاح التفعيل غير صالح') }
-    } catch (err) {
+    } catch {
       setError('فشل التحقق من مفتاح التفعيل')
     } finally { setLoading(false) }
   }
@@ -35,7 +41,7 @@ export default function ActivationPage() {
           </div>
           <h2 className="text-2xl font-bold text-white mb-2">الاشتراك مفعل</h2>
           <p className="text-white/50 mb-6">تم تفعيل الاشتراك بنجاح. يمكنك الآن استخدام جميع مميزات التطبيق.</p>
-          <button onClick={() => window.location.reload()} className="btn-primary w-full">الذهاب للتطبيق</button>
+          <button onClick={() => window.location.href = '/'} className="btn-primary w-full">الذهاب للتطبيق</button>
         </div>
       </div>
     )

@@ -1,9 +1,11 @@
+import os
 import paramiko
 
-HOST = '147.79.66.116'
-PORT = 22
-USER = 'root'
-PASSWORD = 'Newjoker2k333'
+HOST = os.environ.get('SKYPRO_SSH_HOST', '147.79.66.116')
+PORT = int(os.environ.get('SKYPRO_SSH_PORT', '22'))
+USER = os.environ.get('SKYPRO_SSH_USER', 'root')
+PASSWORD = os.environ.get('SKYPRO_SSH_PASSWORD')
+MYSQL_ROOT_PASSWORD = os.environ.get('SKYPRO_MYSQL_ROOT_PASSWORD')
 
 def run_command(ssh, command, timeout=30):
     stdin, stdout, stderr = ssh.exec_command(command, timeout=timeout)
@@ -13,7 +15,11 @@ def run_command(ssh, command, timeout=30):
 
 ssh = paramiko.SSHClient()
 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+if not PASSWORD:
+    raise RuntimeError('Set SKYPRO_SSH_PASSWORD before running this script.')
 ssh.connect(HOST, PORT, USER, PASSWORD)
+if not MYSQL_ROOT_PASSWORD:
+    raise RuntimeError('Set SKYPRO_MYSQL_ROOT_PASSWORD before running DB diagnostics.')
 
 print('Debugging API...')
 
@@ -61,14 +67,15 @@ print('PHP-FPM active:', out)
 print()
 
 # Test DB connection via simple PHP
+php_password = MYSQL_ROOT_PASSWORD.replace('\\', '\\\\').replace('"', '\\"')
 php_test = '''<?php
 try {
-    $pdo = new PDO("mysql:host=localhost;dbname=senderpro;charset=utf8mb4", "root", "Newjoker2k333");
+    $pdo = new PDO("mysql:host=localhost;dbname=senderpro;charset=utf8mb4", "root", "__MYSQL_PASSWORD__");
     echo "DB_OK";
 } catch (PDOException $e) {
     echo "DB_FAIL:" . $e->getMessage();
 }
-'''
+'''.replace('__MYSQL_PASSWORD__', php_password)
 sftp = ssh.open_sftp()
 with sftp.file('/var/www/html/test-db.php', 'w') as f:
     f.write(php_test)

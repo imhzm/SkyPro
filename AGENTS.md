@@ -82,7 +82,7 @@ npm run build:desktop
 - Server: `http://147.79.66.116/sender-pro-api`
 - Files: `sender-pro-api/*.php`
 - Upload manually via SCP/SFTP to `/var/www/html/sender-pro-api/`
-- SSH: `root@147.79.66.116` / `Newjoker2k333`
+- SSH: use `SKYPRO_SSH_HOST`, `SKYPRO_SSH_USER`, and `SKYPRO_SSH_PASSWORD` environment variables. Do not commit server passwords.
 
 ### Database (SQLite)
 - File: `data/senderpro.db` (created at runtime)

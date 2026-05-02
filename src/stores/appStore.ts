@@ -8,7 +8,7 @@ interface AppState {
   isSidebarOpen: boolean
   isLoading: boolean
   notification: { type: 'success' | 'error' | 'warning'; message: string } | null
-  
+
   setSettings: (settings: Partial<AppSettings>) => void
   setActivePlatform: (platform: PlatformId) => void
   toggleSidebar: () => void
@@ -61,8 +61,12 @@ interface AuthState {
   activation: ActivationData | null
   isAuthenticated: boolean
   keyData: { key: string; expiryDate: string } | null
-  
+  loginUser: { email: string; role: 'admin' | 'customer' } | null
+  token: string | null
+
   setActivation: (activation: ActivationData | null) => void
+  setLoginUser: (user: { email: string; role: 'admin' | 'customer' } | null) => void
+  setToken: (token: string | null) => void
   logout: () => void
 }
 
@@ -72,6 +76,8 @@ export const useAuthStore = create<AuthState>()(
       activation: null,
       isAuthenticated: false,
       keyData: null,
+      loginUser: null,
+      token: null,
 
       setActivation: (activation) =>
         set({
@@ -80,17 +86,35 @@ export const useAuthStore = create<AuthState>()(
           keyData: activation ? { key: activation.key, expiryDate: activation.expiryDate } : null,
         }),
 
-      logout: () => set({ activation: null, isAuthenticated: false, keyData: null }),
+      setLoginUser: (user) =>
+        set({ loginUser: user }),
+
+      setToken: (token) =>
+        set({ token }),
+
+      logout: () => set({ activation: null, isAuthenticated: false, keyData: null, loginUser: null, token: null }),
     }),
     {
       name: 'sender-pro-auth',
+      partialize: (state) => ({
+        activation: state.activation,
+        isAuthenticated: state.isAuthenticated,
+        keyData: state.keyData,
+        loginUser: null,
+        token: null,
+      }),
       onRehydrateStorage: () => (state) => {
+        if (state) {
+          state.loginUser = null
+          state.token = null
+        }
         if (state?.activation) {
           const isValid = state.activation.status === 'active' && (!state.activation.expiryDate || new Date(state.activation.expiryDate) > new Date())
           if (!isValid) {
             state.isAuthenticated = false
             state.activation = null
             state.keyData = null
+            state.token = null
           }
         }
       },

@@ -75,7 +75,7 @@ export default function AccountModule() {
                 <span className="font-bold" style={{ color: '#7c3aed' }}>الباقة الحالية</span>
                 <span className={`badge ${isAuthenticated ? 'badge-success' : 'badge-danger'}`}>{isAuthenticated ? 'نشط' : 'غير مفعل'}</span>
               </div>
-              <p className="text-sm text-secondary-600">Sky Wave Sender Pro</p>
+              <p className="text-sm text-secondary-600">SkyPro</p>
             </div>
             {keyData && (
               <div className="p-3 bg-secondary-50 rounded-xl border border-secondary-100 space-y-2">

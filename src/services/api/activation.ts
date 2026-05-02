@@ -1,4 +1,58 @@
-const SERVER_API_URL = 'https://skypro.skywaveads.com/api'
+import { useAuthStore } from '../../stores/appStore'
+
+const WEB_API_URL = import.meta.env.VITE_WEB_API_URL || 'https://skypro.skywaveads.com/api'
+const SERVER_API_URL = import.meta.env.VITE_API_URL || 'https://skypro.skywaveads.com/sender-pro-api'
+
+function getToken(): string | null {
+  return useAuthStore.getState().token || null
+}
+
+function authHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  const token = getToken()
+  if (token) headers['Authorization'] = `Bearer ${token}`
+  return headers
+}
+
+type ActivationStatus = NonNullable<ActivationResponse['data']>['status']
+
+function normalizeActivationResult(result: unknown, fallbackKey: string, fallbackDeviceId?: string): ActivationResponse {
+  const resultObj = (result && typeof result === 'object') ? (result as Record<string, unknown>) : {}
+  const resultData = (resultObj.data && typeof resultObj.data === 'object')
+    ? (resultObj.data as Record<string, unknown>)
+    : {}
+  const keyData = (resultData.key && typeof resultData.key === 'object')
+    ? (resultData.key as Record<string, unknown>)
+    : resultData
+  const expiryDate = String(keyData.expiresAt || keyData.expiryDate || resultData.expiresAt || '')
+
+  return {
+    success: true,
+    message: String(resultObj.message || 'تم التحقق من الاشتراك بنجاح'),
+    data: {
+      key: String(keyData.keyCode || keyData.key || fallbackKey),
+      status: String(keyData.status || resultData.status || 'active') as ActivationStatus,
+      expiryDate,
+      expiresAt: expiryDate,
+      deviceId: String(resultData.sessionId || keyData.deviceId || fallbackDeviceId || ''),
+      maxDevices: Number(keyData.maxDevices || resultData.maxDevices || 0) || undefined,
+    }
+  }
+}
+
+export interface LoginResponse {
+  success: boolean
+  message: string
+  data?: {
+    token?: string
+    email: string
+    role: 'admin' | 'customer'
+    key?: string
+    status?: 'active' | 'expired' | 'pending' | 'invalid' | 'available' | 'revoked' | 'assigned'
+    expiryDate?: string
+    deviceId?: string
+  }
+}
 
 export interface ActivationResponse {
   success: boolean
@@ -13,22 +67,33 @@ export interface ActivationResponse {
   }
 }
 
+export interface SerialRequestResponse {
+  success: boolean
+  message: string
+  data?: {
+    serial: string
+    key: string
+    expiryDate: string
+  }
+}
+
 export const activationApi = {
-  activateKey: async (key: string, deviceId: string): Promise<ActivationResponse> => {
+  activateKey: async (key: string, deviceId: string, deviceInfo?: Record<string, unknown>): Promise<ActivationResponse> => {
     if (window.electronAPI?.activateKey) {
       try {
-        const result = await window.electronAPI.activateKey({ key, deviceId })
+        const result = await window.electronAPI.activateKey({ key, deviceId, deviceInfo })
         if (result) return result
       } catch (e) { console.error('IPC activateKey failed:', e) }
     }
 
     try {
-      const response = await fetch(`${SERVER_API_URL}/keys/activate`, {
+      const response = await fetch(`${WEB_API_URL}/auth/verify-device`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key, deviceFingerprint: deviceId })
+        body: JSON.stringify({ key, deviceFingerprint: deviceId, deviceInfo })
       })
-      return response.json()
+      const result = await response.json()
+      return result.success ? normalizeActivationResult(result, key, deviceId) : result
     } catch {
       return { success: false, message: 'فشل الاتصال بالخادم' }
     }
@@ -43,12 +108,13 @@ export const activationApi = {
     }
 
     try {
-      const response = await fetch(`${SERVER_API_URL}/auth/verify-device`, {
+      const response = await fetch(`${WEB_API_URL}/auth/verify-device`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ key, deviceFingerprint: deviceId })
       })
-      return response.json()
+      const result = await response.json()
+      return result.success ? normalizeActivationResult(result, key, deviceId) : result
     } catch {
       return { success: false, message: 'فشل الاتصال بالخادم' }
     }
@@ -63,25 +129,27 @@ export const activationApi = {
     }
 
     try {
-      const response = await fetch(`${SERVER_API_URL}/keys/status?key=${encodeURIComponent(key)}`)
-      return response.json()
+      const response = await fetch(`${WEB_API_URL}/keys/status?key=${encodeURIComponent(key)}`)
+      const result = await response.json()
+      return result.success ? normalizeActivationResult(result, key) : result
     } catch {
       return { success: false, message: 'فشل الاتصال بالخادم' }
     }
   },
 
   resetDevice: async (key: string, deviceId: string): Promise<ActivationResponse> => {
+    const token = getToken()
     if (window.electronAPI?.resetDevice) {
       try {
-        const result = await window.electronAPI.resetDevice({ key })
+        const result = await window.electronAPI.resetDevice({ key, deviceId, token })
         if (result) return result
       } catch (e) { console.error('IPC resetDevice failed:', e) }
     }
 
     try {
-      const response = await fetch(`${SERVER_API_URL}/auth/reset-device`, {
+      const response = await fetch(`${WEB_API_URL}/auth/reset-device`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify({ key, deviceFingerprint: deviceId })
       })
       return response.json()
@@ -97,5 +165,38 @@ export const activationApi = {
       } catch (e) { console.error('IPC getDeviceInfo failed:', e) }
     }
     return null
+  },
+
+  login: async (email: string, password: string, serial: string, deviceFingerprint: string, deviceInfo?: Record<string, unknown>): Promise<LoginResponse> => {
+    if (window.electronAPI?.login) {
+      try {
+        const result = await window.electronAPI.login({ email, password, serial, deviceFingerprint, deviceInfo })
+        if (result) return result
+      } catch (e) { console.error('IPC login failed:', e) }
+    }
+
+    try {
+      const response = await fetch(`${WEB_API_URL}/desktop/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, serial, deviceFingerprint, deviceInfo })
+      })
+      return response.json()
+    } catch {
+      return { success: false, message: 'فشل الاتصال بالخادم' }
+    }
+  },
+
+  requestActivation: async (email: string, months: number = 12): Promise<SerialRequestResponse> => {
+    try {
+      const response = await fetch(`${SERVER_API_URL}/request-activation.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, months })
+      })
+      return response.json()
+    } catch {
+      return { success: false, message: 'فشل الاتصال بالخادم' }
+    }
   }
 }

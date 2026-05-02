@@ -15,6 +15,9 @@ dist-release/
 !.env.example
 *.backup
 
+# Local deployment helpers can contain host/user details
+deploy-api.sh
+
 # Logs
 logs/
 *.log
@@ -25,6 +28,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 # Editor
+.claude/
 .vscode/*
 !.vscode/extensions.json
 .idea/
@@ -42,3 +46,8 @@ Desktop.ini
 # Data
 data/
 sqlite-data/
+
+# Generated Python/cache artifacts
+__pycache__/
+*.py[cod]
+*.bak

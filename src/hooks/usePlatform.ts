@@ -35,7 +35,7 @@ export function usePlatform(platformId: string) {
 
   const loadResults = useCallback(async () => {
     try {
-      const res = await window.electronAPI.dbQuery({ table: 'leads', where: `platform = '${String(platformId).replace(/'/g, "''")}'`, limit: 500 })
+      const res = await window.electronAPI.dbQuery({ table: 'leads', filters: [{ column: 'platform', op: '=', value: platformId }], limit: 500 })
       if (res.success && res.data) setResults(res.data || [])
     } catch (err: any) { console.error('Failed to load results:', err.message) }
   }, [platformId])
@@ -121,7 +121,7 @@ export function usePlatform(platformId: string) {
 
   const clearResults = useCallback(async () => {
     try {
-      const res = await window.electronAPI.dbQuery({ table: 'leads', where: `platform = '${String(platformId).replace(/'/g, "''")}'` })
+      const res = await window.electronAPI.dbQuery({ table: 'leads', filters: [{ column: 'platform', op: '=', value: platformId }] })
       if (res.success && res.data) {
         for (const row of (res.data || [])) {
           await window.electronAPI.dbDelete({ table: 'leads', id: row.id })

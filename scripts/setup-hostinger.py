@@ -1,9 +1,16 @@
+import os
 import paramiko
 
-HOST = '147.79.66.116'
-PORT = 22
-USER = 'root'
-PASSWORD = 'Newjoker2k333'
+HOST = os.getenv('SKYPRO_HOST', '')
+PORT = int(os.getenv('SKYPRO_PORT', '22'))
+USER = os.getenv('SKYPRO_USER', '')
+PASSWORD = os.getenv('SKYPRO_PASSWORD', '')
+DB_ROOT_PASSWORD = os.getenv('SKYPRO_DB_ROOT_PASSWORD', '')
+
+if not HOST or not USER or not PASSWORD or not DB_ROOT_PASSWORD:
+    raise SystemExit(
+        'Missing required env vars: SKYPRO_HOST, SKYPRO_USER, SKYPRO_PASSWORD, SKYPRO_DB_ROOT_PASSWORD'
+    )
 
 def run_command(ssh, command):
     stdin, stdout, stderr = ssh.exec_command(command)
@@ -30,12 +37,12 @@ if err:
         print(f'Install error: {err}')
 
 # Check if database exists
-out, err = run_command(ssh, "mysql -u root -p'Newjoker2k333' -e \"SHOW DATABASES LIKE 'senderpro';\"")
+out, err = run_command(ssh, f"mysql -u root -p'{DB_ROOT_PASSWORD}' -e \"SHOW DATABASES LIKE 'senderpro';\"")
 print(f'Database check: {out}')
 
 if 'senderpro' not in out:
     print('Creating database senderpro...')
-    out, err = run_command(ssh, "mysql -u root -p'Newjoker2k333' -e \"CREATE DATABASE IF NOT EXISTS senderpro CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;\"")
+    out, err = run_command(ssh, f"mysql -u root -p'{DB_ROOT_PASSWORD}' -e \"CREATE DATABASE IF NOT EXISTS senderpro CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;\"")
     if err:
         print(f'Create DB error: {err}')
     else:
@@ -45,7 +52,7 @@ else:
 
 # Import SQL schema
 print('Importing SQL schema...')
-out, err = run_command(ssh, "mysql -u root -p'Newjoker2k333' senderpro < /var/www/html/sender-pro-api/sender_pro_database.sql")
+out, err = run_command(ssh, f"mysql -u root -p'{DB_ROOT_PASSWORD}' senderpro < /var/www/html/sender-pro-api/sender_pro_database.sql")
 if err:
     print(f'Import error: {err}')
 else:

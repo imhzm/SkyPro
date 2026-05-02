@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
-import { useAppStore } from '../../stores/appStore'
+import { useAppStore, useAuthStore } from '../../stores/appStore'
 import { getPlatformById } from '../../data/platforms'
-import { Menu, Bell, Globe, Minus, Square, X } from 'lucide-react'
+import { Menu, Bell, Globe, Minus, Square, X, LogOut } from 'lucide-react'
 
 export default function AppTitleBar() {
   const { activePlatform, toggleSidebar } = useAppStore()
+  const { logout } = useAuthStore()
   const platform = getPlatformById(activePlatform)
   const [isMaximized, setIsMaximized] = useState(false)
 
@@ -59,7 +60,7 @@ export default function AppTitleBar() {
             <span className="text-white font-bold" style={{ fontSize: '10px' }}>SW</span>
           </div>
           <div className="hidden md:block">
-            <p className="text-white font-bold text-xs leading-none">Sky Wave Pro</p>
+            <p className="text-white font-bold text-xs leading-none">SkyPro</p>
             <p className="leading-none mt-0.5" style={{ color: 'rgba(234, 243, 255, 0.35)', fontSize: '9px' }}>Automation Dashboard</p>
           </div>
         </div>
@@ -121,6 +122,18 @@ export default function AppTitleBar() {
           <span className="sw-status-dot" />
           <span className="text-[10px] font-medium" style={{ color: 'rgba(34, 197, 94, 0.8)' }}>متصل</span>
         </div>
+
+        {/* Logout */}
+        <button
+          onClick={logout}
+          className="h-full px-2.5 flex items-center justify-center transition-colors duration-150"
+          style={{ background: 'transparent' }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          title="تسجيل خروج"
+        >
+          <LogOut size={15} className="text-white/45" />
+        </button>
 
         {/* Divider before window controls */}
         <div className="h-5 w-px mx-0.5" style={{ background: 'rgba(234, 243, 255, 0.08)' }} />
