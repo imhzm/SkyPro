@@ -180,7 +180,7 @@ function saveAccount(platform, username, password, status = 'active') {
 function openExternalUrl(rawUrl) {
   try {
     const parsed = new URL(rawUrl)
-    if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
+    if (parsed.protocol === 'https:') {
       shell.openExternal(parsed.toString()).catch(() => {})
     }
   } catch {}
