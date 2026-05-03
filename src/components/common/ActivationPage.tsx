@@ -68,7 +68,7 @@ export default function ActivationPage() {
               type="text"
               className="w-full px-4 py-3 rounded-xl text-center font-mono text-lg tracking-wider"
               style={{ background: 'rgba(255,255,255,0.08)', border: '1.5px solid rgba(10,108,241,0.3)', color: '#EAF3FF' }}
-              placeholder="SKY1-PRO2-XXXX-2026"
+          placeholder="SKY1-PRO2-XXXXXXXX-XXXXXXXX-2026"
               value={key}
               onChange={(e) => { setKey(e.target.value.toUpperCase()); setError(''); setSuccess('') }}
               onKeyDown={(e) => e.key === 'Enter' && handleActivate()}
