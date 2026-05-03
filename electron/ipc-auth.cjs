@@ -4,6 +4,32 @@ const crypto = require('crypto')
 const WEB_API_URL = 'https://skypro.skywaveads.com/api'
 const SERVER_API_URL = 'https://skypro.skywaveads.com/sender-pro-api'
 const OFFLINE_FALLBACK_ENABLED = process.env.SKYPRO_ALLOW_OFFLINE_KEY_FALLBACK === 'true'
+const NETWORK_TIMEOUT_MS = 20_000
+
+function normalizeText(value, max = 256) {
+  return typeof value === 'string' ? value.trim().slice(0, max) : ''
+}
+
+async function fetchJson(url, options = {}) {
+  const parsed = new URL(url)
+  if (parsed.protocol !== 'https:') {
+    throw new Error('Refusing insecure API connection')
+  }
+
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), NETWORK_TIMEOUT_MS)
+  try {
+    const response = await fetch(parsed.toString(), {
+      ...options,
+      signal: controller.signal,
+    })
+    const text = await response.text()
+    const data = text ? JSON.parse(text) : {}
+    return { response, data }
+  } finally {
+    clearTimeout(timeout)
+  }
+}
 
 function generateDeviceFingerprint() {
   const components = [
@@ -76,17 +102,18 @@ function normalizeWebActivationResult(result, fallbackKey, fallbackDeviceId) {
 }
 
 function registerAuthIPC({ ipcm, bm, db }) {
-  ipcm('activate-key', async (e, { key, deviceId }) => {
+  ipcm('activate-key', async (e, { key, deviceId } = {}) => {
+    key = normalizeText(key, 80)
+    deviceId = normalizeText(deviceId, 256)
     const deviceInfo = getDeviceCapabilities()
     const fingerprint = deviceId || deviceInfo.fingerprint
     deviceInfo.fingerprint = fingerprint
     try {
-      const response = await fetch(`${WEB_API_URL}/auth/verify-device`, {
+      const { data: result } = await fetchJson(`${WEB_API_URL}/auth/verify-device`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ key, deviceFingerprint: fingerprint, deviceInfo })
       })
-      const result = await response.json()
       if (result.success) {
         saveDeviceInfo(db, deviceInfo, key)
         return normalizeWebActivationResult(result, key, fingerprint)
@@ -103,17 +130,18 @@ function registerAuthIPC({ ipcm, bm, db }) {
     return { success: false, message: 'فشل التحقق من الخادم. أعد المحاولة عند توفر اتصال.' }
   })
 
-  ipcm('validate-key', async (e, { key, deviceId }) => {
+  ipcm('validate-key', async (e, { key, deviceId } = {}) => {
+    key = normalizeText(key, 80)
+    deviceId = normalizeText(deviceId, 256)
     const deviceInfo = getDeviceCapabilities()
     const fingerprint = deviceId || deviceInfo.fingerprint
     deviceInfo.fingerprint = fingerprint
     try {
-      const response = await fetch(`${WEB_API_URL}/auth/verify-device`, {
+      const { data: result } = await fetchJson(`${WEB_API_URL}/auth/verify-device`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ key, deviceFingerprint: fingerprint, deviceInfo })
       })
-      const result = await response.json()
       if (result.success) {
         saveDeviceInfo(db, deviceInfo, key)
         return normalizeWebActivationResult(result, key, fingerprint)
@@ -129,10 +157,10 @@ function registerAuthIPC({ ipcm, bm, db }) {
     return { success: false, message: 'تعذر التحقق من المفتاح بدون اتصال بالخادم.' }
   })
 
-  ipcm('check-key-status', async (e, { key }) => {
+  ipcm('check-key-status', async (e, { key } = {}) => {
+    key = normalizeText(key, 80)
     try {
-      const response = await fetch(`${WEB_API_URL}/keys/status?key=${encodeURIComponent(key)}`)
-      const result = await response.json()
+      const { data: result } = await fetchJson(`${WEB_API_URL}/keys/status?key=${encodeURIComponent(key)}`)
       if (result.success) return normalizeWebActivationResult(result, key, undefined)
     } catch (err) { console.error('Server key status failed:', err.message) }
     return { success: false, message: 'تعذر جلب حالة المفتاح بدون اتصال بالخادم.' }
@@ -142,7 +170,10 @@ function registerAuthIPC({ ipcm, bm, db }) {
     return getDeviceCapabilities()
   })
 
-  ipcm('reset-device', async (e, { key, deviceId, token }) => {
+  ipcm('reset-device', async (e, { key, deviceId, token } = {}) => {
+    key = normalizeText(key, 80)
+    deviceId = normalizeText(deviceId, 256)
+    token = normalizeText(token, 512)
     const deviceInfo = getDeviceCapabilities()
     const fingerprint = deviceId || deviceInfo.fingerprint
     try {
@@ -150,26 +181,28 @@ function registerAuthIPC({ ipcm, bm, db }) {
       if (token) {
         headers.Authorization = `Bearer ${token}`
       }
-      const response = await fetch(`${WEB_API_URL}/auth/reset-device`, {
+      const { data: result } = await fetchJson(`${WEB_API_URL}/auth/reset-device`, {
         method: 'POST',
         headers,
         body: JSON.stringify({ key, deviceFingerprint: fingerprint })
       })
-      const result = await response.json()
       if (result.success) return result
       if (result.error) return { success: false, message: result.error }
     } catch (err) { console.error('Server reset device failed:', err.message) }
     return { success: false, message: 'فشل الاتصال بالخادم' }
   })
 
-  ipcm('login', async (e, { email, password, serial, deviceFingerprint, deviceInfo }) => {
+  ipcm('login', async (e, { email, password, serial, deviceFingerprint, deviceInfo } = {}) => {
+    email = normalizeText(email, 254).toLowerCase()
+    password = typeof password === 'string' ? password.slice(0, 512) : ''
+    serial = normalizeText(serial, 80).toUpperCase()
+    deviceFingerprint = normalizeText(deviceFingerprint, 256)
     try {
-      const response = await fetch(`${WEB_API_URL}/desktop/login`, {
+      const { data: result } = await fetchJson(`${WEB_API_URL}/desktop/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, serial, deviceFingerprint, deviceInfo })
       })
-      const result = await response.json()
       return result
     } catch (err) {
       console.error('Login IPC error:', err.message)
