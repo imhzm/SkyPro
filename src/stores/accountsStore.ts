@@ -1,10 +1,15 @@
 import { create } from 'zustand'
 
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
+}
+
 export interface Account {
   id: number
   platform: string
   username: string
   password?: string
+  has_password?: boolean
   proxy?: string
   notes?: string
   status: string
@@ -29,14 +34,14 @@ export const useAccountsStore = create<AccountsStore>((set, get) => ({
     try {
       const res = await window.electronAPI.dbQuery({ table: 'accounts', limit: 1000 })
       if (res.success && res.data) set({ accounts: res.data || [] })
-    } catch (err: any) { console.error('Failed to load accounts:', err.message) }
+    } catch (err: unknown) { console.error('Failed to load accounts:', errorMessage(err)) }
   },
 
   addAccount: async (account) => {
     try {
       await window.electronAPI.dbInsert({ table: 'accounts', data: account })
       await get().loadAccounts()
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('dbInsert error:', err)
       throw err
     }
@@ -46,7 +51,7 @@ export const useAccountsStore = create<AccountsStore>((set, get) => ({
     try {
       await window.electronAPI.dbUpdate({ table: 'accounts', id, data })
       await get().loadAccounts()
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('dbUpdate error:', err)
       throw err
     }
@@ -56,7 +61,7 @@ export const useAccountsStore = create<AccountsStore>((set, get) => ({
     try {
       await window.electronAPI.dbDelete({ table: 'accounts', id })
       await get().loadAccounts()
-    } catch (err: any) { console.error('Failed to delete account:', err.message) }
+    } catch (err: unknown) { console.error('Failed to delete account:', errorMessage(err)) }
   },
 
   getAccountsByPlatform: (platform) => {

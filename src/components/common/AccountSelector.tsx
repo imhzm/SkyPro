@@ -18,16 +18,21 @@ interface CycleSettings {
   delayBetweenAccounts: number
 }
 
+type CycleTask = {
+  type: string
+  params: Record<string, unknown>
+}
+
 interface AccountSelectorProps {
   platformId: string
   accounts: Account[]
   cycleActive: boolean
   cycleProgress: CycleProgress | null
-  onStartCycle: (selectedAccounts: Account[], task: any, settings: CycleSettings) => void
+  onStartCycle: (selectedAccounts: Account[], task: CycleTask, settings: CycleSettings) => void
   onStopCycle: () => void
   onAddAccount?: () => void
-  extractTask?: any
-  sendTask?: any
+  extractTask?: CycleTask
+  sendTask?: CycleTask
 }
 
 export default function AccountSelector({

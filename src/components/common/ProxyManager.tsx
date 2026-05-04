@@ -21,7 +21,7 @@ export default function ProxyManager() {
   const loadProxies = useCallback(async () => {
     try {
       const res = await window.electronAPI.getProxies()
-      if (res.success && res.data) setProxies(res.data || [])
+      if (res.success && res.data) setProxies((Array.isArray(res.data) ? res.data : []) as unknown as Proxy[])
     } catch (err: any) { console.error('Failed to load proxies:', err.message) }
   }, [])
 
@@ -34,12 +34,12 @@ export default function ProxyManager() {
     try {
       await window.electronAPI.saveProxy({
         label: newProxy.label || `${newProxy.host}:${newProxy.port}`,
-        host: newProxy.host,
-        port: newProxy.port,
+        host: newProxy.host!,
+        port: newProxy.port!,
         protocol: newProxy.protocol || 'http',
         username: newProxy.username || '',
         password: newProxy.password || '',
-      })
+      } as any)
       setNewProxy({ protocol: 'http', status: 'متاح' })
       setShowAdd(false)
       await loadProxies()
@@ -54,7 +54,7 @@ export default function ProxyManager() {
     setLoadingTest(proxy.id)
     try {
       const proxyStr = `${proxy.protocol}://${proxy.username ? proxy.username + ':' + proxy.password + '@' : ''}${proxy.host}:${proxy.port}`
-      const res = await window.electronAPI.testProxy({ proxy: proxyStr })
+      const res = await window.electronAPI.testProxy({ host: proxy.host, port: proxy.port, protocol: proxy.protocol, proxy: proxyStr } as any)
       const status = res.success ? 'متاح' : 'متوقف'
       await window.electronAPI.dbUpdate({ table: 'proxies', id: parseInt(proxy.id), data: { status } })
       setProxies(prev => prev.map(p => p.id === proxy.id ? { ...p, status: status as any } : p))

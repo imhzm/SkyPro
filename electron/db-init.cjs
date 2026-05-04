@@ -1,6 +1,17 @@
 // ==================== DATABASE SCHEMA ====================
 function initDatabase(db) {
   if (!db) return
+
+  // ==================== PRAGMA SETTINGS ====================
+  // WAL mode: better concurrent read/write performance
+  db.pragma('journal_mode = WAL')
+  // Enforce foreign key constraints
+  db.pragma('foreign_keys = ON')
+  // Faster sync for better write performance (still safe with WAL)
+  db.pragma('synchronous = NORMAL')
+  // Increase cache size for better read performance (2MB)
+  db.pragma('cache_size = -2000')
+
   db.exec(`
   CREATE TABLE IF NOT EXISTS leads (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -86,6 +97,26 @@ function initDatabase(db) {
     first_activated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     last_seen DATETIME DEFAULT CURRENT_TIMESTAMP
   )`)
+
+  // ==================== INDEXES (idempotent) ====================
+  // Performance-critical indexes for filtered queries
+  const indexes = [
+    'CREATE INDEX IF NOT EXISTS idx_leads_platform ON leads (platform)',
+    'CREATE INDEX IF NOT EXISTS idx_leads_source ON leads (source)',
+    'CREATE INDEX IF NOT EXISTS idx_leads_created_at ON leads (created_at)',
+    'CREATE INDEX IF NOT EXISTS idx_accounts_platform ON accounts (platform)',
+    'CREATE INDEX IF NOT EXISTS idx_accounts_status ON accounts (status)',
+    'CREATE UNIQUE INDEX IF NOT EXISTS idx_accounts_platform_username ON accounts (platform, username)',
+    'CREATE INDEX IF NOT EXISTS idx_campaigns_platform ON campaigns (platform)',
+    'CREATE INDEX IF NOT EXISTS idx_campaigns_status ON campaigns (status)',
+    'CREATE INDEX IF NOT EXISTS idx_campaigns_scheduled ON campaigns (status, scheduled_at)',
+    'CREATE UNIQUE INDEX IF NOT EXISTS idx_proxies_host_port ON proxies (host, port, protocol)',
+    'CREATE INDEX IF NOT EXISTS idx_leads_platform_created ON leads (platform, created_at)',
+    'CREATE UNIQUE INDEX IF NOT EXISTS idx_smtp_email ON smtp_settings (email, host, port)',
+  ]
+  for (const sql of indexes) {
+    try { db.exec(sql) } catch (e) { /* index may conflict with existing data */ }
+  }
 }
 
 module.exports = { initDatabase }

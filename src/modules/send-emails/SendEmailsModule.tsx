@@ -26,8 +26,8 @@ export default function SendEmailsModule() {
     try {
       const res = await window.electronAPI.getSmtpSettings()
       if (res.success && res.data) {
-        setSmtpList(res.data || [])
-        setSelectedSmtpId(prev => prev || (res.data.length > 0 ? res.data[0].id : null))
+        setSmtpList((res.data as any[]) || [])
+        setSelectedSmtpId(prev => prev || (((res.data as any[]) || []).length > 0 ? (res.data as any[])[0].id : null))
       }
     } catch (err: any) { console.error('Failed to load SMTP:', err.message) }
   }, [])

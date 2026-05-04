@@ -88,7 +88,7 @@ export default function FacebookModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.facebookLogin({ username: loginForm.email, password: loginForm.password, headless: false, proxy: loginForm.proxy || undefined })
-      if (res.success) { setSessionId(res.sessionId); showMsg('تم تسجيل الدخول بنجاح!'); await loadAccounts() }
+      if (res.success) { setSessionId(res.sessionId || ''); showMsg('تم تسجيل الدخول بنجاح!'); await loadAccounts() }
       else showMsg(res.error || 'فشل تسجيل الدخول', true)
     } catch (err: any) { showMsg(err.message || 'خطأ في الاتصال', true) }
     setLoading(false)
@@ -102,7 +102,7 @@ export default function FacebookModule() {
       setLoading(false)
       return
     }
-    const hasPass = !!(account.password && account.password.trim())
+    const hasPass = (!!account.has_password || !!(account.password && account.password.trim()))
     if (!hasPass) {
       setLoginForm({ ...loginForm, email: account.username, password: '' })
       setTimeout(() => passwordRef.current?.focus(), 100)
@@ -112,8 +112,8 @@ export default function FacebookModule() {
     }
     setLoginForm({ ...loginForm, email: account.username, password: account.password || '' })
     try {
-      const res = await window.electronAPI.facebookLogin({ username: account.username, password: account.password, headless: false, proxy: account.proxy || loginForm.proxy || undefined })
-      if (res.success) { setSessionId(res.sessionId); showMsg(`تم تسجيل الدخول بحساب ${account.username}!`); await loadAccounts() }
+      const res = await window.electronAPI.facebookLogin({ accountId: account.id, username: account.username, password: account.password, headless: false, proxy: account.proxy || loginForm.proxy || undefined })
+      if (res.success) { setSessionId(res.sessionId || ''); showMsg(`تم تسجيل الدخول بحساب ${account.username}!`); await loadAccounts() }
       else showMsg(res.error || 'فشل تسجيل الدخول', true)
     } catch (err: any) { showMsg(err.message || 'خطأ في الاتصال', true) }
     setLoading(false)
@@ -135,6 +135,12 @@ export default function FacebookModule() {
     if (extractType === 'reviews' && !reviewPageUrl) { showMsg('يرجى إدخال رابط الصفحة', true); return }
     if (extractType === 'search-groups' && !searchGroupQuery) { showMsg('يرجى إدخال كلمة البحث', true); return }
     if (extractType === 'join-groups' && !joinGroupUrls.trim()) { showMsg('يرجى إدخال روابط المجموعات', true); return }
+    
+    // P1-27: Add UI caps for extraction
+    if (extractLimit >= 1000) {
+      if (!confirm(`تحذير: استخراج ${extractLimit} نتيجة قد يستغرق وقتاً طويلاً وقد يعرض حسابك للحظر. هل تريد المتابعة؟`)) return
+    }
+    
     setExtracting(true)
     streamResultsRef.current = []
     setStreamResults([])
@@ -208,7 +214,7 @@ export default function FacebookModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.facebookPostToGroups({ sessionId, groups, message: postMessage })
-      if (res.success) { const ok = (res.data || []).filter((r: any) => r.status === 'posted').length; showMsg(`تم النشر في ${ok} من ${groups.length} مجموعة`); setToolResults(res.data || []) }
+      if (res.success) { const ok = ((res.data as any[]) || []).filter((r: any) => r.status === 'posted').length; showMsg(`تم النشر في ${ok} من ${groups.length} مجموعة`); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
@@ -221,7 +227,7 @@ export default function FacebookModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.facebookSharePost({ sessionId, postUrl: sharePostUrl, groups })
-      if (res.success) { showMsg(`تمت المشاركة في ${(res.data || []).length} مجموعة`); setToolResults(res.data || []) }
+      if (res.success) { showMsg(`تمت المشاركة في ${((res.data as any[]) || []).length} مجموعة`); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
@@ -233,7 +239,7 @@ export default function FacebookModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.facebookAutoReply({ sessionId, postUrl: replyPostUrl, replyText, limit: replyLimit })
-      if (res.success) { showMsg(`تم الرد على \${res.count || 0} تعليق`); setToolResults(res.data || []) }
+      if (res.success) { showMsg(`تم الرد على \${res.count || 0} تعليق`); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
@@ -246,7 +252,7 @@ export default function FacebookModule() {
     const recipients = recipientsText.split('\n').filter(r => r.trim())
     try {
       const res = await window.electronAPI.facebookSendMessages({ sessionId, recipients, message: broadcastMessage })
-      if (res.success) { const sent = (res.data || []).filter((r: any) => r.status === 'sent').length; showMsg(`تم إرسال ${sent} من ${recipients.length} رسالة`); setToolResults(res.data || []) }
+      if (res.success) { const sent = ((res.data as any[]) || []).filter((r: any) => r.status === 'sent').length; showMsg(`تم إرسال ${sent} من ${recipients.length} رسالة`); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشل الإرسال', true)
     } catch (err: any) { showMsg(err.message || 'خطأ في الإرسال', true) }
     setLoading(false)
@@ -261,7 +267,7 @@ export default function FacebookModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.facebookMention({ sessionId, postUrls: urls, usernames: names, text: mentionText })
-      if (res.success) { showMsg(`تم منشن \${res.count || 0} مستخدم`); setToolResults(res.data || []) }
+      if (res.success) { showMsg(`تم منشن \${res.count || 0} مستخدم`); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
@@ -274,7 +280,7 @@ export default function FacebookModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.facebookSendFriendRequests({ sessionId, profileUrls: urls })
-      if (res.success) { const sent = (res.data || []).filter((r: any) => r.status === 'sent').length; showMsg(`تم إرسال ${sent} طلب صداقة من ${urls.length}`); setToolResults(res.data || []) }
+      if (res.success) { const sent = ((res.data as any[]) || []).filter((r: any) => r.status === 'sent').length; showMsg(`تم إرسال ${sent} طلب صداقة من ${urls.length}`); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
@@ -292,7 +298,7 @@ export default function FacebookModule() {
         deleteAll: deleteFriendsMode === 'all',
         friendUrls: deleteFriendsMode === 'selected' ? friendUrls : []
       })
-      if (res.success) { showMsg(`تم حذف \${res.count || 0} صديق`); setToolResults(res.data || []) }
+      if (res.success) { showMsg(`تم حذف \${res.count || 0} صديق`); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
@@ -305,7 +311,7 @@ export default function FacebookModule() {
     const usernames = addUsernames.split('\n').map(s => s.trim()).filter(Boolean)
     try {
       const res = await window.electronAPI.facebookAddToGroupChat({ sessionId, groupChatUrl, usernames })
-      if (res.success) { const added = (res.data || []).filter((r: any) => r.status === 'added').length; showMsg(`تم إضافة ${added} من ${usernames.length} عضو`); setToolResults(res.data || []) }
+      if (res.success) { const added = ((res.data as any[]) || []).filter((r: any) => r.status === 'added').length; showMsg(`تم إضافة ${added} من ${usernames.length} عضو`); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
@@ -318,7 +324,7 @@ export default function FacebookModule() {
     const pageUrls = sendPageUrls.split('\n').map(s => s.trim()).filter(Boolean)
     try {
       const res = await window.electronAPI.facebookSendPageMessages({ sessionId, pageUrls, message: sendPageMessage })
-      if (res.success) { const sent = (res.data || []).filter((r: any) => r.status === 'sent').length; showMsg(`تم إرسال ${sent} من ${pageUrls.length} رسالة`); setToolResults(res.data || []) }
+      if (res.success) { const sent = ((res.data as any[]) || []).filter((r: any) => r.status === 'sent').length; showMsg(`تم إرسال ${sent} من ${pageUrls.length} رسالة`); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
@@ -331,7 +337,7 @@ export default function FacebookModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.facebookInteractionFarm({ sessionId, postUrls: urls, action: interactionAction })
-      if (res.success) { showMsg(`تم التفاعل مع \${res.count || 0} منشور`); setToolResults(res.data || []) }
+      if (res.success) { showMsg(`تم التفاعل مع \${res.count || 0} منشور`); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
@@ -343,7 +349,7 @@ export default function FacebookModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.facebookDeletePosts({ sessionId, limit: deletePostsLimit })
-      if (res.success) { showMsg(`تم حذف \${res.count || 0} منشور`); setToolResults(res.data || []) }
+      if (res.success) { showMsg(`تم حذف \${res.count || 0} منشور`); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
@@ -368,7 +374,7 @@ export default function FacebookModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.facebookUsersToIds({ sessionId, usernames })
-      if (res.success) { showMsg(`تم تحويل \${res.count || 0} مستخدم`); setToolResults(res.data || []) }
+      if (res.success) { showMsg(`تم تحويل \${res.count || 0} مستخدم`); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
@@ -381,7 +387,7 @@ export default function FacebookModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.facebookLinksToIds({ sessionId, links })
-      if (res.success) { showMsg(`تم تحويل \${res.count || 0} رابط`); setToolResults(res.data || []) }
+      if (res.success) { showMsg(`تم تحويل \${res.count || 0} رابط`); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
@@ -395,9 +401,9 @@ export default function FacebookModule() {
     try {
       const res = await window.electronAPI.facebookPageSendMessages({ sessionId, pageUrl: pageMsgUrl, recipients, message: pageMsgText })
       if (res.success) {
-        const sent = (res.data || []).filter((r: any) => r.status === 'sent').length
+        const sent = ((res.data as any[]) || []).filter((r: any) => r.status === 'sent').length
         showMsg(`تم إرسال ${sent} من ${recipients.length} رسالة`);
-        setToolResults(res.data || [])
+        setToolResults((res.data as any[]) || [])
       } else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)

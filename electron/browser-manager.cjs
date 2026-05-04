@@ -32,7 +32,7 @@ class BrowserManager {
 
       const args = [
         '--disable-blink-features=AutomationControlled',
-        '--disable-features=IsolateOrigins,site-per-process',
+        // NOTE: IsolateOrigins and site-per-process are NOT disabled — browser security preserved
         '--window-size=1366,768',
         '--disable-infobars',
         '--disable-dev-shm-usage',
@@ -45,7 +45,7 @@ class BrowserManager {
         '--disable-breakpad',
         '--disable-component-extensions-with-background-pages',
         '--disable-features=TranslateUI',
-        '--disable-ipc-flooding-protection',
+        // NOTE: ipc-flooding-protection is NOT disabled — browser stability preserved
         '--disable-renderer-backgrounding',
         '--enable-features=NetworkService,NetworkServiceInProcess',
         '--force-color-profile=srgb',
@@ -67,8 +67,8 @@ class BrowserManager {
         viewport: { width: vpWidth, height: vpHeight },
         locale: 'ar-SA',
         timezoneId: 'Asia/Riyadh',
-        geolocation: { latitude: 24.7136, longitude: 46.6753 },
-        permissions: ['geolocation'],
+        // Geolocation is NOT auto-granted for privacy — only set if explicitly needed
+        permissions: [],
         colorScheme: 'light',
         extraHTTPHeaders: {
           'Accept-Language': 'ar-SA,ar;q=0.9,en-US;q=0.8,en;q=0.7',

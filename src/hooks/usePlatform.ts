@@ -1,6 +1,13 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useAccountsStore } from '../stores/accountsStore'
 
+// Unified limits for bulk operations
+const BULK_LIMITS = {
+  maxResultsDisplay: 500,
+  maxCycleAccounts: 20,
+  maxBulkInput: 1000,
+} as const
+
 export interface CycleProgress {
   type: string
   currentAccount?: number
@@ -36,7 +43,7 @@ export function usePlatform(platformId: string) {
   const loadResults = useCallback(async () => {
     try {
       const res = await window.electronAPI.dbQuery({ table: 'leads', filters: [{ column: 'platform', op: '=', value: platformId }], limit: 500 })
-      if (res.success && res.data) setResults(res.data || [])
+      if (res.success && res.data) setResults(Array.isArray(res.data) ? res.data : [])
     } catch (err: any) { console.error('Failed to load results:', err.message) }
   }, [platformId])
 
@@ -44,7 +51,7 @@ export function usePlatform(platformId: string) {
     try {
       const res = await window.electronAPI.checkPlatformSession({ platform: platformId, headless: false })
       if (res.success && res.alreadyLoggedIn) {
-        setSessionId(res.sessionId)
+        setSessionId(res.sessionId || '')
         return { alreadyLoggedIn: true, sessionId: res.sessionId }
       }
       return { alreadyLoggedIn: false, sessionId: '' }
@@ -120,19 +127,27 @@ export function usePlatform(platformId: string) {
   }, [results, showMsg])
 
   const clearResults = useCallback(async () => {
+    if (results.length === 0) {
+      showMsg('لا توجد نتائج لمسحها', true)
+      return
+    }
+    // Require explicit user confirmation for bulk delete
+    const confirmed = window.confirm(
+      `هل تريد حذف ${results.length} نتيجة من منصة ${platformId}؟ لا يمكن التراجع عن هذا الإجراء.`
+    )
+    if (!confirmed) return
     try {
-      const res = await window.electronAPI.dbQuery({ table: 'leads', filters: [{ column: 'platform', op: '=', value: platformId }] })
-      if (res.success && res.data) {
-        for (const row of (res.data || [])) {
-          await window.electronAPI.dbDelete({ table: 'leads', id: row.id })
-        }
+      const res = await window.electronAPI.clearLeadsByPlatform({ platform: platformId })
+      if (!res.success) {
+        showMsg(res.error || 'خطأ في مسح النتائج', true)
+        return
       }
       setResults([])
-      showMsg('تم مسح جميع النتائج')
+      showMsg(`تم مسح ${res.changes || 0} نتيجة`)
     } catch (err: any) {
       showMsg('خطأ في مسح النتائج: ' + err.message, true)
     }
-  }, [platformId, showMsg])
+  }, [platformId, results.length, showMsg])
 
   const deleteResult = useCallback(async (id: number) => {
     await window.electronAPI.dbDelete({ table: 'leads', id })
@@ -140,22 +155,36 @@ export function usePlatform(platformId: string) {
   }, [loadResults])
 
   const startCycle = useCallback(async (accountList: any[], task: any, settings?: any) => {
+    // Validate account list
+    if (!accountList || accountList.length === 0) {
+      showMsg('لا توجد حسابات للتدوير', true)
+      return
+    }
+    const validAccounts = accountList.filter((a: any) => a.username || a.email)
+    if (validAccounts.length === 0) {
+      showMsg('لا توجد حسابات صالحة (بدون اسم مستخدم)', true)
+      return
+    }
+    if (validAccounts.length > BULK_LIMITS.maxCycleAccounts) {
+      showMsg(`الحد الأقصى للحسابات في الدورة هو ${BULK_LIMITS.maxCycleAccounts}`, true)
+      return
+    }
     setCycleProgress(null)
     setCycleActive(true)
     try {
       const res = await window.electronAPI.cycleAccounts({
         platform: platformId,
-        accounts: accountList,
+        accounts: validAccounts.map((a: any) => ({ id: a.id, username: a.username, platform: a.platform })),
         task,
         settings: settings || {}
       })
       if (res.success && res.data) {
         const data = (Array.isArray(res.data) ? res.data : [res.data]) as any[]
         setResults(prev => [...prev, ...data.map((d: any) => ({ ...d, platform: platformId }))])
-        const accountSummary = (res.log || []).map((l: any) => `${l.account}: ${l.status}`).join(' | ')
+        const accountSummary = (Array.isArray((res as any).log) ? (res as any).log : []).map((l: any) => `${l.account}: ${l.status}`).join(' | ')
         showMsg(`تمت الدورة بنجاح: ${data.length} نتيجة${accountSummary ? ' | ' + accountSummary : ''}`)
       } else {
-        showMsg(res.error || 'فشلت الدورة', true)
+        showMsg(String((res as any).error || 'فشلت الدورة'), true)
       }
     } catch (err: any) {
       showMsg('خطأ في الدورة: ' + err.message, true)

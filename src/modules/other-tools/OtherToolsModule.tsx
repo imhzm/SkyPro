@@ -47,7 +47,7 @@ export default function OtherToolsModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.generateHashtags({ keyword: hashtagKeyword, platform: hashtagPlatform })
-      if (res.success) { setHashtagsResult(res.data || []); showMsg('تم التوليد') }
+      if (res.success) { setHashtagsResult((res.data as any[]) || []); showMsg('تم التوليد') }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
@@ -56,25 +56,37 @@ export default function OtherToolsModule() {
   const handleConvertVcf = () => {
     if (!vcfData.trim()) { showMsg('أدخل البيانات أولاً', true); return }
     const lines = vcfData.split('\n').filter(l => l.trim())
-    let vcf = ''
-    lines.forEach((line, idx) => {
-      const parts = line.split(',').map(p => p.trim())
-      const name = parts[0] || `Contact ${idx + 1}`
-      const phone = parts[1] || ''
-      const email = parts[2] || ''
-      vcf += `BEGIN:VCARD\nVERSION:3.0\nFN:${name}\n`
-      if (phone) vcf += `TEL;TYPE=${vcfType.toUpperCase()}:${phone}\n`
-      if (email) vcf += `EMAIL:${email}\n`
-      vcf += `END:VCARD\n`
+    if (lines.length === 0) return
+
+    const CHUNK_SIZE = 500
+    const chunks = []
+    for (let i = 0; i < lines.length; i += CHUNK_SIZE) {
+      chunks.push(lines.slice(i, i + CHUNK_SIZE))
+    }
+
+    chunks.forEach((chunk, index) => {
+      let vcf = ''
+      for (const line of chunk) {
+        const parts = line.split(',')
+        const name = parts[0]?.trim() || 'Unknown'
+        const phone = parts[1]?.trim() || ''
+        const email = parts[2]?.trim() || ''
+        // P2-22: Fix Arabic text encoding (Mojibake) by explicitly defining CHARSET=UTF-8 in VCF
+        vcf += `BEGIN:VCARD\nVERSION:3.0\nFN;CHARSET=UTF-8:${name}\n`
+        if (phone) vcf += `TEL;TYPE=${vcfType.toUpperCase()}:${phone}\n`
+        if (email) vcf += `EMAIL:${email}\n`
+        vcf += `END:VCARD\n`
+      }
+      const blob = new Blob(['\uFEFF' + vcf], { type: 'text/vcard;charset=utf-8' }) // Added BOM for Windows compatibility
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = chunks.length > 1 ? `contacts_part${index + 1}.vcf` : 'contacts.vcf'
+      a.click()
+      URL.revokeObjectURL(url)
     })
-    const blob = new Blob([vcf], { type: 'text/vcard' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'contacts.vcf'
-    a.click()
-    URL.revokeObjectURL(url)
-    showMsg('تم تحويل وتحميل ملف VCF')
+    showMsg(`تم تحويل وتحميل ${chunks.length} ملف VCF`)
+    setVcfData('')
   }
 
   const handleGenerateUsernames = () => {

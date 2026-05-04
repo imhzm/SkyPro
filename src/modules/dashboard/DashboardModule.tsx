@@ -100,18 +100,19 @@ export default function DashboardModule() {
   const loadData = useCallback(async () => {
     try {
       const [leadsRes, accountsRes, campaignsRes] = await Promise.all([
-        window.electronAPI.dbQuery({ table: 'leads', filters: [] }).catch(() => ({ success: false, data: [] })),
-        window.electronAPI.dbQuery({ table: 'accounts', filters: [] }).catch(() => ({ success: false, data: [] })),
-        window.electronAPI.dbQuery({ table: 'campaigns', filters: [] }).catch(() => ({ success: false, data: [] })),
+        window.electronAPI.dbCount({ table: 'leads', filters: [] }).catch(() => ({ success: false, count: 0 })),
+        window.electronAPI.dbCount({ table: 'accounts', filters: [] }).catch(() => ({ success: false, count: 0 })),
+        window.electronAPI.dbCount({ table: 'campaigns', filters: [] }).catch(() => ({ success: false, count: 0 })),
       ])
-      const leads = leadsRes.data || []
-      const accounts = accountsRes.data || []
-      const campaigns = campaignsRes.data || []
+      
       setStats({
-        leads: leads.length,
-        accounts: accounts.length,
-        campaigns: campaigns.length,
+        leads: leadsRes.count || 0,
+        accounts: accountsRes.count || 0,
+        campaigns: campaignsRes.count || 0,
       })
+      
+      const recentLeadsRes = await window.electronAPI.dbQuery({ table: 'leads', filters: [], limit: 6 }).catch(() => ({ success: false, data: [] }))
+      const leads = (recentLeadsRes.data as any[]) || []
       if (leads.length > 0) {
         setRecentLeads(leads.slice(0, 6).map((l: RecentLead) => ({
           platform: l.platform || 'facebook',

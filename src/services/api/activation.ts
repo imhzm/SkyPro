@@ -42,7 +42,7 @@ function normalizeActivationResult(result: unknown, fallbackKey: string, fallbac
 
 export interface LoginResponse {
   success: boolean
-  message: string
+  message?: string
   data?: {
     token?: string
     email: string
@@ -56,7 +56,7 @@ export interface LoginResponse {
 
 export interface ActivationResponse {
   success: boolean
-  message: string
+  message?: string
   data?: {
     key: string
     status: 'active' | 'expired' | 'pending' | 'invalid' | 'available' | 'revoked' | 'assigned'
@@ -82,7 +82,7 @@ export const activationApi = {
     if (window.electronAPI?.activateKey) {
       try {
         const result = await window.electronAPI.activateKey({ key, deviceId, deviceInfo })
-        if (result) return result
+        if (result) return result as unknown as ActivationResponse
       } catch (e) { console.error('IPC activateKey failed:', e) }
     }
 
@@ -103,7 +103,7 @@ export const activationApi = {
     if (window.electronAPI?.validateKey) {
       try {
         const result = await window.electronAPI.validateKey({ key, deviceId })
-        if (result) return result
+        if (result) return result as unknown as ActivationResponse
       } catch (e) { console.error('IPC validateKey failed:', e) }
     }
 
@@ -124,7 +124,7 @@ export const activationApi = {
     if (window.electronAPI?.checkKeyStatus) {
       try {
         const result = await window.electronAPI.checkKeyStatus({ key })
-        if (result) return result
+        if (result) return result as unknown as ActivationResponse
       } catch (e) { console.error('IPC checkStatus failed:', e) }
     }
 
@@ -142,7 +142,7 @@ export const activationApi = {
     if (window.electronAPI?.resetDevice) {
       try {
         const result = await window.electronAPI.resetDevice({ key, deviceId, token })
-        if (result) return result
+        if (result) return result as unknown as ActivationResponse
       } catch (e) { console.error('IPC resetDevice failed:', e) }
     }
 
@@ -171,7 +171,7 @@ export const activationApi = {
     if (window.electronAPI?.login) {
       try {
         const result = await window.electronAPI.login({ email, password, serial, deviceFingerprint, deviceInfo })
-        if (result) return result
+        if (result) return result as unknown as LoginResponse
       } catch (e) { console.error('IPC login failed:', e) }
     }
 

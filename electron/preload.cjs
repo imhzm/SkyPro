@@ -166,6 +166,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbInsert: (data) => ipcRenderer.invoke('db-insert', data),
   dbUpdate: (data) => ipcRenderer.invoke('db-update', data),
   dbDelete: (data) => ipcRenderer.invoke('db-delete', data),
+  clearLeadsByPlatform: (data) => ipcRenderer.invoke('clear-leads-by-platform', data),
+  dbCount: (data) => ipcRenderer.invoke('db-count', data),
 
   // Export
   exportToCSV: (data) => ipcRenderer.invoke('export-csv', data),

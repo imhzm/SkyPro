@@ -36,7 +36,7 @@ export default function SnapchatModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.snapchatLogin({ username: loginForm.username, password: loginForm.password, headless: false, proxy: loginForm.proxy || undefined })
-      if (res.success) { setSessionId(res.sessionId); showMsg(res.message || 'تم تسجيل الدخول بنجاح!'); await loadAllAccounts() }
+      if (res.success) { setSessionId(res.sessionId || ''); showMsg(res.message || 'تم تسجيل الدخول بنجاح!'); await loadAllAccounts() }
       else showMsg(res.error || 'فشل تسجيل الدخول', true)
     } catch (err: any) { showMsg(err.message || 'خطأ في الاتصال', true) }
     setLoading(false)
@@ -46,11 +46,11 @@ export default function SnapchatModule() {
     setLoading(true)
     const sessionCheck = await checkSession()
     if (sessionCheck.alreadyLoggedIn) { showMsg(`جلسة نشطة - مسجل دخول بحساب ${account.username}`); setLoading(false); return }
-    const hasPass = !!(account.password && account.password.trim())
+    const hasPass = (!!account.has_password || !!(account.password && account.password.trim()))
     if (!hasPass) { setLoginForm({ ...loginForm, username: account.username, password: '' }); setTimeout(() => passwordRef.current?.focus(), 100); showMsg('هذا الحساب ليس لديه كلمة مرور محفوظة. يرجى إدخال كلمة المرور يدوياً.', true); setLoading(false); return }
     setLoginForm({ ...loginForm, username: account.username, password: account.password || '' })
     try {
-      const res = await window.electronAPI.snapchatLogin({ username: account.username, password: account.password, headless: false, proxy: account.proxy || loginForm.proxy || undefined })
+      const res = await window.electronAPI.snapchatLogin({ accountId: account.id, username: account.username, password: account.password, headless: false, proxy: account.proxy || loginForm.proxy || undefined })
       if (res.success) { setSessionId(res.sessionId || 'snapchat-session'); showMsg(`تم تسجيل الدخول بحساب ${account.username}!`); await loadAllAccounts() }
       else showMsg(res.error || 'فشل تسجيل الدخول', true)
     } catch (err: any) { showMsg(err.message || 'خطأ في الاتصال', true) }
@@ -61,7 +61,7 @@ export default function SnapchatModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.launchBrowser({ platform: 'snapchat', headless: false })
-      if (res.success) { setSessionId(res.sessionId); showMsg('تم فتح المتصفح - سجل دخول يدوياً') }
+      if (res.success) { setSessionId(res.sessionId || ''); showMsg('تم فتح المتصفح - سجل دخول يدوياً') }
       else showMsg(res.error || 'فشل فتح المتصفح', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
@@ -74,7 +74,7 @@ export default function SnapchatModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.snapchatBroadcast({ sessionId, usernames: recipients, message: broadcastMessage })
-      if (res.success) { setToolResults(res.data || [{ status: 'opened', message: res.message }]); showMsg(res.message || 'تم فتح Snapchat Web') }
+      if (res.success) { setToolResults((res as any).data || [{ status: 'opened', message: (res as any).message }]); showMsg((res as any).message || 'تم فتح Snapchat Web') }
       else showMsg(res.error || 'فشل العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)

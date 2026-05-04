@@ -10,9 +10,12 @@
     "dev": "node scripts/dev-runner.mjs",
     "dev:renderer": "vite --host 127.0.0.1 --port 5180",
     "dev:electron": "cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5180 electron .",
+    "guard:runtime-data": "node scripts/assert-clean-runtime-data.mjs",
+    "prebuild:renderer": "npm run guard:runtime-data",
     "build": "npm run build:renderer",
     "build:renderer": "tsc -b && vite build",
     "build:desktop": "npm run build:renderer && electron-builder",
+    "test:security": "node --test scripts/export-sanitizers.test.mjs",
     "lint": "eslint .",
     "preview": "vite preview"
   },

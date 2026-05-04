@@ -14,17 +14,20 @@ export default function AccountModule() {
     const loadStats = async () => {
       try {
         const [leads, accounts, campaigns] = await Promise.all([
-          window.electronAPI.dbQuery({ table: 'leads', filters: [] }),
-          window.electronAPI.dbQuery({ table: 'accounts', filters: [] }),
-          window.electronAPI.dbQuery({ table: 'campaigns', filters: [] }),
+          window.electronAPI.dbCount({ table: 'leads', filters: [] }),
+          window.electronAPI.dbCount({ table: 'accounts', filters: [] }),
+          window.electronAPI.dbCount({ table: 'campaigns', filters: [] }),
         ])
-        setStats({ leads: leads.data?.length || 0, accounts: accounts.data?.length || 0, campaigns: campaigns.data?.length || 0 })
+        setStats({ leads: leads.count || 0, accounts: accounts.count || 0, campaigns: campaigns.count || 0 })
       } catch (err: any) { setError('فشل تحميل الإحصائيات'); console.error('Failed to load stats:', err.message) }
     }
     const loadProfile = async () => {
       try {
-        const res = await window.electronAPI.dbQuery({ table: 'accounts', filters: [{ column: 'platform', op: '=', value: 'facebook' }], limit: 1 })
-        if (res.data && res.data[0]) setProfile({ name: res.data[0].username || '', email: res.data[0].notes || '', phone: '' })
+        // P2-19: Decouple profile from accounts table. Use settings/local storage or generic data.
+        const storedName = localStorage.getItem('profile_name') || ''
+        const storedEmail = localStorage.getItem('profile_email') || ''
+        const storedPhone = localStorage.getItem('profile_phone') || ''
+        setProfile({ name: storedName, email: storedEmail, phone: storedPhone })
       } catch (err: any) { console.error('Failed to load profile:', err.message) }
     }
     loadStats()
@@ -34,12 +37,11 @@ export default function AccountModule() {
   const handleSaveProfile = async () => {
     setLoading(true)
     try {
-      const res = await window.electronAPI.dbQuery({ table: 'accounts', filters: [], limit: 1 })
-      if (res.success && res.data && res.data.length > 0) {
-        await window.electronAPI.dbUpdate({ table: 'accounts', id: res.data[0].id, data: { notes: profile.email } })
-        setMessage('تم حفظ البيانات')
-        setTimeout(() => setMessage(''), 3000)
-      } else { setError('لا يوجد حساب لحفظ البيانات'); setTimeout(() => setError(''), 3000) }
+      localStorage.setItem('profile_name', profile.name)
+      localStorage.setItem('profile_email', profile.email)
+      localStorage.setItem('profile_phone', profile.phone)
+      setMessage('تم حفظ البيانات بنجاح')
+      setTimeout(() => setMessage(''), 3000)
     } catch (err: any) { setError(err.message || 'فشل الحفظ'); setTimeout(() => setError(''), 3000) }
     setLoading(false)
   }

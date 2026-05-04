@@ -40,7 +40,7 @@ export default function TelegramModule() {
     try {
       const res = await window.electronAPI.telegramLogin({ phoneNumber, headless: false, proxy })
       if (res.success) {
-        setSessionId(res.sessionId)
+        setSessionId(res.sessionId || '')
         if (res.needsCode) { setNeedsCode(true); showMsg('أدخل كود التحقق المرسل لهاتفك') }
         else { setNeedsCode(false); showMsg(res.message || 'تم فتح Telegram بنجاح') }
         await loadAccounts()
@@ -67,7 +67,7 @@ export default function TelegramModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.telegramExtractMembers({ sessionId, groupUrl, limit: extractLimit })
-      if (res.success) { setToolResults(res.data || []); showMsg(`تم استخراج ${res.count || (res.data || []).length} عضو`); await loadResults() }
+      if (res.success) { setToolResults((res.data as any[]) || []); showMsg(`تم استخراج ${res.count || ((res.data as any[]) || []).length} عضو`); await loadResults() }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
@@ -80,7 +80,7 @@ export default function TelegramModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.telegramSendMessages({ sessionId, recipients, message: broadcastMessage })
-      if (res.success) { const ok = (res.data || []).filter((x: any) => x.status === 'sent').length; showMsg(`تم إرسال ${ok} من ${recipients.length} رسالة`); setToolResults(res.data || []) }
+      if (res.success) { const ok = ((res.data as any[]) || []).filter((x: any) => x.status === 'sent').length; showMsg(`تم إرسال ${ok} من ${recipients.length} رسالة`); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
@@ -93,7 +93,7 @@ export default function TelegramModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.telegramAddUsers({ sessionId, groupUsername: addGroup, users })
-      if (res.success) { const ok = (res.data || []).filter((x: any) => x.status === 'added').length; showMsg(`تم إضافة ${ok} من ${users.length} مستخدم`); setToolResults(res.data || []) }
+      if (res.success) { const ok = ((res.data as any[]) || []).filter((x: any) => x.status === 'added').length; showMsg(`تم إضافة ${ok} من ${users.length} مستخدم`); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
