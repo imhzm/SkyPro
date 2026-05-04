@@ -40,7 +40,7 @@ export default function LinkedinModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.linkedinLogin({ username: loginForm.username, password: loginForm.password, headless: false, proxy: loginForm.proxy || undefined })
-      if (res.success) { setSessionId(res.sessionId); showMsg('تم تسجيل الدخول بنجاح!'); await loadAccounts() }
+      if (res.success) { setSessionId(res.sessionId || ''); showMsg('تم تسجيل الدخول بنجاح!'); await loadAccounts() }
       else showMsg(res.error || 'فشل تسجيل الدخول', true)
     } catch (err: any) { showMsg(err.message || 'خطأ في الاتصال', true) }
     setLoading(false)
@@ -54,7 +54,7 @@ export default function LinkedinModule() {
       setLoading(false)
       return
     }
-    const hasPass = !!(account.password && account.password.trim())
+    const hasPass = (!!account.has_password || !!(account.password && account.password.trim()))
     if (!hasPass) {
       setLoginForm({ ...loginForm, username: account.username, password: '' })
       setTimeout(() => passwordRef.current?.focus(), 100)
@@ -64,8 +64,8 @@ export default function LinkedinModule() {
     }
     setLoginForm({ ...loginForm, username: account.username, password: account.password || '' })
     try {
-      const res = await window.electronAPI.linkedinLogin({ username: account.username, password: account.password, headless: false, proxy: account.proxy || loginForm.proxy || undefined })
-      if (res.success) { setSessionId(res.sessionId); showMsg(`تم تسجيل الدخول بحساب ${account.username}!`); await loadAllAccounts() }
+      const res = await window.electronAPI.linkedinLogin({ accountId: account.id, username: account.username, password: account.password, headless: false, proxy: account.proxy || loginForm.proxy || undefined })
+      if (res.success) { setSessionId(res.sessionId || ''); showMsg(`تم تسجيل الدخول بحساب ${account.username}!`); await loadAllAccounts() }
       else showMsg(res.error || 'فشل تسجيل الدخول', true)
     } catch (err: any) { showMsg(err.message || 'خطأ في الاتصال', true) }
     setLoading(false)
@@ -77,7 +77,7 @@ export default function LinkedinModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.linkedinSearch({ sessionId, query: searchQuery, type: searchType, limit: extractLimit })
-      if (res.success) { setToolResults(res.data || []); showMsg(`تم العثور على ${res.count || 0} نتيجة`); await loadResults() }
+      if (res.success) { setToolResults((res.data as any[]) || []); showMsg(`تم العثور على ${res.count || 0} نتيجة`); await loadResults() }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
@@ -88,7 +88,7 @@ export default function LinkedinModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.linkedinExtractCompanies({ sessionId, searchUrl: extractUrl || `https://www.linkedin.com/search/results/companies/?keywords=${encodeURIComponent(searchQuery)}`, limit: extractLimit })
-      if (res.success) { setToolResults(res.data || []); showMsg(`تم استخراج ${res.count || 0} شركة`); await loadResults() }
+      if (res.success) { setToolResults((res.data as any[]) || []); showMsg(`تم استخراج ${res.count || 0} شركة`); await loadResults() }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
@@ -101,7 +101,7 @@ export default function LinkedinModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.linkedinSendMessages({ sessionId, recipients, message: broadcastMessage })
-      if (res.success) { const ok = (res.data || []).filter((x: any) => x.status === 'sent').length; showMsg(`تم إرسال ${ok} من ${recipients.length} رسالة`); setToolResults(res.data || []) }
+      if (res.success) { const ok = ((res.data as any[]) || []).filter((x: any) => x.status === 'sent').length; showMsg(`تم إرسال ${ok} من ${recipients.length} رسالة`); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)

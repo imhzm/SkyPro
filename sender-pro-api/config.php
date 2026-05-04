@@ -140,11 +140,11 @@ function cleanInput($value, $maxLength = 255) {
     return substr($value, 0, $maxLength);
 }
 
-// Helper: generate activation key (cryptographically secure)
+// Helper: generate activation key (cryptographically secure, 128-bit entropy)
 function generateKey() {
     $parts = [];
     for ($i = 0; $i < 4; $i++) {
-        $parts[] = strtoupper(bin2hex(random_bytes(2)));
+        $parts[] = strtoupper(bin2hex(random_bytes(4)));
     }
     return implode('-', $parts);
 }

@@ -42,7 +42,7 @@ export default function GoogleModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.googleMapsExtract({ searchQuery: mapsQuery, location: mapsLocation, limit: mapsLimit })
-      if (res.success && res.data) { setMapsResults(res.data || []); showMsg(`تم استخراج ${res.count ?? res.data?.length ?? 0}`) }
+      if (res.success && res.data) { setMapsResults((res.data as any[]) || []); showMsg(`تم استخراج ${res.count ?? res.data?.length ?? 0}`) }
       else showMsg(res.error || 'فشل الاستخراج', true)
     } catch (err: any) { showMsg(err.message || 'خطأ', true) }
     setLoading(false)
@@ -52,7 +52,7 @@ export default function GoogleModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.olxExtract({ country: olxCountry, category: olxCategory, limit: olxLimit })
-      if (res.success && res.data) { setOlxResults(res.data || []); showMsg(`تم استخراج ${res.count ?? res.data?.length ?? 0}`) }
+      if (res.success && res.data) { setOlxResults((res.data as any[]) || []); showMsg(`تم استخراج ${res.count ?? res.data?.length ?? 0}`) }
       else showMsg(res.error || 'فشل الاستخراج', true)
     } catch (err: any) { showMsg(err.message || 'خطأ', true) }
     setLoading(false)
@@ -74,7 +74,7 @@ export default function GoogleModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.launchBrowser({ platform: 'google', headless: false, proxy: loginForm.proxy || undefined })
-      if (res.success) { setSessionId(res.sessionId); showMsg('تم فتح المتصفح - سجل الدخول بحساب Google') }
+      if (res.success) { setSessionId(res.sessionId || ''); showMsg('تم فتح المتصفح - سجل الدخول بحساب Google') }
       else showMsg(res.error || 'فشل فتح المتصفح', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
@@ -89,7 +89,7 @@ export default function GoogleModule() {
     if (!account.password?.trim()) { showMsg('هذا الحساب ليس لديه كلمة مرور محفوظة.', true); setLoading(false); return }
     try {
       const res = await window.electronAPI.launchBrowser({ platform: 'google', headless: false, proxy: proxyToUse })
-      if (res.success) { setSessionId(res.sessionId); showMsg(`تم فتح المتصفح - سجل الدخول بحساب ${account.username}`) }
+      if (res.success) { setSessionId(res.sessionId || ''); showMsg(`تم فتح المتصفح - سجل الدخول بحساب ${account.username}`) }
       else showMsg(res.error || 'فشل فتح المتصفح', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)

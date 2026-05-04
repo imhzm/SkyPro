@@ -44,7 +44,7 @@ export default function TwitterModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.twitterLogin({ username: loginForm.username, password: loginForm.password, headless: false, proxy: loginForm.proxy || undefined })
-      if (res.success) { setSessionId(res.sessionId); showMsg('تم تسجيل الدخول بنجاح!'); await loadAccounts() }
+      if (res.success) { setSessionId(res.sessionId || ''); showMsg('تم تسجيل الدخول بنجاح!'); await loadAccounts() }
       else showMsg(res.error || 'فشل تسجيل الدخول', true)
     } catch (err: any) { showMsg(err.message || 'خطأ في الاتصال', true) }
     setLoading(false)
@@ -58,7 +58,7 @@ export default function TwitterModule() {
       setLoading(false)
       return
     }
-    const hasPass = !!(account.password && account.password.trim())
+    const hasPass = (!!account.has_password || !!(account.password && account.password.trim()))
     if (!hasPass) {
       setLoginForm({ ...loginForm, username: account.username, password: '' })
       setTimeout(() => passwordRef.current?.focus(), 100)
@@ -68,8 +68,8 @@ export default function TwitterModule() {
     }
     setLoginForm({ ...loginForm, username: account.username, password: account.password || '' })
     try {
-      const res = await window.electronAPI.twitterLogin({ username: account.username, password: account.password, headless: false, proxy: account.proxy || loginForm.proxy || undefined })
-      if (res.success) { setSessionId(res.sessionId); showMsg(`تم تسجيل الدخول بحساب ${account.username}!`); await loadAllAccounts() }
+      const res = await window.electronAPI.twitterLogin({ accountId: account.id, username: account.username, password: account.password, headless: false, proxy: account.proxy || loginForm.proxy || undefined })
+      if (res.success) { setSessionId(res.sessionId || ''); showMsg(`تم تسجيل الدخول بحساب ${account.username}!`); await loadAllAccounts() }
       else showMsg(res.error || 'فشل تسجيل الدخول', true)
     } catch (err: any) { showMsg(err.message || 'خطأ في الاتصال', true) }
     setLoading(false)
@@ -81,7 +81,7 @@ export default function TwitterModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.twitterExtractFollowers({ sessionId, username: extractUser, limit: extractLimit })
-      if (res.success) { setToolResults(res.data || []); showMsg(`تم استخراج ${res.count || 0} متابع`); await loadResults() }
+      if (res.success) { setToolResults((res.data as any[]) || []); showMsg(`تم استخراج ${res.count || 0} متابع`); await loadResults() }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
@@ -118,7 +118,7 @@ export default function TwitterModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.twitterFollow({ sessionId, usernames })
-      if (res.success) { const ok = (res.data || []).filter((x: any) => x.status === 'followed').length; showMsg(`تمت متابعة ${ok} من ${usernames.length} حساب`); setToolResults(res.data || []) }
+      if (res.success) { const ok = ((res.data as any[]) || []).filter((x: any) => x.status === 'followed').length; showMsg(`تمت متابعة ${ok} من ${usernames.length} حساب`); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
@@ -131,7 +131,7 @@ export default function TwitterModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.twitterRetweet({ sessionId, tweetUrls: urls })
-      if (res.success) { const ok = (res.data || []).filter((x: any) => x.status === 'retweeted').length; showMsg(`تم الريتويت ${ok} من ${urls.length}`); setToolResults(res.data || []) }
+      if (res.success) { const ok = ((res.data as any[]) || []).filter((x: any) => x.status === 'retweeted').length; showMsg(`تم الريتويت ${ok} من ${urls.length}`); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
@@ -144,7 +144,7 @@ export default function TwitterModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.runTool({ platform: 'twitter', toolId: 'mention', toolName: 'منشن تويتر', params: { sessionId, postUrl: mentionTweetUrl, mentions, message: mentionMessage } })
-      if (res.success) { showMsg('تم المنشن بنجاح'); setToolResults(res.data || []) }
+      if (res.success) { showMsg('تم المنشن بنجاح'); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)

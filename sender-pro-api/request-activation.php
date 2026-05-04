@@ -1,7 +1,7 @@
 <?php
-// request-activation.php - Generate serial and send activation email
+// request-activation.php - Create a pending activation request
 // Endpoint: POST /request-activation
-// Auto-approves requests (serial acts as the verification token)
+// Public requests never create or return activation credentials.
 
 require_once 'config.php';
 
@@ -30,33 +30,24 @@ $user = $stmt->fetch();
 
 if (!$user) {
     // Don't reveal that user doesn't exist (security)
-    sendResponse(true, 'If the email exists, activation details will be sent.');
+    sendResponse(true, 'If the email exists, an activation request will be recorded.');
 }
 
-// Generate cryptographically secure activation key
-$key = generateKey();
-
-// Calculate expiry date
+// Calculate requested expiry date. Admin approval is responsible for issuing a real key.
 $expiryDate = date('Y-m-d', strtotime("+$subscriptionMonths months"));
 
-// Insert activation key with pending status
-$stmt = $pdo->prepare('INSERT INTO activation_keys (`key`, status, expiry_date) VALUES (?, ?, ?)');
-$stmt->execute([$key, 'pending', $expiryDate]);
+// Store a request reference only. This is not an activation serial and cannot be redeemed.
+$requestRef = 'REQ-' . strtoupper(bin2hex(random_bytes(8)));
+$pendingKeyMarker = 'PENDING-REQUEST';
 
-// Generate secure serial (48 chars: 32 hex + 16 alphanumeric)
-$serial = generateSerial();
+$stmt = $pdo->prepare('INSERT INTO activation_requests (user_email, `key`, serial, status, approved_at) VALUES (?, ?, ?, ?, NULL)');
+$stmt->execute([$email, $pendingKeyMarker, $requestRef, 'pending']);
 
-// Save activation request (auto-approved)
-$stmt = $pdo->prepare('INSERT INTO activation_requests (user_email, `key`, serial, status, approved_at) VALUES (?, ?, ?, ?, NOW())');
-$stmt->execute([$email, $key, $serial, 'approved']);
-
-// Send email with serial
-$subject = 'Sky Wave Pro - Activation Details';
-$message = "Hello,\n\nYour activation details for Sky Wave Pro:\n\n";
-$message .= "Serial: $serial\n";
-$message .= "Key: $key\n";
-$message .= "Expiry Date: $expiryDate\n\n";
-$message .= "Use this serial along with your email and password to login to the application.\n\n";
+$subject = 'Sky Wave Pro - Activation Request Received';
+$message = "Hello,\n\nWe received your Sky Wave Pro activation request.\n\n";
+$message .= "Request reference: $requestRef\n";
+$message .= "Requested expiry date: $expiryDate\n\n";
+$message .= "An administrator must approve the request before any activation key is issued.\n\n";
 $message .= "Thank you for choosing Sky Wave Pro!";
 
 $headers = "From: admin@skywaveads.com\r\n";
@@ -64,10 +55,7 @@ $headers .= "Reply-To: admin@skywaveads.com\r\n";
 $headers .= "Content-Type: text/plain; charset=utf-8\r\n";
 $headers .= "X-Mailer: PHP/" . phpversion();
 
-// Log the action
-$serialMask = substr($serial, 0, 6) . '...' . substr($serial, -6);
-$keyMask = substr($key, 0, 4) . '...' . substr($key, -4);
-logAction($pdo, 'activation_request', "Email: $email, Serial: $serialMask, Key: $keyMask, IP: $clientIP");
+logAction($pdo, 'activation_request_pending', "Email: $email, Request: $requestRef, IP: $clientIP");
 
 // Try to send email
 $mailSent = false;
@@ -75,14 +63,10 @@ if (function_exists('mail')) {
     $mailSent = @mail($email, $subject, $message, $headers);
 }
 
-$shouldReturnDetails = strtolower(getenv('RETURN_ACTIVATION_DETAILS') ?: 'false') === 'true';
 $data = [
+    'requestReference' => $requestRef,
     'expiryDate' => $expiryDate,
     'emailSent' => $mailSent
 ];
-if ($shouldReturnDetails) {
-    $data['serial'] = $serial;
-    $data['key'] = $key;
-}
 
-sendResponse(true, $mailSent ? 'Activation details sent via email' : 'Activation request processed (email may be delayed)', $data);
+sendResponse(true, $mailSent ? 'Activation request received' : 'Activation request received (email may be delayed)', $data);

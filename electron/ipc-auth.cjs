@@ -1,10 +1,14 @@
 const os = require('os')
 const crypto = require('crypto')
+const fs = require('fs')
+const path = require('path')
+const { app } = require('electron')
 
 const WEB_API_URL = 'https://skypro.skywaveads.com/api'
 const SERVER_API_URL = 'https://skypro.skywaveads.com/sender-pro-api'
 const OFFLINE_FALLBACK_ENABLED = process.env.SKYPRO_ALLOW_OFFLINE_KEY_FALLBACK === 'true'
 const NETWORK_TIMEOUT_MS = 20_000
+const INSTALL_ID_FILE = 'install-id'
 
 function normalizeText(value, max = 256) {
   return typeof value === 'string' ? value.trim().slice(0, max) : ''
@@ -31,8 +35,23 @@ async function fetchJson(url, options = {}) {
   }
 }
 
+function getInstallId() {
+  const userDataPath = app.getPath('userData')
+  fs.mkdirSync(userDataPath, { recursive: true })
+  const installIdPath = path.join(userDataPath, INSTALL_ID_FILE)
+  try {
+    const existing = fs.readFileSync(installIdPath, 'utf8').trim()
+    if (/^[a-f0-9-]{32,64}$/i.test(existing)) return existing
+  } catch {}
+
+  const installId = crypto.randomUUID()
+  fs.writeFileSync(installIdPath, installId, { encoding: 'utf8', mode: 0o600 })
+  return installId
+}
+
 function generateDeviceFingerprint() {
   const components = [
+    getInstallId(),
     os.hostname(),
     os.platform(),
     os.arch(),
@@ -102,11 +121,10 @@ function normalizeWebActivationResult(result, fallbackKey, fallbackDeviceId) {
 }
 
 function registerAuthIPC({ ipcm, bm, db }) {
-  ipcm('activate-key', async (e, { key, deviceId } = {}) => {
+  ipcm('activate-key', async (e, { key } = {}) => {
     key = normalizeText(key, 80)
-    deviceId = normalizeText(deviceId, 256)
     const deviceInfo = getDeviceCapabilities()
-    const fingerprint = deviceId || deviceInfo.fingerprint
+    const fingerprint = deviceInfo.fingerprint
     deviceInfo.fingerprint = fingerprint
     try {
       const { data: result } = await fetchJson(`${WEB_API_URL}/auth/verify-device`, {
@@ -130,11 +148,10 @@ function registerAuthIPC({ ipcm, bm, db }) {
     return { success: false, message: 'فشل التحقق من الخادم. أعد المحاولة عند توفر اتصال.' }
   })
 
-  ipcm('validate-key', async (e, { key, deviceId } = {}) => {
+  ipcm('validate-key', async (e, { key } = {}) => {
     key = normalizeText(key, 80)
-    deviceId = normalizeText(deviceId, 256)
     const deviceInfo = getDeviceCapabilities()
-    const fingerprint = deviceId || deviceInfo.fingerprint
+    const fingerprint = deviceInfo.fingerprint
     deviceInfo.fingerprint = fingerprint
     try {
       const { data: result } = await fetchJson(`${WEB_API_URL}/auth/verify-device`, {
@@ -192,11 +209,12 @@ function registerAuthIPC({ ipcm, bm, db }) {
     return { success: false, message: 'فشل الاتصال بالخادم' }
   })
 
-  ipcm('login', async (e, { email, password, serial, deviceFingerprint, deviceInfo } = {}) => {
+  ipcm('login', async (e, { email, password, serial } = {}) => {
     email = normalizeText(email, 254).toLowerCase()
     password = typeof password === 'string' ? password.slice(0, 512) : ''
     serial = normalizeText(serial, 80).toUpperCase()
-    deviceFingerprint = normalizeText(deviceFingerprint, 256)
+    const deviceInfo = getDeviceCapabilities()
+    const deviceFingerprint = deviceInfo.fingerprint
     try {
       const { data: result } = await fetchJson(`${WEB_API_URL}/desktop/login`, {
         method: 'POST',

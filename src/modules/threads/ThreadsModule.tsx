@@ -41,7 +41,7 @@ export default function ThreadsModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.threadsLogin({ username: loginForm.username, password: loginForm.password, headless: false, proxy: loginForm.proxy || undefined })
-      if (res.success) { setSessionId(res.sessionId); showMsg(res.message || 'تم تسجيل الدخول بنجاح!'); await loadAllAccounts() }
+      if (res.success) { setSessionId(res.sessionId || ''); showMsg(res.message || 'تم تسجيل الدخول بنجاح!'); await loadAllAccounts() }
       else showMsg(res.error || 'فشل تسجيل الدخول', true)
     } catch (err: any) { showMsg(err.message || 'خطأ في الاتصال', true) }
     setLoading(false)
@@ -51,11 +51,11 @@ export default function ThreadsModule() {
     setLoading(true)
     const sessionCheck = await checkSession()
     if (sessionCheck.alreadyLoggedIn) { showMsg(`جلسة نشطة - مسجل دخول بحساب ${account.username}`); setLoading(false); return }
-    const hasPass = !!(account.password && account.password.trim())
+    const hasPass = (!!account.has_password || !!(account.password && account.password.trim()))
     if (!hasPass) { setLoginForm({ ...loginForm, username: account.username, password: '' }); setTimeout(() => passwordRef.current?.focus(), 100); showMsg('هذا الحساب ليس لديه كلمة مرور محفوظة.', true); setLoading(false); return }
     setLoginForm({ ...loginForm, username: account.username, password: account.password || '' })
     try {
-      const res = await window.electronAPI.threadsLogin({ username: account.username, password: account.password, headless: false, proxy: account.proxy || loginForm.proxy || undefined })
+      const res = await window.electronAPI.threadsLogin({ accountId: account.id, username: account.username, password: account.password, headless: false, proxy: account.proxy || loginForm.proxy || undefined })
       if (res.success) { setSessionId(res.sessionId || 'threads-session'); showMsg(`تم تسجيل الدخول بحساب ${account.username}!`); await loadAllAccounts() }
       else showMsg(res.error || 'فشل تسجيل الدخول', true)
     } catch (err: any) { showMsg(err.message || 'خطأ في الاتصال', true) }
@@ -66,7 +66,7 @@ export default function ThreadsModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.launchBrowser({ platform: 'threads', headless: false })
-      if (res.success) { setSessionId(res.sessionId); showMsg('تم فتح المتصفح') }
+      if (res.success) { setSessionId(res.sessionId || ''); showMsg('تم فتح المتصفح') }
       else showMsg(res.error || 'فشل فتح المتصفح', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
@@ -78,7 +78,7 @@ export default function ThreadsModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.threadsExtract({ sessionId, url: extractUrl, limit: extractLimit })
-      if (res.success) { setToolResults(res.data || []); showMsg(`تم استخراج ${res.count || (res.data || []).length}`); await loadResults() }
+      if (res.success) { setToolResults((res.data as any[]) || []); showMsg(`تم استخراج ${res.count || ((res.data as any[]) || []).length}`); await loadResults() }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
@@ -91,7 +91,7 @@ export default function ThreadsModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.threadsMention({ sessionId, postUrl: mentionUrl, mentions, message: mentionMessage })
-      if (res.success) { showMsg('تم المنشن بنجاح'); setToolResults(res.data || []) }
+      if (res.success) { showMsg('تم المنشن بنجاح'); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)

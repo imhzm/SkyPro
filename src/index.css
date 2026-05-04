@@ -527,3 +527,10 @@ input[type="range"]::-moz-range-thumb {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
 }
+
+/* P2-15: Accessibility Focus Visible */
+*:focus-visible {
+  outline: 2px solid #8B2CF5;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(139, 44, 245, 0.15);
+}

@@ -45,7 +45,7 @@ export default function TiktokModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.launchBrowser({ platform: 'tiktok', headless: false, proxy: loginForm.proxy || undefined })
-      if (res.success) { setSessionId(res.sessionId); showMsg('تم فتح المتصفح - سجل دخول يدوياً على TikTok'); await loadAllAccounts() }
+      if (res.success) { setSessionId(res.sessionId || ''); showMsg('تم فتح المتصفح - سجل دخول يدوياً على TikTok'); await loadAllAccounts() }
       else showMsg(res.error || 'فشل فتح المتصفح', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
@@ -59,7 +59,7 @@ export default function TiktokModule() {
       let res: any
       if (extractType === 'comments') res = await window.electronAPI.tiktokExtractComments({ sessionId, videoUrl: extractInput, limit: extractLimit })
       else res = await window.electronAPI.tiktokExtractFollowers({ sessionId, username: extractInput.replace('@', ''), limit: extractLimit })
-      if (res.success) { setToolResults(res.data || []); showMsg(`تم استخراج ${res.count || (res.data || []).length}`); await loadResults() }
+      if (res.success) { setToolResults((res.data as any[]) || []); showMsg(`تم استخراج ${res.count || ((res.data as any[]) || []).length}`); await loadResults() }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)

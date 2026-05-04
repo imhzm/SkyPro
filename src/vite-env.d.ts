@@ -1,179 +1,395 @@
+/// <reference types="vite/client" />
+
 export {}
 
+// ==================== Common IPC Response Types ====================
+interface IpcSuccess<T = unknown> {
+  success: true
+  message?: string
+  data?: T
+  [key: string]: unknown
+}
+
+interface IpcError {
+  success: false
+  error?: string
+  message?: string
+  [key: string]: unknown
+}
+
+type IpcResult<T = unknown> = IpcSuccess<T> | IpcError
+
+interface BrowserLaunchResult {
+  success: boolean
+  sessionId?: string
+  message?: string
+  error?: string
+  needsQR?: boolean
+  [key: string]: unknown
+}
+
+interface PlatformSessionResult extends BrowserLaunchResult {
+  alreadyLoggedIn?: boolean
+  url?: string
+}
+
+interface LoginResult {
+  success: boolean
+  message?: string
+  error?: string
+  sessionId?: string
+  needsCode?: boolean
+  [key: string]: unknown
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+interface ExtractionResult {
+  success: boolean
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  data?: any
+  count?: number
+  jobId?: string
+  cancelled?: boolean
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  partialData?: any
+  error?: string
+  [key: string]: unknown
+}
+
+interface ExtractionProgress {
+  type: string
+  count: number
+  total: number
+  data?: Record<string, unknown>[]
+}
+
+interface RememberedLogin {
+  email: string
+  password?: string
+  serial: string
+  remember: boolean
+}
+
+interface DeviceInfo {
+  fingerprint: string
+  hostname: string
+  platform: string
+  arch: string
+  cpu: string
+  cpuCores: number
+  ram: string
+}
+
+interface ActivationData {
+  key: string
+  status: string
+  expiryDate?: string
+  expiresAt?: string
+  deviceId?: string
+  maxDevices?: number
+}
+
+interface ProxyRecord {
+  id: number
+  label: string
+  host: string
+  port: string
+  protocol: string
+  accountId?: number
+  username?: string
+  hasPassword: boolean
+  status: string
+  created_at: string
+}
+
+interface SmtpRecord {
+  id: number
+  email: string
+  hasPassword: boolean
+  host: string
+  port: number
+  ssl: string
+  created_at: string
+}
+
+interface SecuritySettings {
+  enabled: number | boolean
+  randomDelays: number | boolean
+  minDelay: number
+  maxDelay: number
+  maxActionsPerHour: number
+  rotateUserAgent: number | boolean
+  randomizeViewport: number | boolean
+  useStealthMode: number | boolean
+  maxRetries: number
+}
+
+interface CampaignRecord {
+  id: number
+  name: string
+  platform: string
+  type: string
+  status: string
+  results: string
+  scheduled_at: string
+  data: string
+  created_at: string
+}
+
+interface DbQueryParams {
+  table: string
+  filters?: Array<{ column: string; op: string; value: unknown }>
+  limit?: number
+  where?: string
+}
+
+interface DbInsertParams {
+  table: string
+  data: Record<string, unknown>
+}
+
+interface DbUpdateParams {
+  table: string
+  id: number
+  data: Record<string, unknown>
+}
+
+interface DbDeleteParams {
+  table: string
+  id: number
+}
+
+interface SmtpSendParams {
+  smtp: { host: string; port: number; email: string; password?: string; ssl?: string }
+  to: string | string[]
+  subject: string
+  body: string
+  attachments?: unknown[]
+}
+
+interface ExportParams {
+  filename?: string
+  data: Record<string, unknown>[]
+  headers: string[]
+}
+
+// Platform-specific login params
+interface PlatformLoginParams {
+  accountId?: number
+  username?: string
+  password?: string
+  headless?: boolean
+  proxy?: string
+  phoneNumber?: string
+  [key: string]: unknown
+}
+
+interface PlatformSearchParams {
+  sessionId: string
+  query: string
+  type?: string
+  limit?: number
+}
+
+interface ExtractionParams {
+  sessionId: string
+  postUrl?: string
+  url?: string
+  username?: string
+  videoUrl?: string
+  limit?: number
+  jobId?: string
+  delayMs?: number
+  [key: string]: unknown
+}
+
+interface MessageParams {
+  sessionId: string
+  message: string
+  users?: string[]
+  usernames?: string[]
+  recipients?: string[]
+  delay?: number
+  [key: string]: unknown
+}
+
+// ==================== Electron API Interface ====================
 declare global {
   interface Window {
     electronAPI: {
       // Browser
-      launchBrowser: (options: any) => Promise<any>
-      closeBrowser: (sessionId: string) => Promise<any>
-      getBrowserStatus: (sessionId: string) => Promise<any>
-      closeAllBrowsers: () => Promise<any>
-      checkPlatformSession: (data: any) => Promise<any>
+      launchBrowser: (options: { headless?: boolean; platform?: string; proxy?: string; profileId?: string }) => Promise<BrowserLaunchResult>
+      closeBrowser: (sessionId: string) => Promise<IpcResult>
+      getBrowserStatus: (sessionId: string) => Promise<IpcResult<{ active: boolean }>>
+      closeAllBrowsers: () => Promise<IpcResult>
+      checkPlatformSession: (data: { platform: string; headless?: boolean }) => Promise<PlatformSessionResult>
 
       // Activation
-      activateKey: (data: any) => Promise<any>
-      validateKey: (data: any) => Promise<any>
-      checkKeyStatus: (data: any) => Promise<any>
-      resetDevice: (data: any) => Promise<any>
-      getDeviceInfo: () => Promise<any>
-      login: (data: any) => Promise<any>
-      getRememberedLogin: () => Promise<any>
-      saveRememberedLogin: (data: any) => Promise<any>
-      clearRememberedLogin: () => Promise<any>
+      activateKey: (data: { key: string; deviceId?: string; deviceInfo?: Record<string, unknown> }) => Promise<IpcResult<ActivationData>>
+      validateKey: (data: { key: string; deviceId?: string }) => Promise<IpcResult<ActivationData>>
+      checkKeyStatus: (data: { key: string }) => Promise<IpcResult<ActivationData>>
+      resetDevice: (data: { key: string; deviceId?: string; token?: string | null }) => Promise<IpcResult>
+      getDeviceInfo: () => Promise<DeviceInfo>
+      login: (data: { email: string; password?: string; serial: string; deviceFingerprint?: string; deviceInfo?: Record<string, unknown> }) => Promise<IpcResult>
+      getRememberedLogin: () => Promise<IpcResult<RememberedLogin>>
+      saveRememberedLogin: (data: Partial<RememberedLogin>) => Promise<IpcResult>
+      clearRememberedLogin: () => Promise<IpcResult>
 
       // Facebook
-      facebookLogin: (data: any) => Promise<any>
-      facebookSearch: (data: any) => Promise<any>
-      facebookExtractPageLikers: (data: any) => Promise<any>
-      facebookExtractComments: (data: any) => Promise<any>
-      facebookExtractGroupMembers: (data: any) => Promise<any>
-      facebookExtractFriends: (data: any) => Promise<any>
-      facebookPostToGroups: (data: any) => Promise<any>
-      facebookSendMessages: (data: any) => Promise<any>
-      facebookMention: (data: any) => Promise<any>
-      facebookSharePost: (data: any) => Promise<any>
-      facebookAutoReply: (data: any) => Promise<any>
-      facebookExtractPageFollowers: (data: any) => Promise<any>
-      facebookSendFriendRequests: (data: any) => Promise<any>
-      facebookDeleteFriends: (data: any) => Promise<any>
-      facebookInteractionFarm: (data: any) => Promise<any>
-      facebookDeletePosts: (data: any) => Promise<any>
-      facebookAnalyzeGroup: (data: any) => Promise<any>
-      facebookUsersToIds: (data: any) => Promise<any>
-      facebookExtractPostDetails: (data: any) => Promise<any>
-      facebookExtractPhones: (data: any) => Promise<any>
-      facebookLinksToIds: (data: any) => Promise<any>
-      facebookSearchGroups: (data: any) => Promise<any>
-      facebookJoinGroups: (data: any) => Promise<any>
-      facebookExtractPageMessengers: (data: any) => Promise<any>
-      facebookExtractProfileMessengers: (data: any) => Promise<any>
-      facebookExtractReviews: (data: any) => Promise<any>
-      facebookPageSendMessages: (data: any) => Promise<any>
-      facebookAddToGroupChat: (data: any) => Promise<any>
-      facebookSendPageMessages: (data: any) => Promise<any>
+      facebookLogin: (data: PlatformLoginParams) => Promise<LoginResult>
+      facebookSearch: (data: PlatformSearchParams) => Promise<ExtractionResult>
+      facebookExtractPageLikers: (data: ExtractionParams) => Promise<ExtractionResult>
+      facebookExtractComments: (data: ExtractionParams) => Promise<ExtractionResult>
+      facebookExtractGroupMembers: (data: ExtractionParams) => Promise<ExtractionResult>
+      facebookExtractFriends: (data: ExtractionParams) => Promise<ExtractionResult>
+      facebookPostToGroups: (data: Record<string, unknown>) => Promise<IpcResult>
+      facebookSendMessages: (data: MessageParams) => Promise<IpcResult>
+      facebookMention: (data: Record<string, unknown>) => Promise<IpcResult>
+      facebookSharePost: (data: Record<string, unknown>) => Promise<IpcResult>
+      facebookAutoReply: (data: Record<string, unknown>) => Promise<IpcResult>
+      facebookExtractPageFollowers: (data: ExtractionParams) => Promise<ExtractionResult>
+      facebookSendFriendRequests: (data: Record<string, unknown>) => Promise<IpcResult>
+      facebookDeleteFriends: (data: Record<string, unknown>) => Promise<IpcResult>
+      facebookInteractionFarm: (data: Record<string, unknown>) => Promise<IpcResult>
+      facebookDeletePosts: (data: Record<string, unknown>) => Promise<IpcResult>
+      facebookAnalyzeGroup: (data: Record<string, unknown>) => Promise<IpcResult>
+      facebookUsersToIds: (data: Record<string, unknown>) => Promise<IpcResult>
+      facebookExtractPostDetails: (data: ExtractionParams) => Promise<ExtractionResult>
+      facebookExtractPhones: (data: ExtractionParams) => Promise<ExtractionResult>
+      facebookLinksToIds: (data: Record<string, unknown>) => Promise<IpcResult>
+      facebookSearchGroups: (data: PlatformSearchParams) => Promise<ExtractionResult>
+      facebookJoinGroups: (data: Record<string, unknown>) => Promise<IpcResult>
+      facebookExtractPageMessengers: (data: ExtractionParams) => Promise<ExtractionResult>
+      facebookExtractProfileMessengers: (data: ExtractionParams) => Promise<ExtractionResult>
+      facebookExtractReviews: (data: ExtractionParams) => Promise<ExtractionResult>
+      facebookPageSendMessages: (data: MessageParams) => Promise<IpcResult>
+      facebookAddToGroupChat: (data: Record<string, unknown>) => Promise<IpcResult>
+      facebookSendPageMessages: (data: MessageParams) => Promise<IpcResult>
 
       // WhatsApp
-      whatsappLaunch: (opts?: { proxy?: string }) => Promise<any>
-      whatsappSendMessages: (data: any) => Promise<any>
-      whatsappExtractGroups: (data: any) => Promise<any>
-      whatsappFilterNumbers: (data: any) => Promise<any>
+      whatsappLaunch: (opts?: { proxy?: string }) => Promise<BrowserLaunchResult>
+      whatsappSendMessages: (data: MessageParams) => Promise<IpcResult>
+      whatsappExtractGroups: (data: ExtractionParams) => Promise<ExtractionResult>
+      whatsappFilterNumbers: (data: Record<string, unknown>) => Promise<IpcResult>
 
       // Instagram
-      instagramLogin: (data: any) => Promise<any>
-      instagramExtractFollowers: (data: any) => Promise<any>
-      instagramAutoFollow: (data: any) => Promise<any>
-      instagramExtractComments: (data: any) => Promise<any>
-      instagramSendMessages: (data: any) => Promise<any>
-      instagramExtractHashtag: (data: any) => Promise<any>
+      instagramLogin: (data: PlatformLoginParams) => Promise<LoginResult>
+      instagramExtractFollowers: (data: ExtractionParams) => Promise<ExtractionResult>
+      instagramAutoFollow: (data: Record<string, unknown>) => Promise<IpcResult>
+      instagramExtractComments: (data: ExtractionParams) => Promise<ExtractionResult>
+      instagramSendMessages: (data: MessageParams) => Promise<IpcResult>
+      instagramExtractHashtag: (data: Record<string, unknown>) => Promise<ExtractionResult>
 
       // Twitter
-      twitterLogin: (data: any) => Promise<any>
-      twitterTweet: (data: any) => Promise<any>
-      twitterExtractFollowers: (data: any) => Promise<any>
-      twitterScheduleTweet: (data: any) => Promise<any>
-      twitterFollow: (data: any) => Promise<any>
-      twitterRetweet: (data: any) => Promise<any>
+      twitterLogin: (data: PlatformLoginParams) => Promise<LoginResult>
+      twitterTweet: (data: Record<string, unknown>) => Promise<IpcResult>
+      twitterExtractFollowers: (data: ExtractionParams) => Promise<ExtractionResult>
+      twitterScheduleTweet: (data: Record<string, unknown>) => Promise<IpcResult>
+      twitterFollow: (data: Record<string, unknown>) => Promise<IpcResult>
+      twitterRetweet: (data: Record<string, unknown>) => Promise<IpcResult>
 
       // LinkedIn
-      linkedinLogin: (data: any) => Promise<any>
-      linkedinSearch: (data: any) => Promise<any>
-      linkedinExtractCompanies: (data: any) => Promise<any>
-      linkedinSendMessages: (data: any) => Promise<any>
+      linkedinLogin: (data: PlatformLoginParams) => Promise<LoginResult>
+      linkedinSearch: (data: PlatformSearchParams) => Promise<ExtractionResult>
+      linkedinExtractCompanies: (data: ExtractionParams) => Promise<ExtractionResult>
+      linkedinSendMessages: (data: MessageParams) => Promise<IpcResult>
 
       // Telegram
-      telegramLogin: (data: any) => Promise<any>
-      telegramVerifyCode: (data: any) => Promise<any>
-      telegramSendMessages: (data: any) => Promise<any>
-      telegramExtractMembers: (data: any) => Promise<any>
-      telegramAddUsers: (data: any) => Promise<any>
+      telegramLogin: (data: PlatformLoginParams) => Promise<LoginResult>
+      telegramVerifyCode: (data: Record<string, unknown>) => Promise<IpcResult>
+      telegramSendMessages: (data: MessageParams) => Promise<IpcResult>
+      telegramExtractMembers: (data: ExtractionParams) => Promise<ExtractionResult>
+      telegramAddUsers: (data: Record<string, unknown>) => Promise<IpcResult>
 
       // TikTok
-      tiktokExtractComments: (data: any) => Promise<any>
-      tiktokExtractFollowers: (data: any) => Promise<any>
+      tiktokExtractComments: (data: ExtractionParams) => Promise<ExtractionResult>
+      tiktokExtractFollowers: (data: ExtractionParams) => Promise<ExtractionResult>
 
       // Pinterest
-      pinterestLogin: (data: any) => Promise<any>
-      pinterestSearch: (data: any) => Promise<any>
-      pinterestExtract: (data: any) => Promise<any>
+      pinterestLogin: (data: PlatformLoginParams) => Promise<LoginResult>
+      pinterestSearch: (data: PlatformSearchParams) => Promise<ExtractionResult>
+      pinterestExtract: (data: ExtractionParams) => Promise<ExtractionResult>
 
       // Threads
-      threadsLogin: (data: any) => Promise<any>
-      threadsExtract: (data: any) => Promise<any>
-      threadsMention: (data: any) => Promise<any>
+      threadsLogin: (data: PlatformLoginParams) => Promise<LoginResult>
+      threadsExtract: (data: ExtractionParams) => Promise<ExtractionResult>
+      threadsMention: (data: Record<string, unknown>) => Promise<IpcResult>
 
       // Snapchat
-      snapchatLogin: (data: any) => Promise<any>
+      snapchatLogin: (data: PlatformLoginParams) => Promise<LoginResult>
+      snapchatBroadcast: (data: { sessionId?: string; usernames?: string[]; message?: string }) => Promise<IpcResult>
 
       // Reddit
-      redditLogin: (data: any) => Promise<any>
-      redditSearch: (data: any) => Promise<any>
-      redditPublish: (data: any) => Promise<any>
+      redditLogin: (data: PlatformLoginParams) => Promise<LoginResult>
+      redditSearch: (data: PlatformSearchParams) => Promise<ExtractionResult>
+      redditPublish: (data: Record<string, unknown>) => Promise<IpcResult>
 
       // Google
-      googleMapsExtract: (data: any) => Promise<any>
-      olxExtract: (data: any) => Promise<any>
-      googleRate: (data: any) => Promise<any>
+      googleMapsExtract: (data: Record<string, unknown>) => Promise<ExtractionResult>
+      olxExtract: (data: Record<string, unknown>) => Promise<ExtractionResult>
+      googleRate: (data: Record<string, unknown>) => Promise<IpcResult>
 
       // Email
-      sendEmail: (data: any) => Promise<any>
+      sendEmail: (data: Record<string, unknown>) => Promise<IpcResult>
 
       // Auto Point
-      autoPointRun: (data: any) => Promise<any>
+      autoPointRun: (data: Record<string, unknown>) => Promise<IpcResult>
 
       // Generic Tool Runner
-      runTool: (data: any) => Promise<any>
+      runTool: (data: Record<string, unknown>) => Promise<IpcResult>
 
       // Video Download
-      videoDownload: (data: any) => Promise<any>
+      videoDownload: (data: { url: string; saveDir?: string }) => Promise<IpcResult>
 
       // Hashtags
-      generateHashtags: (data: any) => Promise<any>
+      generateHashtags: (data: { keyword: string; platform?: string }) => Promise<IpcResult>
 
       // Proxy
-      saveProxy: (data: any) => Promise<any>
-      getProxies: () => Promise<any>
-      deleteProxy: (data: any) => Promise<any>
-      testProxy: (data: any) => Promise<any>
-
-      // Snapchat
-      snapchatBroadcast: (data: any) => Promise<any>
+      saveProxy: (data: { label: string; host: string; port: string; protocol: string; username?: string; password?: string
+  has_password?: boolean }) => Promise<IpcResult>
+      getProxies: () => Promise<IpcResult<ProxyRecord[]>>
+      deleteProxy: (data: { id: number }) => Promise<IpcResult>
+      testProxy: (data: { host: string; port: string; protocol: string; username?: string; password?: string }) => Promise<IpcResult>
 
       // SMTP Email
-      sendSmtpEmail: (data: any) => Promise<any>
-      getSmtpSettings: () => Promise<any>
-      deleteSmtpSetting: (data: any) => Promise<any>
+      sendSmtpEmail: (data: SmtpSendParams) => Promise<IpcResult>
+      getSmtpSettings: () => Promise<IpcResult<SmtpRecord[]>>
+      deleteSmtpSetting: (data: { id: number }) => Promise<IpcResult>
 
       // Security Settings
-      getSecuritySettings: () => Promise<any>
-      saveSecuritySettings: (data: any) => Promise<any>
+      getSecuritySettings: () => Promise<IpcResult<SecuritySettings>>
+      saveSecuritySettings: (data: Partial<SecuritySettings>) => Promise<IpcResult>
 
       // Scheduler
-      scheduleCampaign: (data: any) => Promise<any>
-      getScheduledCampaigns: () => Promise<any>
-      deleteCampaign: (data: any) => Promise<any>
+      scheduleCampaign: (data: { name: string; platform: string; type: string; data: Record<string, unknown>; scheduledAt: string }) => Promise<IpcResult>
+      getScheduledCampaigns: () => Promise<IpcResult<CampaignRecord[]>>
+      deleteCampaign: (data: { id: number }) => Promise<IpcResult>
 
       // DB
-      dbQuery: (data: any) => Promise<any>
-      dbInsert: (data: any) => Promise<any>
-      dbUpdate: (data: any) => Promise<any>
-      dbDelete: (data: any) => Promise<any>
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      dbQuery: (data: DbQueryParams) => Promise<IpcResult<any[]>>
+      dbInsert: (data: DbInsertParams) => Promise<IpcResult<{ id: number }>>
+      dbUpdate: (data: DbUpdateParams) => Promise<IpcResult>
+      dbDelete: (data: DbDeleteParams) => Promise<IpcResult>
+      clearLeadsByPlatform: (data: { platform: string }) => Promise<IpcResult>
+      dbCount: (data: DbQueryParams) => Promise<{ success: boolean; count?: number; error?: string }>
 
       // Export
-      exportToCSV: (data: any) => Promise<any>
-      exportToExcel: (data: any) => Promise<any>
+      exportToCSV: (data: ExportParams) => Promise<IpcResult>
+      exportToExcel: (data: ExportParams) => Promise<IpcResult>
 
       // Extraction streaming & cancel
-      cancelExtraction: (data: any) => void
-      onExtractionProgress: (callback: (data: any) => void) => () => void
+      cancelExtraction: (data: { jobId: string }) => void
+      onExtractionProgress: (callback: (data: ExtractionProgress) => void) => () => void
 
       // Multi-account cycle
-      getActiveSessions: () => Promise<any>
-      cycleAccounts: (data: any) => Promise<any>
-      stopCycle: () => Promise<any>
+      getActiveSessions: () => Promise<IpcResult>
+      cycleAccounts: (data: Record<string, unknown>) => Promise<IpcResult>
+      stopCycle: () => Promise<IpcResult>
 
-      getAppVersion: () => Promise<any>
-      checkForUpdates: () => Promise<any>
-      installUpdate: () => Promise<any>
+      getAppVersion: () => Promise<IpcResult<string>>
+      checkForUpdates: () => Promise<IpcResult>
+      installUpdate: () => Promise<IpcResult>
       getPlatform: () => string
 
       // Window Controls

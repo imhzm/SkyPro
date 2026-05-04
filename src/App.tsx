@@ -8,6 +8,25 @@ import { activationApi } from './services/api/activation'
 import { useEffect, useState } from 'react'
 import './index.css'
 
+// Grace period: allow offline usage for up to 72 hours after last successful validation
+const GRACE_PERIOD_MS = 72 * 60 * 60 * 1000
+const LAST_VALIDATED_KEY = 'skypro_last_validated_at'
+
+function isGracePeriodExpired(): boolean {
+  const lastValidated = localStorage.getItem(LAST_VALIDATED_KEY)
+  if (!lastValidated) return true
+  const elapsed = Date.now() - Number(lastValidated)
+  return elapsed > GRACE_PERIOD_MS
+}
+
+function markValidationSuccess() {
+  localStorage.setItem(LAST_VALIDATED_KEY, String(Date.now()))
+}
+
+function clearValidationTimestamp() {
+  localStorage.removeItem(LAST_VALIDATED_KEY)
+}
+
 function AppContent() {
   const { isAuthenticated, activation, setActivation, logout } = useAuthStore()
   const [isValidating, setIsValidating] = useState(false)
@@ -20,12 +39,27 @@ function AppContent() {
         const deviceInfo = await activationApi.getDeviceInfo()
         const deviceId = deviceInfo?.fingerprint || activation.deviceId || ''
         const result = await activationApi.validateKey(activation.key, deviceId)
-        if (!result.success || result.data?.status !== 'active') {
+
+        if (result.success && result.data?.status === 'active') {
+          // Server confirmed key is active — update grace period timestamp
+          markValidationSuccess()
+        } else {
+          // Server explicitly rejected the key — invalidate immediately
+          console.warn('Key rejected by server:', result.data?.status)
+          clearValidationTimestamp()
           setActivation(null)
           logout()
         }
       } catch (err) {
-        console.error('Startup validation failed:', err)
+        // Network error or server unreachable — check grace period
+        console.error('Startup validation failed (network):', err)
+        if (isGracePeriodExpired()) {
+          console.warn('Grace period expired — forcing logout')
+          clearValidationTimestamp()
+          setActivation(null)
+          logout()
+        }
+        // If within grace period, allow continued use silently
       } finally {
         setIsValidating(false)
       }

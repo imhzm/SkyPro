@@ -25,9 +25,9 @@ CREATE TABLE IF NOT EXISTS users (
 -- Activation keys table
 CREATE TABLE IF NOT EXISTS activation_keys (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    `key` VARCHAR(20) UNIQUE NOT NULL,
-    status ENUM('pending', 'active', 'expired', 'invalid') DEFAULT 'pending',
-    device_id VARCHAR(100) DEFAULT NULL,
+    `key` VARCHAR(40) UNIQUE NOT NULL,
+    status ENUM('pending', 'active', 'expired', 'invalid', 'suspended', 'revoked', 'assigned', 'available') DEFAULT 'pending',
+    device_id VARCHAR(255) DEFAULT NULL,
     expiry_date DATE NOT NULL,
     activated_at TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS app_logs (
 -- Devices table - stores device info on activation
 CREATE TABLE IF NOT EXISTS devices (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    fingerprint VARCHAR(100) UNIQUE NOT NULL,
+    fingerprint VARCHAR(255) UNIQUE NOT NULL,
     hostname VARCHAR(100),
     platform VARCHAR(50),
     arch VARCHAR(50),
@@ -60,15 +60,15 @@ CREATE TABLE IF NOT EXISTS devices (
     INDEX idx_fingerprint (fingerprint)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Activation requests table - stores serial + device fingerprint for email verification
+-- Activation requests table - public requests stay pending until admin approval.
 -- NOTE: serial is UNIQUE to prevent duplicate serials
 CREATE TABLE IF NOT EXISTS activation_requests (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_email VARCHAR(255) NOT NULL,
     `key` VARCHAR(20) NOT NULL,
     serial VARCHAR(100) NOT NULL,
-    device_fingerprint VARCHAR(100) DEFAULT NULL,
-    status ENUM('pending', 'approved', 'rejected') DEFAULT 'approved',
+    device_fingerprint VARCHAR(255) DEFAULT NULL,
+    status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
     requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     approved_at TIMESTAMP NULL,
     INDEX idx_serial (serial),

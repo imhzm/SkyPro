@@ -30,7 +30,7 @@ export default function WhatsappModule() {
     try {
       const res = await window.electronAPI.whatsappLaunch({ proxy: proxy || undefined })
       if (res.success) {
-        setSessionId(res.sessionId)
+        setSessionId(res.sessionId || '')
         if (res.needsQR) { setShowQR(true); showMsg('افتح كاميرا الهاتف وامسح QR code الظاهر في المتصفح') }
         else { setShowQR(false); showMsg('WhatsApp متصل بنجاح!') }
         await loadAccounts()
@@ -47,9 +47,9 @@ export default function WhatsappModule() {
     try {
       const res = await window.electronAPI.whatsappSendMessages({ sessionId, recipients, message: broadcastMessage })
       if (res.success) {
-        const sent = (res.data || []).filter((r: any) => r.status === 'sent').length
+        const sent = ((res.data as any[]) || []).filter((r: any) => r.status === 'sent').length
         showMsg(`تم إرسال ${sent} من ${recipients.length} رسالة`)
-        setToolResults(res.data || [])
+        setToolResults((res.data as any[]) || [])
       } else showMsg(res.error || 'فشل الإرسال', true)
     } catch (err: any) { showMsg(err.message || 'خطأ في الإرسال', true) }
     setLoading(false)
@@ -62,11 +62,11 @@ export default function WhatsappModule() {
     try {
       const res = await window.electronAPI.whatsappFilterNumbers({ numbers })
       if (res.success) {
-        const filteredData = res.data || []
+        const filteredData = (res as any).data || []
         setToolResults(filteredData)
         showMsg(`تم فلترة ${filteredData.length} رقم - ${filteredData.filter((r: any) => r.status === 'valid' || r.status === 'نشط').length} رقم فعال`)
         await loadResults()
-      } else showMsg(res.error || 'فشلت العملية', true)
+      } else showMsg((res as any).error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
   }
@@ -81,7 +81,7 @@ export default function WhatsappModule() {
       } else {
         res = await window.electronAPI.runTool({ platform: 'whatsapp', toolId: extractType, toolName: 'استخراج واتساب', params: { sessionId } })
       }
-      if (res.success) { setToolResults(res.data || []); showMsg(`تم استخراج ${res.count || (res.data || []).length} نتيجة`); await loadResults() }
+      if (res.success) { setToolResults((res.data as any[]) || []); showMsg(`تم استخراج ${res.count || ((res.data as any[]) || []).length} نتيجة`); await loadResults() }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
@@ -95,7 +95,7 @@ export default function WhatsappModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.runTool({ platform: 'whatsapp', toolId: 'group-post', toolName: 'النشر في المجموعات', params: { sessionId, groups, message: groupMessage } })
-      if (res.success) { showMsg('تم النشر في المجموعات'); setToolResults(res.data || []) }
+      if (res.success) { showMsg('تم النشر في المجموعات'); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
@@ -197,10 +197,10 @@ export default function WhatsappModule() {
           <button onClick={handleFilter} disabled={loading || !filterNumbers.trim()} className="btn-primary w-full disabled:opacity-50">{loading ? <Loader2 size={18} className="animate-spin" /> : <><Filter size={18} /> فلترة</>}</button>
         </div>
       </div>
-      {(toolResults.length > 0 || results.length > 0) && (
+      {(toolResults.length > 0 || (results as any[]).length > 0) && (
         <div className="card">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-secondary-900">النتائج ({toolResults.length || results.length})</h3>
+            <h3 className="font-bold text-secondary-900">النتائج ({toolResults.length || (results as any[]).length})</h3>
             <div className="flex gap-2">
               <button onClick={() => handleExport(['الرقم', 'الحالة'], 'whatsapp-filter', toolResults)} className="btn-success text-sm"><FileSpreadsheet size={16} /> تصدير</button>
               <button onClick={handleClearResults} className="btn-danger text-sm"><Trash2 size={16} /> مسح الكل</button>

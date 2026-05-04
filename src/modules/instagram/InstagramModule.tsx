@@ -57,7 +57,7 @@ export default function InstagramModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.instagramLogin({ username: loginForm.username, password: loginForm.password, headless: false, proxy: loginForm.proxy || undefined })
-      if (res.success) { setSessionId(res.sessionId); showMsg('تم تسجيل الدخول بنجاح!'); await loadAccounts() }
+      if (res.success) { setSessionId(res.sessionId || ''); showMsg('تم تسجيل الدخول بنجاح!'); await loadAccounts() }
       else showMsg(res.error || 'فشل تسجيل الدخول', true)
     } catch (err: any) { showMsg(err.message || 'خطأ', true) }
     setLoading(false)
@@ -71,7 +71,7 @@ export default function InstagramModule() {
       setLoading(false)
       return
     }
-    const hasPass = !!(account.password && account.password.trim())
+    const hasPass = (!!account.has_password || !!(account.password && account.password.trim()))
     if (!hasPass) {
       setLoginForm({ ...loginForm, username: account.username, password: '' })
       setTimeout(() => passwordRef.current?.focus(), 100)
@@ -81,8 +81,8 @@ export default function InstagramModule() {
     }
     setLoginForm({ ...loginForm, username: account.username, password: account.password || '' })
     try {
-      const res = await window.electronAPI.instagramLogin({ username: account.username, password: account.password, headless: false, proxy: account.proxy || loginForm.proxy || undefined })
-      if (res.success) { setSessionId(res.sessionId); showMsg(`تم تسجيل الدخول بحساب ${account.username}!`); await loadAllAccounts() }
+      const res = await window.electronAPI.instagramLogin({ accountId: account.id, username: account.username, password: account.password, headless: false, proxy: account.proxy || loginForm.proxy || undefined })
+      if (res.success) { setSessionId(res.sessionId || ''); showMsg(`تم تسجيل الدخول بحساب ${account.username}!`); await loadAllAccounts() }
       else showMsg(res.error || 'فشل تسجيل الدخول', true)
     } catch (err: any) { showMsg(err.message || 'خطأ في الاتصال', true) }
     setLoading(false)
@@ -140,7 +140,7 @@ export default function InstagramModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.instagramAutoFollow({ sessionId, usernames })
-      if (res.success) { const ok = (res.data || []).filter((x: any) => x.status === 'followed').length; showMsg(`تمت متابعة ${ok} من ${usernames.length}`); setToolResults(res.data || []) }
+      if (res.success) { const ok = ((res.data as any[]) || []).filter((x: any) => x.status === 'followed').length; showMsg(`تمت متابعة ${ok} من ${usernames.length}`); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
@@ -153,7 +153,7 @@ export default function InstagramModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.runTool({ platform: 'instagram', toolId: 'mention', toolName: 'منشن إنستجرام', params: { sessionId, postUrl: mentionPostUrl, mentions, message: mentionMessage } })
-      if (res.success) { showMsg('تم المنشن بنجاح'); setToolResults(res.data || []) }
+      if (res.success) { showMsg('تم المنشن بنجاح'); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
@@ -166,7 +166,7 @@ export default function InstagramModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.instagramSendMessages({ sessionId, recipients, message: broadcastMessage })
-      if (res.success) { const ok = (res.data || []).filter((x: any) => x.status === 'sent').length; showMsg(`تم إرسال ${ok} من ${recipients.length}`); setToolResults(res.data || []) }
+      if (res.success) { const ok = ((res.data as any[]) || []).filter((x: any) => x.status === 'sent').length; showMsg(`تم إرسال ${ok} من ${recipients.length}`); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)

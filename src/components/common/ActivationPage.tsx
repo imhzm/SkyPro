@@ -16,7 +16,7 @@ export default function ActivationPage() {
     try {
       const deviceInfo = await activationApi.getDeviceInfo()
       const deviceId = deviceInfo?.fingerprint || deviceInfo?.hostname || `device-${Date.now()}`
-      const result = await activationApi.activateKey(key.trim(), deviceId, deviceInfo)
+      const result = await activationApi.activateKey(key.trim(), deviceId, deviceInfo as any)
       if (result.success && result.data) {
         setSuccess('تم تفعيل الاشتراك بنجاح!')
         setActivation({
