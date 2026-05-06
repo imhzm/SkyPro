@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+.next/
+out/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Prisma
+skypro-web/prisma/*.db
+
+# Claude
+.claude/
+
+# Electron runtime data
+skypro-desktop/runtime-data/
+
+# Cache
+.vite/
+.vite-temp/
