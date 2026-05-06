@@ -43,7 +43,7 @@ for ($i = 0; $i < $count; $i++) {
     $key = generateKey();
     
     try {
-        $stmt = $pdo->prepare("INSERT INTO activation_keys (`key`, expiry_date) VALUES (?, ?)");
+        $stmt = $pdo->prepare("INSERT INTO activation_keys (key_code, expires_at) VALUES (?, ?)");
         $stmt->execute([$key, $expiryDate]);
         $generated[] = $key;
     } catch (PDOException $e) {

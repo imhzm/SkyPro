@@ -21,7 +21,7 @@ if (empty($key)) {
     sendResponse(false, 'Key is required');
 }
 
-$stmt = $pdo->prepare("SELECT `key`, status, expiry_date, device_id, activated_at FROM activation_keys WHERE `key` = ?");
+$stmt = $pdo->prepare("SELECT key_code, status, expires_at, device_id, activated_at FROM activation_keys WHERE key_code = ?");
 $stmt->execute([$key]);
 $keyData = $stmt->fetch();
 
@@ -39,7 +39,7 @@ if (!empty($keyData['device_id'])) {
 
 sendResponse(true, 'Status retrieved', [
     'status' => $keyData['status'],
-    'expiryDate' => $keyData['expiry_date'],
+    'expiryDate' => $keyData['expires_at'],
     'deviceBound' => !empty($keyData['device_id']),
     'deviceHint' => $maskedDeviceId,
     'activatedAt' => $keyData['activated_at']

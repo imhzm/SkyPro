@@ -33,8 +33,8 @@ if (!is_array($deviceInfo)) {
     $deviceInfo = [];
 }
 
-// Check if key exists
-$stmt = $pdo->prepare('SELECT * FROM activation_keys WHERE `key` = ?');
+// Check if key exists (key_code matches Prisma schema)
+$stmt = $pdo->prepare('SELECT * FROM activation_keys WHERE key_code = ?');
 $stmt->execute([$key]);
 $keyData = $stmt->fetch();
 
@@ -59,34 +59,41 @@ if ($keyData['status'] === 'active' && !empty($keyData['device_id']) && $keyData
     sendResponse(false, 'This key is already activated on another device');
 }
 
-// Save/update device info
+// Save/update device info (matches Prisma schema)
 if (!empty($deviceInfo)) {
-    $checkStmt = $pdo->prepare('SELECT id, first_activation_key FROM devices WHERE fingerprint = ?');
+    $checkStmt = $pdo->prepare('SELECT id, user_id, key_id FROM devices WHERE device_fingerprint = ?');
     $checkStmt->execute([$deviceFingerprint]);
     $existingDevice = $checkStmt->fetch();
 
     if ($existingDevice) {
-        $updateStmt = $pdo->prepare('UPDATE devices SET last_seen = NOW() WHERE fingerprint = ?');
+        $updateStmt = $pdo->prepare('UPDATE devices SET last_seen_at = NOW() WHERE device_fingerprint = ?');
         $updateStmt->execute([$deviceFingerprint]);
     } else {
-        $insertStmt = $pdo->prepare('INSERT INTO devices (fingerprint, hostname, platform, arch, cpu, cpu_cores, ram, first_activation_key, first_activated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())');
+        // Get user_id and key_id from activation key
+        $keyStmt = $pdo->prepare('SELECT user_id, id FROM activation_keys WHERE key_code = ?');
+        $keyStmt->execute([$key]);
+        $keyInfo = $keyStmt->fetch();
+
+        $insertStmt = $pdo->prepare('INSERT INTO devices (user_id, key_id, device_fingerprint, device_name, os_info, cpu_info, ram_info, disk_info, gpu_info, screen_resolution, is_active, reset_count, max_resets_per_year, first_seen_at, last_seen_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, 2, NOW(), NOW())');
         $insertStmt->execute([
+            $keyInfo['user_id'] ?? null,
+            $keyInfo['id'] ?? null,
             $deviceFingerprint,
-            $deviceInfo['hostname'] ?? '',
-            $deviceInfo['platform'] ?? '',
-            $deviceInfo['arch'] ?? '',
+            $deviceInfo['deviceName'] ?? ($deviceInfo['hostname'] ?? ''),
+            $deviceInfo['os'] ?? ($deviceInfo['platform'] ?? ''),
             $deviceInfo['cpu'] ?? '',
-            $deviceInfo['cpuCores'] ?? 0,
             $deviceInfo['ram'] ?? '',
-            $key
+            $deviceInfo['disk'] ?? '',
+            $deviceInfo['gpu'] ?? '',
+            $deviceInfo['screen'] ?? ''
         ]);
     }
 }
 
-// If key is pending, activate it
+// If key is pending, activate it (key_code matches Prisma)
 if ($keyData['status'] === 'pending') {
-    $stmt = $pdo->prepare('UPDATE activation_keys SET status = "active", device_id = ?, activated_at = NOW() WHERE `key` = ?');
-    $stmt->execute([$deviceFingerprint, $key]);
+    $stmt = $pdo->prepare('UPDATE activation_keys SET status = "active", activated_at = NOW() WHERE key_code = ?');
+    $stmt->execute([$key]);
 }
 
 if (!in_array($keyData['status'], ['pending', 'active'], true)) {
@@ -96,10 +103,10 @@ if (!in_array($keyData['status'], ['pending', 'active'], true)) {
 // Log the action
 logAction($pdo, 'device_verified', "Key: $key, Device: $deviceFingerprint, IP: $clientIP");
 
-// Return success
+// Return success (expires_at matches Prisma schema)
 sendResponse(true, 'Device verified successfully', [
     'key' => $key,
     'status' => 'active',
-    'expiryDate' => $keyData['expiry_date'],
+    'expiryDate' => $keyData['expires_at'],
     'deviceId' => $deviceFingerprint
 ]);
