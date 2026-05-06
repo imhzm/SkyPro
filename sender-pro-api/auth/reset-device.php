@@ -36,8 +36,8 @@ if (!preg_match('/^[A-Z0-9\\-]+$/', $key)) {
     sendResponse(false, 'Invalid key');
 }
 
-// Check if key exists
-$stmt = $pdo->prepare('SELECT * FROM activation_keys WHERE `key` = ?');
+// Check if key exists (key_code matches Prisma schema)
+$stmt = $pdo->prepare('SELECT * FROM activation_keys WHERE key_code = ?');
 $stmt->execute([$key]);
 $keyData = $stmt->fetch();
 
@@ -50,12 +50,12 @@ if (in_array($keyData['status'], ['revoked', 'expired', 'suspended'], true)) {
 }
 
 // Reset device_id and set status back to pending
-$stmt = $pdo->prepare('UPDATE activation_keys SET device_id = NULL, status = "pending" WHERE `key` = ?');
+$stmt = $pdo->prepare('UPDATE activation_keys SET device_id = NULL, status = "pending" WHERE key_code = ?');
 $stmt->execute([$key]);
 
-// Remove device record if exists
+// Remove device record if exists (device_fingerprint matches Prisma)
 if (!empty($deviceFingerprint)) {
-    $stmt = $pdo->prepare('DELETE FROM devices WHERE fingerprint = ?');
+    $stmt = $pdo->prepare('DELETE FROM devices WHERE device_fingerprint = ?');
     $stmt->execute([$deviceFingerprint]);
 }
 

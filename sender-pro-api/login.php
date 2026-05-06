@@ -43,12 +43,12 @@ if (!is_array($deviceInfo)) {
     $deviceInfo = [];
 }
 
-// Verify user credentials
-$stmt = $pdo->prepare('SELECT * FROM users WHERE email = ?');
+// Verify user credentials (password_hash matches Prisma schema)
+$stmt = $pdo->prepare('SELECT id, email, password_hash, role, status FROM users WHERE email = ?');
 $stmt->execute([$email]);
 $user = $stmt->fetch();
 
-if (!$user || !password_verify($password, $user['password'])) {
+if (!$user || !password_verify($password, $user['password_hash'])) {
     logAction($pdo, 'login_failed', "Email: $email, IP: $clientIP");
     sendResponse(false, 'Invalid email or password');
 }
@@ -75,8 +75,8 @@ if ($request['user_email'] !== $email) {
 $stmt = $pdo->prepare('UPDATE activation_requests SET device_fingerprint = ?, approved_at = IFNULL(approved_at, NOW()) WHERE id = ?');
 $stmt->execute([$deviceFingerprint, $request['id']]);
 
-// Get the associated activation key
-$stmt = $pdo->prepare('SELECT * FROM activation_keys WHERE `key` = ?');
+// Get the associated activation key (key_code matches Prisma schema)
+$stmt = $pdo->prepare('SELECT * FROM activation_keys WHERE key_code = ?');
 $stmt->execute([$request['key']]);
 $keyData = $stmt->fetch();
 
@@ -88,43 +88,50 @@ if (in_array($keyData['status'], ['revoked', 'suspended'], true)) {
     sendResponse(false, 'This activation key is not allowed');
 }
 
-// Check if key is expired
-if ($keyData['status'] === 'expired' || ($keyData['expiry_date'] && $keyData['expiry_date'] < date('Y-m-d'))) {
+// Check if key is expired (expires_at matches Prisma schema)
+if ($keyData['status'] === 'expired' || ($keyData['expires_at'] && $keyData['expires_at'] < date('Y-m-d H:i:s'))) {
     // Update status to expired
-    $pdo->prepare('UPDATE activation_keys SET status = "expired" WHERE `key` = ?')->execute([$request['key']]);
+    $pdo->prepare('UPDATE activation_keys SET status = "expired" WHERE key_code = ?')->execute([$request['key']]);
     sendResponse(false, 'This activation key has expired');
 }
 
 // Activate the key if pending
 if ($keyData['status'] === 'pending') {
-    $stmt = $pdo->prepare('UPDATE activation_keys SET status = "active", device_id = ?, activated_at = NOW() WHERE `key` = ?');
-    $stmt->execute([$deviceFingerprint, $request['key']]);
+    $stmt = $pdo->prepare('UPDATE activation_keys SET status = "active", activated_at = NOW() WHERE key_code = ?');
+    $stmt->execute([$request['key']]);
 }
 
 if (!in_array($keyData['status'], ['pending', 'active'], true)) {
     sendResponse(false, 'This activation key is not available');
 }
 
-// Save/update device info
+// Save/update device info (matches Prisma schema)
 if (!empty($deviceInfo) && !empty($deviceFingerprint)) {
-    $checkStmt = $pdo->prepare('SELECT id FROM devices WHERE fingerprint = ?');
+    $checkStmt = $pdo->prepare('SELECT id, user_id, key_id FROM devices WHERE device_fingerprint = ?');
     $checkStmt->execute([$deviceFingerprint]);
     $existingDevice = $checkStmt->fetch();
 
     if ($existingDevice) {
-        $updateStmt = $pdo->prepare('UPDATE devices SET last_seen = NOW() WHERE fingerprint = ?');
+        $updateStmt = $pdo->prepare('UPDATE devices SET last_seen_at = NOW() WHERE device_fingerprint = ?');
         $updateStmt->execute([$deviceFingerprint]);
     } else {
-        $insertStmt = $pdo->prepare('INSERT INTO devices (fingerprint, hostname, platform, arch, cpu, cpu_cores, ram, first_activation_key, first_activated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())');
+        // Get user_id and key_id from activation key
+        $keyStmt = $pdo->prepare('SELECT user_id, id FROM activation_keys WHERE key_code = ?');
+        $keyStmt->execute([$request['key']]);
+        $keyInfo = $keyStmt->fetch();
+
+        $insertStmt = $pdo->prepare('INSERT INTO devices (user_id, key_id, device_fingerprint, device_name, os_info, cpu_info, ram_info, disk_info, gpu_info, screen_resolution, is_active, reset_count, max_resets_per_year, first_seen_at, last_seen_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, 2, NOW(), NOW())');
         $insertStmt->execute([
+            $keyInfo['user_id'] ?? null,
+            $keyInfo['id'] ?? null,
             $deviceFingerprint,
-            $deviceInfo['hostname'] ?? '',
-            $deviceInfo['platform'] ?? '',
-            $deviceInfo['arch'] ?? '',
+            $deviceInfo['deviceName'] ?? ($deviceInfo['hostname'] ?? ''),
+            $deviceInfo['os'] ?? ($deviceInfo['platform'] ?? ''),
             $deviceInfo['cpu'] ?? '',
-            $deviceInfo['cpuCores'] ?? 0,
             $deviceInfo['ram'] ?? '',
-            $request['key']
+            $deviceInfo['disk'] ?? '',
+            $deviceInfo['gpu'] ?? '',
+            $deviceInfo['screen'] ?? '',
         ]);
     }
 }
