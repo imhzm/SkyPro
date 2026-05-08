@@ -1,5 +1,6 @@
 import { Navbar } from '@/components/marketing/Navbar'
 import { HeroSection } from '@/components/marketing/HeroSection'
+import { TrustedBySection } from '@/components/marketing/TrustedBySection'
 import { FeaturesSection } from '@/components/marketing/FeaturesSection'
 import { HowItWorksSection } from '@/components/marketing/HowItWorksSection'
 import { TestimonialsSection } from '@/components/marketing/TestimonialsSection'
@@ -14,6 +15,7 @@ export default function HomePage() {
     <main className="min-h-screen bg-[#060d1b]">
       <Navbar />
       <HeroSection />
+      <TrustedBySection />
       <FeaturesSection />
       <HowItWorksSection />
       <TestimonialsSection />
