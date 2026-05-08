@@ -116,14 +116,32 @@ body {
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 24px;
-    transition: all 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .glass-card:hover {
     background: rgba(255, 255, 255, 0.07);
     border-color: rgba(255, 255, 255, 0.14);
-    transform: translateY(-4px);
-    box-shadow: 0 20px 60px rgba(10, 108, 241, 0.08);
+    transform: translateY(-6px);
+    box-shadow: 0 25px 60px rgba(10, 108, 241, 0.1), 0 0 40px rgba(139, 44, 245, 0.05);
+  }
+
+  .glass-card-3d {
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-style: preserve-3d;
+    perspective: 1000px;
+  }
+
+  .glass-card-3d:hover {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 255, 255, 0.16);
+    transform: translateY(-8px) rotateX(2deg) rotateY(-2deg);
+    box-shadow: 0 30px 80px rgba(10, 108, 241, 0.12), 0 0 60px rgba(139, 44, 245, 0.06);
   }
 
   .gradient-border {
@@ -177,6 +195,81 @@ body {
   .feature-icon {
     @apply flex h-11 w-11 items-center justify-center rounded-2xl;
   }
+
+  /* Marquee for trusted-by and testimonials */
+  .marquee-container {
+    overflow: hidden;
+    position: relative;
+  }
+
+  .marquee-container::before,
+  .marquee-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 120px;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  .marquee-container::before {
+    right: 0;
+    background: linear-gradient(to left, #060d1b, transparent);
+  }
+
+  .marquee-container::after {
+    left: 0;
+    background: linear-gradient(to right, #060d1b, transparent);
+  }
+
+  .marquee-track {
+    display: flex;
+    gap: 2rem;
+    animation: marquee 30s linear infinite;
+    width: max-content;
+  }
+
+  .marquee-track:hover {
+    animation-play-state: paused;
+  }
+
+  /* Scroll progress bar */
+  .scroll-progress {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--sky-500), var(--violet-500));
+    z-index: 9999;
+    transition: width 0.1s linear;
+    border-radius: 0 0 0 2px;
+  }
+
+  /* Image showcase cards */
+  .showcase-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.03);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .showcase-card:hover {
+    border-color: rgba(255, 255, 255, 0.18);
+    transform: translateY(-4px) scale(1.01);
+    box-shadow: 0 25px 60px rgba(10, 108, 241, 0.08);
+  }
+
+  .showcase-card img {
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .showcase-card:hover img {
+    transform: scale(1.05);
+    opacity: 0.85 !important;
+  }
 }
 
 @layer utilities {
@@ -210,8 +303,70 @@ body {
     100% { background-position: 200% 0; }
   }
 
+  @keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  @keyframes gradient-shift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  @keyframes glow-pulse {
+    0%, 100% {
+      box-shadow: 0 0 20px rgba(10, 108, 241, 0.3), 0 0 40px rgba(139, 44, 245, 0.15);
+    }
+    50% {
+      box-shadow: 0 0 30px rgba(10, 108, 241, 0.5), 0 0 60px rgba(139, 44, 245, 0.25);
+    }
+  }
+
+  @keyframes draw-line {
+    from { width: 0; }
+    to { width: 100%; }
+  }
+
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes scale-in {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  @keyframes slide-in-right {
+    from { opacity: 0; transform: translateX(60px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  @keyframes slide-in-left {
+    from { opacity: 0; transform: translateX(-60px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
   .animate-float {
     animation: float 3s ease-in-out infinite;
+  }
+
+  .animate-glow-pulse {
+    animation: glow-pulse 2.5s ease-in-out infinite;
+  }
+
+  .animate-gradient-shift {
+    background-size: 200% 200%;
+    animation: gradient-shift 4s ease-in-out infinite;
+  }
+
+  .animate-spin-slow {
+    animation: spin-slow 20s linear infinite;
   }
 
   .shimmer-border {

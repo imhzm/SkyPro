@@ -21,7 +21,7 @@ async function getActor(req: NextRequest) {
   const desktopSession = await prisma.auditLog.findFirst({
     where: {
       action: 'desktop_login',
-      details: { path: ['token'], equals: bearer },
+      details: { path: ['token'] as any, equals: bearer },
     },
     select: { userId: true },
     orderBy: { createdAt: 'desc' },
