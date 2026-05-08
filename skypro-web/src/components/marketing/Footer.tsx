@@ -15,10 +15,10 @@ const footerLinks = {
     { label: 'المنصات المدعومة', href: '/platforms' },
   ],
   support: [
-    { label: 'مركز المساعدة', href: '#' },
+    { label: 'مركز المساعدة', href: '#faq' },
     { label: 'تواصل معنا', href: 'https://wa.me/201067894321' },
-    { label: 'الشروط والأحكام', href: '#' },
-    { label: 'سياسة الخصوصية', href: '#' },
+    { label: 'الشروط والأحكام', href: '/terms' },
+    { label: 'سياسة الخصوصية', href: '/privacy' },
   ],
 }
 

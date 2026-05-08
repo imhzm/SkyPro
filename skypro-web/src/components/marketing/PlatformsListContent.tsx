@@ -94,29 +94,36 @@ export function PlatformsListContent({ pages }: { pages: PlatformPageData[] }) {
           </motion.div>
 
           {/* Search and Filters */}
-          <div className="flex flex-col sm:flex-row items-center gap-3 mb-8">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-10 glass-card p-2 rounded-2xl max-w-4xl mx-auto">
+            <div className="relative w-full md:w-[350px] shrink-0">
+              <Search className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-sky-400 opacity-70" />
               <input
                 type="text"
-                placeholder="ابحث عن منصة..."
+                placeholder="ابحث عن منصة (مثال: واتساب, خرائط)..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-xl pr-10 pl-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-sky-500/40 focus:ring-1 focus:ring-sky-500/20 transition-all"
+                className="w-full bg-white/[0.02] border border-white/5 rounded-xl pr-12 pl-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-sky-500/40 focus:bg-white/[0.04] transition-all duration-300"
               />
             </div>
-            <div className="flex gap-1.5 flex-wrap justify-center">
+            <div className="flex gap-2 flex-wrap justify-center w-full md:w-auto p-2">
               {categories.map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => setCategory(cat.id)}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+                  className={`relative rounded-xl px-4 py-2 text-sm font-medium transition-all duration-300 ${
                     category === cat.id
-                      ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30'
-                      : 'bg-white/5 text-slate-400 border border-white/8 hover:bg-white/10 hover:text-white'
+                      ? 'text-white'
+                      : 'text-slate-400 hover:text-white hover:bg-white/5'
                   }`}
                 >
-                  {cat.label}
+                  {category === cat.id && (
+                    <motion.div
+                      layoutId="activeCategory"
+                      className="absolute inset-0 bg-gradient-to-r from-sky-500/20 to-violet-500/20 border border-sky-500/30 rounded-xl"
+                      transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
+                  <span className="relative z-10">{cat.label}</span>
                 </button>
               ))}
             </div>
