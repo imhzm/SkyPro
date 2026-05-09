@@ -1,8 +1,9 @@
 ﻿'use client'
 
 import Link from 'next/link'
-import { Send, ArrowLeft, Zap, Shield, Users, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, Zap, Shield, Users, CheckCircle2 } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { Logo } from '@/components/marketing/Logo'
 
 const highlights = [
   { icon: Zap, text: 'إعداد في دقائق' },
@@ -28,9 +29,9 @@ export function CtaSection() {
           whileInView={{ opacity: 1, scale: 1, rotate: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, type: 'spring', bounce: 0.5 }}
-          className="flex h-20 w-20 items-center justify-center rounded-2xl bg-white/10 border border-white/20 mx-auto mb-8 shadow-2xl shadow-black/20"
+          className="flex items-center justify-center mx-auto mb-8 drop-shadow-2xl"
         >
-          <Send className="h-10 w-10 text-white" />
+          <Logo size={88} />
         </motion.div>
 
         <motion.h2

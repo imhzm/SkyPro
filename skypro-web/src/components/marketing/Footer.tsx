@@ -1,11 +1,12 @@
 ﻿'use client'
 
-import { Send, Mail, Phone, MessageCircle, Globe, ArrowUp, Heart, Sparkles } from 'lucide-react'
+import { Mail, Phone, MessageCircle, Globe, ArrowUp, Heart, Sparkles } from 'lucide-react'
 import Link from 'next/link'
 import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { PlatformIcon } from '@/components/marketing/PlatformIcon'
 import { platforms } from '@/data/platforms'
+import { Logo } from '@/components/marketing/Logo'
 
 const footerLinks = {
   product: [
@@ -155,8 +156,8 @@ export function Footer() {
               className="lg:col-span-4"
             >
               <div className="flex items-center gap-3 mb-5 group">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-violet-500 shadow-lg shadow-sky-500/20 transition-all duration-300 group-hover:shadow-sky-500/40 group-hover:scale-105">
-                  <Send className="h-5 w-5 text-white" />
+                <div className="transition-transform duration-300 group-hover:scale-105">
+                  <Logo size={44} />
                 </div>
                 <div>
                   <span className="font-display text-lg font-bold text-white">SkyPro</span>

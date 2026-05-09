@@ -5,13 +5,14 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
   Check, ChevronDown, ArrowRight, Star, Shield,
-  Monitor, Sparkles, Send, Cpu, Lock, BarChart3, Globe,
+  Monitor, Sparkles, Cpu, Lock, BarChart3, Globe, Zap,
 } from 'lucide-react'
 import { PlatformIcon } from '@/components/marketing/PlatformIcon'
+import { Logo } from '@/components/marketing/Logo'
 import { platformPages, getPlatformIds } from '@/data/platform-pages'
 import type { PlatformPageData } from '@/data/platform-pages'
 
-const toolIcons = [Send, Cpu, Lock, BarChart3, Globe, Check]
+const toolIcons = [Zap, Cpu, Lock, BarChart3, Globe, Check]
 
 function getComparison(platform: PlatformPageData) {
   const comps: Record<string, { feature: string; us: string; them: string }[]> = {
@@ -407,7 +408,7 @@ export function PlatformPageContent({ data }: { data: PlatformPageData }) {
                     <th className="text-right px-5 py-4 text-sm font-semibold text-slate-400 w-2/5">الميزة</th>
                     <th className="text-center px-5 py-4 w-[30%]">
                       <div className="inline-flex items-center gap-2">
-                        <Send className="h-4 w-4 text-sky-400" />
+                        <Logo size={20} />
                         <span className="text-sm font-bold gradient-text-brand">SkyPro</span>
                       </div>
                     </th>
