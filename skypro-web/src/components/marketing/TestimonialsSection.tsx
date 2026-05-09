@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { motion } from 'framer-motion'
 import { Star, Quote, MessageSquareText } from 'lucide-react'
@@ -8,7 +8,7 @@ const testimonials = [
     name: 'أحمد محمد',
     role: 'مدير تسويق',
     company: 'شركة النور للتجارة',
-    text: 'سيندر برو وفّر علينا ساعات من العمل اليومي. حملاتنا التسويقية على فيسبوك واتساب أصبحت أسرع 10 مرات.',
+    text: 'SkyPro وفّر علينا ساعات من العمل اليومي. حملاتنا التسويقية على فيسبوك واتساب أصبحت أسرع 10 مرات.',
     rating: 5,
     color: 'from-sky-400 to-blue-600',
   },
@@ -32,7 +32,7 @@ const testimonials = [
     name: 'فاطمة حسن',
     role: 'مسؤولة تسويق',
     company: 'وكالة ديجيتال بلس',
-    text: 'نظام الحماية من الحظر فعلاً شغال. قبل سيندر برو كنا بنحظر كل يوم، الحمد لله الموضوع اتظبط.',
+    text: 'نظام الحماية من الحظر فعلاً شغال. قبل SkyPro كنا بنحظر كل يوم، الحمد لله الموضوع اتظبط.',
     rating: 5,
     color: 'from-emerald-400 to-green-600',
   },
@@ -48,7 +48,7 @@ const testimonials = [
     name: 'نورهان أحمد',
     role: 'صانعة محتوى',
     company: 'فري لانسر',
-    text: 'بدون سيندر برو كنت بضيع ساعات في استخراج الداتا. حالياً بدقائق بلقّي كل اللي محتاجاه.',
+    text: 'بدون SkyPro كنت بضيع ساعات في استخراج الداتا. حالياً بدقائق بلقّي كل اللي محتاجاه.',
     rating: 5,
     color: 'from-cyan-400 to-teal-600',
   },
@@ -97,7 +97,7 @@ export function TestimonialsSection() {
             transition={{ delay: 0.15 }}
             className="section-desc mt-3"
           >
-            آراء حقيقية من مستخدمين يثقون في سيندر برو
+            آراء حقيقية من مستخدمين يثقون في SkyPro
           </motion.p>
         </div>
 

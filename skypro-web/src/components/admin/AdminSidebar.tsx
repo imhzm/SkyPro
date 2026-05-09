@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
@@ -66,7 +66,7 @@ export function AdminSidebar() {
               </div>
               {!collapsed && (
                 <div>
-                  <span className="text-lg font-bold gradient-text-brand">سيندر برو</span>
+                  <span className="text-lg font-bold gradient-text-brand">SkyPro</span>
                   <p className="text-[10px] text-slate-500 leading-tight">لوحة التحكم</p>
                 </div>
               )}

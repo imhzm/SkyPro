@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -79,7 +79,7 @@ export default function ResetPasswordForm() {
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-violet-500 shadow-lg shadow-sky-500/20">
               <Send className="h-5 w-5 text-white" />
             </div>
-            <span className="text-2xl font-bold gradient-text-brand">سيندر برو</span>
+            <span className="text-2xl font-bold gradient-text-brand">SkyPro</span>
           </Link>
           <p className="text-slate-400 mt-3">إعادة تعيين كلمة المرور</p>
         </div>

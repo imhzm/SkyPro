@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import Link from 'next/link'
 import { useState, useMemo } from 'react'
@@ -194,7 +194,7 @@ export function PlatformsListContent({ pages }: { pages: PlatformPageData[] }) {
                   <Star key={i} className="w-5 h-5 fill-amber-400 text-amber-400" />
                 ))}
               </div>
-              <p className="text-lg text-white font-semibold mb-2">+5,000 مسوق يثقون في سيندر برو</p>
+              <p className="text-lg text-white font-semibold mb-2">+5,000 مسوق يثقون في SkyPro</p>
               <p className="text-sm text-slate-400">جرّب مجاناً ليومين — بدون بطاقة ائتمان</p>
             </div>
 

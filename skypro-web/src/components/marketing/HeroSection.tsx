@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { platforms } from '@/data/platforms'
 import { useEffect, useState, useRef } from 'react'
@@ -97,7 +97,7 @@ export function HeroSection() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-400" />
             </span>
-            منتج من Sky Wave — أقوى أداة تسويق آلي
+            مُدعوم بالذكاء الاصطناعي · ثقة +10,000 شركة عربية · من Sky Wave
           </motion.div>
 
           {/* Heading */}
@@ -107,11 +107,10 @@ export function HeroSection() {
             transition={{ duration: 0.7, delay: 0.1 }}
             className="text-4xl sm:text-5xl lg:text-7xl font-bold leading-[1.1] mb-6"
           >
-            <span className="text-white">أتمت تسويقك على</span>
-            <br />
+            <span className="text-white">سرّع نموّك على</span>{' '}
             <span className="gradient-text-brand">18+ منصة</span>
             <br />
-            <span className="text-white">بضغطة واحدة</span>
+            <span className="text-white">بدون أي خبرة تقنية</span>
           </motion.h1>
 
           {/* Subtitle */}
@@ -121,7 +120,9 @@ export function HeroSection() {
             transition={{ duration: 0.7, delay: 0.2 }}
             className="text-lg sm:text-xl text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed"
           >
-            استخرج بيانات العملاء، أرسل رسائل جماعية، وأدر حسابات متعددة — كل ذلك من تطبيق واحد احترافي.
+            <strong className="text-white">SkyPro</strong> منصة التسويق الآلي رقم 1 عربياً —
+            استخرج بيانات العملاء بدقة، أطلق حملات جماعية ذكية،
+            وأدر حسابات متعددة في وقت واحد. <span className="text-sky-400 font-semibold">وفّر 90% من وقتك</span> وضاعِف نتائجك.
           </motion.p>
 
           {/* CTA buttons */}
@@ -217,7 +218,7 @@ export function HeroSection() {
             <div className="showcase-card">
               <Image
                 src="/images/hero-dashboard.png"
-                alt="لوحة تحكم سيندر برو — إدارة الحملات وتتبع الأداء لحظياً"
+                alt="لوحة تحكم SkyPro — إدارة الحملات وتتبع الأداء لحظياً"
                 width={1400}
                 height={512}
                 className="h-64 w-full object-cover opacity-80"

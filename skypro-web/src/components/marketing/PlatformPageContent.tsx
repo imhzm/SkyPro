@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
@@ -45,9 +45,9 @@ function getComparison(platform: PlatformPageData) {
 function getTestimonial(platform: PlatformPageData) {
   const testimonials: Record<string, { name: string; role: string; text: string; rating: number }[]> = {
     facebook: [
-      { name: 'أحمد محمد', role: 'صاحب متجر إلكتروني', text: 'سيندر برو وفّر عليّ ساعات يومياً. حملات فيسبوك صارت أسرع 10 مرات والنتايج أحسن بكثير.', rating: 5 },
+      { name: 'أحمد محمد', role: 'صاحب متجر إلكتروني', text: 'SkyPro وفّر عليّ ساعات يومياً. حملات فيسبوك صارت أسرع 10 مرات والنتايج أحسن بكثير.', rating: 5 },
       { name: 'سارة علي', role: 'مديرة تسويق', text: 'أفضل أداة استخدمتها. استخراج الأعضاء من الجروبات وسيلة لا تقدر بثمن.', rating: 5 },
-      { name: 'محمد حسين', role: 'وكالة تسويق رقمي', text: 'نشر 200+ جروب في ساعة واحدة. كان بيآخد يوم كامل قبل سيندر برو.', rating: 5 },
+      { name: 'محمد حسين', role: 'وكالة تسويق رقمي', text: 'نشر 200+ جروب في ساعة واحدة. كان بيآخد يوم كامل قبل SkyPro.', rating: 5 },
     ],
     whatsapp: [
       { name: 'محمد خالد', role: 'مدير مبيعات', text: 'حملات واتساب بتوصل لعملاء حقيقيين. معدل الاستجابة 45% — أفضل من أي أداة تانية.', rating: 5 },
@@ -61,8 +61,8 @@ function getTestimonial(platform: PlatformPageData) {
     ],
   }
   return testimonials[platform.id] || [
-    { name: 'محمد أحمد', role: 'مسوق رقمي', text: `سيندر برو غيّر طريقة عملي على ${platform.arabicName}. الأتمتة وفرّت عليّ وقت كتير والنتايج أحسن بكتير.`, rating: 5 },
-    { name: 'نور الدين', role: 'صاحب متجر', text: `${platform.arabicName} كان بيآخد وقت طويل، بس مع سيندر برو كل شيء اتعمل تلقائي وبدقة عالية.`, rating: 5 },
+    { name: 'محمد أحمد', role: 'مسوق رقمي', text: `SkyPro غيّر طريقة عملي على ${platform.arabicName}. الأتمتة وفرّت عليّ وقت كتير والنتايج أحسن بكتير.`, rating: 5 },
+    { name: 'نور الدين', role: 'صاحب متجر', text: `${platform.arabicName} كان بيآخد وقت طويل، بس مع SkyPro كل شيء اتعمل تلقائي وبدقة عالية.`, rating: 5 },
   ]
 }
 
@@ -148,7 +148,7 @@ export function PlatformPageContent({ data }: { data: PlatformPageData }) {
               </div>
               <div className="text-right">
                 <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white">{data.arabicName}</h1>
-                <p className="text-xl sm:text-2xl gradient-text-brand font-bold">سيندر برو</p>
+                <p className="text-xl sm:text-2xl gradient-text-brand font-bold">SkyPro</p>
               </div>
             </div>
 
@@ -192,7 +192,7 @@ export function PlatformPageContent({ data }: { data: PlatformPageData }) {
                     <div className="w-3 h-3 rounded-full bg-emerald-500/80" />
                     <div className="flex-1 bg-white/5 rounded-lg h-7 mx-4 flex items-center px-3">
                       <Monitor className="h-3 w-3 text-slate-500 ml-2" />
-                      <span className="text-[11px] text-slate-600 mr-auto">senderpro.skywaveads.com/{data.id}</span>
+                      <span className="text-[11px] text-slate-600 mr-auto">skypro.skywaveads.com/{data.id}</span>
                       <div className="flex gap-1 ml-auto">
                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                         <span className="text-[9px] text-emerald-400">متصل</span>
@@ -393,9 +393,9 @@ export function PlatformPageContent({ data }: { data: PlatformPageData }) {
           <Section>
             <div className="text-center mb-14">
               <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-4 py-1.5 text-[12px] font-semibold text-emerald-400 mb-4">
-                لماذا سيندر برو؟
+                لماذا SkyPro؟
               </div>
-              <h2 className="section-title gradient-text mb-3">{data.arabicName} سيندر برو <span className="gradient-text">مقابل المنافسين</span></h2>
+              <h2 className="section-title gradient-text mb-3">{data.arabicName} SkyPro <span className="gradient-text">مقابل المنافسين</span></h2>
             </div>
           </Section>
 
@@ -408,7 +408,7 @@ export function PlatformPageContent({ data }: { data: PlatformPageData }) {
                     <th className="text-center px-5 py-4 w-[30%]">
                       <div className="inline-flex items-center gap-2">
                         <Send className="h-4 w-4 text-sky-400" />
-                        <span className="text-sm font-bold gradient-text-brand">سيندر برو</span>
+                        <span className="text-sm font-bold gradient-text-brand">SkyPro</span>
                       </div>
                     </th>
                     <th className="text-center px-5 py-4 text-sm font-semibold text-slate-600 w-[30%]">المنافسون</th>
@@ -433,7 +433,7 @@ export function PlatformPageContent({ data }: { data: PlatformPageData }) {
           </Section>
 
           <Section className="mt-8 text-center">
-            <Link href="/auth/register" className="btn-primary px-8 py-3">جرّب سيندر برو مجاناً</Link>
+            <Link href="/auth/register" className="btn-primary px-8 py-3">جرّب SkyPro مجاناً</Link>
           </Section>
         </div>
       </section>
@@ -583,7 +583,7 @@ export function PlatformPageContent({ data }: { data: PlatformPageData }) {
                   جاهز تبدأ التسويق على {data.arabicName}؟
                 </h2>
                 <p className="text-lg text-slate-400 mb-8 max-w-xl mx-auto">
-                  انضم لأكثر من 5,000 مسوق يستخدمون سيندر برو لأتمتة حملاتهم على {data.arabicName} و 18+ منصة أخرى.
+                  انضم لأكثر من 5,000 مسوق يستخدمون SkyPro لأتمتة حملاتهم على {data.arabicName} و 18+ منصة أخرى.
                 </p>
                 <div className="flex flex-wrap items-center justify-center gap-4">
                   <Link href="/auth/register" className="btn-primary text-lg px-10 py-4 shadow-2xl shadow-sky-500/20">

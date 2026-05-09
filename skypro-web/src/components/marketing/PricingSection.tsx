@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { Check, Shield, RotateCcw, CreditCard, Zap, Clock, Headphones, TrendingUp, DollarSign } from 'lucide-react'
 import { motion } from 'framer-motion'
@@ -83,7 +83,7 @@ export function PricingSection() {
             </div>
 
             <div className="text-center relative z-10">
-              <h3 className="text-2xl font-bold text-white mb-2">سيندر برو</h3>
+              <h3 className="text-2xl font-bold text-white mb-2">SkyPro</h3>
               <p className="text-slate-500 mb-8 text-sm">اشتراك سنوي — كل المميزات متاحة</p>
 
               <div className="flex items-baseline justify-center gap-2 mb-2">

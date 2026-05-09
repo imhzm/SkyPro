@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { faqs } from '@/data/platforms'
 import { useState } from 'react'
@@ -41,7 +41,7 @@ export function FaqSection() {
             transition={{ delay: 0.15 }}
             className="section-desc mt-3"
           >
-            إجابات على أكثر الأسئلة تكراراً حول سيندر برو
+            إجابات على أكثر الأسئلة تكراراً حول SkyPro
           </motion.p>
         </div>
 

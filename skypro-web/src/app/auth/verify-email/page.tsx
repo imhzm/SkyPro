@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -52,7 +52,7 @@ function VerifyEmailForm() {
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-violet-500 shadow-lg shadow-sky-500/20">
               <Send className="h-5 w-5 text-white" />
             </div>
-            <span className="text-2xl font-bold gradient-text-brand">سيندر برو</span>
+            <span className="text-2xl font-bold gradient-text-brand">SkyPro</span>
           </Link>
         </div>
 

@@ -18,7 +18,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
   const data = getPlatformPage(id)
-  if (!data) return { title: 'المنصة غير موجودة | سيندر برو' }
+  if (!data) return { title: 'المنصة غير موجودة | SkyPro' }
 
   return {
     title: data.metaTitle,
@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: data.metaTitle,
       description: data.metaDescription,
       url: `https://skypro.skywaveads.com/platforms/${id}`,
-      siteName: 'سيندر برو — Sky Wave',
+      siteName: 'SkyPro — Sky Wave',
       type: 'website',
     },
     alternates: {
@@ -45,7 +45,7 @@ export default async function PlatformPage({ params }: Props) {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
-    name: `سيندر برو — ${data.arabicName}`,
+    name: `SkyPro — ${data.arabicName}`,
     description: data.schemaDescription,
     applicationCategory: data.schemaCategory,
     operatingSystem: 'Windows',
