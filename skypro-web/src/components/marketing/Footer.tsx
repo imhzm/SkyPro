@@ -277,23 +277,38 @@ export function Footer() {
               <p className="text-sm text-slate-600">
                 &copy; {new Date().getFullYear()} سيندر برو — Sky Wave Ads. جميع الحقوق محفوظة.
               </p>
-              <p className="text-sm text-slate-600 flex items-center gap-1.5">
-                صُنع بـ <Heart className="h-3.5 w-3.5 text-rose-500 fill-rose-500" /> في مصر
+              <p className="text-sm text-slate-600 flex items-center gap-1.5 flex-wrap justify-center sm:justify-start">
+                صُنع بـ <Heart className="h-3.5 w-3.5 text-rose-500 fill-rose-500 animate-pulse" /> بواسطة
+                <a
+                  href="https://www.skywaveads.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sky-400 hover:text-sky-300 font-semibold transition-colors"
+                >
+                  Sky Wave
+                </a>
               </p>
             </div>
           </div>
         </div>
 
-        {/* Back to top button */}
+        {/* Back to top button (right side, opposite WhatsApp) */}
         <motion.button
           onClick={scrollToTop}
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={showBackToTop ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
-          transition={{ duration: 0.3 }}
-          className="fixed bottom-6 left-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-sky-500 to-violet-500 text-white shadow-2xl shadow-sky-500/30 hover:scale-110 hover:shadow-sky-500/50 transition-all duration-300"
+          initial={{ opacity: 0, scale: 0.8, y: 20 }}
+          animate={
+            showBackToTop
+              ? { opacity: 1, scale: 1, y: 0 }
+              : { opacity: 0, scale: 0.8, y: 20, pointerEvents: 'none' }
+          }
+          transition={{ duration: 0.3, ease: 'easeOut' }}
+          whileTap={{ scale: 0.92 }}
+          className="group fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-sky-500 via-blue-500 to-violet-500 text-white shadow-2xl shadow-sky-500/40 hover:shadow-sky-500/60 hover:scale-105 transition-all duration-300"
           aria-label="رجوع للأعلى"
         >
-          <ArrowUp className="h-5 w-5" />
+          <span className="absolute inset-0 rounded-full bg-sky-400/20 animate-ping" />
+          <span className="absolute inset-1 rounded-full bg-gradient-to-tr from-white/20 to-transparent" />
+          <ArrowUp className="relative h-6 w-6 drop-shadow-md transition-transform duration-300 group-hover:-translate-y-0.5" strokeWidth={2.5} />
         </motion.button>
       </footer>
     </>
