@@ -7,6 +7,7 @@ import Image from 'next/image'
 import { ArrowDown, Shield, Zap, Users, Globe } from 'lucide-react'
 import { motion, useInView } from 'framer-motion'
 import { PlatformIcon } from '@/components/marketing/PlatformIcon'
+import { StatusWidget } from '@/components/marketing/StatusWidget'
 
 const stats = [
   { value: 18, suffix: '+', label: 'منصة مدعومة', icon: Globe },
@@ -86,18 +87,21 @@ export function HeroSection() {
 
       <div className="relative z-10 section-shell w-full pt-32 pb-20 lg:pt-40 lg:pb-28">
         <div className="max-w-4xl mx-auto text-center">
-          {/* Badge */}
+          {/* Badge + Live Status */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={mounted ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6 }}
-            className="inline-flex items-center gap-2 rounded-full bg-sky-500/10 border border-sky-500/20 px-4 py-1.5 text-[12px] font-semibold text-sky-400 mb-8"
+            className="flex flex-wrap items-center justify-center gap-2.5 mb-8"
           >
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-400" />
+            <span className="inline-flex items-center gap-2 rounded-full bg-sky-500/10 border border-sky-500/20 px-4 py-1.5 text-[12px] font-semibold text-sky-400">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-400" />
+              </span>
+              مُدعوم بالذكاء الاصطناعي · ثقة +10,000 شركة · من Sky Wave
             </span>
-            مُدعوم بالذكاء الاصطناعي · ثقة +10,000 شركة عربية · من Sky Wave
+            <StatusWidget />
           </motion.div>
 
           {/* Heading */}
