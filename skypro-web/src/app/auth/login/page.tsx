@@ -1,12 +1,14 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { signIn } from 'next-auth/react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Eye, EyeOff, Mail, Lock, Send } from 'lucide-react'
 
-export default function LoginPage() {
+function LoginContent() {
+  const params = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -15,11 +17,14 @@ export default function LoginPage() {
   const [notice, setNotice] = useState('')
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
     if (params.get('message') === 'trial-created') {
       setNotice('تم إنشاء حسابك وتفعيل تجربة SkyPro لمدة يومين. أرسلنا بيانات الدخول والسيريال إلى بريدك، وإذا لم تظهر الرسالة في الوارد راجع قسم Spam/Junk.')
     }
-  }, [])
+    const errParam = params.get('error')
+    if (errParam) {
+      setError(decodeURIComponent(errParam))
+    }
+  }, [params])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -28,24 +33,33 @@ export default function LoginPage() {
 
     try {
       const res = await signIn('credentials', {
-        email,
+        email: email.trim().toLowerCase(),
         password,
         redirect: false,
       })
 
-      if (res?.ok && !res.error) {
-        // Session is now established, check user role
-        const sessionRes = await fetch('/api/auth/me')
-        const sessionData = await sessionRes.json()
-        if (sessionData.success && sessionData.data?.role === 'admin') {
-          window.location.href = '/admin'
-        } else {
-          window.location.href = '/'
-        }
-      } else {
-        setError(res?.error || 'فشل تسجيل الدخول')
+      if (!res?.ok || res.error) {
+        setError(res?.error || 'بيانات الدخول غير صحيحة')
         setLoading(false)
+        return
       }
+
+      const callback = params.get('callbackUrl')
+      let target = callback && callback.startsWith('/') ? callback : '/dashboard'
+
+      try {
+        const meRes = await fetch('/api/auth/me', { cache: 'no-store' })
+        if (meRes.ok) {
+          const me = await meRes.json()
+          if (me?.success && me.data?.role === 'admin' && !callback) {
+            target = '/admin'
+          }
+        }
+      } catch {
+        // Fall back to /dashboard if /api/auth/me fails
+      }
+
+      window.location.href = target
     } catch {
       setError('فشل الاتصال بالخادم')
       setLoading(false)
@@ -183,5 +197,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#060d1b]" />}>
+      <LoginContent />
+    </Suspense>
   )
 }

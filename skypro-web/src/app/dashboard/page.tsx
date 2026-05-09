@@ -5,7 +5,7 @@ import { prisma } from '@/lib/db'
 import { redirect } from 'next/navigation'
 import {
   Key, Calendar, Monitor, Clock, ArrowUpRight,
-  CheckCircle2, AlertCircle, XCircle, Copy, Download
+  CheckCircle2, AlertCircle, XCircle, Download
 } from 'lucide-react'
 import CopyButton from '@/components/dashboard/CopyButton'
 import RenewButton from '@/components/dashboard/RenewButton'
@@ -33,6 +33,7 @@ function getDaysLeft(expiresAt: Date | null) {
 
 export default async function DashboardPage() {
   const session = await auth()
+  // Layout already enforces auth, but re-check defensively for type safety.
   if (!session?.user?.id) redirect('/auth/login')
 
   const userId = Number(session.user.id)
