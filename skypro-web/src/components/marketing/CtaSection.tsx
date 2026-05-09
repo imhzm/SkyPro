@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import Link from 'next/link'
 import { Send, ArrowLeft, Zap, Shield, Users, CheckCircle2 } from 'lucide-react'
@@ -50,7 +50,7 @@ export function CtaSection() {
           transition={{ delay: 0.3 }}
           className="text-lg sm:text-xl text-white/80 mb-10 max-w-2xl mx-auto leading-relaxed"
         >
-          انضم إلى آلاف المسوقين الذين يعتمدون على سيندر برو. جرّب مجاناً ليومين وبدون بطاقة ائتمانية.
+          انضم إلى آلاف المسوقين الذين يعتمدون على SkyPro. جرّب مجاناً ليومين وبدون بطاقة ائتمانية.
         </motion.p>
 
         <motion.div

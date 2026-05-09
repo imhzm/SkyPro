@@ -309,6 +309,103 @@ body {
     100% { transform: translateX(calc(-50% - 1rem)); }
   }
 
+  /* ============== Legal pages typography (privacy / terms) ============== */
+  .prose-legal h3 {
+    color: #e2e8f0;
+    font-weight: 700;
+    font-size: 1.05rem;
+    margin-top: 1.25rem;
+    margin-bottom: 0.5rem;
+  }
+  .prose-legal p {
+    margin-bottom: 0.75rem;
+  }
+  .prose-legal ul {
+    list-style: none;
+    padding: 0;
+    margin: 0.5rem 0 0.75rem 0;
+  }
+  .prose-legal ul > li {
+    position: relative;
+    padding-inline-start: 1.25rem;
+    padding-block: 0.25rem;
+    color: rgb(203 213 225);
+  }
+  .prose-legal ul > li::before {
+    content: '';
+    position: absolute;
+    inset-inline-start: 0;
+    top: 0.65rem;
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--sky-400), var(--violet-500));
+  }
+  .prose-legal strong {
+    color: #fff;
+    font-weight: 700;
+  }
+  .prose-legal a {
+    color: var(--sky-400);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+  .prose-legal a:hover {
+    color: #93c5fd;
+  }
+
+  .legal-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.75rem 0;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .legal-table th,
+  .legal-table td {
+    text-align: right;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    font-size: 0.875rem;
+  }
+  .legal-table th {
+    background: rgba(255, 255, 255, 0.04);
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .legal-table tr:last-child td {
+    border-bottom: none;
+  }
+  .legal-table td {
+    color: rgb(203 213 225);
+  }
+
+  .callout-info,
+  .callout-warn {
+    border-radius: 12px;
+    padding: 0.875rem 1rem;
+    font-size: 0.9rem;
+    line-height: 1.7;
+    margin: 0.5rem 0;
+    border-inline-start: 3px solid;
+  }
+  .callout-info {
+    background: rgba(14, 165, 233, 0.08);
+    border-color: var(--sky-400);
+    color: rgb(186 230 253);
+  }
+  .callout-warn {
+    background: rgba(251, 191, 36, 0.08);
+    border-color: rgb(245 158 11);
+    color: rgb(253 230 138);
+  }
+
   @keyframes gradient-shift {
     0%, 100% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }

@@ -1,4 +1,4 @@
-import { Metadata } from 'next'
+﻿import { Metadata } from 'next'
 import Image from 'next/image'
 import { platformPages, getPlatformIds } from '@/data/platform-pages'
 import { PlatformsListContent } from '@/components/marketing/PlatformsListContent'
@@ -7,14 +7,14 @@ import { Footer } from '@/components/marketing/Footer'
 import { WhatsAppButton } from '@/components/marketing/WhatsAppButton'
 
 export const metadata: Metadata = {
-  title: 'المنصات المدعومة | سيندر برو — 18+ منصة تسويق آلي',
-  description: 'استكشف 18+ منصة مدعومة في سيندر برو: فيسبوك، واتساب، انستغرام، تويتر، لينكد إن، تيليجرام والمزيد. أتمت حملاتك التسويقية على كل المنصات.',
-  keywords: 'منصات تسويق آلي, فيسبوك, واتساب, انستغرام, تويتر, لينكد إن, تيليجرام, تيك توك, سيندر برو',
+  title: 'المنصات المدعومة | SkyPro — 18+ منصة تسويق آلي',
+  description: 'استكشف 18+ منصة مدعومة في SkyPro: فيسبوك، واتساب، انستغرام، تويتر، لينكد إن، تيليجرام والمزيد. أتمت حملاتك التسويقية على كل المنصات.',
+  keywords: 'منصات تسويق آلي, فيسبوك, واتساب, انستغرام, تويتر, لينكد إن, تيليجرام, تيك توك, SkyPro',
   openGraph: {
-    title: 'المنصات المدعومة | سيندر برو',
+    title: 'المنصات المدعومة | SkyPro',
     description: '18+ منصة تسويق آلي في مكان واحد',
     url: 'https://skypro.skywaveads.com/platforms',
-    siteName: 'سيندر برو — Sky Wave',
+    siteName: 'SkyPro — Sky Wave',
     type: 'website',
   },
 }
@@ -26,13 +26,13 @@ export default function PlatformsPage() {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
-    name: 'منصات سيندر برو المدعومة',
-    description: 'جميع المنصات المدعومة في سيندر برو لأتمتة التسويق',
+    name: 'منصات SkyPro المدعومة',
+    description: 'جميع المنصات المدعومة في SkyPro لأتمتة التسويق',
     numberOfItems: pages.length,
     itemListElement: pages.map((p, index) => ({
       '@type': 'ListItem',
       position: index + 1,
-      name: `سيندر برو - ${p.arabicName}`,
+      name: `SkyPro - ${p.arabicName}`,
       url: `https://skypro.skywaveads.com/platforms/${p.id}`,
     })),
   }

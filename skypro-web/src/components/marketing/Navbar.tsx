@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import Link from 'next/link'
 import { useState, useEffect, useCallback } from 'react'
@@ -75,7 +75,7 @@ export function Navbar() {
                 <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </div>
               <span className="flex min-w-0 flex-col">
-                <span className="truncate font-display text-lg font-bold tracking-wide text-white">سيندر برو</span>
+                <span className="truncate font-display text-lg font-bold tracking-wide text-white">SkyPro</span>
                 <span className="truncate text-[10px] text-slate-500 transition-colors group-hover:text-slate-400">by Sky Wave</span>
               </span>
             </Link>
@@ -186,7 +186,7 @@ export function Navbar() {
                       <Send className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                      <span className="font-display text-lg font-bold text-white">سيندر برو</span>
+                      <span className="font-display text-lg font-bold text-white">SkyPro</span>
                       <span className="block text-[10px] text-slate-500">by Sky Wave</span>
                     </div>
                   </div>

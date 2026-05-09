@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { Send, Mail, Phone, MessageCircle, Globe, ArrowUp, Heart, Sparkles } from 'lucide-react'
 import Link from 'next/link'
@@ -159,12 +159,14 @@ export function Footer() {
                   <Send className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <span className="font-display text-lg font-bold text-white">سيندر برو</span>
+                  <span className="font-display text-lg font-bold text-white">SkyPro</span>
                   <span className="block text-[10px] text-slate-600">by Sky Wave</span>
                 </div>
               </div>
               <p className="text-sm text-slate-500 leading-relaxed max-w-sm mb-6">
-                أقوى أداة تسويق آلي لمنصات التواصل الاجتماعي. منتج من Sky Wave — وكالة النمو الرقمي.
+                <strong className="text-slate-300">SkyPro</strong> هو الجيل الجديد من التسويق الآلي —
+                مساحة عمل موحّدة لاستخراج البيانات، البث الجماعي، وإدارة الحسابات على 18+ منصة.
+                مصنوع بإتقان من <strong className="text-slate-300">Sky Wave</strong> — وكالة النمو الرقمي الأولى في المنطقة.
               </p>
               <div className="flex items-center gap-3">
                 {[
@@ -275,7 +277,7 @@ export function Footer() {
           <div className="border-t border-white/6 mt-12 pt-8">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <p className="text-sm text-slate-600">
-                &copy; {new Date().getFullYear()} سيندر برو — Sky Wave Ads. جميع الحقوق محفوظة.
+                &copy; {new Date().getFullYear()} SkyPro — Sky Wave Ads. جميع الحقوق محفوظة.
               </p>
               <p className="text-sm text-slate-600 flex items-center gap-1.5 flex-wrap justify-center sm:justify-start">
                 صُنع بـ <Heart className="h-3.5 w-3.5 text-rose-500 fill-rose-500 animate-pulse" /> بواسطة

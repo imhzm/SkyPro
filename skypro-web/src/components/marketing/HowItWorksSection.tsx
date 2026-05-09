@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { motion } from 'framer-motion'
 import Image from 'next/image'
@@ -16,7 +16,7 @@ const steps = [
   {
     icon: Download,
     title: 'حمّل التطبيق',
-    desc: 'نزّل تطبيق سيندر برو على جهازك وأدخل مفتاح التفعيل',
+    desc: 'نزّل تطبيق SkyPro على جهازك وأدخل مفتاح التفعيل',
     detail: 'تثبيت في أقل من دقيقتين',
     color: 'from-violet-400 to-purple-600',
     shadow: 'shadow-violet-500/30',
