@@ -13,6 +13,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   email_not_verified: 'بريدك الإلكتروني لم يُؤكَّد بعد. تحقّق من رسالتك أو اطلب رابطاً جديداً بالأسفل.',
   account_suspended: 'حسابك محظور — تواصل مع الدعم الفني',
   account_deleted: 'هذا الحساب محذوف ولا يمكن استخدامه',
+  account_locked: 'تم قفل الحساب مؤقتاً بعد عدة محاولات فاشلة. حاول بعد 30 دقيقة أو استخدم استعادة كلمة المرور.',
   google_only_account: 'هذا الحساب مرتبط بـ Google — استخدم زر Google للدخول',
   rate_limited: 'محاولات كثيرة جداً — انتظر قليلاً ثم حاول مرة أخرى',
   CredentialsSignin: 'بيانات الدخول غير صحيحة',

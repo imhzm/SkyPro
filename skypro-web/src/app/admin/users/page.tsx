@@ -6,6 +6,7 @@ import {
   Check,
   Copy,
   Key,
+  LogOut,
   Mail,
   Monitor,
   Plus,
@@ -18,6 +19,7 @@ import {
   Users,
   X
 } from 'lucide-react'
+import { useToast } from '@/components/ui/Toaster'
 
 interface LatestKey {
   keyCode: string
@@ -86,6 +88,7 @@ function formatDate(value?: string | null) {
 }
 
 export default function AdminUsersPage() {
+  const { success: toastSuccess, error: toastError } = useToast()
   const [users, setUsers] = useState<User[]>([])
   const [statusCounts, setStatusCounts] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
@@ -164,6 +167,27 @@ export default function AdminUsersPage() {
   }
 
   const refreshUsers = () => setReloadToken((value) => value + 1)
+
+  const forceLogout = async (user: User) => {
+    setActionUserId(user.id)
+    try {
+      const res = await fetch('/api/admin/users/force-logout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        toastSuccess(data.message || 'تم إنهاء الجلسات')
+      } else {
+        toastError(data.error || 'فشلت العملية')
+      }
+    } catch {
+      toastError('فشل الاتصال بالخادم')
+    } finally {
+      setActionUserId(null)
+    }
+  }
 
   const deleteUser = async (user: User) => {
     setActionUserId(user.id)
@@ -520,6 +544,17 @@ export default function AdminUsersPage() {
                           >
                             <UserCheck size={15} />
                             فك الحظر
+                          </button>
+                        )}
+                        {user.status === 'active' && (
+                          <button
+                            onClick={() => forceLogout(user)}
+                            disabled={actionUserId === user.id}
+                            className="admin-btn-secondary !px-3 !py-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            title="إنهاء كل الجلسات النشطة لهذا المستخدم"
+                          >
+                            <LogOut size={15} />
+                            إنهاء الجلسات
                           </button>
                         )}
                         {user.role !== 'admin' && user.status !== 'deleted' && (
