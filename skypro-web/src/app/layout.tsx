@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { CookieBanner } from '@/components/marketing/CookieBanner'
+import { Analytics } from '@/components/analytics/Analytics'
 
 const SITE_URL = 'https://skypro.skywaveads.com'
 const SITE_NAME = 'SkyPro'
@@ -223,6 +224,7 @@ export default function RootLayout({
           {children}
         </div>
         <CookieBanner />
+        <Analytics />
       </body>
     </html>
   )
