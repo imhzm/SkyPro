@@ -1,11 +1,21 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { checkRateLimit, getClientIp } from '@/lib/request-security'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const ip = getClientIp(req)
+    const ipLimit = checkRateLimit(`auth-me:ip:${ip}`, 120, 60 * 1000) // 120/min per IP
+    if (!ipLimit.allowed) {
+      return NextResponse.json(
+        { success: false, error: 'طلبات كثيرة جداً' },
+        { status: 429, headers: { 'Retry-After': String(ipLimit.retryAfter) } }
+      )
+    }
+
     const session = await auth()
 
     if (!session?.user?.id) {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
+import { checkRateLimit, getClientIp } from '@/lib/request-security'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,6 +20,16 @@ function getRedirectUri(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  // Rate-limit OAuth initiations per IP to prevent abuse
+  const ip = getClientIp(req)
+  const limit = checkRateLimit(`google-oauth:init:${ip}`, 30, 60 * 60 * 1000)
+  if (!limit.allowed) {
+    return new NextResponse('Too many requests', {
+      status: 429,
+      headers: { 'Retry-After': String(limit.retryAfter) },
+    })
+  }
+
   const clientId = process.env.GOOGLE_CLIENT_ID
   if (!clientId) {
     return NextResponse.redirect(

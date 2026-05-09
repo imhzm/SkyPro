@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { encode } from 'next-auth/jwt'
 import { prisma } from '@/lib/db'
 import { generateApiKey, getTrialEndDate } from '@/lib/utils'
+import { checkRateLimit, getClientIp } from '@/lib/request-security'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,6 +35,13 @@ function getRedirectUri(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  // Rate-limit callback per IP (prevent abuse / brute-force on state)
+  const ip = getClientIp(req)
+  const limit = checkRateLimit(`google-oauth:callback:${ip}`, 60, 60 * 60 * 1000)
+  if (!limit.allowed) {
+    return loginRedirect(req, 'محاولات كثيرة — انتظر قليلاً')
+  }
+
   const code = req.nextUrl.searchParams.get('code')
   const state = req.nextUrl.searchParams.get('state')
   const oauthError = req.nextUrl.searchParams.get('error')

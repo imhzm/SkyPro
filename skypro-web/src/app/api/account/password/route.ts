@@ -71,14 +71,22 @@ export async function POST(req: NextRequest) {
     const newHash = hashPassword(newPassword)
     await prisma.user.update({
       where: { id: user.id },
-      data: { passwordHash: newHash },
+      data: {
+        passwordHash: newHash,
+        passwordChangedAt: new Date(), // forces all old sessions to invalidate
+        failedLoginCount: 0,
+        lockedUntil: null,
+      },
     })
 
     await prisma.auditLog.create({
       data: { userId: user.id, action: 'password_changed', ipAddress },
     })
 
-    return NextResponse.json(successResponse(null, 'تم تغيير كلمة المرور بنجاح'))
+    return NextResponse.json(successResponse(
+      { sessionInvalidated: true },
+      'تم تغيير كلمة المرور بنجاح. كل الجلسات الأخرى تم إنهاؤها.'
+    ))
   } catch (err) {
     console.error('Password change error:', err)
     return NextResponse.json(errorResponse(getErrorMessage(err)), { status: 500 })

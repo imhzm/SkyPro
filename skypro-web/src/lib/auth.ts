@@ -13,6 +13,40 @@ class AccountSuspended extends CredentialsSignin { code = 'account_suspended' }
 class AccountDeleted extends CredentialsSignin { code = 'account_deleted' }
 class TooManyAttempts extends CredentialsSignin { code = 'rate_limited' }
 class GoogleOnlyAccount extends CredentialsSignin { code = 'google_only_account' }
+class AccountLocked extends CredentialsSignin { code = 'account_locked' }
+
+// Lockout policy
+const MAX_FAILED_LOGINS = 5
+const LOCKOUT_DURATION_MS = 30 * 60 * 1000 // 30 minutes
+
+async function recordFailedLogin(userId: number) {
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: { failedLoginCount: { increment: 1 } },
+    select: { failedLoginCount: true },
+  })
+  if (user.failedLoginCount >= MAX_FAILED_LOGINS) {
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        lockedUntil: new Date(Date.now() + LOCKOUT_DURATION_MS),
+        failedLoginCount: 0, // reset after lockout to allow next cycle
+      },
+    })
+  }
+}
+
+async function clearFailedLoginCount(userId: number, ipAddress: string | null) {
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      failedLoginCount: 0,
+      lockedUntil: null,
+      lastLoginAt: new Date(),
+      lastLoginIp: ipAddress?.slice(0, 60) ?? null,
+    },
+  })
+}
 
 async function sendWelcomeEmailThroughApi(subject: string, welcomeData: Record<string, unknown>) {
   const baseUrl = process.env.NEXTAUTH_URL?.replace(/\/$/, '')
@@ -85,6 +119,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           throw new AccountDeleted()
         }
 
+        // Account lockout: reject if currently locked
+        if (user.lockedUntil && user.lockedUntil > new Date()) {
+          throw new AccountLocked()
+        }
+
         if (!user.passwordHash) {
           // Account exists but has no password — Google OAuth only.
           throw new GoogleOnlyAccount()
@@ -96,6 +135,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         )
 
         if (!isValid) {
+          await recordFailedLogin(user.id)
           throw new InvalidCredentials()
         }
 
@@ -104,6 +144,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!user.emailVerifiedAt) {
           throw new EmailNotVerified()
         }
+
+        // Successful login — reset failure counter, record IP/time
+        await clearFailedLoginCount(user.id, ipAddress)
 
         await prisma.auditLog.create({
           data: {
@@ -311,7 +354,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (token.id) {
         const currentUser = await prisma.user.findUnique({
           where: { id: Number(token.id) },
-          select: { role: true, status: true }
+          select: { role: true, status: true, passwordChangedAt: true }
         })
 
         if (!currentUser || currentUser.status !== 'active') {
@@ -320,6 +363,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         } else {
           token.role = currentUser.role
           ;(token as any).status = currentUser.status
+
+          // Session invalidation: if password changed AFTER token issuance,
+          // force re-login. Token's `iat` is set by Auth.js automatically.
+          const tokenIatSec = (token as any).iat as number | undefined
+          if (
+            currentUser.passwordChangedAt &&
+            tokenIatSec &&
+            Math.floor(currentUser.passwordChangedAt.getTime() / 1000) > tokenIatSec
+          ) {
+            token.role = 'blocked'
+            ;(token as any).status = 'session_invalidated'
+          }
         }
       }
 
