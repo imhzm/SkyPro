@@ -13,16 +13,24 @@ const SESSION_COOKIE_NAME = process.env.NODE_ENV === 'production'
   ? '__Secure-authjs.session-token'
   : 'authjs.session-token'
 
+function getPublicBase(req: NextRequest) {
+  // Always prefer NEXTAUTH_URL — the request URL behind a reverse proxy may
+  // resolve to localhost which corrupts redirects.
+  const env = process.env.NEXTAUTH_URL?.replace(/\/$/, '')
+  if (env) return env
+  const proto = req.headers.get('x-forwarded-proto') || req.nextUrl.protocol.replace(':', '')
+  const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || req.nextUrl.host
+  return `${proto}://${host}`
+}
+
 function loginRedirect(req: NextRequest, error: string) {
   return NextResponse.redirect(
-    new URL(`/auth/login?error=${encodeURIComponent(error)}`, req.url)
+    `${getPublicBase(req)}/auth/login?error=${encodeURIComponent(error)}`
   )
 }
 
 function getRedirectUri(req: NextRequest) {
-  const base = process.env.NEXTAUTH_URL?.replace(/\/$/, '')
-    ?? `${req.nextUrl.protocol}//${req.nextUrl.host}`
-  return `${base}/api/auth/google/callback`
+  return `${getPublicBase(req)}/api/auth/google/callback`
 }
 
 export async function GET(req: NextRequest) {
@@ -90,14 +98,33 @@ export async function GET(req: NextRequest) {
     return loginRedirect(req, 'بريد Google غير متاح')
   }
 
-  // 3. Find or create user (mirrors auth.ts logic)
+  // 3. Find or create user (mirrors auth.ts logic + security checks)
   let user = await prisma.user.findUnique({
     where: { email: profile.email },
-    select: { id: true, email: true, name: true, avatarUrl: true, role: true, status: true },
+    select: {
+      id: true, email: true, name: true, avatarUrl: true,
+      role: true, status: true, passwordHash: true,
+    },
   })
 
-  if (user && user.status !== 'active' && user.status !== 'pending_verification') {
-    return loginRedirect(req, 'الحساب غير نشط — تواصل مع الدعم')
+  if (user) {
+    // Block deleted/suspended accounts — never auto-reactivate via OAuth
+    if (user.status === 'suspended') {
+      return loginRedirect(req, 'الحساب محظور — تواصل مع الدعم')
+    }
+    if (user.status === 'deleted') {
+      return loginRedirect(req, 'هذا الحساب محذوف ولا يمكن استخدامه')
+    }
+    // Prevent OAuth account hijacking on email-only flows: if a password account
+    // exists for this email, require the owner to log in with password first.
+    // (NextAuth v5 sets allowDangerousEmailAccountLinking: false; mirror it.)
+    if (user.passwordHash) {
+      // Allow if Google email is verified — we trust Google's verification.
+      // But still require the user's account to not be suspended/deleted.
+      if (!profile.verified_email) {
+        return loginRedirect(req, 'سجّل الدخول بكلمة المرور أولاً ثم اربط Google من الإعدادات')
+      }
+    }
   }
 
   if (!user) {
@@ -116,7 +143,10 @@ export async function GET(req: NextRequest) {
           status: 'active',
           emailVerifiedAt: new Date(),
         },
-        select: { id: true, email: true, name: true, avatarUrl: true, role: true, status: true },
+        select: {
+          id: true, email: true, name: true, avatarUrl: true,
+          role: true, status: true, passwordHash: true,
+        },
       })
       const activationKey = await tx.activationKey.create({
         data: {
@@ -152,8 +182,9 @@ export async function GET(req: NextRequest) {
     })
   }
 
-  // Re-activate / refresh status
-  if (user.status !== 'active') {
+  // Activate ONLY pending_verification accounts (Google verified the email).
+  // Never auto-reactivate suspended/deleted (already rejected above).
+  if (user.status === 'pending_verification') {
     await prisma.user.update({
       where: { id: user.id },
       data: { status: 'active', emailVerifiedAt: new Date() },
@@ -178,10 +209,10 @@ export async function GET(req: NextRequest) {
     maxAge,
   })
 
-  // 5. Set cookie + redirect to chosen destination
+  // 5. Set cookie + redirect to chosen destination (always absolute via NEXTAUTH_URL)
   const safeCallback = callbackUrl.startsWith('/') ? callbackUrl : '/dashboard'
   const target = user.role === 'admin' && safeCallback === '/dashboard' ? '/admin' : safeCallback
-  const response = NextResponse.redirect(new URL(target, req.url))
+  const response = NextResponse.redirect(`${getPublicBase(req)}${target}`)
 
   response.cookies.set(SESSION_COOKIE_NAME, sessionToken, {
     httpOnly: true,

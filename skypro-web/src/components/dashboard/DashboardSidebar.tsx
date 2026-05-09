@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Monitor, LogOut, Menu, X, Zap } from 'lucide-react'
+import { LayoutDashboard, Monitor, LogOut, Menu, X, Settings } from 'lucide-react'
+import { Logo } from '@/components/marketing/Logo'
 
 interface User {
   name: string | null
@@ -12,8 +13,9 @@ interface User {
 }
 
 const navLinks = [
-  { href: '/dashboard', label: 'لوحة التحكم', icon: LayoutDashboard },
-  { href: '/dashboard/devices', label: 'الأجهزة', icon: Monitor },
+  { href: '/dashboard',          label: 'لوحة التحكم', icon: LayoutDashboard },
+  { href: '/dashboard/devices',  label: 'الأجهزة',     icon: Monitor },
+  { href: '/dashboard/settings', label: 'الإعدادات',   icon: Settings },
 ]
 
 export default function DashboardSidebar({ user }: { user: User }) {
@@ -29,7 +31,7 @@ export default function DashboardSidebar({ user }: { user: User }) {
       {/* Mobile top bar */}
       <div className="lg:hidden fixed top-0 inset-x-0 z-40 flex items-center justify-between px-4 h-14 bg-[#060d1b]/95 backdrop-blur border-b border-white/8">
         <Link href="/" className="flex items-center gap-2 text-white font-bold text-lg">
-          <Zap className="w-5 h-5 text-sky-400" />
+          <Logo size={28} />
           SkyPro
         </Link>
         <button onClick={() => setOpen(!open)} className="text-slate-400 hover:text-white">
@@ -50,7 +52,7 @@ export default function DashboardSidebar({ user }: { user: User }) {
       >
         {/* Logo */}
         <div className="flex items-center gap-2 px-5 h-16 border-b border-white/8">
-          <Zap className="w-5 h-5 text-sky-400" />
+          <Logo size={32} priority />
           <span className="text-white font-bold text-lg">SkyPro</span>
         </div>
 
@@ -79,7 +81,7 @@ export default function DashboardSidebar({ user }: { user: User }) {
         {/* User */}
         <div className="px-4 py-4 border-t border-white/8 space-y-3">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-sky-600 flex items-center justify-center text-white text-sm font-bold shrink-0">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-sky-500 to-violet-500 flex items-center justify-center text-white text-sm font-bold shrink-0">
               {initials}
             </div>
             <div className="min-w-0">
@@ -87,7 +89,7 @@ export default function DashboardSidebar({ user }: { user: User }) {
               <p className="text-slate-500 text-xs truncate">{user.email}</p>
             </div>
           </div>
-          <form action="/api/auth/logout" method="POST">
+          <form action="/api/auth/signout" method="POST">
             <button
               type="submit"
               className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-500/10 text-sm transition-all"

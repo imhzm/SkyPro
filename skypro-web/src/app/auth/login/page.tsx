@@ -8,6 +8,21 @@ import Image from 'next/image'
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react'
 import { Logo } from '@/components/marketing/Logo'
 
+const ERROR_MESSAGES: Record<string, string> = {
+  invalid_credentials: 'بيانات الدخول غير صحيحة',
+  email_not_verified: 'بريدك الإلكتروني لم يُؤكَّد بعد. تحقّق من رسالتك أو اطلب رابطاً جديداً بالأسفل.',
+  account_suspended: 'حسابك محظور — تواصل مع الدعم الفني',
+  account_deleted: 'هذا الحساب محذوف ولا يمكن استخدامه',
+  google_only_account: 'هذا الحساب مرتبط بـ Google — استخدم زر Google للدخول',
+  rate_limited: 'محاولات كثيرة جداً — انتظر قليلاً ثم حاول مرة أخرى',
+  CredentialsSignin: 'بيانات الدخول غير صحيحة',
+}
+
+function mapAuthError(code?: string | null): string {
+  if (!code) return 'بيانات الدخول غير صحيحة'
+  return ERROR_MESSAGES[code] || code
+}
+
 function LoginContent() {
   const params = useSearchParams()
   const [email, setEmail] = useState('')
@@ -15,7 +30,10 @@ function LoginContent() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [errorCode, setErrorCode] = useState<string | null>(null)
   const [notice, setNotice] = useState('')
+  const [resending, setResending] = useState(false)
+  const [resendSent, setResendSent] = useState(false)
 
   useEffect(() => {
     if (params.get('message') === 'trial-created') {
@@ -40,10 +58,13 @@ function LoginContent() {
       })
 
       if (!res?.ok || res.error) {
-        setError(res?.error || 'بيانات الدخول غير صحيحة')
+        const code = (res as { code?: string })?.code ?? res?.error
+        setErrorCode(code ?? null)
+        setError(mapAuthError(code))
         setLoading(false)
         return
       }
+      setErrorCode(null)
 
       const callback = params.get('callbackUrl')
       let target = callback && callback.startsWith('/') ? callback : '/dashboard'
@@ -101,6 +122,39 @@ function LoginContent() {
           {error && (
             <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl mb-4 text-sm">
               {error}
+              {errorCode === 'email_not_verified' && (
+                <div className="mt-3 pt-3 border-t border-red-500/20">
+                  {resendSent ? (
+                    <p className="text-emerald-400 text-xs">
+                      ✓ تم إرسال رابط جديد. تحقق من بريدك (وSpam).
+                    </p>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={resending || !email.trim()}
+                      onClick={async () => {
+                        if (!email.trim()) return
+                        setResending(true)
+                        try {
+                          await fetch('/api/auth/resend-verify-email', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ email: email.trim().toLowerCase() }),
+                          })
+                          setResendSent(true)
+                        } catch {
+                          /* ignored */
+                        } finally {
+                          setResending(false)
+                        }
+                      }}
+                      className="text-xs text-sky-400 hover:text-sky-300 font-semibold disabled:opacity-50"
+                    >
+                      {resending ? 'جارٍ الإرسال...' : 'أرسل رابط التحقق مرة أخرى'}
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

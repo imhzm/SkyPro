@@ -6,17 +6,23 @@ export const dynamic = 'force-dynamic'
 const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
 const STATE_COOKIE = 'g_oauth_state'
 
+function getPublicBase(req: NextRequest) {
+  const env = process.env.NEXTAUTH_URL?.replace(/\/$/, '')
+  if (env) return env
+  const proto = req.headers.get('x-forwarded-proto') || req.nextUrl.protocol.replace(':', '')
+  const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || req.nextUrl.host
+  return `${proto}://${host}`
+}
+
 function getRedirectUri(req: NextRequest) {
-  const base = process.env.NEXTAUTH_URL?.replace(/\/$/, '')
-    ?? `${req.nextUrl.protocol}//${req.nextUrl.host}`
-  return `${base}/api/auth/google/callback`
+  return `${getPublicBase(req)}/api/auth/google/callback`
 }
 
 export async function GET(req: NextRequest) {
   const clientId = process.env.GOOGLE_CLIENT_ID
   if (!clientId) {
     return NextResponse.redirect(
-      new URL('/auth/login?error=' + encodeURIComponent('تكوين Google OAuth ناقص'), req.url)
+      `${getPublicBase(req)}/auth/login?error=${encodeURIComponent('تكوين Google OAuth ناقص')}`
     )
   }
 

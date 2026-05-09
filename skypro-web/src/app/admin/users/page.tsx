@@ -13,6 +13,7 @@ import {
   Search,
   ShieldAlert,
   ShieldCheck,
+  Trash2,
   UserCheck,
   Users,
   X
@@ -107,6 +108,8 @@ export default function AdminUsersPage() {
   const [notice, setNotice] = useState<Notice | null>(null)
 
   const [pendingBanUser, setPendingBanUser] = useState<User | null>(null)
+  const [pendingDeleteUser, setPendingDeleteUser] = useState<User | null>(null)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [suspensionReason, setSuspensionReason] = useState('')
   const [actionUserId, setActionUserId] = useState<number | null>(null)
 
@@ -161,6 +164,29 @@ export default function AdminUsersPage() {
   }
 
   const refreshUsers = () => setReloadToken((value) => value + 1)
+
+  const deleteUser = async (user: User) => {
+    setActionUserId(user.id)
+    setNotice(null)
+
+    try {
+      const res = await fetch(`/api/admin/users?id=${user.id}`, { method: 'DELETE' })
+      const data = await res.json()
+
+      if (data.success) {
+        setNotice({ type: 'success', message: data.message || 'تم حذف المستخدم بنجاح' })
+        setPendingDeleteUser(null)
+        setDeleteConfirmText('')
+        refreshUsers()
+      } else {
+        setNotice({ type: 'error', message: data.error || 'فشل حذف المستخدم' })
+      }
+    } catch {
+      setNotice({ type: 'error', message: 'فشل الاتصال بالخادم' })
+    } finally {
+      setActionUserId(null)
+    }
+  }
 
   const updateStatus = async (user: User, status: 'active' | 'suspended', reason?: string) => {
     setActionUserId(user.id)
@@ -496,6 +522,17 @@ export default function AdminUsersPage() {
                             فك الحظر
                           </button>
                         )}
+                        {user.role !== 'admin' && user.status !== 'deleted' && (
+                          <button
+                            onClick={() => { setPendingDeleteUser(user); setDeleteConfirmText('') }}
+                            disabled={actionUserId === user.id}
+                            className="admin-btn-danger !px-3 !py-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            title="حذف نهائي"
+                          >
+                            <Trash2 size={15} />
+                            حذف
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -561,6 +598,65 @@ export default function AdminUsersPage() {
               >
                 <Ban size={16} />
                 تأكيد الحظر
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {pendingDeleteUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-xl border border-red-500/40 bg-slate-950 p-5 shadow-2xl shadow-red-500/10">
+            <div className="mb-4 flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Trash2 className="text-red-400" size={18} />
+                  حذف المستخدم نهائياً
+                </h2>
+                <p className="mt-1 text-sm text-slate-400">
+                  حذف ناعم: الحساب يُعلَّم كـ <strong>deleted</strong>، السيريالات تُلغى، الأجهزة تُفصل،
+                  والاشتراكات تُلغى. الإجراء لا يمكن التراجع عنه من الواجهة.
+                </p>
+              </div>
+              <button onClick={() => { setPendingDeleteUser(null); setDeleteConfirmText('') }} className="text-slate-400 hover:text-white" aria-label="إغلاق">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/[0.05] p-3 text-sm">
+              <div className="font-medium text-white">{pendingDeleteUser.name || 'بدون اسم'}</div>
+              <div className="mt-1 text-slate-400" dir="ltr">{pendingDeleteUser.email}</div>
+              <div className="mt-2 flex flex-wrap gap-3 text-xs text-slate-500">
+                <span>{pendingDeleteUser.keysCount} مفتاح</span>
+                <span>{pendingDeleteUser.devicesCount} جهاز</span>
+                <span>دور: {pendingDeleteUser.role === 'admin' ? 'أدمن' : 'مستخدم'}</span>
+              </div>
+            </div>
+            <label className="admin-label">
+              اكتب <code className="rounded bg-red-500/15 px-1.5 py-0.5 font-mono text-xs text-red-300">DELETE</code> للتأكيد
+            </label>
+            <input
+              type="text"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              className="admin-input"
+              placeholder="DELETE"
+              dir="ltr"
+              autoComplete="off"
+            />
+            <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                onClick={() => { setPendingDeleteUser(null); setDeleteConfirmText('') }}
+                className="admin-btn-secondary"
+              >
+                إلغاء
+              </button>
+              <button
+                onClick={() => deleteUser(pendingDeleteUser)}
+                disabled={deleteConfirmText !== 'DELETE' || actionUserId === pendingDeleteUser.id}
+                className="admin-btn-danger disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Trash2 size={16} />
+                حذف نهائي
               </button>
             </div>
           </div>
