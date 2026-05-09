@@ -75,7 +75,7 @@ export function Navbar() {
                 <Logo size={44} priority />
               </div>
               <span className="flex min-w-0 flex-col">
-                <span className="truncate font-display text-lg font-bold tracking-wide text-white">SkyPro</span>
+                <span className="truncate font-display text-lg font-extrabold tracking-wide gradient-text-brand">SkyPro</span>
                 <span className="truncate text-[10px] text-slate-500 transition-colors group-hover:text-slate-400">by Sky Wave</span>
               </span>
             </Link>
@@ -184,7 +184,7 @@ export function Navbar() {
                   <div className="flex items-center gap-3 mb-10">
                     <Logo size={40} />
                     <div>
-                      <span className="font-display text-lg font-bold text-white">SkyPro</span>
+                      <span className="font-display text-lg font-extrabold gradient-text-brand">SkyPro</span>
                       <span className="block text-[10px] text-slate-500">by Sky Wave</span>
                     </div>
                   </div>

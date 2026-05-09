@@ -160,7 +160,7 @@ export function Footer() {
                   <Logo size={44} />
                 </div>
                 <div>
-                  <span className="font-display text-lg font-bold text-white">SkyPro</span>
+                  <span className="font-display text-lg font-extrabold gradient-text-brand">SkyPro</span>
                   <span className="block text-[10px] text-slate-600">by Sky Wave</span>
                 </div>
               </div>

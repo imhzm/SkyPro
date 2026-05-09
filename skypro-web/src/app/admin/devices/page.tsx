@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { RotateCcw } from 'lucide-react'
+import { useToast } from '@/components/ui/Toaster'
 
 interface Device {
   id: number
@@ -22,6 +23,7 @@ interface Device {
 }
 
 export default function AdminDevicesPage() {
+  const { success, error } = useToast()
   const [devices, setDevices] = useState<Device[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
@@ -51,10 +53,14 @@ export default function AdminDevicesPage() {
     try {
       const res = await fetch(`/api/admin/devices?id=${deviceId}`, { method: 'DELETE' })
       const data = await res.json()
-      if (data.success) loadDevices()
-      else alert(data.error || 'فشلت العملية')
+      if (data.success) {
+        success('تم إعادة تعيين الجهاز')
+        loadDevices()
+      } else {
+        error(data.error || 'فشلت العملية')
+      }
     } catch {
-      alert('فشل الاتصال بالخادم')
+      error('فشل الاتصال بالخادم')
     }
   }
 
