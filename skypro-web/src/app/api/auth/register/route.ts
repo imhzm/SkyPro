@@ -12,6 +12,7 @@ import {
   rejectCrossSite,
   rejectLargeJson,
 } from '@/lib/request-security'
+import { checkPasswordBreach } from '@/lib/security'
 
 export async function POST(req: NextRequest) {
   try {
@@ -40,6 +41,15 @@ export async function POST(req: NextRequest) {
     const existing = await prisma.user.findUnique({ where: { email } })
     if (existing) {
       return NextResponse.json(errorResponse('البريد الإلكتروني مسجل بالفعل'), { status: 409 })
+    }
+
+    // Block known-breached passwords (HIBP k-anonymity API)
+    const breach = await checkPasswordBreach(password)
+    if (breach.breached && breach.count >= 50) {
+      return NextResponse.json(
+        errorResponse(`كلمة المرور هذه ظهرت في تسريبات معروفة (${breach.count.toLocaleString('ar-EG')} مرة). اختر كلمة مرور أقوى.`),
+        { status: 400 }
+      )
     }
 
     const passwordHash = hashPassword(password)

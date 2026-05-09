@@ -3,10 +3,11 @@
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { redirect } from 'next/navigation'
-import { User, Shield, Trash2 } from 'lucide-react'
+import { User, Shield, Trash2, ShieldCheck } from 'lucide-react'
 import DeleteAccountCard from '@/components/dashboard/DeleteAccountCard'
 import ProfileForm from '@/components/dashboard/ProfileForm'
 import PasswordChangeForm from '@/components/dashboard/PasswordChangeForm'
+import TwoFactorCard from '@/components/dashboard/TwoFactorCard'
 
 export default async function SettingsPage() {
   const session = await auth()
@@ -24,6 +25,9 @@ export default async function SettingsPage() {
       status: true,
       emailVerifiedAt: true,
       passwordHash: true,
+      twoFactorEnabled: true,
+      lastLoginAt: true,
+      lastLoginIp: true,
       createdAt: true,
     },
   })
@@ -76,6 +80,29 @@ export default async function SettingsPage() {
         <Section icon={Shield} title="الأمان وكلمة المرور">
           <PasswordChangeForm />
         </Section>
+      )}
+
+      {/* 2FA */}
+      <Section icon={ShieldCheck} title="التحقق بخطوتين (2FA)">
+        <TwoFactorCard initialEnabled={user.twoFactorEnabled} hasPassword={isPasswordAccount} />
+      </Section>
+
+      {/* Last login info */}
+      {user.lastLoginAt && (
+        <div className="bg-white/[0.02] border border-white/8 rounded-2xl p-5 text-sm flex flex-wrap items-center gap-x-6 gap-y-2">
+          <div>
+            <span className="text-slate-500">آخر تسجيل دخول:</span>{' '}
+            <strong className="text-slate-200">
+              {user.lastLoginAt.toLocaleString('ar-EG', { dateStyle: 'medium', timeStyle: 'short' })}
+            </strong>
+          </div>
+          {user.lastLoginIp && (
+            <div>
+              <span className="text-slate-500">من IP:</span>{' '}
+              <code className="text-slate-300 font-mono text-xs" dir="ltr">{user.lastLoginIp}</code>
+            </div>
+          )}
+        </div>
       )}
 
       {/* Danger zone */}

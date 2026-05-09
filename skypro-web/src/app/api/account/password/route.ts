@@ -10,6 +10,7 @@ import {
   rejectCrossSite,
   rejectLargeJson,
 } from '@/lib/request-security'
+import { checkPasswordBreach, notifySecurityEvent } from '@/lib/security'
 
 export const dynamic = 'force-dynamic'
 
@@ -68,6 +69,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(errorResponse('يجب أن تختلف كلمة المرور الجديدة عن الحالية'), { status: 400 })
     }
 
+    // Block known-breached passwords (HIBP k-anonymity)
+    const breach = await checkPasswordBreach(newPassword)
+    if (breach.breached && breach.count >= 50) {
+      return NextResponse.json(
+        errorResponse(`كلمة المرور الجديدة ظهرت في تسريبات معروفة (${breach.count.toLocaleString('ar-EG')} مرة). اختر كلمة أقوى.`),
+        { status: 400 }
+      )
+    }
+
     const newHash = hashPassword(newPassword)
     await prisma.user.update({
       where: { id: user.id },
@@ -79,13 +89,25 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    await prisma.auditLog.create({
-      data: { userId: user.id, action: 'password_changed', ipAddress },
+    // Notify the user via email + chained audit log
+    const fullUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { email: true, name: true },
     })
+    if (fullUser) {
+      await notifySecurityEvent({
+        userId: user.id,
+        email: fullUser.email,
+        name: fullUser.name,
+        action: 'password_changed',
+        ipAddress,
+        userAgent: req.headers.get('user-agent'),
+      })
+    }
 
     return NextResponse.json(successResponse(
       { sessionInvalidated: true },
-      'تم تغيير كلمة المرور بنجاح. كل الجلسات الأخرى تم إنهاؤها.'
+      'تم تغيير كلمة المرور بنجاح. كل الجلسات الأخرى تم إنهاؤها وتم إرسال إشعار لبريدك.'
     ))
   } catch (err) {
     console.error('Password change error:', err)

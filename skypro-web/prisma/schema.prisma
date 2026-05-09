@@ -21,6 +21,7 @@ model User {
   lockedUntil       DateTime? @map("locked_until")
   twoFactorEnabled  Boolean   @default(false) @map("two_factor_enabled")
   twoFactorSecret   String?   @map("two_factor_secret")
+  twoFactorBackupCodes String? @map("two_factor_backup_codes") @db.Text
   lastLoginAt       DateTime? @map("last_login_at")
   lastLoginIp       String?   @map("last_login_ip")
   createdAt         DateTime  @default(now()) @map("created_at")
