@@ -228,6 +228,7 @@ body {
     gap: 2rem;
     animation: marquee 30s linear infinite;
     width: max-content;
+    will-change: transform;
   }
 
   .marquee-track:hover {
@@ -305,7 +306,7 @@ body {
 
   @keyframes marquee {
     0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
+    100% { transform: translateX(calc(-50% - 1rem)); }
   }
 
   @keyframes gradient-shift {

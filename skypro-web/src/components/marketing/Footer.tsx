@@ -27,7 +27,8 @@ export function Footer() {
   const otherPlatforms = platforms.slice(8, 16)
   const [showBackToTop, setShowBackToTop] = useState(false)
   const [email, setEmail] = useState('')
-  const [subscribed, setSubscribed] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   const handleScroll = useCallback(() => {
     setShowBackToTop(window.scrollY > 500)
@@ -42,12 +43,34 @@ export function Footer() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (email.trim()) {
-      setSubscribed(true)
-      setEmail('')
-      setTimeout(() => setSubscribed(false), 4000)
+    const trimmed = email.trim()
+    if (!trimmed || submitting) return
+
+    setSubmitting(true)
+    setFeedback(null)
+    try {
+      const res = await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: trimmed, source: 'homepage_footer' }),
+      })
+      const data = await res.json()
+      if (res.ok && data?.success) {
+        setFeedback({ type: 'success', message: data.message ?? 'تم الاشتراك بنجاح' })
+        setEmail('')
+      } else {
+        setFeedback({
+          type: 'error',
+          message: data?.message ?? data?.error ?? 'تعذّر الاشتراك، حاول مرة أخرى',
+        })
+      }
+    } catch {
+      setFeedback({ type: 'error', message: 'تعذّر الاتصال بالخادم' })
+    } finally {
+      setSubmitting(false)
+      setTimeout(() => setFeedback(null), 6000)
     }
   }
 
@@ -97,16 +120,29 @@ export function Footer() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="بريدك الإلكتروني"
-                className="flex-1 rounded-full bg-white/5 border border-white/10 px-5 py-3 text-sm text-white placeholder-slate-500 outline-none transition-all focus:border-sky-500/50 focus:bg-white/8 focus:ring-1 focus:ring-sky-500/30"
+                required
+                disabled={submitting}
+                className="flex-1 rounded-full bg-white/5 border border-white/10 px-5 py-3 text-sm text-white placeholder-slate-500 outline-none transition-all focus:border-sky-500/50 focus:bg-white/8 focus:ring-1 focus:ring-sky-500/30 disabled:opacity-60"
                 dir="ltr"
               />
               <button
                 type="submit"
-                className="btn-primary !px-6 !py-3 shrink-0"
+                disabled={submitting || !email.trim()}
+                className="btn-primary !px-6 !py-3 shrink-0 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {subscribed ? '✓ تم الاشتراك' : 'اشترك الآن'}
+                {submitting ? 'جارٍ الإرسال...' : 'اشترك الآن'}
               </button>
             </form>
+            {feedback && (
+              <p
+                role="status"
+                className={`mt-4 text-sm font-medium ${
+                  feedback.type === 'success' ? 'text-emerald-400' : 'text-red-400'
+                }`}
+              >
+                {feedback.message}
+              </p>
+            )}
           </motion.div>
 
           {/* Main footer grid */}
