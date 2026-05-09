@@ -1,10 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import NextAuth from 'next-auth'
+import NextAuth, { CredentialsSignin } from 'next-auth'
 import Google from 'next-auth/providers/google'
 import Credentials from 'next-auth/providers/credentials'
 import { prisma } from '@/lib/db'
 import { generateApiKey, getTrialEndDate, verifyPassword } from '@/lib/utils'
 import { checkRateLimit, getClientIp } from '@/lib/request-security'
+
+// Custom error subclasses so the login page can show precise messages
+class InvalidCredentials extends CredentialsSignin { code = 'invalid_credentials' }
+class EmailNotVerified extends CredentialsSignin { code = 'email_not_verified' }
+class AccountSuspended extends CredentialsSignin { code = 'account_suspended' }
+class AccountDeleted extends CredentialsSignin { code = 'account_deleted' }
+class TooManyAttempts extends CredentialsSignin { code = 'rate_limited' }
+class GoogleOnlyAccount extends CredentialsSignin { code = 'google_only_account' }
 
 async function sendWelcomeEmailThroughApi(subject: string, welcomeData: Record<string, unknown>) {
   const baseUrl = process.env.NEXTAUTH_URL?.replace(/\/$/, '')
@@ -58,23 +66,28 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const emailLimit = checkRateLimit(`nextauth-credentials:${email}`, 12, 15 * 60 * 1000)
         if (!emailLimit.allowed) {
-          return null
+          throw new TooManyAttempts()
         }
 
         const user = await prisma.user.findUnique({
           where: { email }
         })
 
-        if (!user || !user.passwordHash) {
-          return null
+        if (!user) {
+          throw new InvalidCredentials()
         }
 
         if (user.status === 'suspended') {
-          return null
+          throw new AccountSuspended()
         }
 
-        if (!user.emailVerifiedAt) {
-          return null
+        if (user.status === 'deleted') {
+          throw new AccountDeleted()
+        }
+
+        if (!user.passwordHash) {
+          // Account exists but has no password — Google OAuth only.
+          throw new GoogleOnlyAccount()
         }
 
         const isValid = verifyPassword(
@@ -83,7 +96,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         )
 
         if (!isValid) {
-          return null
+          throw new InvalidCredentials()
+        }
+
+        // Verify ONLY after password is confirmed (avoids leaking whether
+        // an email is registered to attackers).
+        if (!user.emailVerifiedAt) {
+          throw new EmailNotVerified()
         }
 
         await prisma.auditLog.create({
