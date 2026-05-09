@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import { useState, useEffect, useCallback } from 'react'
-import { Menu, X, Send, ChevronLeft } from 'lucide-react'
+import { Menu, X, ChevronLeft } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Logo } from '@/components/marketing/Logo'
 
 const navLinks = [
   { label: 'المميزات', href: '/#features' },
@@ -70,9 +71,8 @@ export function Navbar() {
           <div className="flex items-center justify-between gap-4 py-4">
             {/* Logo */}
             <Link href="/" className="flex min-w-0 items-center gap-3 group">
-              <div className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-violet-500 shadow-lg shadow-sky-500/25 transition-all duration-300 group-hover:shadow-sky-500/40 group-hover:scale-105">
-                <Send className="h-5 w-5 text-white transition-transform duration-300 group-hover:rotate-[-15deg]" />
-                <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="transition-transform duration-300 group-hover:scale-105 group-hover:rotate-[-3deg]">
+                <Logo size={44} priority />
               </div>
               <span className="flex min-w-0 flex-col">
                 <span className="truncate font-display text-lg font-bold tracking-wide text-white">SkyPro</span>
@@ -182,9 +182,7 @@ export function Navbar() {
 
                   {/* Logo inside drawer */}
                   <div className="flex items-center gap-3 mb-10">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-violet-500">
-                      <Send className="h-5 w-5 text-white" />
-                    </div>
+                    <Logo size={40} />
                     <div>
                       <span className="font-display text-lg font-bold text-white">SkyPro</span>
                       <span className="block text-[10px] text-slate-500">by Sky Wave</span>

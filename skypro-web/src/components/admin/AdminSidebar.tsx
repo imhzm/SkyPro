@@ -17,8 +17,8 @@ import {
   Menu,
   X,
   ChevronLeft,
-  Send
 } from 'lucide-react'
+import { Logo } from '@/components/marketing/Logo'
 
 const navItems = [
   { href: '/admin', label: 'لوحة التحكم', icon: LayoutDashboard },
@@ -61,9 +61,7 @@ export function AdminSidebar() {
         <div className="flex flex-col h-full">
           <div className="p-4 border-b border-white/5">
             <Link href="/admin" onClick={() => setMobileOpen(false)} className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-violet-500 shadow-lg shadow-sky-500/20">
-                <Send className="h-4 w-4 text-white" />
-              </div>
+              <Logo size={36} />
               {!collapsed && (
                 <div>
                   <span className="text-lg font-bold gradient-text-brand">SkyPro</span>

@@ -2,7 +2,8 @@
 
 import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Mail, Send } from 'lucide-react'
+import { Mail } from 'lucide-react'
+import { Logo } from '@/components/marketing/Logo'
 
 function VerifyEmailForm() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
@@ -49,9 +50,7 @@ function VerifyEmailForm() {
       <div className="relative z-10 w-full max-w-md">
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-violet-500 shadow-lg shadow-sky-500/20">
-              <Send className="h-5 w-5 text-white" />
-            </div>
+            <Logo size={44} priority />
             <span className="text-2xl font-bold gradient-text-brand">SkyPro</span>
           </Link>
         </div>
