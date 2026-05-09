@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { Plus, Copy, Check } from 'lucide-react'
+import { useToast } from '@/components/ui/Toaster'
 
 interface ActivationKey {
   id: number
@@ -18,6 +19,7 @@ interface ActivationKey {
 }
 
 export default function AdminKeysPage() {
+  const { success, error } = useToast()
   const [keys, setKeys] = useState<ActivationKey[]>([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState('')
@@ -59,12 +61,13 @@ export default function AdminKeysPage() {
       const data = await res.json()
       if (data.success) {
         setShowGenerate(false)
+        success(`تم إنشاء ${generateCount} مفتاح بنجاح`)
         loadKeys()
       } else {
-        alert(data.error || 'فشل إنشاء المفاتيح')
+        error(data.error || 'فشل إنشاء المفاتيح')
       }
     } catch {
-      alert('فشل الاتصال بالخادم')
+      error('فشل الاتصال بالخادم')
     } finally {
       setGenerating(false)
     }

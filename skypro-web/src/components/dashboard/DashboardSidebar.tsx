@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Monitor, LogOut, Menu, X, Settings } from 'lucide-react'
+import { LayoutDashboard, Monitor, LogOut, Menu, X, Settings, CreditCard } from 'lucide-react'
 import { Logo } from '@/components/marketing/Logo'
 
 interface User {
@@ -15,6 +15,7 @@ interface User {
 const navLinks = [
   { href: '/dashboard',          label: 'لوحة التحكم', icon: LayoutDashboard },
   { href: '/dashboard/devices',  label: 'الأجهزة',     icon: Monitor },
+  { href: '/dashboard/billing',  label: 'الفوترة',     icon: CreditCard },
   { href: '/dashboard/settings', label: 'الإعدادات',   icon: Settings },
 ]
 
@@ -53,7 +54,7 @@ export default function DashboardSidebar({ user }: { user: User }) {
         {/* Logo */}
         <div className="flex items-center gap-2 px-5 h-16 border-b border-white/8">
           <Logo size={32} priority />
-          <span className="text-white font-bold text-lg">SkyPro</span>
+          <span className="font-extrabold text-lg gradient-text-brand">SkyPro</span>
         </div>
 
         {/* Nav */}
