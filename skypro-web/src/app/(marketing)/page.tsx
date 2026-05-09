@@ -7,6 +7,7 @@ import { TestimonialsSection } from '@/components/marketing/TestimonialsSection'
 import { PricingSection } from '@/components/marketing/PricingSection'
 import { FaqSection } from '@/components/marketing/FaqSection'
 import { CtaSection } from '@/components/marketing/CtaSection'
+import { SkyERPAdSection } from '@/components/marketing/SkyERPAdSection'
 import { SkyCRMAdSection } from '@/components/marketing/SkyCRMAdSection'
 import { Footer } from '@/components/marketing/Footer'
 import { WhatsAppButton } from '@/components/marketing/WhatsAppButton'
@@ -23,6 +24,7 @@ export default function HomePage() {
       <PricingSection />
       <FaqSection />
       <CtaSection />
+      <SkyERPAdSection />
       <SkyCRMAdSection />
       <Footer />
       <WhatsAppButton />

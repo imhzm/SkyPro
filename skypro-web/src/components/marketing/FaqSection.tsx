@@ -79,7 +79,7 @@ export function FaqSection() {
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
+                    transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] as [number, number, number, number] }}
                   >
                     <p className="px-5 pb-6 text-slate-400 leading-relaxed text-[15px] border-t border-white/5 pt-4 mx-5 mt-1">
                       {faq.answer}
