@@ -58,7 +58,7 @@ export default function LoginPage() {
         <div className="absolute top-1/4 right-1/4 w-[400px] h-[400px] bg-sky-500/5 rounded-full blur-[120px]" />
         <div className="absolute bottom-1/4 left-1/4 w-[300px] h-[300px] bg-violet-500/5 rounded-full blur-[100px]" />
         <Image
-          src="https://images.pexels.com/photos/7688336/pexels-photo-7688336.jpeg?auto=compress&cs=tinysrgb&w=1600"
+          src="/images/hero-background.png"
           alt=""
           aria-hidden="true"
           fill
@@ -172,7 +172,7 @@ export default function LoginPage() {
 
           <div className="mt-5 overflow-hidden rounded-2xl border border-white/10">
             <Image
-              src="https://images.pexels.com/photos/7567434/pexels-photo-7567434.jpeg?auto=compress&cs=tinysrgb&w=1200"
+              src="/images/hero-dashboard.png"
               alt="لوحة تحكم لحملات التسويق"
               width={1200}
               height={288}

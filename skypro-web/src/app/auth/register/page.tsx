@@ -62,7 +62,7 @@ export default function RegisterPage() {
         <div className="absolute top-1/4 right-1/4 w-[400px] h-[400px] bg-sky-500/5 rounded-full blur-[120px]" />
         <div className="absolute bottom-1/4 left-1/4 w-[300px] h-[300px] bg-violet-500/5 rounded-full blur-[100px]" />
         <Image
-          src="https://images.pexels.com/photos/7681096/pexels-photo-7681096.jpeg?auto=compress&cs=tinysrgb&w=1600"
+          src="/images/hero-background.png"
           alt=""
           aria-hidden="true"
           fill
@@ -201,7 +201,7 @@ export default function RegisterPage() {
           <div className="mt-5 grid grid-cols-2 gap-3">
             <div className="overflow-hidden rounded-xl border border-white/10">
               <Image
-                src="https://images.pexels.com/photos/3184405/pexels-photo-3184405.jpeg?auto=compress&cs=tinysrgb&w=900"
+                src="/images/campaign-analytics.png"
                 alt="فريق التسويق يعمل على حملات العملاء"
                 width={900}
                 height={320}
@@ -211,7 +211,7 @@ export default function RegisterPage() {
             </div>
             <div className="overflow-hidden rounded-xl border border-white/10">
               <Image
-                src="https://images.pexels.com/photos/7567558/pexels-photo-7567558.jpeg?auto=compress&cs=tinysrgb&w=900"
+                src="/images/hero-dashboard.png"
                 alt="تحليل أداء الحملات التسويقية"
                 width={900}
                 height={320}
