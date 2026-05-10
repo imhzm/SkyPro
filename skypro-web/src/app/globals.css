@@ -309,6 +309,98 @@ body {
     100% { transform: translateX(calc(-50% - 1rem)); }
   }
 
+  /* ============== Cosmic Background animations ============== */
+  .cosmic-bg {
+    contain: strict;
+  }
+
+  /* Star twinkle (3 speeds) */
+  @keyframes star-twinkle {
+    0%, 100% { opacity: var(--twinkle-min, 0.3); }
+    50%      { opacity: var(--twinkle-max, 1); }
+  }
+  .star-twinkle-slow,
+  .star-twinkle-medium,
+  .star-twinkle-fast {
+    animation-name: star-twinkle;
+    animation-iteration-count: infinite;
+    animation-timing-function: ease-in-out;
+    transform-origin: center;
+  }
+  .star-twinkle-slow   { --twinkle-min: 0.4; --twinkle-max: 0.85; }
+  .star-twinkle-medium { --twinkle-min: 0.5; --twinkle-max: 1.0;  }
+  .star-twinkle-fast   { --twinkle-min: 0.6; --twinkle-max: 1.0;  }
+
+  /* Nebula drift (very slow, organic) */
+  @keyframes cosmic-drift-slow {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    50%      { transform: translate3d(15px, -25px, 0) scale(1.04); }
+  }
+  @keyframes cosmic-drift-medium {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    50%      { transform: translate3d(-25px, 18px, 0) scale(1.03); }
+  }
+  .animate-cosmic-drift-slow   { animation: cosmic-drift-slow 18s ease-in-out infinite; }
+  .animate-cosmic-drift-medium { animation: cosmic-drift-medium 14s ease-in-out infinite; }
+
+  /* Galaxy slow rotation */
+  @keyframes galaxy-rotate {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+  .animate-galaxy-rotate {
+    animation: galaxy-rotate 120s linear infinite;
+    transform-origin: center;
+  }
+
+  /* Shooting stars — diagonal trail every ~25 s */
+  .shooting-star {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 3px;
+    height: 3px;
+    background: linear-gradient(45deg, transparent, #fff 30%, #38bdf8 60%, transparent);
+    border-radius: 9999px;
+    box-shadow: 0 0 6px 1px rgba(255, 255, 255, 0.55);
+    transform: rotate(-45deg) translateX(-50px);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .shooting-star::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 0;
+    width: 80px;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.85), transparent);
+    transform: translateY(-50%);
+  }
+  @keyframes shoot {
+    0%   { transform: rotate(-45deg) translate(-200px, -200px); opacity: 0; }
+    8%   { opacity: 1; }
+    20%  { transform: rotate(-45deg) translate(800px, 800px); opacity: 0; }
+    100% { transform: rotate(-45deg) translate(800px, 800px); opacity: 0; }
+  }
+  .shooting-star-1 { top: 10%; left: 20%; animation: shoot 28s linear infinite; }
+  .shooting-star-2 { top: 30%; left: 60%; animation: shoot 32s linear infinite; animation-delay: 14s; }
+
+  /* Reduced motion: kill all cosmic animations */
+  @media (prefers-reduced-motion: reduce) {
+    .cosmic-bg [data-parallax],
+    .star-twinkle-slow,
+    .star-twinkle-medium,
+    .star-twinkle-fast,
+    .animate-cosmic-drift-slow,
+    .animate-cosmic-drift-medium,
+    .animate-galaxy-rotate,
+    .shooting-star {
+      animation: none !important;
+      transform: none !important;
+    }
+  }
+
   /* ============== Legal pages typography (privacy / terms) ============== */
   .prose-legal h3 {
     color: #e2e8f0;
