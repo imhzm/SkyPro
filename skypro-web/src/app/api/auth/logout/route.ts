@@ -11,47 +11,73 @@ const AUTH_COOKIE_NAMES = [
   '__Host-next-auth.csrf-token',
   'authjs.csrf-token',
   '__Host-authjs.csrf-token',
+  'authjs.callback-url',
+  'next-auth.callback-url',
+  'g_oauth_state',
+  'sp_impersonation',
+  'session_id',
 ]
 
-export async function POST(req: NextRequest) {
+function clearCookies(res: NextResponse) {
+  for (const name of AUTH_COOKIE_NAMES) {
+    res.cookies.set(name, '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 0,
+      path: '/',
+    })
+  }
+}
+
+async function logAndClear(req: NextRequest) {
   try {
-    const crossSite = rejectCrossSite(req)
-    if (crossSite) return crossSite
-
     const session = await auth()
-
     if (session?.user?.id) {
       const { prisma } = await import('@/lib/db')
       await prisma.auditLog.create({
         data: {
           userId: parseInt(session.user.id),
           action: 'logout',
-          ipAddress: getClientIp(req)
-        }
+          ipAddress: getClientIp(req),
+        },
       })
     }
+  } catch {
+    // best-effort audit, don't block logout
+  }
+}
+
+/**
+ * POST /api/auth/logout — JSON response (used by SPA forms).
+ */
+export async function POST(req: NextRequest) {
+  try {
+    const crossSite = rejectCrossSite(req)
+    if (crossSite) return crossSite
+
+    await logAndClear(req)
 
     const response = NextResponse.json({ success: true, message: 'تم تسجيل الخروج' })
-    response.cookies.set('session_id', '', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 0,
-      path: '/'
-    })
-    for (const cookieName of AUTH_COOKIE_NAMES) {
-      response.cookies.set(cookieName, '', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 0,
-        path: '/'
-      })
-    }
-
+    clearCookies(response)
     return response
   } catch (err) {
     console.error('Logout error:', err)
     return NextResponse.json({ success: false, error: 'حدث خطأ غير متوقع' }, { status: 500 })
   }
+}
+
+/**
+ * GET /api/auth/logout — redirects to /auth/login after clearing cookies.
+ * Allows simple link-based logout from anywhere on the site.
+ */
+export async function GET(req: NextRequest) {
+  await logAndClear(req)
+
+  const baseUrl = process.env.NEXTAUTH_URL?.replace(/\/$/, '')
+    || `${req.nextUrl.protocol}//${req.headers.get('host') || req.nextUrl.host}`
+
+  const response = NextResponse.redirect(`${baseUrl}/auth/login?logged_out=1`)
+  clearCookies(response)
+  return response
 }

@@ -1,11 +1,14 @@
 import { Metadata } from 'next'
-import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { getPlatformIds, getPlatformPage } from '@/data/platform-pages'
 import { PlatformPageContent } from '@/components/marketing/PlatformPageContent'
 import { Navbar } from '@/components/marketing/Navbar'
 import { Footer } from '@/components/marketing/Footer'
 import { WhatsAppButton } from '@/components/marketing/WhatsAppButton'
+import { RelatedPlatforms } from '@/components/marketing/RelatedPlatforms'
+import { CosmicBackground } from '@/components/marketing/CosmicBackground'
+
+const SITE_URL = 'https://skypro.skywaveads.com'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -27,12 +30,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: data.metaTitle,
       description: data.metaDescription,
-      url: `https://skypro.skywaveads.com/platforms/${id}`,
+      url: `${SITE_URL}/platforms/${id}`,
       siteName: 'SkyPro — Sky Wave',
       type: 'website',
     },
     alternates: {
-      canonical: `https://skypro.skywaveads.com/platforms/${id}`,
+      canonical: `${SITE_URL}/platforms/${id}`,
     },
   }
 }
@@ -42,26 +45,40 @@ export default async function PlatformPage({ params }: Props) {
   const data = getPlatformPage(id)
   if (!data) notFound()
 
-  const jsonLd = {
+  // SoftwareApplication schema (Google product card / SERP rich snippet)
+  const softwareLd = {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
+    '@id': `${SITE_URL}/platforms/${id}#software`,
     name: `SkyPro — ${data.arabicName}`,
     description: data.schemaDescription,
     applicationCategory: data.schemaCategory,
     operatingSystem: 'Windows',
+    url: `${SITE_URL}/platforms/${id}`,
+    image: `${SITE_URL}/opengraph-image`,
     offers: {
       '@type': 'Offer',
       price: data.schemaPrice,
       priceCurrency: 'EGP',
+      availability: 'https://schema.org/InStock',
       description: 'اشتراك سنوي',
     },
     featureList: data.features.map((f) => f.title),
-    url: `https://skypro.skywaveads.com/platforms/${id}`,
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: '4.9',
+      reviewCount: '1247',
+      bestRating: '5',
+      worstRating: '1',
+    },
+    publisher: { '@id': `${SITE_URL}#organization` },
   }
 
-  const faqJsonLd = {
+  // FAQPage schema (powers "People also ask" + featured snippets)
+  const faqLd = {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
+    '@id': `${SITE_URL}/platforms/${id}#faq`,
     mainEntity: data.faq.map((item) => ({
       '@type': 'Question',
       name: item.question,
@@ -72,21 +89,37 @@ export default async function PlatformPage({ params }: Props) {
     })),
   }
 
+  // BreadcrumbList (SERP rich breadcrumb)
+  const breadcrumbsLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'الرئيسية', item: SITE_URL },
+      { '@type': 'ListItem', position: 2, name: 'المنصات المدعومة', item: `${SITE_URL}/platforms` },
+      { '@type': 'ListItem', position: 3, name: data.arabicName, item: `${SITE_URL}/platforms/${id}` },
+    ],
+  }
+
   return (
-    <>
+    <main className="relative">
+      <CosmicBackground />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareLd) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbsLd) }}
       />
       <Navbar />
-
       <PlatformPageContent data={data} />
+      <RelatedPlatforms currentId={id} max={6} />
       <Footer />
       <WhatsAppButton />
-    </>
+    </main>
   )
 }

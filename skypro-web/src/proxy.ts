@@ -139,16 +139,21 @@ export default auth((req) => {
     }
   }
 
-  // ── 7. Already-authenticated users hitting /auth go to dashboard
+  // ── 7. Already-authenticated active users hitting /auth → role-aware redirect.
+  //     Admins go to /admin, regular users go to /dashboard.
+  //     Logout (/api/auth/logout) and /auth/email-change/confirm are exempt.
   if (
     pathname.startsWith('/auth') &&
     !pathname.startsWith('/auth/callback') &&
     !pathname.startsWith('/auth/verify-email') &&
     !pathname.startsWith('/auth/reset-password') &&
+    !pathname.startsWith('/auth/email-change/confirm') &&
     req.auth &&
     userStatus === 'active'
   ) {
-    return withSecurityHeaders(NextResponse.redirect(new URL('/dashboard', req.url)))
+    const role = req.auth.user?.role
+    const target = role === 'admin' ? '/admin' : '/dashboard'
+    return withSecurityHeaders(NextResponse.redirect(new URL(target, req.url)))
   }
 
   return withSecurityHeaders(NextResponse.next())

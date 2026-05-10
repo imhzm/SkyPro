@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Menu, X, ChevronLeft } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Logo } from '@/components/marketing/Logo'
+import { NavbarAuthMenu } from '@/components/marketing/NavbarAuthMenu'
 
 const navLinks = [
   { label: 'المميزات', href: '/#features' },
@@ -102,13 +103,7 @@ export function Navbar() {
                   )}
                 </a>
               ))}
-              <Link href="/auth/login" className="nav-link text-slate-300">تسجيل الدخول</Link>
-              <Link
-                href="/auth/register"
-                className="btn-primary mr-2 !py-2 !px-5 text-[13px] animate-glow-pulse"
-              >
-                جرّب مجاناً
-              </Link>
+              <NavbarAuthMenu variant="desktop" />
             </nav>
 
             {/* Mobile controls */}
@@ -210,14 +205,7 @@ export function Navbar() {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: navLinks.length * 0.05 + 0.1 }}
                     >
-                      <Link
-                        href="/auth/login"
-                        onClick={() => setOpen(false)}
-                        className="flex items-center justify-between rounded-2xl px-4 py-3.5 text-[15px] font-medium text-slate-300 hover:bg-white/6 hover:text-white transition-all"
-                      >
-                        <span>تسجيل الدخول</span>
-                        <ChevronLeft className="h-4 w-4 text-slate-600" />
-                      </Link>
+                      <NavbarAuthMenu variant="mobile" />
                     </motion.div>
                   </div>
 
