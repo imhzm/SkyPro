@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import CopyButton from '@/components/dashboard/CopyButton'
 import RenewButton from '@/components/dashboard/RenewButton'
+import ActivityFeed from '@/components/dashboard/ActivityFeed'
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
@@ -179,6 +180,9 @@ export default async function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Activity Feed */}
+      <ActivityFeed limit={10} />
     </div>
   )
 }

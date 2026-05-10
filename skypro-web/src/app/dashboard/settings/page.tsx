@@ -8,6 +8,7 @@ import DeleteAccountCard from '@/components/dashboard/DeleteAccountCard'
 import ProfileForm from '@/components/dashboard/ProfileForm'
 import PasswordChangeForm from '@/components/dashboard/PasswordChangeForm'
 import TwoFactorCard from '@/components/dashboard/TwoFactorCard'
+import EmailChangeForm from '@/components/dashboard/EmailChangeForm'
 
 export default async function SettingsPage() {
   const session = await auth()
@@ -73,6 +74,9 @@ export default async function SettingsPage() {
       {/* Profile form */}
       <Section icon={User} title="البيانات الشخصية">
         <ProfileForm initialName={user.name ?? ''} email={user.email} avatarUrl={user.avatarUrl} />
+        <div className="mt-5">
+          <EmailChangeForm currentEmail={user.email} requiresPassword={isPasswordAccount} />
+        </div>
       </Section>
 
       {/* Password (only for password accounts) */}

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Copy, Check } from 'lucide-react'
+import { Plus, Copy, Check, Download } from 'lucide-react'
 import { useToast } from '@/components/ui/Toaster'
 
 interface ActivationKey {
@@ -91,12 +91,22 @@ export default function AdminKeysPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
         <h1 className="text-2xl font-bold text-white">إدارة المفاتيح</h1>
-        <button onClick={() => setShowGenerate(true)} className="admin-btn-primary">
-          <Plus size={18} />
-          إنشاء مفاتيح
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <a
+            href={`/api/admin/export?type=keys${statusFilter ? `&status=${statusFilter}` : ''}`}
+            className="admin-btn-secondary"
+            download
+          >
+            <Download size={16} />
+            تصدير CSV
+          </a>
+          <button onClick={() => setShowGenerate(true)} className="admin-btn-primary">
+            <Plus size={18} />
+            إنشاء مفاتيح
+          </button>
+        </div>
       </div>
 
       {showGenerate && (

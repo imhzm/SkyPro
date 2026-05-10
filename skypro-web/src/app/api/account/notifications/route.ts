@@ -1,0 +1,76 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
+import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/db'
+import { successResponse, errorResponse, getErrorMessage } from '@/lib/api'
+import { rejectCrossSite, rejectLargeJson } from '@/lib/request-security'
+
+export const dynamic = 'force-dynamic'
+
+const markSchema = z.object({
+  ids: z.array(z.coerce.number().int().positive()).min(1).max(200).optional(),
+  all: z.boolean().optional(),
+})
+
+export async function GET(_req: NextRequest) {
+  try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json(errorResponse('غير مصرح'), { status: 401 })
+    }
+    const userId = Number(session.user.id)
+
+    const [items, unread] = await Promise.all([
+      prisma.notification.findMany({
+        where: { OR: [{ userId }, { userId: null }] },
+        orderBy: { createdAt: 'desc' },
+        take: 30,
+      }),
+      prisma.notification.count({
+        where: {
+          OR: [{ userId }, { userId: null }],
+          readAt: null,
+        },
+      }),
+    ])
+
+    return NextResponse.json(successResponse({ items, unread }))
+  } catch (err) {
+    console.error('Notifications list error:', err)
+    return NextResponse.json(errorResponse(getErrorMessage(err)), { status: 500 })
+  }
+}
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const crossSite = rejectCrossSite(req)
+    if (crossSite) return crossSite
+    const largePayload = rejectLargeJson(req, 4 * 1024)
+    if (largePayload) return largePayload
+
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json(errorResponse('غير مصرح'), { status: 401 })
+    }
+    const userId = Number(session.user.id)
+
+    const parsed = markSchema.safeParse(await req.json().catch(() => ({})))
+    if (!parsed.success) {
+      return NextResponse.json(errorResponse('بيانات غير صالحة'), { status: 400 })
+    }
+
+    const where: any = parsed.data.all
+      ? { OR: [{ userId }, { userId: null }], readAt: null }
+      : { id: { in: parsed.data.ids ?? [] }, OR: [{ userId }, { userId: null }] }
+
+    const result = await prisma.notification.updateMany({
+      where,
+      data: { readAt: new Date() },
+    })
+
+    return NextResponse.json(successResponse({ marked: result.count }))
+  } catch (err) {
+    console.error('Notifications mark error:', err)
+    return NextResponse.json(errorResponse(getErrorMessage(err)), { status: 500 })
+  }
+}
