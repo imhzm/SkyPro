@@ -3,6 +3,7 @@ import './globals.css'
 import { CookieBanner } from '@/components/marketing/CookieBanner'
 import { Analytics } from '@/components/analytics/Analytics'
 import { ToastProvider } from '@/components/ui/Toaster'
+import ImpersonationBanner from '@/components/admin/ImpersonationBanner'
 
 const SITE_URL = 'https://skypro.skywaveads.com'
 const SITE_NAME = 'SkyPro'
@@ -215,6 +216,7 @@ export default function RootLayout({
           تخطّى إلى المحتوى الرئيسي
         </a>
         <ToastProvider>
+          <ImpersonationBanner />
           <div id="main-content">
             {children}
           </div>

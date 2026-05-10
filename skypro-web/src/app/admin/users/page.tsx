@@ -5,6 +5,8 @@ import {
   Ban,
   Check,
   Copy,
+  Download,
+  Eye,
   Key,
   LogOut,
   Mail,
@@ -12,6 +14,7 @@ import {
   Plus,
   RefreshCw,
   Search,
+  Send,
   ShieldAlert,
   ShieldCheck,
   Trash2,
@@ -113,6 +116,8 @@ export default function AdminUsersPage() {
   const [pendingBanUser, setPendingBanUser] = useState<User | null>(null)
   const [pendingDeleteUser, setPendingDeleteUser] = useState<User | null>(null)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const [bulkLoading, setBulkLoading] = useState(false)
   const [suspensionReason, setSuspensionReason] = useState('')
   const [actionUserId, setActionUserId] = useState<number | null>(null)
 
@@ -167,6 +172,94 @@ export default function AdminUsersPage() {
   }
 
   const refreshUsers = () => setReloadToken((value) => value + 1)
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === users.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(users.map((u) => u.id)))
+    }
+  }
+
+  const runBulkAction = async (action: 'suspend' | 'activate' | 'delete' | 'force_logout') => {
+    if (selectedIds.size === 0) {
+      toastError('اختر مستخدمين أولاً')
+      return
+    }
+    const ids = Array.from(selectedIds)
+    if (action === 'delete' && !confirm(`حذف ${ids.length} مستخدم؟ لا يمكن التراجع.`)) return
+
+    setBulkLoading(true)
+    try {
+      const res = await fetch('/api/admin/users/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids, action }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        toastSuccess(data.message)
+        setSelectedIds(new Set())
+        refreshUsers()
+      } else {
+        toastError(data.error || 'فشلت العملية')
+      }
+    } catch {
+      toastError('فشل الاتصال')
+    } finally {
+      setBulkLoading(false)
+    }
+  }
+
+  const impersonate = async (user: User) => {
+    if (!confirm(`بدء انتحال شخصية ${user.email}؟ كل الإجراءات ستُسجَّل.`)) return
+    setActionUserId(user.id)
+    try {
+      const res = await fetch('/api/admin/users/impersonate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        toastSuccess(data.message)
+        setTimeout(() => { window.location.href = data.data?.redirectTo || '/dashboard' }, 600)
+      } else {
+        toastError(data.error || 'فشل')
+      }
+    } catch {
+      toastError('فشل الاتصال')
+    } finally {
+      setActionUserId(null)
+    }
+  }
+
+  const resendWelcome = async (user: User) => {
+    setActionUserId(user.id)
+    try {
+      const res = await fetch('/api/admin/users/resend-welcome', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id }),
+      })
+      const data = await res.json()
+      if (data.success) toastSuccess(data.message || 'تم الإرسال')
+      else toastError(data.error || 'فشل الإرسال')
+    } catch {
+      toastError('فشل الاتصال')
+    } finally {
+      setActionUserId(null)
+    }
+  }
 
   const forceLogout = async (user: User) => {
     setActionUserId(user.id)
@@ -300,6 +393,14 @@ export default function AdminUsersPage() {
             <RefreshCw size={16} />
             تحديث
           </button>
+          <a
+            href={`/api/admin/export?type=users${statusFilter ? `&status=${statusFilter}` : ''}${searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : ''}`}
+            className="admin-btn-secondary"
+            download
+          >
+            <Download size={16} />
+            CSV
+          </a>
           <button onClick={() => { setShowAdd(!showAdd); setCreatedUser(null) }} className="admin-btn-primary">
             <Plus size={18} />
             {showAdd ? 'إغلاق الإضافة' : 'إضافة مستخدم'}
@@ -407,6 +508,49 @@ export default function AdminUsersPage() {
         </div>
       )}
 
+      {selectedIds.size > 0 && (
+        <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-sky-500/25 bg-sky-500/[0.05] px-4 py-3">
+          <span className="text-sm text-sky-300 font-semibold ml-auto">
+            تم اختيار {selectedIds.size} مستخدم
+          </span>
+          <button
+            onClick={() => setSelectedIds(new Set())}
+            disabled={bulkLoading}
+            className="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-lg bg-white/5 disabled:opacity-50"
+          >
+            إلغاء الاختيار
+          </button>
+          <button
+            onClick={() => runBulkAction('activate')}
+            disabled={bulkLoading}
+            className="text-xs text-emerald-300 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25 hover:bg-emerald-500/20 disabled:opacity-50"
+          >
+            تنشيط
+          </button>
+          <button
+            onClick={() => runBulkAction('force_logout')}
+            disabled={bulkLoading}
+            className="text-xs text-amber-300 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/25 hover:bg-amber-500/20 disabled:opacity-50"
+          >
+            إنهاء الجلسات
+          </button>
+          <button
+            onClick={() => runBulkAction('suspend')}
+            disabled={bulkLoading}
+            className="text-xs text-red-300 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/25 hover:bg-red-500/20 disabled:opacity-50"
+          >
+            حظر
+          </button>
+          <button
+            onClick={() => runBulkAction('delete')}
+            disabled={bulkLoading}
+            className="text-xs text-red-300 px-3 py-1.5 rounded-lg bg-red-500/15 border border-red-500/40 hover:bg-red-500/25 disabled:opacity-50"
+          >
+            حذف نهائي
+          </button>
+        </div>
+      )}
+
       <div className="admin-card">
         <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_180px_180px_auto]">
           <div className="relative">
@@ -465,6 +609,15 @@ export default function AdminUsersPage() {
             <table className="admin-table">
               <thead>
                 <tr>
+                  <th className="!w-10">
+                    <input
+                      type="checkbox"
+                      checked={users.length > 0 && selectedIds.size === users.length}
+                      onChange={toggleSelectAll}
+                      aria-label="اختر الكل"
+                      className="w-4 h-4 accent-sky-500"
+                    />
+                  </th>
                   <th>المستخدم</th>
                   <th>الحالة</th>
                   <th>آخر سيريال</th>
@@ -476,7 +629,17 @@ export default function AdminUsersPage() {
               </thead>
               <tbody>
                 {users.map((user) => (
-                  <tr key={user.id}>
+                  <tr key={user.id} className={selectedIds.has(user.id) ? 'bg-sky-500/[0.05]' : ''}>
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(user.id)}
+                        onChange={() => toggleSelect(user.id)}
+                        disabled={user.role === 'admin'}
+                        aria-label={`اختر ${user.email}`}
+                        className="w-4 h-4 accent-sky-500 disabled:opacity-30"
+                      />
+                    </td>
                     <td>
                       <div className="font-medium text-white">{user.name || 'بدون اسم'}</div>
                       <div className="mt-1 text-xs text-slate-400" dir="ltr">{user.email}</div>
@@ -555,6 +718,26 @@ export default function AdminUsersPage() {
                           >
                             <LogOut size={15} />
                             إنهاء الجلسات
+                          </button>
+                        )}
+                        <button
+                          onClick={() => resendWelcome(user)}
+                          disabled={actionUserId === user.id}
+                          className="admin-btn-secondary !px-3 !py-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          title="إعادة إرسال بريد الترحيب والسيريال"
+                        >
+                          <Send size={15} />
+                          إرسال بياناته
+                        </button>
+                        {user.role !== 'admin' && user.status === 'active' && (
+                          <button
+                            onClick={() => impersonate(user)}
+                            disabled={actionUserId === user.id}
+                            className="admin-btn-secondary !px-3 !py-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            title="انتحال شخصية المستخدم لتشخيص مشكلة"
+                          >
+                            <Eye size={15} />
+                            انتحال
                           </button>
                         )}
                         {user.role !== 'admin' && user.status !== 'deleted' && (

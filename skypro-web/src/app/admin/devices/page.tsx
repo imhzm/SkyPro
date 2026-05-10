@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { RotateCcw } from 'lucide-react'
+import { RotateCcw, Download } from 'lucide-react'
 import { useToast } from '@/components/ui/Toaster'
 
 interface Device {
@@ -66,7 +66,13 @@ export default function AdminDevicesPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-white mb-6">إدارة الأجهزة</h1>
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <h1 className="text-2xl font-bold text-white">إدارة الأجهزة</h1>
+        <a href="/api/admin/export?type=devices" className="admin-btn-secondary" download>
+          <Download size={16} />
+          تصدير CSV
+        </a>
+      </div>
 
       <div className="admin-card">
         {loading ? (

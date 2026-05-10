@@ -3,8 +3,9 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Monitor, LogOut, Menu, X, Settings, CreditCard } from 'lucide-react'
+import { LayoutDashboard, Monitor, LogOut, Menu, X, Settings, CreditCard, Activity } from 'lucide-react'
 import { Logo } from '@/components/marketing/Logo'
+import NotificationBell from '@/components/dashboard/NotificationBell'
 
 interface User {
   name: string | null
@@ -16,6 +17,7 @@ const navLinks = [
   { href: '/dashboard',          label: 'لوحة التحكم', icon: LayoutDashboard },
   { href: '/dashboard/devices',  label: 'الأجهزة',     icon: Monitor },
   { href: '/dashboard/billing',  label: 'الفوترة',     icon: CreditCard },
+  { href: '/dashboard/activity', label: 'سجل النشاط',  icon: Activity },
   { href: '/dashboard/settings', label: 'الإعدادات',   icon: Settings },
 ]
 
@@ -35,9 +37,12 @@ export default function DashboardSidebar({ user }: { user: User }) {
           <Logo size={28} />
           SkyPro
         </Link>
-        <button onClick={() => setOpen(!open)} className="text-slate-400 hover:text-white">
-          {open ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
+        <div className="flex items-center gap-2">
+          <NotificationBell />
+          <button onClick={() => setOpen(!open)} className="text-slate-400 hover:text-white">
+            {open ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
       </div>
 
       {/* Overlay */}
@@ -51,10 +56,13 @@ export default function DashboardSidebar({ user }: { user: User }) {
           ${open ? 'translate-x-0' : 'translate-x-full'} lg:translate-x-0`}
         dir="rtl"
       >
-        {/* Logo */}
-        <div className="flex items-center gap-2 px-5 h-16 border-b border-white/8">
-          <Logo size={32} priority />
-          <span className="font-extrabold text-lg gradient-text-brand">SkyPro</span>
+        {/* Logo + Bell */}
+        <div className="flex items-center justify-between px-5 h-16 border-b border-white/8">
+          <Link href="/" className="flex items-center gap-2">
+            <Logo size={32} priority />
+            <span className="font-extrabold text-lg gradient-text-brand">SkyPro</span>
+          </Link>
+          <NotificationBell />
         </div>
 
         {/* Nav */}

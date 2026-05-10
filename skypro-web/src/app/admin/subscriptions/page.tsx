@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { CalendarPlus, Check, Power, X } from 'lucide-react'
+import { CalendarPlus, Check, Download, Power, X } from 'lucide-react'
 import { useToast } from '@/components/ui/Toaster'
 
 interface Subscription {
@@ -146,6 +146,10 @@ export default function AdminSubscriptionsPage() {
           <h1 className="text-2xl font-bold text-white">إدارة الاشتراكات</h1>
           <p className="text-sm text-slate-500 mt-1">{subscriptions.length} اشتراك في هذه الصفحة</p>
         </div>
+        <a href="/api/admin/export?type=subscriptions" className="admin-btn-secondary" download>
+          <Download size={16} />
+          تصدير CSV
+        </a>
       </div>
 
       <div className="admin-card">
