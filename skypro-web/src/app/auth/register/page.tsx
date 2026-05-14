@@ -46,7 +46,7 @@ export default function RegisterPage() {
           setError(data.message || 'تم إنشاء الحساب لكن فشل إرسال بيانات التفعيل إلى الإيميل')
           return
         }
-        router.push('/auth/login?message=trial-created')
+        router.push(`/auth/register-success?email=${encodeURIComponent(email)}`)
       } else {
         setError(data.error || 'فشل إنشاء الحساب')
       }
