@@ -122,11 +122,11 @@ export async function POST(req: NextRequest) {
     const welcomeData = {
       name,
       email,
+      password,
       serial: activationKey.keyCode,
       expiryDate: trialEndsAt.toLocaleDateString('ar-EG'),
-      loginMethod: 'Use the password you chose during registration',
       planLabel: `تجربة مجانية لمدة ${trialDays} يوم`,
-      verifyLink
+      verifyLink,
     }
     const emailResult = await sendEmail({
       to: email,

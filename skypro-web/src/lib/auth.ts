@@ -52,6 +52,7 @@ async function clearFailedLoginCount(userId: number, ipAddress: string | null) {
 async function sendWelcomeEmailDirect(subject: string, welcomeData: {
   name?: string | null
   email: string
+  password?: string | null
   serial: string
   expiryDate: string
   planLabel?: string
