@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { getClientIp, rejectCrossSite } from '@/lib/request-security'
+import { getClientIp } from '@/lib/request-security'
 
 const AUTH_COOKIE_NAMES = [
   'authjs.session-token',
@@ -53,17 +53,15 @@ async function logAndClear(req: NextRequest) {
  */
 export async function POST(req: NextRequest) {
   try {
-    const crossSite = rejectCrossSite(req)
-    if (crossSite) return crossSite
-
     await logAndClear(req)
 
     const response = NextResponse.json({ success: true, message: 'تم تسجيل الخروج' })
     clearCookies(response)
     return response
-  } catch (err) {
-    console.error('Logout error:', err)
-    return NextResponse.json({ success: false, error: 'حدث خطأ غير متوقع' }, { status: 500 })
+  } catch {
+    const response = NextResponse.json({ success: true, message: 'تم تسجيل الخروج' })
+    clearCookies(response)
+    return response
   }
 }
 

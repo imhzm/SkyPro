@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import { signOut } from 'next-auth/react'
 import { LayoutDashboard, Monitor, LogOut, Menu, X, Settings, CreditCard, Activity } from 'lucide-react'
 import { Logo } from '@/components/marketing/Logo'
 import NotificationBell from '@/components/dashboard/NotificationBell'
@@ -23,7 +24,21 @@ const navLinks = [
 
 export default function DashboardSidebar({ user }: { user: User }) {
   const [open, setOpen] = useState(false)
+  const [loggingOut, setLoggingOut] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
+
+  const handleLogout = async () => {
+    if (loggingOut) return
+    setLoggingOut(true)
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' })
+      await signOut({ redirect: false })
+      window.location.href = '/auth/login?logged_out=1'
+    } catch {
+      window.location.href = '/api/auth/logout'
+    }
+  }
 
   const initials = user.name
     ? user.name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
@@ -98,15 +113,14 @@ export default function DashboardSidebar({ user }: { user: User }) {
               <p className="text-slate-500 text-xs truncate">{user.email}</p>
             </div>
           </div>
-          <form action="/api/auth/signout" method="POST">
-            <button
-              type="submit"
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-500/10 text-sm transition-all"
-            >
-              <LogOut className="w-4 h-4" />
-              تسجيل الخروج
-            </button>
-          </form>
+          <button
+            onClick={handleLogout}
+            disabled={loggingOut}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-500/10 text-sm transition-all disabled:opacity-50"
+          >
+            <LogOut className="w-4 h-4" />
+            {loggingOut ? 'جارٍ الخروج...' : 'تسجيل الخروج'}
+          </button>
         </div>
       </aside>
     </>

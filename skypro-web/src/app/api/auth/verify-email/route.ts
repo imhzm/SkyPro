@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { prisma } from '@/lib/db'
 import { errorResponse, getErrorMessage } from '@/lib/api'
+import { sendEmail, generateActivationConfirmEmail, generateActivationConfirmEmailText } from '@/lib/email'
 import {
   checkRateLimit,
   getClientIp,
@@ -74,6 +75,44 @@ export async function POST(req: NextRequest) {
         }
       })
     ])
+
+    // Send activation confirmation email with serial key
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { email: true, name: true }
+      })
+      const activationKey = await prisma.activationKey.findFirst({
+        where: { userId, status: 'active' },
+        orderBy: { activatedAt: 'desc' }
+      })
+      const subscription = await prisma.subscription.findFirst({
+        where: { userId },
+        orderBy: { createdAt: 'desc' }
+      })
+
+      if (user && activationKey) {
+        const expiryDate = subscription?.expiresAt || activationKey.expiresAt
+        const emailData = {
+          name: user.name || 'عميلنا الكريم',
+          email: user.email,
+          serial: activationKey.keyCode,
+          expiryDate: expiryDate ? expiryDate.toLocaleDateString('ar-EG') : 'غير محدد',
+          planLabel: activationKey.plan === 'trial'
+            ? `تجربة مجانية لمدة ${activationKey.durationDays} يوم`
+            : 'اشتراك نشط',
+        }
+
+        await sendEmail({
+          to: user.email,
+          subject: 'تم تفعيل حسابك في SkyPro — بيانات الدخول والسيريال',
+          text: generateActivationConfirmEmailText(emailData),
+          html: generateActivationConfirmEmail(emailData),
+        })
+      }
+    } catch {
+      // best-effort — don't block the success response
+    }
 
     return NextResponse.json({ success: true, message: 'تم تأكيد البريد الإلكتروني بنجاح' })
   } catch (err) {
