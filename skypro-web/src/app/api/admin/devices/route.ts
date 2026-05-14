@@ -77,7 +77,7 @@ export async function DELETE(req: NextRequest) {
 
     await prisma.device.update({
       where: { id },
-      data: { isActive: false, resetCount: device.resetCount + 1 }
+      data: { isActive: false }
     })
 
     await prisma.auditLog.create({

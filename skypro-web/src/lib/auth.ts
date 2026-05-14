@@ -6,6 +6,10 @@ import { prisma } from '@/lib/db'
 import { generateApiKey, getTrialEndDate, verifyPassword } from '@/lib/utils'
 import { checkRateLimit, getClientIp } from '@/lib/request-security'
 
+// Lightweight in-memory cache for JWT user status checks (avoids DB round trip on every request)
+const userStatusCache = new Map<number, { role: string; status: string; passwordChangedAt: number | null; fetchedAt: number }>()
+const USER_CACHE_TTL_MS = 60_000
+
 // Custom error subclasses so the login page can show precise messages
 class InvalidCredentials extends CredentialsSignin { code = 'invalid_credentials' }
 class EmailNotVerified extends CredentialsSignin { code = 'email_not_verified' }
@@ -352,25 +356,52 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
 
       if (token.id) {
-        const currentUser = await prisma.user.findUnique({
-          where: { id: Number(token.id) },
-          select: { role: true, status: true, passwordChangedAt: true }
-        })
+        const now = Date.now()
+        const userId = Number(token.id)
+        const cached = userStatusCache.get(userId)
+        let role: string
+        let status: string
+        let passwordChangedAt: number | null
 
-        if (!currentUser || currentUser.status !== 'active') {
-          token.role = 'blocked'
-          ;(token as any).status = currentUser?.status || 'deleted'
+        if (cached && (now - cached.fetchedAt) < USER_CACHE_TTL_MS) {
+          role = cached.role
+          status = cached.status
+          passwordChangedAt = cached.passwordChangedAt
         } else {
-          token.role = currentUser.role
-          ;(token as any).status = currentUser.status
+          const currentUser = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { role: true, status: true, passwordChangedAt: true }
+          })
+
+          if (currentUser) {
+            role = currentUser.role
+            status = currentUser.status
+            passwordChangedAt = currentUser.passwordChangedAt?.getTime() ?? null
+            userStatusCache.set(userId, { role, status, passwordChangedAt, fetchedAt: now })
+          } else {
+            role = 'user'
+            status = 'deleted'
+            passwordChangedAt = null
+          }
+
+          // Keep cache from growing unbounded
+          if (userStatusCache.size > 10000) userStatusCache.clear()
+        }
+
+        if (status !== 'active') {
+          token.role = 'blocked'
+          ;(token as any).status = status
+        } else {
+          token.role = role
+          ;(token as any).status = status
 
           // Session invalidation: if password changed AFTER token issuance,
           // force re-login. Token's `iat` is set by Auth.js automatically.
           const tokenIatSec = (token as any).iat as number | undefined
           if (
-            currentUser.passwordChangedAt &&
+            passwordChangedAt &&
             tokenIatSec &&
-            Math.floor(currentUser.passwordChangedAt.getTime() / 1000) > tokenIatSec
+            Math.floor(passwordChangedAt / 1000) > tokenIatSec
           ) {
             token.role = 'blocked'
             ;(token as any).status = 'session_invalidated'

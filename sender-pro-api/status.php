@@ -15,10 +15,13 @@ if (!$rateLimiter->check($clientIP . '_status', 10, 3600)) {
 }
 
 $data = readJsonRequest();
-$key = cleanInput($data['key'] ?? '', 120);
+$key = strtoupper(cleanInput($data['key'] ?? '', 120));
 
 if (empty($key)) {
     sendResponse(false, 'Key is required');
+}
+if (!preg_match('/^[A-Z0-9\\-]+$/', $key)) {
+    sendResponse(false, 'Invalid key');
 }
 
 $stmt = $pdo->prepare("SELECT key_code, status, expires_at, device_id, activated_at FROM activation_keys WHERE key_code = ?");
@@ -34,7 +37,12 @@ if (!$keyData) {
 $maskedDeviceId = '';
 if (!empty($keyData['device_id'])) {
     $deviceId = $keyData['device_id'];
-    $maskedDeviceId = str_repeat('*', max(0, strlen($deviceId) - 8)) . substr($deviceId, -8);
+    $len = strlen($deviceId);
+    if ($len > 8) {
+        $maskedDeviceId = str_repeat('*', $len - 8) . substr($deviceId, -8);
+    } else {
+        $maskedDeviceId = str_repeat('*', $len);
+    }
 }
 
 sendResponse(true, 'Status retrieved', [

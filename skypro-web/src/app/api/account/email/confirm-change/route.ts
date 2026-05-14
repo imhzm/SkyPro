@@ -3,7 +3,7 @@ import crypto from 'crypto'
 import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { successResponse, errorResponse, getErrorMessage } from '@/lib/api'
-import { rejectLargeJson, checkRateLimit, getClientIp, rateLimitedResponse } from '@/lib/request-security'
+import { rejectLargeJson, checkRateLimit, getClientIp, rateLimitedResponse, rejectCrossSite } from '@/lib/request-security'
 import { notifySecurityEvent } from '@/lib/security'
 
 export const dynamic = 'force-dynamic'
@@ -17,6 +17,9 @@ const schema = z.object({ token: z.string().min(32).max(256) })
  */
 export async function POST(req: NextRequest) {
   try {
+    const crossSite = rejectCrossSite(req)
+    if (crossSite) return crossSite
+
     const largePayload = rejectLargeJson(req, 2 * 1024)
     if (largePayload) return largePayload
 

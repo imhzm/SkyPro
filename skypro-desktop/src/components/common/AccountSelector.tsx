@@ -220,7 +220,7 @@ export default function AccountSelector({
         {!cycleActive ? (
           <button
             onClick={handleStart}
-            disabled={selectedIds.size === 0 || cycleActive}
+            disabled={selectedIds.size === 0 || cycleActive || hasNoTaskParams}
             className="btn-success flex items-center gap-1 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Play className="w-4 h-4" />

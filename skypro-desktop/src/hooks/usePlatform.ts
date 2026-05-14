@@ -40,6 +40,14 @@ export function usePlatform(platformId: string) {
     msgTimerRef.current = setTimeout(() => { setMessage(''); setError(''); msgTimerRef.current = null }, 6000)
   }, [])
 
+  const sanitizeCsvValue = useCallback((value: unknown): string => {
+    const str = String(value ?? '')
+    if (/^[=+\-@\t\r]/.test(str)) {
+      return "'" + str.replace(/"/g, '""')
+    }
+    return str
+  }, [])
+
   const loadResults = useCallback(async () => {
     try {
       const res = await window.electronAPI.dbQuery({ table: 'leads', filters: [{ column: 'platform', op: '=', value: platformId }], limit: 500 })
@@ -79,44 +87,46 @@ export function usePlatform(platformId: string) {
       const row: any = {}
       let extraData: any = {}
       try { extraData = JSON.parse(r.extra_data || '{}') } catch { extraData = {} }
+      const raw: Record<string, unknown> = {}
       headers.forEach(h => {
         switch (h) {
-          case 'الاسم': row[h] = r.name || extraData.name || ''; break
-          case 'معرف المستخدم': row[h] = extraData.userId || extraData.id || r.extra_data?.userId || ''; break
-          case 'المعرف': row[h] = r.username || extraData.username || extraData.userId || extraData.id || ''; break
-          case 'الرابط': row[h] = r.url || extraData.profile || extraData.url || r.link || ''; break
-          case 'الهاتف': row[h] = r.phone || extraData.phone || ''; break
-          case 'البريد': row[h] = r.email || extraData.email || ''; break
-          case 'النص': row[h] = r.text || r.content || extraData.text || extraData.extra || ''; break
-          case 'المصدر': row[h] = r.source || extraData.source || ''; break
-          case 'التاريخ': row[h] = r.created_at || ''; break
-          case 'العنوان': row[h] = r.title || r.name || extraData.title || extraData.name || ''; break
-          case 'السعر': row[h] = r.price || extraData.price || ''; break
-          case 'الموقع': row[h] = r.location || r.address || extraData.location || ''; break
-          case 'التقييم': row[h] = r.rating || extraData.rating || ''; break
-          case 'النوع': row[h] = r.type || r.category || extraData.type || ''; break
-          case 'الصورة': row[h] = r.image || r.thumbnail || extraData.image || extraData.thumbnail || ''; break
-          case 'الأعضاء': row[h] = r.members || r.memberCount || extraData.members || extraData.memberCount || ''; break
-          case 'المجموعة': row[h] = r.group || r.groupName || extraData.group || extraData.groupName || ''; break
-          case 'الرقم': row[h] = r.phone || r.number || extraData.phone || extraData.number || ''; break
-          case 'المستلم': row[h] = r.recipient || r.username || extraData.recipient || extraData.username || ''; break
-          case 'الحالة': row[h] = r.status || r.state || extraData.status || ''; break
-          case 'خطأ': row[h] = r.error || r.message || extraData.error || extraData.message || ''; break
-          case 'المستخدم': row[h] = r.username || r.user || extraData.username || extraData.user || r.name || ''; break
-          case 'Name': row[h] = r.name || extraData.name || ''; break
-          case 'UserID': row[h] = extraData.userId || extraData.id || ''; break
-          case 'Profile': row[h] = r.url || extraData.profile || ''; break
-          case 'Phone': row[h] = r.phone || extraData.phone || ''; break
-          case 'Email': row[h] = r.email || extraData.email || ''; break
-          case 'Text': row[h] = extraData.text || ''; break
-          case 'Source': row[h] = r.source || ''; break
-          case 'Date': row[h] = r.created_at || ''; break
-          case 'Recipient': row[h] = r.recipient || r.username || extraData.recipient || ''; break
-          case 'Status': row[h] = r.status || extraData.status || ''; break
-          case 'Error': row[h] = r.error || extraData.error || ''; break
-          default: row[h] = r[h] || extraData[h] || ''; break
+          case 'الاسم': raw[h] = r.name || extraData.name || ''; break
+          case 'معرف المستخدم': raw[h] = extraData.userId || extraData.id || r.extra_data?.userId || ''; break
+          case 'المعرف': raw[h] = r.username || extraData.username || extraData.userId || extraData.id || ''; break
+          case 'الرابط': raw[h] = r.url || extraData.profile || extraData.url || r.link || ''; break
+          case 'الهاتف': raw[h] = r.phone || extraData.phone || ''; break
+          case 'البريد': raw[h] = r.email || extraData.email || ''; break
+          case 'النص': raw[h] = r.text || r.content || extraData.text || extraData.extra || ''; break
+          case 'المصدر': raw[h] = r.source || extraData.source || ''; break
+          case 'التاريخ': raw[h] = r.created_at || ''; break
+          case 'العنوان': raw[h] = r.title || r.name || extraData.title || extraData.name || ''; break
+          case 'السعر': raw[h] = r.price || extraData.price || ''; break
+          case 'الموقع': raw[h] = r.location || r.address || extraData.location || ''; break
+          case 'التقييم': raw[h] = r.rating || extraData.rating || ''; break
+          case 'النوع': raw[h] = r.type || r.category || extraData.type || ''; break
+          case 'الصورة': raw[h] = r.image || r.thumbnail || extraData.image || extraData.thumbnail || ''; break
+          case 'الأعضاء': raw[h] = r.members || r.memberCount || extraData.members || extraData.memberCount || ''; break
+          case 'المجموعة': raw[h] = r.group || r.groupName || extraData.group || extraData.groupName || ''; break
+          case 'الرقم': raw[h] = r.phone || r.number || extraData.phone || extraData.number || ''; break
+          case 'المستلم': raw[h] = r.recipient || r.username || extraData.recipient || extraData.username || ''; break
+          case 'الحالة': raw[h] = r.status || r.state || extraData.status || ''; break
+          case 'خطأ': raw[h] = r.error || r.message || extraData.error || extraData.message || ''; break
+          case 'المستخدم': raw[h] = r.username || r.user || extraData.username || extraData.user || r.name || ''; break
+          case 'Name': raw[h] = r.name || extraData.name || ''; break
+          case 'UserID': raw[h] = extraData.userId || extraData.id || ''; break
+          case 'Profile': raw[h] = r.url || extraData.profile || ''; break
+          case 'Phone': raw[h] = r.phone || extraData.phone || ''; break
+          case 'Email': raw[h] = r.email || extraData.email || ''; break
+          case 'Text': raw[h] = extraData.text || ''; break
+          case 'Source': raw[h] = r.source || ''; break
+          case 'Date': raw[h] = r.created_at || ''; break
+          case 'Recipient': raw[h] = r.recipient || r.username || extraData.recipient || ''; break
+          case 'Status': raw[h] = r.status || extraData.status || ''; break
+          case 'Error': raw[h] = r.error || extraData.error || ''; break
+          default: raw[h] = r[h] || extraData[h] || ''; break
         }
       })
+      for (const k of headers) row[k] = sanitizeCsvValue(raw[k])
       return row
     })
     const res = await window.electronAPI.exportToCSV({
@@ -124,7 +134,7 @@ export function usePlatform(platformId: string) {
     })
     if (res.success) showMsg(`تم التصدير إلى: ${res.path}`)
     else showMsg(res.error || 'فشل التصدير', true)
-  }, [results, showMsg])
+  }, [results, showMsg, sanitizeCsvValue])
 
   const clearResults = useCallback(async () => {
     if (results.length === 0) {

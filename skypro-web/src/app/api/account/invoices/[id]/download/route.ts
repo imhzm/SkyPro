@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { errorResponse, getErrorMessage } from '@/lib/api'
+import { checkRateLimit, getClientIp, rateLimitedResponse } from '@/lib/request-security'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,6 +19,10 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
     if (!session?.user?.id) {
       return NextResponse.json(errorResponse('غير مصرح'), { status: 401 })
     }
+
+    const ip = getClientIp(req)
+    const limit = checkRateLimit(`invoice-download:${session.user.id}`, 30, 60 * 60 * 1000)
+    if (!limit.allowed) return rateLimitedResponse(limit.retryAfter)
 
     const { id: idStr } = await ctx.params
     const invoiceId = Number.parseInt(idStr, 10)
