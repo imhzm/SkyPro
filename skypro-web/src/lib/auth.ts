@@ -58,17 +58,20 @@ async function sendWelcomeEmailDirect(subject: string, welcomeData: {
   loginMethod?: string
 }) {
   try {
+    console.log('[WelcomeEmail] Sending to:', welcomeData.email)
     const result = await sendEmail({
       to: welcomeData.email,
       subject,
       text: generateWelcomeEmailText(welcomeData),
       html: generateWelcomeEmail(welcomeData),
     })
-    if (!result.success) {
-      console.error('Welcome email failed:', result.error)
+    if (result.success) {
+      console.log('[WelcomeEmail] Sent OK:', result.messageId)
+    } else {
+      console.error('[WelcomeEmail] Failed:', result.error)
     }
   } catch (err) {
-    console.error('Welcome email error:', err instanceof Error ? err.message : err)
+    console.error('[WelcomeEmail] Error:', err instanceof Error ? err.message : err)
   }
 }
 
