@@ -13,6 +13,7 @@ import { SkyCRMAdSection } from '@/components/marketing/SkyCRMAdSection'
 import { Footer } from '@/components/marketing/Footer'
 import { WhatsAppButton } from '@/components/marketing/WhatsAppButton'
 import { CosmicBackground } from '@/components/marketing/CosmicBackground'
+import { EmailNoticeBanner } from '@/components/marketing/EmailNoticeBanner'
 import { platforms } from '@/data/platforms'
 
 const SITE_URL = 'https://skypro.skywaveads.com'
@@ -243,6 +244,7 @@ export default function HomePage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }}
       />
+      <EmailNoticeBanner />
       <Navbar />
       <HeroSection />
       <TrustedBySection />
