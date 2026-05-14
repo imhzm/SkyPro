@@ -9,6 +9,7 @@ export const dynamic = 'force-dynamic'
 
 const ACCOUNT_SUSPENDED_MESSAGE = 'تم حظر حسابك من SkyPro. تم إيقاف الدخول إلى البرنامج، يرجى مراجعة بريدك الإلكتروني أو التواصل مع الدعم.'
 const ACCOUNT_INACTIVE_MESSAGE = 'الحساب غير نشط. تواصل مع الدعم الفني.'
+const EMAIL_NOT_VERIFIED_MESSAGE = 'يجب تأكيد بريدك الإلكتروني أولاً لتفعيل حسابك. افتح بريدك الوارد (أو قسم Spam/Junk) واضغط على رابط التأكيد الذي أرسلناه لك، ثم حاول تسجيل الدخول مرة أخرى.'
 
 const desktopLoginSchema = z.object({
   email: z.string().trim().toLowerCase().email('بريد إلكتروني غير صالح'),
@@ -55,6 +56,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(errorResponse(ACCOUNT_SUSPENDED_MESSAGE), { status: 403 })
     }
 
+    if (user.status === 'pending_verification' || !user.emailVerifiedAt) {
+      return NextResponse.json(errorResponse(EMAIL_NOT_VERIFIED_MESSAGE), { status: 403 })
+    }
+
     if (user.status !== 'active') {
       return NextResponse.json(errorResponse(ACCOUNT_INACTIVE_MESSAGE), { status: 403 })
     }
@@ -82,6 +87,10 @@ export async function POST(req: NextRequest) {
 
     if (activationKey.status === 'expired' || isKeyExpired(activationKey.expiresAt)) {
       return NextResponse.json(errorResponse('انتهت صلاحية هذا السيريال'), { status: 403 })
+    }
+
+    if (activationKey.status === 'pending') {
+      return NextResponse.json(errorResponse('السيريال في انتظار تأكيد بريدك الإلكتروني. افتح بريدك (أو Spam/Junk) واضغط رابط التأكيد أولاً.'), { status: 403 })
     }
 
     if (!['active', 'available', 'assigned'].includes(activationKey.status)) {
