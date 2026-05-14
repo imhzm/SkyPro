@@ -1,19 +1,20 @@
 import { useState, useEffect } from 'react'
 import { useAccountsStore } from '../../stores/accountsStore'
-import { Users, Plus, Trash2, Edit3, Save, X, Search, Facebook, MessageCircle, Instagram, Twitter, Linkedin, Send, Globe, AtSign, Bookmark, Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react'
+import { getPlatformGradient } from '../../data/platformGradients'
+import { Users, Plus, Trash2, Edit3, Save, X, Search, Facebook, MessageCircle, Instagram, Twitter, Linkedin, Send, Globe, AtSign, Bookmark, Eye, EyeOff, CheckCircle, AlertCircle, Shield } from 'lucide-react'
 
 const PLATFORMS = [
-  { id: 'facebook', label: 'Facebook', icon: Facebook, color: 'bg-blue-600' },
-  { id: 'whatsapp', label: 'WhatsApp', icon: MessageCircle, color: 'bg-green-600' },
-  { id: 'instagram', label: 'Instagram', icon: Instagram, color: 'bg-pink-600' },
-  { id: 'twitter', label: 'Twitter / X', icon: Twitter, color: 'bg-gray-900' },
-  { id: 'linkedin', label: 'LinkedIn', icon: Linkedin, color: 'bg-blue-700' },
-  { id: 'telegram', label: 'Telegram', icon: Send, color: 'bg-sky-500' },
-  { id: 'tiktok', label: 'TikTok', icon: Globe, color: 'bg-pink-500' },
-  { id: 'pinterest', label: 'Pinterest', icon: Bookmark, color: 'bg-red-600' },
-  { id: 'snapchat', label: 'Snapchat', icon: Globe, color: 'bg-yellow-500' },
-  { id: 'threads', label: 'Threads', icon: AtSign, color: 'bg-gray-800' },
-  { id: 'reddit', label: 'Reddit', icon: Globe, color: 'bg-orange-600' },
+  { id: 'facebook', label: 'Facebook', icon: Facebook },
+  { id: 'whatsapp', label: 'WhatsApp', icon: MessageCircle },
+  { id: 'instagram', label: 'Instagram', icon: Instagram },
+  { id: 'twitter', label: 'Twitter / X', icon: Twitter },
+  { id: 'linkedin', label: 'LinkedIn', icon: Linkedin },
+  { id: 'telegram', label: 'Telegram', icon: Send },
+  { id: 'tiktok', label: 'TikTok', icon: Globe },
+  { id: 'pinterest', label: 'Pinterest', icon: Bookmark },
+  { id: 'snapchat', label: 'Snapchat', icon: Globe },
+  { id: 'threads', label: 'Threads', icon: AtSign },
+  { id: 'reddit', label: 'Reddit', icon: Globe },
 ]
 
 export default function AccountsModule() {
@@ -50,10 +51,13 @@ export default function AccountsModule() {
   })
 
   const handleSave = async () => {
-    if (!form.username) return
+    if (!form.username) {
+      showMsg('يرجى إدخال اسم المستخدم', true)
+      return
+    }
     const payload = { ...form }
     if (editingId && !payload.password) {
-      delete (payload as any).password
+      delete (payload as Record<string, unknown>).password
     }
     try {
       if (editingId) {
@@ -70,7 +74,7 @@ export default function AccountsModule() {
     setShowForm(false)
   }
 
-  const handleEdit = (acc: any) => {
+  const handleEdit = (acc: { id: number; platform: string; username: string; password?: string; proxy?: string; notes?: string; status: string }) => {
     setForm({
       platform: acc.platform,
       username: acc.username,
@@ -89,9 +93,10 @@ export default function AccountsModule() {
     if (deleteConfirmId !== id) { setDeleteConfirmId(id); return }
     await deleteAccount(id)
     setDeleteConfirmId(null)
+    showMsg('تم حذف الحساب')
   }
 
-  const platformInfo = (pid: string) => PLATFORMS.find(p => p.id === pid) || { label: pid, icon: Globe, color: 'bg-gray-500' }
+  const platformInfo = (pid: string) => PLATFORMS.find(p => p.id === pid) || { id: pid, label: pid, icon: Globe }
 
   return (
     <div className="space-y-6">
@@ -101,54 +106,79 @@ export default function AccountsModule() {
           {message || error}
         </div>
       )}
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-secondary-900">إدارة الحسابات</h2>
-          <p className="text-sm text-secondary-500">إدارة جميع حسابات السوشيال ميديا في مكان واحد</p>
+
+      {/* Hero Header */}
+      <div className="rounded-2xl overflow-hidden p-6" style={{ background: 'linear-gradient(135deg, #001a0a 0%, #22c55e 50%, #16a34a 100%)', boxShadow: '0 8px 32px rgba(34, 197, 94, 0.2)' }}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)' }}>
+              <Shield size={28} className="text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-white mb-1">إدارة الحسابات</h1>
+              <p className="text-sm" style={{ color: 'rgba(255,255,255,0.6)' }}>إدارة جميع حسابات السوشيال ميديا في مكان واحد</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="px-3 py-1.5 rounded-full text-xs font-semibold text-white" style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)' }}>
+              {accounts.length} حساب
+            </div>
+            <button onClick={() => { setShowForm(!showForm); setEditingId(null); setForm({ platform: 'facebook', username: '', password: '', proxy: '', notes: '', status: 'active' }) }} className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all hover:shadow-lg" style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)' }}>
+              {showForm ? <><X size={16} className="inline ml-1" /> إغلاق</> : <><Plus size={16} className="inline ml-1" /> إضافة حساب</>}
+            </button>
+          </div>
         </div>
-        <button onClick={() => { setShowForm(!showForm); setEditingId(null); setForm({ platform: 'facebook', username: '', password: '', proxy: '', notes: '', status: 'active' }) }} className="btn-primary">
-          {showForm ? <><X size={18}/> إغلاق</> : <><Plus size={18}/> إضافة حساب</>}
-        </button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-4">
-        {PLATFORMS.slice(0, 8).map(p => {
+      {/* Platform Stats Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-6 gap-2.5">
+        {PLATFORMS.slice(0, 6).map(p => {
           const count = accounts.filter(a => a.platform === p.id).length
+          const gradient = getPlatformGradient(p.id)
+          const isActive = filterPlatform === p.id
           return (
-            <div key={p.id} className="card flex items-center gap-3 cursor-pointer hover:shadow-md transition" onClick={() => setFilterPlatform(filterPlatform === p.id ? '' : p.id)}>
-              <div className={`w-10 h-10 rounded-xl ${p.color} flex items-center justify-center text-white`}><p.icon size={20}/></div>
-              <div><p className="font-bold text-secondary-900">{p.label}</p><p className="text-xs text-secondary-500">{count} حساب</p></div>
-            </div>
+            <button
+              key={p.id}
+              onClick={() => setFilterPlatform(filterPlatform === p.id ? '' : p.id)}
+              className="group flex items-center gap-2.5 p-3 rounded-xl transition-all duration-200 hover:-translate-y-0.5"
+              style={{ background: isActive ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.7)', backdropFilter: 'blur(8px)', border: `1px solid ${isActive ? p.id === 'facebook' ? '#1877f2' : '#e2e8f0' : 'rgba(226,232,240,0.5)'}`, boxShadow: isActive ? '0 4px 16px rgba(0,0,0,0.08)' : 'none' }}
+            >
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white flex-shrink-0 transition-shadow group-hover:shadow-md" style={{ background: gradient }}>
+                <p.icon size={16} />
+              </div>
+              <div className="min-w-0 text-right">
+                <p className="text-xs font-semibold text-secondary-900 truncate">{p.label}</p>
+                <p className="text-[10px] text-secondary-400">{count} حساب</p>
+              </div>
+            </button>
           )
         })}
       </div>
 
       {/* Add/Edit Form */}
       {showForm && (
-        <div className="card border-2 border-blue-100">
+        <div className="card-gradient-border">
           <h3 className="font-bold text-secondary-900 mb-4">{editingId ? 'تعديل الحساب' : 'إضافة حساب جديد'}</h3>
           <div className="grid grid-cols-3 gap-4">
             <div><label className="label-field">المنصة</label><select className="select-field" value={form.platform} onChange={e => setForm({...form, platform: e.target.value})}>
               {PLATFORMS.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
             </select></div>
-            <div><label className="label-field">اسم المستخدم / البريد</label><input type="text" className="input-field" value={form.username} onChange={e => setForm({...form, username: e.target.value})} placeholder="username أو email" /></div>
-            <div><label className="label-field">كلمة المرور</label><div className="relative"><input type={showPassword ? 'text' : 'password'} className="input-field pr-10" value={form.password} onChange={e => setForm({...form, password: e.target.value})} placeholder="••••••••" /><button type="button" className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400 hover:text-secondary-600" onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff size={16} /> : <Eye size={16} />}</button></div></div>
-            <div><label className="label-field">بروكسي (اختياري)</label><input type="text" className="input-field" value={form.proxy} onChange={e => setForm({...form, proxy: e.target.value})} placeholder="IP:Port أو http://user:pass@ip:port" /></div>
+            <div><label className="label-field">اسم المستخدم / البريد</label><input type="text" className="input-field" dir="ltr" value={form.username} onChange={e => setForm({...form, username: e.target.value})} placeholder="username أو email" /></div>
+            <div><label className="label-field">كلمة المرور</label><div className="relative"><input type={showPassword ? 'text' : 'password'} className="input-field pr-10" dir="ltr" value={form.password} onChange={e => setForm({...form, password: e.target.value})} placeholder="••••••••" /><button type="button" className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400 hover:text-secondary-600" onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff size={16} /> : <Eye size={16} />}</button></div></div>
+            <div><label className="label-field">بروكسي (اختياري)</label><input type="text" className="input-field" dir="ltr" value={form.proxy} onChange={e => setForm({...form, proxy: e.target.value})} placeholder="IP:Port" /></div>
             <div className="col-span-2"><label className="label-field">ملاحظات</label><input type="text" className="input-field" value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} placeholder="ملاحظات عن الحساب..." /></div>
           </div>
           <div className="flex gap-2 mt-4">
-            <button onClick={handleSave} disabled={!form.username} className="btn-primary"><Save size={18}/> حفظ</button>
-            <button onClick={() => setShowForm(false)} className="btn-secondary"><X size={18}/> إلغاء</button>
+            <button onClick={handleSave} disabled={!form.username} className="btn-primary"><Save size={18} /> حفظ</button>
+            <button onClick={() => setShowForm(false)} className="btn-secondary"><X size={18} /> إلغاء</button>
           </div>
         </div>
       )}
 
-      {/* Filters */}
+      {/* Search + Filter */}
       <div className="flex gap-4">
         <div className="flex-1 relative">
-          <Search size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary-400"/>
+          <Search size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary-400" />
           <input type="text" className="input-field pr-10" placeholder="بحث في الحسابات..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
         </div>
         <div className="w-48"><select className="select-field" value={filterPlatform} onChange={e => setFilterPlatform(e.target.value)}>
@@ -158,32 +188,44 @@ export default function AccountsModule() {
       </div>
 
       {/* Accounts Table */}
-      <div className="card">
+      <div className="card-gradient-border" style={{ padding: '0' }}>
         {filtered.length === 0 ? (
-          <div className="text-center py-12 text-secondary-400">
-            <Users size={64} className="mx-auto mb-4 opacity-30"/>
-            <p className="text-lg">لا توجد حسابات</p>
-            <p className="text-sm">أضف حساباتك من مختلف المنصات لإدارتها بسهولة</p>
+          <div className="text-center py-16 px-6">
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'linear-gradient(135deg, rgba(34,197,94,0.1), rgba(22,163,74,0.1))' }}>
+              <Users size={32} style={{ color: '#94a3b8' }} />
+            </div>
+            <p className="text-secondary-500 font-medium">لا توجد حسابات</p>
+            <p className="text-xs text-secondary-400 mt-1">أضف حساباتك من مختلف المنصات لإدارتها بسهولة</p>
           </div>
         ) : (
-          <div className="table-container">
+          <div className="table-container" style={{ border: 'none' }}>
             <table className="data-table">
               <thead><tr><th>المنصة</th><th>اسم المستخدم</th><th>البروكسي</th><th>الملاحظات</th><th>الحالة</th><th>التاريخ</th><th></th></tr></thead>
               <tbody>
                 {filtered.map(acc => {
                   const p = platformInfo(acc.platform)
+                  const gradient = getPlatformGradient(acc.platform)
                   return (
                     <tr key={acc.id}>
-                      <td><div className="flex items-center gap-2"><div className={`w-8 h-8 rounded-lg ${p.color} flex items-center justify-center text-white`}><p.icon size={14}/></div><span className="font-medium text-sm">{p.label}</span></div></td>
+                      <td>
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white" style={{ background: gradient }}>
+                            <p.icon size={14} />
+                          </div>
+                          <span className="font-medium text-sm">{p.label}</span>
+                        </div>
+                      </td>
                       <td className="font-medium">{acc.username}</td>
-                      <td className="text-xs text-secondary-500">{acc.proxy || '-'}</td>
+                      <td className="text-xs text-secondary-500 font-mono">{acc.proxy || '-'}</td>
                       <td className="text-xs text-secondary-500 max-w-[200px] truncate">{acc.notes || '-'}</td>
                       <td><span className={`badge ${acc.status === 'active' ? 'badge-success' : 'badge-danger'} text-[10px]`}>{acc.status === 'active' ? 'نشط' : 'غير نشط'}</span></td>
                       <td className="text-xs">{new Date(acc.created_at).toLocaleDateString('ar-EG')}</td>
-                      <td><div className="flex gap-1">
-                        <button onClick={() => handleEdit(acc)} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"><Edit3 size={14}/></button>
-                        <button onClick={() => handleDelete(acc.id)} className={`p-1.5 rounded ${deleteConfirmId === acc.id ? 'bg-danger-50 text-danger-500 animate-pulse' : 'text-danger-500 hover:bg-danger-50'}`}><Trash2 size={14}/>{deleteConfirmId === acc.id && <span className="text-[10px] mr-0.5">؟</span>}</button>
-                      </div></td>
+                      <td>
+                        <div className="flex gap-1">
+                          <button onClick={() => handleEdit(acc)} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"><Edit3 size={14} /></button>
+                          <button onClick={() => handleDelete(acc.id)} className={`p-1.5 rounded-lg transition-colors ${deleteConfirmId === acc.id ? 'bg-red-50 text-red-600 animate-pulse' : 'text-red-400 hover:bg-red-50 hover:text-red-600'}`}><Trash2 size={14} /></button>
+                        </div>
+                      </td>
                     </tr>
                   )
                 })}

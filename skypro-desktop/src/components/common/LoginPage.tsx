@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Mail, Lock, Key, Cpu, Loader2, AlertCircle, CheckCircle } from 'lucide-react'
+import { Mail, Lock, Key, Loader2, AlertCircle, CheckCircle } from 'lucide-react'
+import logoSrc from '../../assets/logo.png'
 import { useAuthStore } from '../../stores/appStore'
 import { activationApi } from '../../services/api/activation'
 import AppTitleBar from '../layout/AppTitleBar'
@@ -131,18 +132,16 @@ export default function LoginPage() {
             background: 'rgba(255,255,255,0.05)',
             backdropFilter: 'blur(16px)',
             border: '1px solid rgba(10,108,241,0.15)',
+            boxShadow: '0 0 60px rgba(10,108,241,0.08), 0 0 120px rgba(139,44,245,0.04)',
           }}
         >
           <div className="text-center mb-6">
-            <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
-              style={{
-                background: 'linear-gradient(135deg, #0A6CF1, #8B2CF5)',
-                boxShadow: '0 4px 20px rgba(10, 108, 241, 0.3)',
-              }}
-            >
-              <Cpu size={32} className="text-white" />
-            </div>
+            <img
+              src={logoSrc}
+              alt="SkyPro"
+              className="w-20 h-20 mx-auto mb-4 object-contain"
+              style={{ filter: 'drop-shadow(0 4px 20px rgba(10, 108, 241, 0.4))' }}
+            />
             <h2 className="text-2xl font-bold text-white mb-2">تسجيل الدخول</h2>
             <p className="text-white/50">أدخل البيانات للدخول إلى التطبيق</p>
           </div>

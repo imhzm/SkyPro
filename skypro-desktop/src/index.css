@@ -528,6 +528,116 @@ input[type="range"]::-moz-range-thumb {
   50% { opacity: 0.5; }
 }
 
+/* Gradient Text */
+.text-gradient {
+  background: linear-gradient(135deg, #0A6CF1, #8B2CF5);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Section Header with gradient line */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+.section-header::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(10, 108, 241, 0.2), transparent);
+}
+
+/* Toggle Switch (modern) */
+.sw-toggle {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border-radius: 9999px;
+  background: #e2e8f0;
+  cursor: pointer;
+  transition: background 0.3s ease;
+  border: none;
+  padding: 0;
+  flex-shrink: 0;
+}
+.sw-toggle.active {
+  background: linear-gradient(135deg, #0A6CF1, #8B2CF5);
+  box-shadow: 0 2px 8px rgba(10, 108, 241, 0.3);
+}
+.sw-toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.sw-toggle.active::after {
+  transform: translateX(20px);
+}
+
+/* Shimmer animation for loading states */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg, rgba(226,232,240,0.3) 25%, rgba(226,232,240,0.6) 50%, rgba(226,232,240,0.3) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Gradient border card */
+.card-gradient-border {
+  position: relative;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(16px);
+  border-radius: 1rem;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.02);
+  padding: 1.5rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.card-gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 1rem;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(10, 108, 241, 0.2), rgba(139, 44, 245, 0.2));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+.card-gradient-border:hover {
+  box-shadow: 0 4px 24px rgba(10, 108, 241, 0.1), 0 8px 32px rgba(139, 44, 245, 0.06);
+  transform: translateY(-1px);
+}
+
+/* Stat card with gradient accent line */
+.stat-accent {
+  position: relative;
+  overflow: hidden;
+}
+.stat-accent::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 4px;
+  height: 100%;
+  border-radius: 0 0 0 4px;
+}
+
 /* P2-15: Accessibility Focus Visible */
 *:focus-visible {
   outline: 2px solid #8B2CF5;
