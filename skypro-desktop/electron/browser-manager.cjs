@@ -73,7 +73,7 @@ class BrowserManager {
         extraHTTPHeaders: {
           'Accept-Language': 'ar-SA,ar;q=0.9,en-US;q=0.8,en;q=0.7',
           'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-          'sec-ch-ua': '"Chromium";v="124", "Google Chrome";v="124"',
+          'sec-ch-ua': '"Chromium";v="136", "Google Chrome";v="136"',
           'sec-ch-ua-mobile': '?0',
           'sec-ch-ua-platform': '"Windows"',
         },
@@ -89,12 +89,10 @@ class BrowserManager {
         Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 4 })
         Object.defineProperty(navigator, 'maxTouchPoints', { get: () => 0 })
         Object.defineProperty(navigator, 'vendor', { get: () => 'Google Inc.' })
-        // Remove automation flags from window
-        delete window.__proto__.cdc_adoQpoasnfa76pfcZLmcfl_
-        delete window.__proto__.cdc_adoQpoasnfa76pfcZLmcfl_Array
-        delete window.__proto__.cdc_adoQpoasnfa76pfcZLmcfl_Object
-        delete window.__proto__.cdc_adoQpoasnfa76pfcZLmcfl_Promise
-        // Override permissions
+        const cdcProps = Object.keys(window).filter(k => k.startsWith('cdc_'))
+        for (const prop of cdcProps) {
+          try { delete window[prop] } catch {}
+        }
         const originalQuery = window.navigator.permissions.query
         window.navigator.permissions.query = (parameters) => (
           parameters.name === 'notifications'

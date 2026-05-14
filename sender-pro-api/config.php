@@ -12,9 +12,10 @@ function loadEnv($path) {
         list($key, $value) = explode('=', $line, 2);
         $key = trim($key);
         $value = trim($value);
-        // Remove surrounding quotes
-        if ((($value[0] ?? '') === '"' && ($value[-1] ?? '') === '"') ||
-            (($value[0] ?? '') === "'" && ($value[-1] ?? '') === "'")) {
+        if (($value[0] ?? '') === '"' && (substr($value, -1) ?? '') === '"') {
+            $value = substr($value, 1, -1);
+        }
+        if (($value[0] ?? '') === "'" && (substr($value, -1) ?? '') === "'") {
             $value = substr($value, 1, -1);
         }
         putenv($key . '=' . $value);
@@ -50,9 +51,27 @@ if ($requestOrigin !== '' && in_array($requestOrigin, $allowedOrigins, true)) {
     exit();
 }
 
+// Security headers
 header('Content-Type: application/json');
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: DENY');
+header('Referrer-Policy: strict-origin-when-cross-origin');
+header('Permissions-Policy: geolocation=(), microphone=(), camera=()');
+
+// HSTS — only in production
+if ($app_env === 'production') {
+    header('Strict-Transport-Security: max-age=31536000; includeSubDomains; preload');
+}
+
+// HTTPS enforcement
+if ($app_env === 'production' && empty($_SERVER['HTTPS']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] !== 'https') {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'HTTPS is required']);
+    exit();
+}
+
 header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Admin-Key');
 header('Access-Control-Max-Age: 86400');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {

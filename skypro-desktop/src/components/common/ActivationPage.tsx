@@ -17,7 +17,12 @@ export default function ActivationPage() {
     setLoading(true); setError(''); setSuccess('')
     try {
       const deviceInfo = await activationApi.getDeviceInfo()
-      const deviceId = deviceInfo?.fingerprint || deviceInfo?.hostname || `device-${Date.now()}`
+      const deviceId = deviceInfo?.fingerprint
+      if (!deviceId) {
+        setError('فشل في قراءة معرف الجهاز. أعد تشغيل التطبيق وحاول مرة أخرى.')
+        setLoading(false)
+        return
+      }
       const result = await activationApi.activateKey(key.trim(), deviceId, deviceInfo as any)
       if (result.success && result.data) {
         setSuccess('تم تفعيل الاشتراك بنجاح!')

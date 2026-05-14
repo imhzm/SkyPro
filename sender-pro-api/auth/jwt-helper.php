@@ -23,6 +23,8 @@ class JWT {
     }
 
     public static function decode($token) {
+        if (self::$secret === null || self::$secret === '') return null;
+
         $parts = explode('.', $token);
         if (count($parts) !== 3) return null;
 
@@ -31,6 +33,8 @@ class JWT {
         $signature = self::base64UrlDecode($parts[2]);
 
         if (!$header || !$payload) return null;
+
+        if (!isset($header['alg']) || $header['alg'] !== 'HS256') return null;
 
         $expectedSig = hash_hmac('sha256', $parts[0] . '.' . $parts[1], self::$secret, true);
         if (!hash_equals($signature, $expectedSig)) return null;

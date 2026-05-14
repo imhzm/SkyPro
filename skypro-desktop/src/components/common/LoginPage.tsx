@@ -7,16 +7,16 @@ import AppTitleBar from '../layout/AppTitleBar'
 
 interface RememberedLogin {
   email: string
-  password: string
+  hasPassword: boolean
   serial: string
   remember: boolean
 }
 
-const emptyRememberedLogin: RememberedLogin = { email: '', password: '', serial: '', remember: false }
+const emptyRememberedLogin: RememberedLogin = { email: '', hasPassword: false, serial: '', remember: false }
 
 export default function LoginPage() {
   const [email, setEmail] = useState(emptyRememberedLogin.email)
-  const [password, setPassword] = useState(emptyRememberedLogin.password)
+  const [password, setPassword] = useState('')
   const [serial, setSerial] = useState(emptyRememberedLogin.serial)
   const [rememberDetails, setRememberDetails] = useState(emptyRememberedLogin.remember)
   const [rememberLoaded, setRememberLoaded] = useState(false)
@@ -33,7 +33,7 @@ export default function LoginPage() {
         if (cancelled || !res?.success || !res.data?.remember) return
         const data = res.data as Partial<RememberedLogin>
         setEmail(data.email || '')
-        setPassword(data.password || '')
+        setPassword('')
         setSerial(data.serial || '')
         setRememberDetails(true)
       })
@@ -55,7 +55,7 @@ export default function LoginPage() {
     const timer = window.setTimeout(() => {
       window.electronAPI.saveRememberedLogin({
         email: email.trim(),
-        password,
+        hasPassword: !!password,
         serial: serial.trim(),
         remember: true,
       }).catch(() => {})
@@ -68,7 +68,7 @@ export default function LoginPage() {
     if (!rememberDetails) return
     await window.electronAPI.saveRememberedLogin({
       email: email.trim(),
-      password,
+      hasPassword: !!password,
       serial: serial.trim(),
       remember: true,
     })

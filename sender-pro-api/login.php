@@ -49,7 +49,7 @@ $stmt->execute([$email]);
 $user = $stmt->fetch();
 
 if (!$user || !password_verify($password, $user['password_hash'])) {
-    logAction($pdo, 'login_failed', "Email: $email, IP: $clientIP");
+    logAction($pdo, 'login_failed', "IP: $clientIP");
     sendResponse(false, 'Invalid email or password');
 }
 
@@ -82,6 +82,60 @@ $keyData = $stmt->fetch();
 
 if (!$keyData) {
     sendResponse(false, 'Activation key not found');
+}
+
+if (in_array($keyData['status'], ['revoked', 'suspended'], true)) {
+    sendResponse(false, 'This activation key is not allowed');
+}
+
+if ($keyData['status'] === 'expired' || ($keyData['expires_at'] && $keyData['expires_at'] < date('Y-m-d H:i:s'))) {
+    $pdo->prepare('UPDATE activation_keys SET status = "expired" WHERE key_code = ?')->execute([$request['key']]);
+    sendResponse(false, 'This activation key has expired');
+}
+
+if ($keyData['status'] === 'pending') {
+    $stmt = $pdo->prepare('UPDATE activation_keys SET status = "active", activated_at = NOW() WHERE key_code = ?');
+    $stmt->execute([$request['key']]);
+}
+
+if (!in_array($keyData['status'], ['pending', 'active'], true)) {
+    sendResponse(false, 'This activation key is not available');
+}
+
+if (!empty($deviceInfo) && !empty($deviceFingerprint)) {
+    $checkStmt = $pdo->prepare('SELECT id, user_id, key_id FROM devices WHERE device_fingerprint = ?');
+    $checkStmt->execute([$deviceFingerprint]);
+    $existingDevice = $checkStmt->fetch();
+
+    if ($existingDevice) {
+        $updateStmt = $pdo->prepare('UPDATE devices SET last_seen_at = NOW() WHERE device_fingerprint = ?');
+        $updateStmt->execute([$deviceFingerprint]);
+    } else {
+        $keyStmt = $pdo->prepare('SELECT user_id, id FROM activation_keys WHERE key_code = ?');
+        $keyStmt->execute([$request['key']]);
+        $keyInfo = $keyStmt->fetch();
+
+        $activeCount = $pdo->prepare('SELECT COUNT(*) as cnt FROM devices WHERE key_id = ? AND is_active = 1');
+        $activeCount->execute([$keyInfo['id']]);
+        $count = $activeCount->fetch();
+        $maxDevices = $keyInfo['max_devices'] ?? 1;
+        if ($count['cnt'] >= $maxDevices) {
+            sendResponse(false, "تم تجاوز الحد الأقصى للأجهزة ($maxDevices)");
+        }
+
+        $insertStmt = $pdo->prepare('INSERT INTO devices (user_id, key_id, device_fingerprint, device_name, os_info, cpu_info, ram_info, gpu_info, screen_resolution, is_active, reset_count, max_resets_per_year, first_seen_at, last_seen_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, 2, NOW(), NOW())');
+        $insertStmt->execute([
+            $keyInfo['user_id'] ?? null,
+            $keyInfo['id'] ?? null,
+            $deviceFingerprint,
+            $deviceInfo['deviceName'] ?? ($deviceInfo['hostname'] ?? ''),
+            $deviceInfo['os'] ?? ($deviceInfo['platform'] ?? ''),
+            $deviceInfo['cpu'] ?? '',
+            $deviceInfo['ram'] ?? '',
+            $deviceInfo['gpu'] ?? '',
+            $deviceInfo['screen'] ?? '',
+        ]);
+    }
 }
 
 if (in_array($keyData['status'], ['revoked', 'suspended'], true)) {
@@ -145,7 +199,7 @@ $token = JWT::encode([
 ], 86400 * 30); // 30 days
 
 // Log successful login
-logAction($pdo, 'login_success', "Email: $email, Key: {$request['key']}, IP: $clientIP");
+logAction($pdo, 'login_success', "Key: $key, IP: $clientIP");
 
 sendResponse(true, 'Login successful', [
     'token' => $token,
@@ -153,6 +207,6 @@ sendResponse(true, 'Login successful', [
     'role' => $user['role'],
     'key' => $request['key'],
     'status' => 'active',
-    'expiryDate' => $keyData['expiry_date'],
+    'expiryDate' => $keyData['expires_at'],
     'deviceId' => $deviceFingerprint
 ]);

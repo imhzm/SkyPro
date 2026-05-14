@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { successResponse, errorResponse, getErrorMessage } from '@/lib/api'
-import { rejectCrossSite, rejectLargeJson } from '@/lib/request-security'
+import { rejectCrossSite, rejectLargeJson, checkRateLimit, getClientIp, rateLimitedResponse } from '@/lib/request-security'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,13 +12,17 @@ const markSchema = z.object({
   all: z.boolean().optional(),
 })
 
-export async function GET(_req: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
     const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json(errorResponse('غير مصرح'), { status: 401 })
     }
     const userId = Number(session.user.id)
+    const ip = getClientIp(req)
+
+    const limit = checkRateLimit(`notifications-list:${userId}`, 60, 60 * 60 * 1000)
+    if (!limit.allowed) return rateLimitedResponse(limit.retryAfter)
 
     const [items, unread] = await Promise.all([
       prisma.notification.findMany({
@@ -53,6 +57,10 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json(errorResponse('غير مصرح'), { status: 401 })
     }
     const userId = Number(session.user.id)
+    const ip = getClientIp(req)
+
+    const limit = checkRateLimit(`notifications-mark:${userId}`, 120, 60 * 60 * 1000)
+    if (!limit.allowed) return rateLimitedResponse(limit.retryAfter)
 
     const parsed = markSchema.safeParse(await req.json().catch(() => ({})))
     if (!parsed.success) {

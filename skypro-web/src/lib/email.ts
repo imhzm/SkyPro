@@ -114,7 +114,6 @@ export async function sendEmail({ to, subject, text, html }: EmailOptions): Prom
 
     const info = await transporter.sendMail({
       from: `"${fromName}" <${fromEmail}>`,
-      sender: user,
       envelope: { from: user, to: recipients.length > 0 ? recipients : [to] },
       replyTo: fromEmail,
       to,

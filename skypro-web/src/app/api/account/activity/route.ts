@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { successResponse, errorResponse, getErrorMessage } from '@/lib/api'
+import { checkRateLimit, getClientIp, rateLimitedResponse } from '@/lib/request-security'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,6 +29,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(errorResponse('غير مصرح'), { status: 401 })
     }
     const userId = Number(session.user.id)
+    const ip = getClientIp(req)
+
+    const rateLimit = checkRateLimit(`activity:${userId}`, 60, 60 * 60 * 1000)
+    if (!rateLimit.allowed) return rateLimitedResponse(rateLimit.retryAfter)
+
     const limit = Math.min(50, Math.max(5, parseInt(req.nextUrl.searchParams.get('limit') || '15', 10)))
 
     const events = await prisma.auditLog.findMany({

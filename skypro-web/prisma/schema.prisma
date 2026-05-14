@@ -74,6 +74,8 @@ model ActivationKey {
   devices      Device[]
   subscription Subscription?
 
+  @@index([status])
+  @@index([expiresAt])
   @@map("activation_keys")
 }
 
@@ -99,6 +101,7 @@ model Device {
   key  ActivationKey @relation(fields: [keyId], references: [id])
 
   @@unique([deviceFingerprint, keyId])
+  @@index([isActive])
   @@map("devices")
 }
 
@@ -188,6 +191,9 @@ model AuditLog {
 
   user User? @relation(fields: [userId], references: [id])
 
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
   @@map("audit_log")
 }
 

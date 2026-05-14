@@ -13,13 +13,17 @@ const createSchema = z.object({
   expiresInDays: z.coerce.number().int().min(0).max(3650).optional(),
 })
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json(errorResponse('غير مصرح'), { status: 401 })
     }
     const userId = Number(session.user.id)
+    const ip = getClientIp(req)
+
+    const limit = checkRateLimit(`api-keys-list:${userId}`, 30, 60 * 60 * 1000)
+    if (!limit.allowed) return rateLimitedResponse(limit.retryAfter)
 
     const keys = await prisma.userApiKey.findMany({
       where: { userId },
@@ -103,6 +107,11 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json(errorResponse('غير مصرح'), { status: 401 })
     }
     const userId = Number(session.user.id)
+    const ip = getClientIp(req)
+
+    const limit = checkRateLimit(`api-keys-delete:${userId}`, 20, 60 * 60 * 1000)
+    if (!limit.allowed) return rateLimitedResponse(limit.retryAfter)
+
     const id = Number(req.nextUrl.searchParams.get('id') || 0)
     if (!Number.isFinite(id) || id <= 0) {
       return NextResponse.json(errorResponse('معرّف غير صالح'), { status: 400 })

@@ -25,11 +25,14 @@ if (empty($key)) {
 if (!preg_match('/^[A-Z0-9\\-]+$/', $key)) {
     sendResponse(false, 'Invalid key');
 }
+if (!empty($deviceId) && !RateLimit::isValidDeviceId($deviceId)) {
+    sendResponse(false, 'Invalid device fingerprint');
+}
 if (!is_array($deviceInfo)) {
     $deviceInfo = [];
 }
 
-$stmt = $pdo->prepare('SELECT * FROM activation_keys WHERE `key` = ?');
+$stmt = $pdo->prepare('SELECT * FROM activation_keys WHERE key_code = ?');
 $stmt->execute([$key]);
 $keyData = $stmt->fetch();
 
@@ -40,7 +43,7 @@ if (!$keyData) {
 
 if ($keyData['status'] === 'expired' || ($keyData['expiry_date'] && $keyData['expiry_date'] < date('Y-m-d'))) {
     if ($keyData['status'] !== 'expired') {
-        $pdo->prepare('UPDATE activation_keys SET status = "expired" WHERE `key` = ?')->execute([$key]);
+        $pdo->prepare('UPDATE activation_keys SET status = "expired" WHERE key_code = ?')->execute([$key]);
     }
     logAction($pdo, 'validation_failed', "Key expired: $key, IP: $clientIP");
     sendResponse(false, 'This key has expired');
@@ -50,6 +53,13 @@ if ($keyData['status'] === 'expired' || ($keyData['expiry_date'] && $keyData['ex
 if ($keyData['status'] === 'active' && $keyData['device_id'] && $keyData['device_id'] !== $deviceId) {
     logAction($pdo, 'validation_failed', "Device mismatch for key: $key, Expected: {$keyData['device_id']}, Got: $deviceId, IP: $clientIP");
     sendResponse(false, 'This key is already activated on another device');
+}
+
+// Validate device info sub-field lengths
+foreach (['hostname', 'platform', 'arch', 'cpu', 'cpuCores', 'ram'] as $field) {
+    if (isset($deviceInfo[$field]) && is_string($deviceInfo[$field])) {
+        $deviceInfo[$field] = cleanInput($deviceInfo[$field], 255);
+    }
 }
 
 // Save/update device info if provided
