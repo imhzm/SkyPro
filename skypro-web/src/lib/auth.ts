@@ -5,6 +5,7 @@ import Credentials from 'next-auth/providers/credentials'
 import { prisma } from '@/lib/db'
 import { generateApiKey, getTrialEndDate, verifyPassword } from '@/lib/utils'
 import { checkRateLimit, getClientIp } from '@/lib/request-security'
+import { sendEmail, generateWelcomeEmail, generateWelcomeEmailText } from '@/lib/email'
 
 // Lightweight in-memory cache for JWT user status checks (avoids DB round trip on every request)
 const userStatusCache = new Map<number, { role: string; status: string; passwordChangedAt: number | null; fetchedAt: number }>()
@@ -52,21 +53,26 @@ async function clearFailedLoginCount(userId: number, ipAddress: string | null) {
   })
 }
 
-async function sendWelcomeEmailThroughApi(subject: string, welcomeData: Record<string, unknown>) {
-  const baseUrl = process.env.NEXTAUTH_URL?.replace(/\/$/, '')
-  if (!baseUrl || !process.env.NEXTAUTH_SECRET) return
-
-  const response = await fetch(`${baseUrl}/api/internal/welcome-email`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${process.env.NEXTAUTH_SECRET}`
-    },
-    body: JSON.stringify({ subject, welcomeData })
-  })
-
-  if (!response.ok) {
-    console.error('Welcome email failed:', response.status)
+async function sendWelcomeEmailDirect(subject: string, welcomeData: {
+  name?: string | null
+  email: string
+  serial: string
+  expiryDate: string
+  planLabel?: string
+  loginMethod?: string
+}) {
+  try {
+    const result = await sendEmail({
+      to: welcomeData.email,
+      subject,
+      text: generateWelcomeEmailText(welcomeData),
+      html: generateWelcomeEmail(welcomeData),
+    })
+    if (!result.success) {
+      console.error('Welcome email failed:', result.error)
+    }
+  } catch (err) {
+    console.error('Welcome email error:', err instanceof Error ? err.message : err)
   }
 }
 
@@ -255,16 +261,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             return { newUser, activationKey }
           })
 
-          const welcomeData = {
+          await sendWelcomeEmailDirect('بيانات تجربة SkyPro المجانية', {
             name: newUser.name || 'عميلنا الكريم',
             email: newUser.email,
-            password: null,
             serial: activationKey.keyCode,
             expiryDate: trialEndsAt.toLocaleDateString('ar-EG'),
             planLabel: `تجربة مجانية لمدة ${trialDays} يوم`,
-            loginMethod: 'Google'
-          }
-          await sendWelcomeEmailThroughApi('بيانات تجربة SkyPro المجانية', welcomeData)
+            loginMethod: 'Google',
+          })
 
           token.id = String(newUser.id)
           token.role = 'user'
@@ -331,14 +335,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               return activationKey
             })
 
-            await sendWelcomeEmailThroughApi('بيانات تجربة SkyPro المجانية', {
+            await sendWelcomeEmailDirect('بيانات تجربة SkyPro المجانية', {
               name: existingUser.name || 'عميلنا الكريم',
               email: existingUser.email,
-              password: null,
               serial: activationKey.keyCode,
               expiryDate: trialEndsAt.toLocaleDateString('ar-EG'),
               planLabel: `تجربة مجانية لمدة ${trialDays} يوم`,
-              loginMethod: 'Google'
+              loginMethod: 'Google',
             })
           }
 
