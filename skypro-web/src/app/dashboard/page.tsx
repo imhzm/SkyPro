@@ -5,7 +5,7 @@ import { prisma } from '@/lib/db'
 import { redirect } from 'next/navigation'
 import {
   Key, Calendar, Monitor, Clock, ArrowUpRight,
-  CheckCircle2, AlertCircle, XCircle, Download
+  CheckCircle2, AlertCircle, XCircle, Download, Mail
 } from 'lucide-react'
 import CopyButton from '@/components/dashboard/CopyButton'
 import RenewButton from '@/components/dashboard/RenewButton'
@@ -70,6 +70,29 @@ export default async function DashboardPage() {
         <h1 className="text-2xl font-bold text-white">لوحة التحكم</h1>
         <p className="text-slate-400 mt-1">إدارة اشتراكك وأجهزتك في SkyPro</p>
       </div>
+
+      {/* Email Verification Pending Banner */}
+      {status === 'pending_email' && (
+        <div className="bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/25 rounded-2xl p-5">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center shrink-0">
+              <Mail className="w-5 h-5 text-amber-400" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-amber-300 font-bold text-sm mb-1">في انتظار تأكيد البريد الإلكتروني</h3>
+              <p className="text-slate-400 text-sm leading-relaxed">
+                أرسلنا رسالة تحتوي على رابط التأكيد وبيانات التفعيل إلى بريدك. يرجى فتح بريدك الوارد والضغط على رابط التأكيد لتفعيل حسابك.
+              </p>
+              <div className="mt-3 flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-2.5">
+                <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                <p className="text-amber-200 text-xs font-medium">
+                  لم تجد الرسالة؟ راجع قسم البريد غير المرغوب فيه (Spam / Junk) — في أغلب الأحيان تصل الرسالة هناك.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Trial / Expiry Warning Banner */}
       {isTrial && daysLeft !== null && daysLeft <= 2 && !isExpired && (
