@@ -2,12 +2,13 @@
 
 import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Mail } from 'lucide-react'
+import { Mail, CheckCircle2 } from 'lucide-react'
 import { Logo } from '@/components/marketing/Logo'
 
 function VerifyEmailForm() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [message, setMessage] = useState('')
+  const [countdown, setCountdown] = useState(5)
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -40,6 +41,16 @@ function VerifyEmailForm() {
       })
   }, [])
 
+  useEffect(() => {
+    if (status !== 'success') return
+    if (countdown <= 0) {
+      window.location.href = '/auth/login?verified=1'
+      return
+    }
+    const t = setTimeout(() => setCountdown(countdown - 1), 1000)
+    return () => clearTimeout(t)
+  }, [status, countdown])
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#060d1b] px-4" dir="rtl">
       <div className="absolute inset-0">
@@ -66,12 +77,13 @@ function VerifyEmailForm() {
           {status === 'success' && (
             <>
               <div className="w-16 h-16 bg-emerald-500/15 border border-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Mail className="w-8 h-8 text-emerald-400" />
+                <CheckCircle2 className="w-8 h-8 text-emerald-400" />
               </div>
-              <h2 className="text-xl font-bold text-white mb-2">تم تأكيد البريد الإلكتروني</h2>
-              <p className="text-slate-400 mb-6">{message}</p>
-              <Link href="/auth/login" className="btn-primary inline-block">
-                تسجيل الدخول
+              <h2 className="text-xl font-bold text-white mb-2">تم تأكيد البريد الإلكتروني بنجاح!</h2>
+              <p className="text-slate-400 mb-2">{message}</p>
+              <p className="text-emerald-400 text-sm mb-6">تم تفعيل حسابك وتجربتك المجانية. سيتم توجيهك لتسجيل الدخول خلال {countdown} ثوان...</p>
+              <Link href="/auth/login?verified=1" className="btn-primary inline-block">
+                تسجيل الدخول الآن
               </Link>
             </>
           )}
