@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAppStore } from '../../stores/appStore'
 import { platforms } from '../../data/platforms'
+import { getPlatformGradient } from '../../data/platformGradients'
 import type { PlatformId } from '../../types'
 
 interface RecentLead {
@@ -33,28 +34,6 @@ import {
   X,
 } from 'lucide-react'
 import { activationApi } from '../../services/api/activation'
-
-const platformGradients: Record<string, string> = {
-  facebook: 'linear-gradient(135deg, #1877f2, #0A6CF1)',
-  whatsapp: 'linear-gradient(135deg, #25d366, #128C7E)',
-  instagram: 'linear-gradient(135deg, #e4405f, #f77737)',
-  twitter: 'linear-gradient(135deg, #1da1f2, #0A6CF1)',
-  linkedin: 'linear-gradient(135deg, #0a66c2, #004182)',
-  telegram: 'linear-gradient(135deg, #0088cc, #005f8f)',
-  snapchat: 'linear-gradient(135deg, #fffc00, #ff7700)',
-  pinterest: 'linear-gradient(135deg, #e60023, #ad081b)',
-  reddit: 'linear-gradient(135deg, #ff4500, #dc2626)',
-  tiktok: 'linear-gradient(135deg, #69c9d0, #ee1d52)',
-  threads: 'linear-gradient(135deg, #000000, #8B2CF5)',
-  google: 'linear-gradient(135deg, #4285f4, #34a853)',
-  'send-emails': 'linear-gradient(135deg, #ea4335, #dd4b39)',
-  'auto-point': 'linear-gradient(135deg, #f97316, #ea580c)',
-  security: 'linear-gradient(135deg, #10b981, #059669)',
-  account: 'linear-gradient(135deg, #8B2CF5, #0A6CF1)',
-  'other-tools': 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
-  settings: 'linear-gradient(135deg, #64748b, #475569)',
-  accounts: 'linear-gradient(135deg, #22c55e, #16a34a)',
-}
 
 export default function DashboardModule() {
   const { setActivePlatform } = useAppStore()
@@ -220,18 +199,21 @@ export default function DashboardModule() {
             <h2 className="font-bold text-secondary-900 text-sm">المنصات المتاحة</h2>
             <span className="badge badge-primary">{socialPlatforms.length} منصة</span>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2.5">
             {socialPlatforms.map((platform) => {
-              const gradient = platformGradients[platform.id] || 'linear-gradient(135deg, #0A6CF1, #8B2CF5)'
+              const gradient = getPlatformGradient(platform.id)
+              const featureCount = platform.features?.length || 0
               return (
                 <button
                   key={platform.id}
                   onClick={() => setActivePlatform(platform.id as PlatformId)}
-                  className="flex items-center gap-2 p-2.5 rounded-lg text-right transition-all hover:shadow-md"
-                  style={{ background: 'rgba(248,250,252,0.6)', border: '1px solid rgba(226,232,240,0.5)' }}
+                  className="group relative flex items-center gap-2.5 p-3 rounded-xl text-right transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+                  style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(8px)', border: '1px solid rgba(226,232,240,0.5)' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = platform.color + '40'; e.currentTarget.style.boxShadow = `0 8px 24px ${platform.color}15` }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(226,232,240,0.5)'; e.currentTarget.style.boxShadow = 'none' }}
                 >
                   <div
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                    className="w-9 h-9 rounded-lg flex items-center justify-center text-white text-xs font-bold flex-shrink-0 transition-shadow duration-200 group-hover:shadow-md"
                     style={{ background: gradient }}
                   >
                     {platform.name[0]}
@@ -240,6 +222,11 @@ export default function DashboardModule() {
                     <p className="text-xs font-semibold text-secondary-900 truncate">{platform.name}</p>
                     <p className="text-[10px] text-secondary-400 truncate">{platform.segment}</p>
                   </div>
+                  {featureCount > 0 && (
+                    <span className="absolute top-1.5 left-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-[9px] font-bold text-white" style={{ background: gradient }}>
+                      {featureCount}
+                    </span>
+                  )}
                 </button>
               )
             })}
@@ -254,7 +241,7 @@ export default function DashboardModule() {
           </div>
           <div className="space-y-2">
             {recentLeads.map((item, i) => {
-              const gradient = platformGradients[item.platform] || 'linear-gradient(135deg, #0A6CF1, #8B2CF5)'
+              const gradient = getPlatformGradient(item.platform)
               return (
                 <div key={i} className="flex items-center gap-2.5 p-2 rounded-lg" style={{ background: 'rgba(248,250,252,0.5)' }}>
                   <div

@@ -3,19 +3,36 @@ import { usePlatform } from '../../hooks/usePlatform'
 import { useAccountsStore } from '../../stores/accountsStore'
 import type { Account } from '../../stores/accountsStore'
 import AccountSelector from '../../components/common/AccountSelector'
+import ToolGrid from '../../components/tools/ToolGrid'
+import ToolCard from '../../components/tools/ToolCard'
+import ToolPanel from '../../components/tools/ToolPanel'
 import {
   LogIn, Search, Download, Users, Send, Megaphone, Play, Eye, EyeOff,
   Trash2, AlertCircle, CheckCircle, Loader2, FileSpreadsheet, Heart,
   UserPlus, MessageSquare, Globe, AtSign, BarChart3, FileText,
-  Share2, Copy, ThumbsUp, Bot, Square
+  Share2, Copy, ThumbsUp, Bot, Square, LogOut, Facebook as FacebookIcon,
 } from 'lucide-react'
 
-type TabId = 'login' | 'extract' | 'marketing' | 'messaging' | 'tools'
+type ActiveTool =
+  | 'extract' | 'post-to-groups' | 'share-post' | 'auto-reply' | 'mention'
+  | 'send-messages' | 'page-send-messages'
+  | 'friend-requests' | 'delete-friends' | 'interaction-farm' | 'delete-posts'
+  | 'analyze-group' | 'add-to-group-chat' | 'send-page-messages'
+  | 'users-to-ids' | 'links-to-ids'
+  | null
+
+type ResultsOwner = Exclude<ActiveTool, null> | null
+
+const ACCENT = '#1877F2'
+const ACCENT_GRADIENT = 'linear-gradient(135deg, #1877F2, #0866FF)'
 
 export default function FacebookModule() {
-  const [activeTab, setActiveTab] = useState<TabId>('login')
   const { loading, setLoading, message, error, showMsg, sessionId, setSessionId, accounts, results, loadAccounts, loadResults, handleExport, clearResults, checkSession, clearSession, cycleActive, cycleProgress, startCycle, stopCycle } = usePlatform('facebook')
   const { accounts: allAccounts } = useAccountsStore()
+
+  const [activeTool, setActiveTool] = useState<ActiveTool>(null)
+  const [showLoginPanel, setShowLoginPanel] = useState(false)
+  const [resultsOwner, setResultsOwner] = useState<ResultsOwner>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [selectedAccountId, setSelectedAccountId] = useState('')
   const passwordRef = useRef<HTMLInputElement>(null)
@@ -88,7 +105,7 @@ export default function FacebookModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.facebookLogin({ username: loginForm.email, password: loginForm.password, headless: false, proxy: loginForm.proxy || undefined })
-      if (res.success) { setSessionId(res.sessionId || ''); showMsg('تم تسجيل الدخول بنجاح!'); await loadAccounts() }
+      if (res.success) { setSessionId(res.sessionId || ''); showMsg('تم تسجيل الدخول بنجاح!'); await loadAccounts(); setShowLoginPanel(false) }
       else showMsg(res.error || 'فشل تسجيل الدخول', true)
     } catch (err: any) { showMsg(err.message || 'خطأ في الاتصال', true) }
     setLoading(false)
@@ -105,7 +122,8 @@ export default function FacebookModule() {
     const hasPass = (!!account.has_password || !!(account.password && account.password.trim()))
     if (!hasPass) {
       setLoginForm({ ...loginForm, email: account.username, password: '' })
-      setTimeout(() => passwordRef.current?.focus(), 100)
+      setShowLoginPanel(true)
+      setTimeout(() => passwordRef.current?.focus(), 200)
       showMsg('هذا الحساب ليس لديه كلمة مرور محفوظة. يرجى إدخال كلمة المرور يدوياً ثم الضغط على "تسجيل الدخول".', true)
       setLoading(false)
       return
@@ -135,15 +153,15 @@ export default function FacebookModule() {
     if (extractType === 'reviews' && !reviewPageUrl) { showMsg('يرجى إدخال رابط الصفحة', true); return }
     if (extractType === 'search-groups' && !searchGroupQuery) { showMsg('يرجى إدخال كلمة البحث', true); return }
     if (extractType === 'join-groups' && !joinGroupUrls.trim()) { showMsg('يرجى إدخال روابط المجموعات', true); return }
-    
-    // P1-27: Add UI caps for extraction
+
     if (extractLimit >= 1000) {
       if (!confirm(`تحذير: استخراج ${extractLimit} نتيجة قد يستغرق وقتاً طويلاً وقد يعرض حسابك للحظر. هل تريد المتابعة؟`)) return
     }
-    
+
     setExtracting(true)
     streamResultsRef.current = []
     setStreamResults([])
+    setResultsOwner('extract')
     const jobId = `fb-${extractType}-${Date.now()}`
     setCurrentJobId(jobId)
     try {
@@ -191,6 +209,7 @@ export default function FacebookModule() {
     setToolResults([])
     streamResultsRef.current = []
     setStreamResults([])
+    setResultsOwner(null)
     clearResults()
   }
 
@@ -199,9 +218,10 @@ export default function FacebookModule() {
     if (!searchQuery) { showMsg('أدخل كلمة البحث', true); return }
     setToolResults([])
     setLoading(true)
+    setResultsOwner('extract')
     try {
       const res = await window.electronAPI.facebookSearch({ sessionId, query: searchQuery, type: searchType, limit: extractLimit })
-      if (res.success) { showMsg(`تم العثور على \${res.count || 0} نتيجة`); await loadResults() }
+      if (res.success) { showMsg(`تم العثور على ${res.count || 0} نتيجة`); await loadResults() }
       else showMsg(res.error || 'فشل البحث', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
@@ -212,6 +232,7 @@ export default function FacebookModule() {
     const groups = groupUrls.split('\n').map(s => s.trim()).filter(Boolean)
     if (!postMessage || groups.length === 0) { showMsg('أدخل المجموعات والرسالة', true); return }
     setLoading(true)
+    setResultsOwner('post-to-groups')
     try {
       const res = await window.electronAPI.facebookPostToGroups({ sessionId, groups, message: postMessage })
       if (res.success) { const ok = ((res.data as any[]) || []).filter((r: any) => r.status === 'posted').length; showMsg(`تم النشر في ${ok} من ${groups.length} مجموعة`); setToolResults((res.data as any[]) || []) }
@@ -225,6 +246,7 @@ export default function FacebookModule() {
     const groups = shareGroupUrls.split('\n').map(s => s.trim()).filter(Boolean)
     if (!sharePostUrl || groups.length === 0) { showMsg('أدخل رابط المنشور والمجموعات', true); return }
     setLoading(true)
+    setResultsOwner('share-post')
     try {
       const res = await window.electronAPI.facebookSharePost({ sessionId, postUrl: sharePostUrl, groups })
       if (res.success) { showMsg(`تمت المشاركة في ${((res.data as any[]) || []).length} مجموعة`); setToolResults((res.data as any[]) || []) }
@@ -237,9 +259,10 @@ export default function FacebookModule() {
     if (!ensureSession()) return
     if (!replyPostUrl || !replyText) { showMsg('أدخل رابط المنشور ونص الرد', true); return }
     setLoading(true)
+    setResultsOwner('auto-reply')
     try {
       const res = await window.electronAPI.facebookAutoReply({ sessionId, postUrl: replyPostUrl, replyText, limit: replyLimit })
-      if (res.success) { showMsg(`تم الرد على \${res.count || 0} تعليق`); setToolResults((res.data as any[]) || []) }
+      if (res.success) { showMsg(`تم الرد على ${res.count || 0} تعليق`); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
@@ -249,6 +272,7 @@ export default function FacebookModule() {
     if (!ensureSession()) return
     if (!recipientsText || !broadcastMessage) { showMsg('يرجى إدخال المستلمين والرسالة', true); return }
     setLoading(true)
+    setResultsOwner('send-messages')
     const recipients = recipientsText.split('\n').filter(r => r.trim())
     try {
       const res = await window.electronAPI.facebookSendMessages({ sessionId, recipients, message: broadcastMessage })
@@ -265,9 +289,10 @@ export default function FacebookModule() {
     if (urls.length === 0) { showMsg('أدخل روابط المنشورات', true); return }
     if (names.length === 0) { showMsg('أدخل أسماء المستخدمين للمنشن', true); return }
     setLoading(true)
+    setResultsOwner('mention')
     try {
       const res = await window.electronAPI.facebookMention({ sessionId, postUrls: urls, usernames: names, text: mentionText })
-      if (res.success) { showMsg(`تم منشن \${res.count || 0} مستخدم`); setToolResults((res.data as any[]) || []) }
+      if (res.success) { showMsg(`تم منشن ${res.count || 0} مستخدم`); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
@@ -278,6 +303,7 @@ export default function FacebookModule() {
     const urls = friendRequestUrls.split('\n').map(s => s.trim()).filter(Boolean)
     if (urls.length === 0) { showMsg('أدخل روابط الحسابات', true); return }
     setLoading(true)
+    setResultsOwner('friend-requests')
     try {
       const res = await window.electronAPI.facebookSendFriendRequests({ sessionId, profileUrls: urls })
       if (res.success) { const sent = ((res.data as any[]) || []).filter((r: any) => r.status === 'sent').length; showMsg(`تم إرسال ${sent} طلب صداقة من ${urls.length}`); setToolResults((res.data as any[]) || []) }
@@ -290,6 +316,7 @@ export default function FacebookModule() {
     if (!ensureSession()) return
     if (deleteFriendsMode === 'all' && !confirm('هل أنت متأكد من حذف الأصدقاء؟ هذا الإجراء لا يمكن التراجع عنه.')) return
     setLoading(true)
+    setResultsOwner('delete-friends')
     try {
       const friendUrls = deleteFriendsUrls.split('\n').map(s => s.trim()).filter(Boolean)
       const res = await window.electronAPI.facebookDeleteFriends({
@@ -298,7 +325,7 @@ export default function FacebookModule() {
         deleteAll: deleteFriendsMode === 'all',
         friendUrls: deleteFriendsMode === 'selected' ? friendUrls : []
       })
-      if (res.success) { showMsg(`تم حذف \${res.count || 0} صديق`); setToolResults((res.data as any[]) || []) }
+      if (res.success) { showMsg(`تم حذف ${res.count || 0} صديق`); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
@@ -308,6 +335,7 @@ export default function FacebookModule() {
     if (!ensureSession()) return
     if (!groupChatUrl || !addUsernames.trim()) { showMsg('أدخل رابط المجموعة وأسماء المستخدمين', true); return }
     setLoading(true)
+    setResultsOwner('add-to-group-chat')
     const usernames = addUsernames.split('\n').map(s => s.trim()).filter(Boolean)
     try {
       const res = await window.electronAPI.facebookAddToGroupChat({ sessionId, groupChatUrl, usernames })
@@ -321,6 +349,7 @@ export default function FacebookModule() {
     if (!ensureSession()) return
     if (!sendPageUrls || !sendPageMessage) { showMsg('أدخل روابط الصفحات والرسالة', true); return }
     setLoading(true)
+    setResultsOwner('send-page-messages')
     const pageUrls = sendPageUrls.split('\n').map(s => s.trim()).filter(Boolean)
     try {
       const res = await window.electronAPI.facebookSendPageMessages({ sessionId, pageUrls, message: sendPageMessage })
@@ -335,9 +364,10 @@ export default function FacebookModule() {
     const urls = interactionUrls.split('\n').map(s => s.trim()).filter(Boolean)
     if (urls.length === 0) { showMsg('أدخل روابط المنشورات', true); return }
     setLoading(true)
+    setResultsOwner('interaction-farm')
     try {
       const res = await window.electronAPI.facebookInteractionFarm({ sessionId, postUrls: urls, action: interactionAction })
-      if (res.success) { showMsg(`تم التفاعل مع \${res.count || 0} منشور`); setToolResults((res.data as any[]) || []) }
+      if (res.success) { showMsg(`تم التفاعل مع ${res.count || 0} منشور`); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
@@ -347,9 +377,10 @@ export default function FacebookModule() {
     if (!ensureSession()) return
     if (!confirm('هل أنت متأكد من حذف المنشورات؟ هذا الإجراء لا يمكن التراجع عنه.')) return
     setLoading(true)
+    setResultsOwner('delete-posts')
     try {
       const res = await window.electronAPI.facebookDeletePosts({ sessionId, limit: deletePostsLimit })
-      if (res.success) { showMsg(`تم حذف \${res.count || 0} منشور`); setToolResults((res.data as any[]) || []) }
+      if (res.success) { showMsg(`تم حذف ${res.count || 0} منشور`); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
@@ -359,6 +390,7 @@ export default function FacebookModule() {
     if (!ensureSession()) return
     if (!analyzeGroupUrl) { showMsg('أدخل رابط المجموعة', true); return }
     setLoading(true)
+    setResultsOwner('analyze-group')
     try {
       const res = await window.electronAPI.facebookAnalyzeGroup({ sessionId, groupUrl: analyzeGroupUrl })
       if (res.success) { setToolResults(res.data ? [res.data] : []); showMsg('تم تحليل المجموعة بنجاح') }
@@ -372,9 +404,10 @@ export default function FacebookModule() {
     const usernames = usersToIds.split('\n').map(s => s.trim()).filter(Boolean)
     if (usernames.length === 0) { showMsg('أدخل أسماء المستخدمين', true); return }
     setLoading(true)
+    setResultsOwner('users-to-ids')
     try {
       const res = await window.electronAPI.facebookUsersToIds({ sessionId, usernames })
-      if (res.success) { showMsg(`تم تحويل \${res.count || 0} مستخدم`); setToolResults((res.data as any[]) || []) }
+      if (res.success) { showMsg(`تم تحويل ${res.count || 0} مستخدم`); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
@@ -385,9 +418,10 @@ export default function FacebookModule() {
     const links = linksToIds.split('\n').map(s => s.trim()).filter(Boolean)
     if (links.length === 0) { showMsg('أدخل الروابط', true); return }
     setLoading(true)
+    setResultsOwner('links-to-ids')
     try {
       const res = await window.electronAPI.facebookLinksToIds({ sessionId, links })
-      if (res.success) { showMsg(`تم تحويل \${res.count || 0} رابط`); setToolResults((res.data as any[]) || []) }
+      if (res.success) { showMsg(`تم تحويل ${res.count || 0} رابط`); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
@@ -397,25 +431,18 @@ export default function FacebookModule() {
     if (!ensureSession()) return
     if (!pageMsgUrl || !pageMsgRecipients || !pageMsgText) { showMsg('أدخل رابط الصفحة والمستلمين والرسالة', true); return }
     setLoading(true)
+    setResultsOwner('page-send-messages')
     const recipients = pageMsgRecipients.split('\n').map(s => s.trim()).filter(Boolean)
     try {
       const res = await window.electronAPI.facebookPageSendMessages({ sessionId, pageUrl: pageMsgUrl, recipients, message: pageMsgText })
       if (res.success) {
         const sent = ((res.data as any[]) || []).filter((r: any) => r.status === 'sent').length
-        showMsg(`تم إرسال ${sent} من ${recipients.length} رسالة`);
+        showMsg(`تم إرسال ${sent} من ${recipients.length} رسالة`)
         setToolResults((res.data as any[]) || [])
       } else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
   }
-
-  const tabs: { id: TabId; label: string; icon: any }[] = [
-    { id: 'login', label: 'تسجيل الدخول', icon: LogIn },
-    { id: 'extract', label: 'استخراج البيانات', icon: Download },
-    { id: 'marketing', label: 'التسويق والنشر', icon: Megaphone },
-    { id: 'messaging', label: 'المراسلة', icon: Send },
-    { id: 'tools', label: 'أدوات متقدمة', icon: Bot },
-  ]
 
   const extractTools = [
     { id: 'post-likers', name: 'معجبين المنشور', icon: Heart, needsUrl: true, urlLabel: 'رابط المنشور' },
@@ -432,66 +459,250 @@ export default function FacebookModule() {
     { id: 'join-groups', name: 'الانضمام لمجموعات', icon: Users, needsUrl: true, urlLabel: 'روابط المجموعات' },
   ]
 
-  const renderLogin = () => (
-    <div className="grid grid-cols-2 gap-6">
-      <div className="card">
-        <h3 className="font-bold text-secondary-900 mb-4 text-lg flex items-center gap-2"><LogIn size={20} className="text-primary-600"/> تسجيل الدخول</h3>
-        {sessionId && (
-          <div className="mb-4 p-4 bg-success-50 rounded-xl border border-success-100">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <CheckCircle size={20} className="text-success-600" />
-                <div><p className="font-bold text-success-700">جلسة نشطة</p><p className="text-xs text-success-600">يمكنك استخدام جميع الأدوات الآن</p></div>
-              </div>
-              <button onClick={clearSession} className="btn-danger text-xs px-3 py-1.5"><LogIn size={14} /> إنهاء الجلسة</button>
+  type ToolDef = {
+    id: Exclude<ActiveTool, null>
+    name: string
+    description: string
+    icon: typeof Download
+    accent: string
+    accentGradient: string
+  }
+
+  const extractCategoryTools: ToolDef[] = [
+    { id: 'extract', name: 'استخراج البيانات', description: 'متابعين، تعليقات، مجموعات، أرقام، تقييمات', icon: Download, accent: '#0A6CF1', accentGradient: 'linear-gradient(135deg, #0A6CF1, #1d4ed8)' },
+  ]
+
+  const marketingTools: ToolDef[] = [
+    { id: 'post-to-groups', name: 'النشر في المجموعات', description: 'نشر منشور في عدة مجموعات', icon: Megaphone, accent: '#10b981', accentGradient: 'linear-gradient(135deg, #10b981, #047857)' },
+    { id: 'share-post', name: 'مشاركة منشور', description: 'مشاركة منشور في مجموعات متعددة', icon: Share2, accent: '#3b82f6', accentGradient: 'linear-gradient(135deg, #3b82f6, #1e40af)' },
+    { id: 'auto-reply', name: 'رد تلقائي', description: 'الرد على التعليقات تلقائياً', icon: Bot, accent: '#8b5cf6', accentGradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' },
+    { id: 'mention', name: 'منشن جماعي', description: 'منشن مستخدمين في عدة منشورات', icon: AtSign, accent: '#f97316', accentGradient: 'linear-gradient(135deg, #f97316, #c2410c)' },
+  ]
+
+  const messagingTools: ToolDef[] = [
+    { id: 'send-messages', name: 'رسائل من الملف الشخصي', description: 'إرسال رسائل مباشرة للأشخاص', icon: Send, accent: '#0ea5e9', accentGradient: 'linear-gradient(135deg, #0ea5e9, #0369a1)' },
+    { id: 'page-send-messages', name: 'رسائل من الصفحة', description: 'إرسال رسائل من صفحتك للمتابعين', icon: Megaphone, accent: '#0891b2', accentGradient: 'linear-gradient(135deg, #0891b2, #155e75)' },
+  ]
+
+  const advancedTools: ToolDef[] = [
+    { id: 'friend-requests', name: 'إرسال طلبات صداقة', description: 'طلبات صداقة لقائمة حسابات', icon: UserPlus, accent: '#22c55e', accentGradient: 'linear-gradient(135deg, #22c55e, #15803d)' },
+    { id: 'delete-friends', name: 'حذف الأصدقاء', description: 'حذف أصدقاء حسب قائمة أو حد', icon: Users, accent: '#ef4444', accentGradient: 'linear-gradient(135deg, #ef4444, #b91c1c)' },
+    { id: 'interaction-farm', name: 'مزرعة التفاعل', description: 'إعجاب/تعليق على منشورات', icon: ThumbsUp, accent: '#a855f7', accentGradient: 'linear-gradient(135deg, #a855f7, #7e22ce)' },
+    { id: 'delete-posts', name: 'حذف المنشورات', description: 'حذف منشوراتك القديمة', icon: Trash2, accent: '#dc2626', accentGradient: 'linear-gradient(135deg, #dc2626, #991b1b)' },
+    { id: 'analyze-group', name: 'تحليل مجموعة', description: 'استخراج بيانات وإحصائيات مجموعة', icon: BarChart3, accent: '#6366f1', accentGradient: 'linear-gradient(135deg, #6366f1, #4338ca)' },
+    { id: 'add-to-group-chat', name: 'إضافة لمجموعة شات', description: 'إضافة عملاء لمجموعة محادثة', icon: UserPlus, accent: '#ec4899', accentGradient: 'linear-gradient(135deg, #ec4899, #be185d)' },
+    { id: 'send-page-messages', name: 'إرسال للصفحات العامة', description: 'إرسال رسائل لصفحات لست أدمناً فيها', icon: Send, accent: '#f59e0b', accentGradient: 'linear-gradient(135deg, #f59e0b, #d97706)' },
+    { id: 'users-to-ids', name: 'تحويل Users إلى IDs', description: 'استخراج معرفات حسابات', icon: Copy, accent: '#14b8a6', accentGradient: 'linear-gradient(135deg, #14b8a6, #0f766e)' },
+    { id: 'links-to-ids', name: 'تحويل روابط إلى IDs', description: 'استخراج معرفات من روابط', icon: FileText, accent: '#eab308', accentGradient: 'linear-gradient(135deg, #eab308, #a16207)' },
+  ]
+
+  const allTools = [...extractCategoryTools, ...marketingTools, ...messagingTools, ...advancedTools]
+  const currentTool = allTools.find(t => t.id === activeTool) ?? null
+
+  // ---- Session card ----
+  const renderSessionCard = () => (
+    <div
+      className="rounded-2xl overflow-hidden"
+      style={{
+        background: 'linear-gradient(135deg, rgba(24,119,242,0.06), rgba(8,102,255,0.04))',
+        border: '1px solid rgba(24,119,242,0.18)',
+        boxShadow: '0 4px 20px rgba(24,119,242,0.06)',
+      }}
+    >
+      <div className="px-5 py-4 flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-3">
+          <div
+            className="w-12 h-12 rounded-2xl flex items-center justify-center text-white shrink-0"
+            style={{ background: ACCENT_GRADIENT, boxShadow: '0 4px 12px rgba(24,119,242,0.3)' }}
+          >
+            <FacebookIcon size={22} />
+          </div>
+          <div>
+            <h3 className="font-bold text-secondary-900 text-base leading-tight">Facebook</h3>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="inline-block w-2 h-2 rounded-full" style={{ background: sessionId ? '#22c55e' : '#94a3b8', boxShadow: sessionId ? '0 0 8px rgba(34,197,94,0.6)' : 'none' }} />
+              <span className="text-xs font-medium" style={{ color: sessionId ? '#16a34a' : '#64748b' }}>
+                {sessionId ? 'جلسة نشطة — جاهز للعمل' : 'لا توجد جلسة — سجل الدخول أولاً'}
+              </span>
+              {accounts.length > 0 && (
+                <span className="text-[11px] text-secondary-500">• {accounts.length} حساب محفوظ</span>
+              )}
             </div>
           </div>
-        )}
-        {fbAccounts.length > 0 && (
-          <div className="mb-4 p-4 bg-primary-50 rounded-xl border border-primary-100">
-            <label className="label-field">الحسابات المحفوظة</label>
-            <select className="select-field mb-2" value={selectedAccountId} onChange={e => {
-              const id = e.target.value; setSelectedAccountId(id)
-              const acc = fbAccounts.find(a => a.id.toString() === id)
-              if (acc && !sessionId) { setLoginForm({ ...loginForm, email: acc.username, password: acc.password || '' }); if (!acc.password?.trim()) setTimeout(() => passwordRef.current?.focus(), 100) }
-            }}>
-              <option value="">-- اختر حساب --</option>
-              {fbAccounts.map(acc => (<option key={acc.id} value={acc.id}>{acc.username} {acc.password?.trim() ? '(باسورد محفوظ)' : '(بدون باسورد)'}</option>))}
-            </select>
-            {selectedAccountId && (<button onClick={() => { const acc = fbAccounts.find(a => a.id.toString() === selectedAccountId); if (acc) handleLoginWithAccount(acc) }} disabled={loading} className="btn-success w-full text-sm">{loading ? <Loader2 size={16} className="animate-spin" /> : <><LogIn size={16} /> دخول / فحص الجلسة</>}</button>)}
-            <div className="my-3 border-t border-primary-100" />
-          </div>
-        )}
-        <div className="space-y-4">
-          <div><label className="label-field">البريد الإلكتروني</label><input type="email" className="input-field" placeholder="example@email.com" value={loginForm.email} onChange={e => setLoginForm({ ...loginForm, email: e.target.value })} /></div>
-          <div><label className="label-field">كلمة المرور</label><div className="relative"><input ref={passwordRef} type={showPassword ? 'text' : 'password'} className="input-field pl-10" placeholder="••••••••" value={loginForm.password} onChange={e => setLoginForm({ ...loginForm, password: e.target.value })} /><button onClick={() => setShowPassword(!showPassword)} className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400 hover:text-secondary-600">{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></div></div>
-          <div><label className="label-field">بروكسي (اختياري)</label><input type="text" className="input-field" placeholder="IP:Port أو http://user:pass@ip:port" value={loginForm.proxy} onChange={e => setLoginForm({ ...loginForm, proxy: e.target.value })} /></div>
-          <button onClick={handleLogin} disabled={loading || !loginForm.email || !loginForm.password} className="btn-primary w-full disabled:opacity-50">{loading ? <Loader2 size={18} className="animate-spin" /> : <><LogIn size={18} /> تسجيل الدخول</>}</button>
+        </div>
+        <div className="flex items-center gap-2">
+          {sessionId ? (
+            <button onClick={clearSession} className="btn-secondary text-xs"><LogOut size={14} /> إنهاء الجلسة</button>
+          ) : (
+            <button onClick={() => setShowLoginPanel(true)} className="btn-primary text-sm" style={{ background: ACCENT_GRADIENT }}><LogIn size={16} /> تسجيل الدخول</button>
+          )}
         </div>
       </div>
-      <div className="card">
-        <h3 className="font-bold text-secondary-900 mb-4 text-lg">الحسابات المحفوظة</h3>
-        {accounts.length === 0 ? (
-          <div className="text-center py-12 text-secondary-400"><Users size={48} className="mx-auto mb-3 opacity-30" /><p>لا توجد حسابات مسجلة</p><p className="text-xs mt-1">سجل الدخول لحفظ حسابك</p></div>
-        ) : (
-          <div className="space-y-2 max-h-[400px] overflow-y-auto">
+      {fbAccounts.length > 0 && !sessionId && (
+        <div className="px-5 py-3 border-t flex items-center gap-3 flex-wrap" style={{ borderColor: 'rgba(24,119,242,0.12)', background: 'rgba(255,255,255,0.5)' }}>
+          <span className="text-xs font-semibold text-secondary-600 shrink-0">حسابات محفوظة:</span>
+          <select
+            className="select-field flex-1 min-w-[200px] max-w-xs text-sm py-2"
+            value={selectedAccountId}
+            onChange={e => {
+              const id = e.target.value; setSelectedAccountId(id)
+              const acc = fbAccounts.find(a => a.id.toString() === id)
+              if (acc && !sessionId) {
+                setLoginForm({ ...loginForm, email: acc.username, password: acc.password || '' })
+                if (!acc.password?.trim()) { setShowLoginPanel(true); setTimeout(() => passwordRef.current?.focus(), 200) }
+              }
+            }}
+          >
+            <option value="">-- اختر حساب --</option>
+            {fbAccounts.map(acc => (
+              <option key={acc.id} value={acc.id}>{acc.username} {acc.password?.trim() ? '(باسورد محفوظ)' : '(بدون باسورد)'}</option>
+            ))}
+          </select>
+          {selectedAccountId && (
+            <button onClick={() => { const acc = fbAccounts.find(a => a.id.toString() === selectedAccountId); if (acc) handleLoginWithAccount(acc) }} disabled={loading} className="btn-success text-xs">
+              {loading ? <Loader2 size={14} className="animate-spin" /> : <><LogIn size={14} /> دخول</>}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  )
+
+  // ---- Login panel content ----
+  const renderLoginPanelContent = () => (
+    <div className="space-y-5">
+      {sessionId && (
+        <div className="p-4 rounded-xl border" style={{ background: 'rgba(34,197,94,0.06)', borderColor: 'rgba(34,197,94,0.25)' }}>
+          <div className="flex items-center gap-2"><CheckCircle size={18} className="text-success-600" /><p className="font-semibold text-success-700 text-sm">جلسة نشطة — يمكنك استخدام جميع الأدوات</p></div>
+        </div>
+      )}
+      <div>
+        <label className="label-field">البريد الإلكتروني</label>
+        <input type="email" className="input-field" placeholder="example@email.com" value={loginForm.email} onChange={e => setLoginForm({ ...loginForm, email: e.target.value })} />
+      </div>
+      <div>
+        <label className="label-field">كلمة المرور</label>
+        <div className="relative">
+          <input ref={passwordRef} type={showPassword ? 'text' : 'password'} className="input-field pl-10" placeholder="••••••••" value={loginForm.password} onChange={e => setLoginForm({ ...loginForm, password: e.target.value })} />
+          <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400 hover:text-secondary-600">{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
+        </div>
+      </div>
+      <div>
+        <label className="label-field">بروكسي (اختياري)</label>
+        <input type="text" className="input-field" placeholder="IP:Port أو http://user:pass@ip:port" value={loginForm.proxy} onChange={e => setLoginForm({ ...loginForm, proxy: e.target.value })} />
+      </div>
+      {accounts.length > 0 && (
+        <div>
+          <h4 className="font-bold text-secondary-900 text-sm mb-3">الحسابات المحفوظة على الجهاز</h4>
+          <div className="space-y-2 max-h-[280px] overflow-y-auto scroll-container pr-1">
             {accounts.map((acc: any) => (
-              <div key={acc.id} className="flex items-center justify-between p-3 rounded-xl bg-secondary-50 border border-secondary-100 hover:bg-secondary-100 transition-colors">
-                <div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm font-bold">{(acc.username || '?')[0].toUpperCase()}</div><div><p className="font-medium text-secondary-900 text-sm">{acc.username}</p><p className="text-xs text-secondary-500">{new Date(acc.created_at || Date.now()).toLocaleDateString('ar-EG')}</p>{acc.password?.trim() ? <span className="text-[10px] text-success-600">باسورد محفوظ</span> : <span className="text-[10px] text-warning-600">بدون باسورد</span>}</div></div>
+              <div key={acc.id} className="flex items-center justify-between p-3 rounded-xl bg-white border border-secondary-100">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm font-bold shrink-0">{(acc.username || '?')[0].toUpperCase()}</div>
+                  <div className="min-w-0">
+                    <p className="font-medium text-secondary-900 text-sm truncate">{acc.username}</p>
+                    <p className="text-[11px] text-secondary-500">{new Date(acc.created_at || Date.now()).toLocaleDateString('ar-EG')}{acc.password?.trim() ? ' • باسورد محفوظ' : ' • بدون باسورد'}</p>
+                  </div>
+                </div>
                 <span className={`badge ${acc.status === 'active' ? 'badge-success' : 'badge-danger'}`}>{acc.status === 'active' ? 'نشط' : 'غير نشط'}</span>
               </div>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 
-  const renderExtract = () => {
-    const selectedTool = extractTools.find(t => t.id === extractType)
+  const loginFooter = (
+    <button onClick={handleLogin} disabled={loading || !loginForm.email || !loginForm.password} className="btn-primary w-full disabled:opacity-50" style={{ background: ACCENT_GRADIENT }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><LogIn size={18} /> تسجيل الدخول</>}
+    </button>
+  )
+
+  // ---- Shared results table ----
+  const renderResultsTable = (owner: ResultsOwner, columns: string[], exportKey: string, variant: 'extract' | 'simple' | 'detailed' | 'recipient' = 'simple') => {
+    if (resultsOwner !== owner) return null
     const displayResults = toolResults.length > 0 ? toolResults : results
+    const list = streamResults.length > 0 ? streamResults : displayResults
+    if (list.length === 0) return null
     return (
-      <div className="space-y-6">
+      <div className="mt-5 rounded-xl border border-secondary-200 bg-white/60 overflow-hidden">
+        <div className="flex items-center justify-between p-3 border-b border-secondary-100 flex-wrap gap-2">
+          <h4 className="font-bold text-secondary-900 text-sm">النتائج ({list.length})</h4>
+          <div className="flex gap-2">
+            <button onClick={() => handleExport(columns, exportKey, toolResults)} className="btn-success text-xs"><FileSpreadsheet size={14} /> تصدير CSV</button>
+            <button onClick={handleClearResults} className="btn-danger text-xs"><Trash2 size={14} /> مسح</button>
+          </div>
+        </div>
+        <div className="table-container" style={{ maxHeight: '380px', overflow: 'auto' }}>
+          <table className="data-table">
+            <thead><tr>{columns.map((c, i) => <th key={i}>{c}</th>)}</tr></thead>
+            <tbody>
+              {list.map((r: any, i: number) => {
+                if (variant === 'extract') {
+                  const extra = (() => { try { return JSON.parse(r.extra_data || '{}') } catch { return {} as any } })()
+                  const userId = r.userId || extra.userId || extra.id || r.user_id || '-'
+                  const name = r.name || extra.name || r.username || '-'
+                  const profile = r.url || r.profile || extra.profile || extra.url || '-'
+                  const phone = r.phone || extra.phone || '-'
+                  const text = extra.text || r.text || extra.extra || '-'
+                  const source = r.source || extra.source || '-'
+                  return (
+                    <tr key={r.id || i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium text-sm">{name}</td>
+                      <td className="text-xs font-mono text-primary-600">{userId}</td>
+                      <td className="text-xs max-w-[150px] truncate">{profile !== '-' ? <a href={profile} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{profile.substring(0, 40)}...</a> : '-'}</td>
+                      <td className="text-xs">{phone}</td>
+                      <td className="text-xs max-w-[150px] truncate">{text}</td>
+                      <td className="text-xs">{source}</td>
+                    </tr>
+                  )
+                }
+                if (variant === 'recipient') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium">{r.recipient || r.name || '-'}</td>
+                      <td><span className={`badge ${r.status === 'sent' ? 'badge-success' : r.status === 'failed' ? 'badge-danger' : 'badge-warning'}`}>{r.status}</span></td>
+                      <td className="text-xs text-secondary-500">{r.error || '-'}</td>
+                    </tr>
+                  )
+                }
+                if (variant === 'detailed') {
+                  const userId = r.userId || r.id || r.username || '-'
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium text-sm">{r.name || r.recipient || r.group || '-'}</td>
+                      <td className="text-xs font-mono text-primary-600">{userId}</td>
+                      <td className="text-xs max-w-[150px] truncate">{r.profile || r.url || r.link || '-'}</td>
+                      <td className="text-xs">{r.phone || '-'}</td>
+                      <td><span className={`badge ${r.status === 'found' || r.status === 'sent' || r.status === 'liked' || r.status === 'loved' || r.status === 'shared' || r.status === 'posted' || r.status === 'replied' || r.status === 'mentioned' || r.status === 'deleted' ? 'badge-success' : r.status === 'not_found' || r.status === 'skipped' ? 'badge-warning' : 'badge-danger'}`}>{r.status}</span></td>
+                    </tr>
+                  )
+                }
+                // simple variant
+                return (
+                  <tr key={i}>
+                    <td className="text-secondary-500">{i + 1}</td>
+                    <td className="text-xs max-w-[300px] truncate">{r.group || r.url || r.name || r.recipient || JSON.stringify(r).substring(0, 80)}</td>
+                    <td><span className={`badge ${r.status === 'posted' || r.status === 'sent' || r.status === 'replied' || r.status === 'shared' || r.status === 'liked' || r.status === 'mentioned' || r.status === 'added' ? 'badge-success' : r.status === 'skipped' ? 'badge-warning' : 'badge-danger'}`}>{r.status}</span></td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    )
+  }
+
+  // ---- Tool bodies ----
+  const renderExtractBody = () => {
+    const selectedTool = extractTools.find(t => t.id === extractType)
+    return (
+      <div className="space-y-5">
         <AccountSelector
           platformId="facebook"
           accounts={allAccounts}
@@ -502,347 +713,309 @@ export default function FacebookModule() {
           extractTask={{ type: 'extract', params: { extractType, postUrl: extractUrl, groupUrl: extractUrl, pageUrl: extractUrl, url: extractUrl, searchType, query: searchQuery, limit: extractLimit } }}
           sendTask={{ type: 'send', params: { recipients: recipientsText.split('\n').filter(Boolean), message: broadcastMessage } }}
         />
-        <div className="card">
-          <h3 className="font-bold text-secondary-900 mb-4 text-lg">استخراج البيانات</h3>
-          <div className="space-y-4">
-            <div><label className="label-field">نوع الاستخراج</label>
-              <select className="select-field" value={extractType} onChange={e => setExtractType(e.target.value)}>
-                {extractTools.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
-            </div>
-            {extractType !== 'friends' && extractType !== 'profile-messengers' && extractType !== 'search-groups' && extractType !== 'page-messengers' && extractType !== 'reviews' && extractType !== 'join-groups' && (
-              <div><label className="label-field">{selectedTool?.urlLabel || 'الرابط'}</label>
-                <input type="url" className="input-field" placeholder="https://facebook.com/..." value={extractUrl} onChange={e => setExtractUrl(e.target.value)} />
-              </div>
-            )}
-            {extractType === 'page-messengers' && (
-              <div><label className="label-field">رابط الصفحة (يجب أن تكون أدمن)</label>
-                <input type="url" className="input-field" placeholder="https://facebook.com/your-page" value={pageMessengerUrl} onChange={e => setPageMessengerUrl(e.target.value)} />
-              </div>
-            )}
-            {extractType === 'profile-messengers' && (
-              <div><label className="label-field">عدد المراسلين: {profileMessengerLimit}</label>
-                <input type="range" min="10" max="500" value={profileMessengerLimit} onChange={e => setProfileMessengerLimit(parseInt(e.target.value))} className="w-full accent-blue-600" />
-              </div>
-            )}
-            {extractType === 'reviews' && (
-              <div><label className="label-field">رابط الصفحة</label>
-                <input type="url" className="input-field" placeholder="https://facebook.com/your-page" value={reviewPageUrl} onChange={e => setReviewPageUrl(e.target.value)} />
-              </div>
-            )}
-            {extractType === 'search-groups' && (
-              <div><label className="label-field">كلمة البحث عن المجموعات</label>
-                <input type="text" className="input-field" placeholder="تسويق، أعمال..." value={searchGroupQuery} onChange={e => setSearchGroupQuery(e.target.value)} />
-              </div>
-            )}
-            {extractType === 'join-groups' && (
-              <div><label className="label-field">روابط المجموعات (سطر لكل مجموعة)</label>
-                <textarea className="textarea-field" rows={4} value={joinGroupUrls} onChange={e => setJoinGroupUrls(e.target.value)} placeholder="https://facebook.com/groups/...&#10;https://facebook.com/groups/..." />
-              </div>
-            )}
-            <div><label className="label-field">الحد الأقصى للنتائج: {extractLimit}</label><input type="range" min="10" max="5000" step="10" value={extractLimit} onChange={e => setExtractLimit(parseInt(e.target.value))} className="w-full accent-blue-600" /></div>
-            <div><label className="label-field">تأخير بين الصفحات (مللي ثانية): {delayMs}</label><input type="range" min="500" max="5000" step="100" value={delayMs} onChange={e => setDelayMs(parseInt(e.target.value))} className="w-full accent-indigo-500" /><p className="text-xs text-secondary-400 mt-1">تأخير أكبر = أمان أكثر ضد الحظر</p></div>
-            <div className="flex gap-2">
-              <button onClick={handleExtract} disabled={extracting} className="btn-primary flex-1">{extracting ? <Loader2 size={18} className="animate-spin" /> : <><Play size={18} /> بدء الاستخراج</>}</button>
-              {extracting && <button onClick={stopExtraction} className="btn-danger"><Square size={18} /> إيقاف</button>}
-              <button onClick={handleSearch} disabled={loading || extracting} className="btn-secondary"><><Search size={18} /> بحث</></button>
-            </div>
-            {extracting && <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200"><Loader2 size={16} className="animate-spin text-blue-600" /><span className="text-blue-700 text-sm font-medium">جاري الاستخراج... {streamResults.length} نتيجة حتى الآن</span></div>}
+
+        <div>
+          <label className="label-field">نوع الاستخراج</label>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+            {extractTools.map(t => {
+              const isSel = extractType === t.id
+              const ToolIcon = t.icon
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setExtractType(t.id)}
+                  className="flex items-center gap-2 p-3 rounded-xl border text-sm font-medium transition-all text-right"
+                  style={{
+                    background: isSel ? 'rgba(10,108,241,0.08)' : 'white',
+                    borderColor: isSel ? '#0A6CF1' : 'rgba(226,232,240,0.8)',
+                    color: isSel ? '#0A6CF1' : '#475569',
+                    boxShadow: isSel ? '0 0 0 2px rgba(10,108,241,0.15)' : 'none',
+                  }}
+                >
+                  <ToolIcon size={16} />
+                  <span className="text-xs">{t.name}</span>
+                </button>
+              )
+            })}
           </div>
         </div>
-        <div className="grid grid-cols-4 gap-3">
-          {extractTools.map(tool => {
-            const isSel = extractType === tool.id
-            return (
-              <button key={tool.id} onClick={() => setExtractType(tool.id)} className={`tool-card cursor-pointer text-center ${isSel ? 'ring-2' : ''}`}
-                style={isSel ? { borderColor: '#0A6CF1', boxShadow: '0 0 0 2px rgba(10,108,241,0.2), 0 4px 16px rgba(10,108,241,0.1)' } : {}}>
-                <div className="w-10 h-10 rounded-xl mx-auto flex items-center justify-center"
-                  style={isSel
-                    ? { background: 'linear-gradient(135deg, #0A6CF1, #8B2CF5)', color: 'white', boxShadow: '0 2px 8px rgba(10,108,241,0.25)' }
-                    : { background: 'rgba(248,250,252,0.8)', color: '#64748b' }}>
-                  <tool.icon size={20} />
-                </div>
-                <h4 className="font-bold text-xs mt-2" style={{ color: isSel ? '#0A6CF1' : '#334155' }}>{tool.name}</h4>
-              </button>
-            )
-          })}
-        </div>
-        {(displayResults.length > 0 || streamResults.length > 0) && (
-          <div className="card">
-            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-              <h3 className="font-bold text-secondary-900">النتائج ({streamResults.length || displayResults.length})</h3>
-              <div className="flex gap-2">
-                <button onClick={() => handleExport(['الاسم', 'معرف المستخدم', 'الرابط', 'الهاتف', 'النص', 'المصدر', 'التاريخ'], 'facebook-extract', toolResults)} className="btn-success text-sm"><FileSpreadsheet size={16} /> تصدير CSV</button>
-                <button onClick={handleClearResults} className="btn-danger text-sm"><Trash2 size={16} /> مسح الكل</button>
-              </div>
-            </div>
-            <div className="table-container" style={{ maxHeight: '500px', overflow: 'auto' }}>
-              <table className="data-table">
-                <thead><tr><th>#</th><th>الاسم</th><th>معرف المستخدم</th><th>الرابط</th><th>الهاتف</th><th>النص/ملاحظات</th><th>المصدر</th></tr></thead>
-                <tbody>
-                  {(streamResults.length > 0 ? streamResults : displayResults).map((r: any, i: number) => {
-                    const extra = (() => { try { return JSON.parse(r.extra_data || '{}') } catch { return {} as any } })()
-                    const userId = r.userId || extra.userId || extra.id || r.user_id || '-'
-                    const name = r.name || extra.name || r.username || '-'
-                    const profile = r.url || r.profile || extra.profile || extra.url || '-'
-                    const phone = r.phone || extra.phone || '-'
-                    const text = extra.text || r.text || extra.extra || '-'
-                    const source = r.source || extra.source || '-'
-                    return (
-                      <tr key={r.id || i}>
-                        <td className="text-secondary-500">{i + 1}</td>
-                        <td className="font-medium text-sm">{name}</td>
-                        <td className="text-xs font-mono text-primary-600">{userId}</td>
-                        <td className="text-xs max-w-[150px] truncate">{profile !== '-' ? <a href={profile} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{profile.substring(0, 40)}...</a> : '-'}</td>
-                        <td className="text-xs">{phone}</td>
-                        <td className="text-xs max-w-[150px] truncate">{text}</td>
-                        <td className="text-xs">{source}</td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
+
+        {extractType !== 'friends' && extractType !== 'profile-messengers' && extractType !== 'search-groups' && extractType !== 'page-messengers' && extractType !== 'reviews' && extractType !== 'join-groups' && (
+          <div>
+            <label className="label-field">{selectedTool?.urlLabel || 'الرابط'}</label>
+            <input type="url" className="input-field" placeholder="https://facebook.com/..." value={extractUrl} onChange={e => setExtractUrl(e.target.value)} />
           </div>
         )}
-        <div className="card">
-          <h3 className="font-bold text-secondary-900 mb-4 text-lg">بحث متقدم</h3>
-          <div className="flex gap-4">
-            <div className="flex-1"><label className="label-field">كلمة البحث</label><input type="text" className="input-field" placeholder="ابحث عن صفحات أو أشخاص أو مجموعات..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} /></div>
-            <div className="w-40"><label className="label-field">النوع</label><select className="select-field" value={searchType} onChange={e => setSearchType(e.target.value)}><option value="pages">الصفحات</option><option value="people">الأشخاص</option><option value="groups">المجموعات</option></select></div>
+        {extractType === 'page-messengers' && (
+          <div>
+            <label className="label-field">رابط الصفحة (يجب أن تكون أدمن)</label>
+            <input type="url" className="input-field" placeholder="https://facebook.com/your-page" value={pageMessengerUrl} onChange={e => setPageMessengerUrl(e.target.value)} />
+          </div>
+        )}
+        {extractType === 'profile-messengers' && (
+          <div>
+            <label className="label-field">عدد المراسلين: {profileMessengerLimit}</label>
+            <input type="range" min="10" max="500" value={profileMessengerLimit} onChange={e => setProfileMessengerLimit(parseInt(e.target.value))} className="w-full accent-blue-600" />
+          </div>
+        )}
+        {extractType === 'reviews' && (
+          <div>
+            <label className="label-field">رابط الصفحة</label>
+            <input type="url" className="input-field" placeholder="https://facebook.com/your-page" value={reviewPageUrl} onChange={e => setReviewPageUrl(e.target.value)} />
+          </div>
+        )}
+        {extractType === 'search-groups' && (
+          <div>
+            <label className="label-field">كلمة البحث عن المجموعات</label>
+            <input type="text" className="input-field" placeholder="تسويق، أعمال..." value={searchGroupQuery} onChange={e => setSearchGroupQuery(e.target.value)} />
+          </div>
+        )}
+        {extractType === 'join-groups' && (
+          <div>
+            <label className="label-field">روابط المجموعات (سطر لكل مجموعة)</label>
+            <textarea className="textarea-field" rows={4} value={joinGroupUrls} onChange={e => setJoinGroupUrls(e.target.value)} placeholder="https://facebook.com/groups/...&#10;https://facebook.com/groups/..." />
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="label-field">الحد الأقصى للنتائج: {extractLimit}</label>
+            <input type="range" min="10" max="5000" step="10" value={extractLimit} onChange={e => setExtractLimit(parseInt(e.target.value))} className="w-full accent-blue-600" />
+          </div>
+          <div>
+            <label className="label-field">تأخير الصفحات (ms): {delayMs}</label>
+            <input type="range" min="500" max="5000" step="100" value={delayMs} onChange={e => setDelayMs(parseInt(e.target.value))} className="w-full accent-indigo-500" />
           </div>
         </div>
+        <p className="text-[11px] text-secondary-400 -mt-2">تأخير أكبر = أمان أكثر ضد الحظر</p>
+
+        {extracting && (
+          <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <Loader2 size={16} className="animate-spin text-blue-600" />
+            <span className="text-blue-700 text-sm font-medium">جاري الاستخراج... {streamResults.length} نتيجة حتى الآن</span>
+          </div>
+        )}
+
+        <div className="border-t border-secondary-100 pt-4 mt-2">
+          <h4 className="font-bold text-secondary-900 text-sm mb-3 flex items-center gap-2"><Search size={16} /> بحث متقدم</h4>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="col-span-2">
+              <input type="text" className="input-field" placeholder="ابحث عن صفحات أو أشخاص أو مجموعات..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+            </div>
+            <div>
+              <select className="select-field" value={searchType} onChange={e => setSearchType(e.target.value)}>
+                <option value="pages">الصفحات</option>
+                <option value="people">الأشخاص</option>
+                <option value="groups">المجموعات</option>
+              </select>
+            </div>
+          </div>
+          <button onClick={handleSearch} disabled={loading || extracting || !searchQuery} className="btn-secondary mt-2 text-sm"><Search size={16} /> بحث</button>
+        </div>
+
+        {renderResultsTable('extract', ['#', 'الاسم', 'معرف المستخدم', 'الرابط', 'الهاتف', 'النص', 'المصدر'], 'facebook-extract', 'extract')}
       </div>
     )
   }
-
-  const renderMarketing = () => (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-6">
-        <div className="card">
-          <h3 className="font-bold text-secondary-900 mb-4 flex items-center gap-2"><Megaphone size={20} className="text-green-600" /> النشر في المجموعات</h3>
-          <div className="space-y-4">
-            <div><label className="label-field">روابط المجموعات (سطر لكل مجموعة)</label><textarea className="textarea-field" rows={4} value={groupUrls} onChange={e => setGroupUrls(e.target.value)} placeholder="https://facebook.com/groups/..." /></div>
-            <div><label className="label-field">نص المنشور</label><textarea className="textarea-field" rows={4} value={postMessage} onChange={e => setPostMessage(e.target.value)} placeholder="اكتب منشورك هنا..." /></div>
-            <button onClick={handlePostToGroups} disabled={loading} className="btn-primary w-full">{loading ? <Loader2 size={18} className="animate-spin" /> : <><Megaphone size={18} /> نشر في المجموعات</>}</button>
-          </div>
-        </div>
-        <div className="card">
-          <h3 className="font-bold text-secondary-900 mb-4 flex items-center gap-2"><Share2 size={20} className="text-blue-600" /> مشاركة منشور في مجموعات</h3>
-          <div className="space-y-4">
-            <div><label className="label-field">رابط المنشور</label><input type="url" className="input-field" placeholder="https://facebook.com/.../posts/..." value={sharePostUrl} onChange={e => setSharePostUrl(e.target.value)} /></div>
-            <div><label className="label-field">روابط المجموعات (سطر لكل مجموعة)</label><textarea className="textarea-field" rows={4} value={shareGroupUrls} onChange={e => setShareGroupUrls(e.target.value)} placeholder="https://facebook.com/groups/..." /></div>
-            <button onClick={handleSharePost} disabled={loading} className="btn-primary w-full bg-blue-600 hover:bg-blue-700">{loading ? <Loader2 size={18} className="animate-spin" /> : <><Share2 size={18} /> مشاركة</>}</button>
-          </div>
-        </div>
-        <div className="card">
-          <h3 className="font-bold text-secondary-900 mb-4 flex items-center gap-2"><MessageSquare size={20} className="text-purple-600" /> الرد التلقائي على التعليقات</h3>
-          <div className="space-y-4">
-            <p className="text-xs text-secondary-500 bg-secondary-50 p-2 rounded-lg">آلية العمل: ينتقل لرابط المنشور، يمرر على التعليقات واحداً تلو الآخر، يضغط على زر "رد" ويكتب الرد تلقائياً</p>
-            <div><label className="label-field">رابط المنشور</label><input type="url" className="input-field" placeholder="https://facebook.com/.../posts/..." value={replyPostUrl} onChange={e => setReplyPostUrl(e.target.value)} /></div>
-            <div><label className="label-field">نص الرد</label><textarea className="textarea-field" rows={3} value={replyText} onChange={e => setReplyText(e.target.value)} placeholder="اكتب ردك التلقائي..." /></div>
-            <div><label className="label-field">عدد التعليقات: {replyLimit}</label><input type="range" min="1" max="50" value={replyLimit} onChange={e => setReplyLimit(parseInt(e.target.value))} className="w-full accent-purple-600" /></div>
-            <button onClick={handleAutoReply} disabled={loading} className="btn-primary w-full bg-purple-600 hover:bg-purple-700">{loading ? <Loader2 size={18} className="animate-spin" /> : <><Bot size={18} /> بدء الرد التلقائي</>}</button>
-          </div>
-        </div>
-        <div className="card">
-          <h3 className="font-bold text-secondary-900 mb-4 flex items-center gap-2"><AtSign size={20} className="text-orange-600" /> منشن للعملاء</h3>
-          <div className="space-y-4">
-            <p className="text-xs text-secondary-500 bg-secondary-50 p-2 rounded-lg">آلية العمل: ينتقل لكل منشور، يكتب تعليق فيه @اسم_المستخدم لكل شخص في القائمة واحدة تلو الأخرى</p>
-            <div><label className="label-field">روابط المنشورات (سطر لكل منشور)</label><textarea className="textarea-field" rows={3} value={mentionUrls} onChange={e => setMentionUrls(e.target.value)} placeholder="https://facebook.com/.../posts/...&#10;https://facebook.com/.../posts/..." /></div>
-            <div><label className="label-field">أسماء المستخدمين للمنشن (سطر لكل اسم - يمكنك نسخها من النتائج المستخرجة)</label><textarea className="textarea-field" rows={3} value={mentionUsernames} onChange={e => setMentionUsernames(e.target.value)} placeholder="username1&#10;user2&#10;@user3" /></div>
-            <div><label className="label-field">نص التعليق (اختياري)</label><textarea className="textarea-field" rows={2} value={mentionText} onChange={e => setMentionText(e.target.value)} placeholder="...تعليقك مع المنشن" /></div>
-            <button onClick={handleMention} disabled={loading} className="btn-primary w-full bg-orange-600 hover:bg-orange-700">{loading ? <Loader2 size={18} className="animate-spin" /> : <><AtSign size={18} /> بدء المنشن</>}</button>
-          </div>
-        </div>
-      </div>
-      {toolResults.length > 0 && (
-        <div className="card">
-          <div className="flex items-center justify-between mb-4"><h3 className="font-bold text-secondary-900">النتائج ({toolResults.length})</h3><span className="badge badge-success">مكتمل</span></div>
-          <div className="table-container" style={{ maxHeight: '300px', overflow: 'auto' }}>
-            <table className="data-table"><thead><tr><th>#</th><th>التفاصيل</th><th>الحالة</th></tr></thead>
-              <tbody>{toolResults.map((r: any, i: number) => (<tr key={i}><td className="text-secondary-500">{i + 1}</td><td className="text-xs max-w-[300px] truncate">{r.group || r.url || r.name || r.recipient || JSON.stringify(r).substring(0, 80)}</td><td><span className={`badge ${r.status === 'posted' || r.status === 'sent' || r.status === 'replied' || r.status === 'shared' || r.status === 'liked' || r.status === 'mentioned' ? 'badge-success' : r.status === 'skipped' ? 'badge-warning' : 'badge-danger'}`}>{r.status}</span></td></tr>))}</tbody>
-            </table>
-          </div>
-        </div>
-      )}
+  const extractFooter = (
+    <div className="flex gap-2">
+      <button onClick={handleExtract} disabled={extracting} className="btn-primary flex-1" style={{ background: 'linear-gradient(135deg, #0A6CF1, #1d4ed8)' }}>
+        {extracting ? <Loader2 size={18} className="animate-spin" /> : <><Play size={18} /> بدء الاستخراج</>}
+      </button>
+      {extracting && (<button onClick={stopExtraction} className="btn-danger"><Square size={18} /> إيقاف</button>)}
     </div>
   )
 
-  const renderMessaging = () => (
-    <div className="space-y-6">
-      <div className="card">
-        <h3 className="font-bold text-secondary-900 mb-4 text-lg flex items-center gap-2"><Send size={20} className="text-primary-600" /> إرسال رسائل (الملف الشخصي)</h3>
-        <div className="space-y-4">
-          <div><label className="label-field">قائمة المستلمين (اسم مستخدم أو ID - سطر لكل مستلم)</label><textarea className="textarea-field" rows={5} value={recipientsText} onChange={e => setRecipientsText(e.target.value)} placeholder="user1&#10;user2&#10;1000123456789" /></div>
-          <div><label className="label-field">نص الرسالة</label><textarea className="textarea-field" rows={4} value={broadcastMessage} onChange={e => setBroadcastMessage(e.target.value)} placeholder="اكتب رسالتك هنا..." /></div>
-          <button onClick={handleSendMessages} disabled={loading} className="btn-primary w-full">{loading ? <Loader2 size={18} className="animate-spin" /> : <><Send size={18} /> إرسال الرسائل</>}</button>
-        </div>
-      </div>
-
-      <div className="card">
-        <h3 className="font-bold text-secondary-900 mb-4 text-lg flex items-center gap-2"><Megaphone size={20} className="text-blue-600" /> إرسال رسائل من الصفحة</h3>
-        <p className="text-xs text-secondary-500 bg-secondary-50 p-2 rounded-lg mb-4">يجب أن تكون أدمن في الصفحة. سيتم التبديل للصفحة تلقائياً قبل الإرسال.</p>
-        <div className="space-y-4">
-          <div><label className="label-field">رابط الصفحة</label><input type="url" className="input-field" placeholder="https://facebook.com/your-page" value={pageMsgUrl} onChange={e => setPageMsgUrl(e.target.value)} /></div>
-          <div><label className="label-field">قائمة المستلمين (سطر لكل مستلم)</label><textarea className="textarea-field" rows={4} value={pageMsgRecipients} onChange={e => setPageMsgRecipients(e.target.value)} placeholder="user1&#10;user2" /></div>
-          <div><label className="label-field">نص الرسالة</label><textarea className="textarea-field" rows={3} value={pageMsgText} onChange={e => setPageMsgText(e.target.value)} placeholder="اكتب رسالتك هنا..." /></div>
-          <button onClick={handlePageSendMessages} disabled={loading} className="btn-primary w-full bg-blue-600 hover:bg-blue-700">{loading ? <Loader2 size={18} className="animate-spin" /> : <><Megaphone size={18} /> إرسال من الصفحة</>}</button>
-        </div>
-      </div>
-      {toolResults.length > 0 && (
-        <div className="card">
-          <div className="flex items-center justify-between mb-4"><h3 className="font-bold text-secondary-900">نتائج الإرسال ({toolResults.length})</h3><button onClick={() => handleExport(['Recipient', 'Status', 'Error'], 'facebook-messages', toolResults)} className="btn-secondary text-sm"><FileSpreadsheet size={16} /> تصدير</button></div>
-          <div className="table-container" style={{ maxHeight: '300px', overflow: 'auto' }}>
-            <table className="data-table"><thead><tr><th>#</th><th>المستلم</th><th>الحالة</th><th>خطأ</th></tr></thead>
-              <tbody>{toolResults.map((r: any, i: number) => (<tr key={i}><td className="text-secondary-500">{i + 1}</td><td className="font-medium">{r.recipient || r.name || '-'}</td><td><span className={`badge ${r.status === 'sent' ? 'badge-success' : r.status === 'failed' ? 'badge-danger' : 'badge-warning'}`}>{r.status}</span></td><td className="text-xs text-secondary-500">{r.error || '-'}</td></tr>))}</tbody>
-            </table>
-          </div>
-        </div>
-      )}
+  const renderPostToGroupsBody = () => (
+    <div className="space-y-4">
+      <div><label className="label-field">روابط المجموعات (سطر لكل مجموعة)</label><textarea className="textarea-field" rows={5} value={groupUrls} onChange={e => setGroupUrls(e.target.value)} placeholder="https://facebook.com/groups/..." /></div>
+      <div><label className="label-field">نص المنشور</label><textarea className="textarea-field" rows={5} value={postMessage} onChange={e => setPostMessage(e.target.value)} placeholder="اكتب منشورك هنا..." /></div>
+      {renderResultsTable('post-to-groups', ['#', 'المجموعة', 'الحالة'], 'facebook-post-to-groups', 'simple')}
     </div>
   )
+  const postToGroupsFooter = (<button onClick={handlePostToGroups} disabled={loading} className="btn-primary w-full" style={{ background: 'linear-gradient(135deg, #10b981, #047857)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><Megaphone size={18} /> نشر في المجموعات</>}</button>)
 
-  const renderTools = () => (
-    <div className="space-y-6">
-      {/* إدارة الأصدقاء */}
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)' }}><UserPlus size={16} className="text-white" /></div>
-          <h2 className="font-bold text-secondary-900 text-base">إدارة الأصدقاء</h2>
-        </div>
-        <div className="grid grid-cols-2 gap-6">
-          <div className="card">
-            <h3 className="font-bold text-secondary-900 mb-4 flex items-center gap-2"><UserPlus size={20} className="text-green-600" /> إرسال طلبات صداقة</h3>
-            <div className="space-y-4">
-              <div><label className="label-field">روابط الحسابات (سطر لكل رابط)</label><textarea className="textarea-field" rows={4} value={friendRequestUrls} onChange={e => setFriendRequestUrls(e.target.value)} placeholder="https://facebook.com/username1&#10;https://facebook.com/username2" /></div>
-              <button onClick={handleFriendRequests} disabled={loading} className="btn-primary w-full bg-green-600 hover:bg-green-700">{loading ? <Loader2 size={18} className="animate-spin" /> : <><UserPlus size={18} /> إرسال الطلبات</>}</button>
-            </div>
-          </div>
-          <div className="card">
-            <h3 className="font-bold text-secondary-900 mb-4 flex items-center gap-2"><Users size={20} className="text-blue-600" /> حذف الأصدقاء</h3>
-            <div className="space-y-4">
-              <p className="text-sm text-red-500 flex items-center gap-1"><AlertCircle size={16} /> تحذير: هذا الإجراء لا يمكن التراجع عنه!</p>
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2 cursor-pointer"><input type="radio" name="deleteMode" checked={deleteFriendsMode === 'all'} onChange={() => setDeleteFriendsMode('all')} className="w-4 h-4 accent-red-600" /><span className="text-sm">حذف الكل</span></label>
-                <label className="flex items-center gap-2 cursor-pointer"><input type="radio" name="deleteMode" checked={deleteFriendsMode === 'selected'} onChange={() => setDeleteFriendsMode('selected')} className="w-4 h-4 accent-red-600" /><span className="text-sm">تحديد أصدقاء</span></label>
-              </div>
-              {deleteFriendsMode === 'all' && (
-                <div><label className="label-field">عدد الأصدقاء: {deleteFriendsLimit}</label><input type="range" min="5" max="200" value={deleteFriendsLimit} onChange={e => setDeleteFriendsLimit(parseInt(e.target.value))} className="w-full accent-red-600" /></div>
-              )}
-              {deleteFriendsMode === 'selected' && (
-                <div><label className="label-field">روابط الأصدقاء (سطر لكل رابط)</label><textarea className="textarea-field" rows={4} value={deleteFriendsUrls} onChange={e => setDeleteFriendsUrls(e.target.value)} placeholder="https://facebook.com/username1&#10;https://facebook.com/username2" /></div>
-              )}
-              <button onClick={handleDeleteFriends} disabled={loading} className="btn-danger w-full">{loading ? <Loader2 size={18} className="animate-spin" /> : <><Trash2 size={18} /> حذف الأصدقاء</>}</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* التفاعل وإدارة المنشورات */}
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #8B2CF5, #6d28d9)' }}><ThumbsUp size={16} className="text-white" /></div>
-          <h2 className="font-bold text-secondary-900 text-base">التفاعل وإدارة المنشورات</h2>
-        </div>
-        <div className="grid grid-cols-2 gap-6">
-          <div className="card">
-            <h3 className="font-bold text-secondary-900 mb-4 flex items-center gap-2"><ThumbsUp size={20} className="text-purple-600" /> مزرعة التفاعل</h3>
-            <div className="space-y-4">
-              <div><label className="label-field">نوع التفاعل</label>
-                <select className="select-field" value={interactionAction} onChange={e => setInteractionAction(e.target.value)}>
-                  <option value="like">إعجاب</option><option value="love">حب</option><option value="comment">تعليق عشوائي</option>
-                </select>
-              </div>
-              <div><label className="label-field">روابط المنشورات (سطر لكل رابط)</label><textarea className="textarea-field" rows={4} value={interactionUrls} onChange={e => setInteractionUrls(e.target.value)} placeholder="https://facebook.com/.../posts/..." /></div>
-              <button onClick={handleInteractionFarm} disabled={loading} className="btn-primary w-full bg-purple-600 hover:bg-purple-700">{loading ? <Loader2 size={18} className="animate-spin" /> : <><ThumbsUp size={18} /> بدء التفاعل</>}</button>
-            </div>
-          </div>
-          <div className="card">
-            <h3 className="font-bold text-secondary-900 mb-4 flex items-center gap-2"><Trash2 size={20} className="text-red-600" /> حذف المنشورات</h3>
-            <div className="space-y-4">
-              <p className="text-sm text-red-500 flex items-center gap-1"><AlertCircle size={16} /> تحذير: هذا الإجراء لا يمكن التراجع عنه!</p>
-              <div><label className="label-field">عدد المنشورات: {deletePostsLimit}</label><input type="range" min="1" max="50" value={deletePostsLimit} onChange={e => setDeletePostsLimit(parseInt(e.target.value))} className="w-full accent-red-600" /></div>
-              <button onClick={handleDeletePosts} disabled={loading} className="btn-danger w-full">{loading ? <Loader2 size={18} className="animate-spin" /> : <><Trash2 size={18} /> حذف المنشورات</>}</button>
-            </div>
-          </div>
-          <div className="card">
-            <h3 className="font-bold text-secondary-900 mb-4 flex items-center gap-2"><BarChart3 size={20} className="text-indigo-600" /> تحليل مجموعة</h3>
-            <div className="space-y-4">
-              <div><label className="label-field">رابط المجموعة</label><input type="url" className="input-field" placeholder="https://facebook.com/groups/..." value={analyzeGroupUrl} onChange={e => setAnalyzeGroupUrl(e.target.value)} /></div>
-              <button onClick={handleAnalyzeGroup} disabled={loading} className="btn-primary w-full bg-indigo-600 hover:bg-indigo-700">{loading ? <Loader2 size={18} className="animate-spin" /> : <><BarChart3 size={18} /> تحليل</>}</button>
-            </div>
-          </div>
-          <div className="card">
-            <h3 className="font-bold text-secondary-900 mb-4 flex items-center gap-2"><UserPlus size={20} className="text-pink-600" /> إضافة عملاء لمجموعة شات</h3>
-            <div className="space-y-4">
-              <p className="text-xs text-secondary-500 bg-secondary-50 p-2 rounded-lg">آلية العمل: يفتح رابط مجموعة الشات، يضغط "إضافة أعضاء"، يبحث عن كل اسم مستخدم ويضيفه واحد تلو الآخر.</p>
-              <div><label className="label-field">رابط مجموعة الشات</label><input type="url" className="input-field" placeholder="https://facebook.com/messages/t/..." value={groupChatUrl} onChange={e => setGroupChatUrl(e.target.value)} /></div>
-              <div><label className="label-field">أسماء المستخدمين (سطر لكل اسم)</label><textarea className="textarea-field" rows={4} value={addUsernames} onChange={e => setAddUsernames(e.target.value)} placeholder="username1&#10;user2&#10;أو أسماء من النتائج المستخرجة" /></div>
-              <button onClick={handleAddToGroupChat} disabled={loading} className="btn-primary w-full bg-pink-600 hover:bg-pink-700">{loading ? <Loader2 size={18} className="animate-spin" /> : <><UserPlus size={18} /> إضافة للمجموعة</>}</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* تحويل ومعالجة البيانات */}
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #0A6CF1, #3b82f6)' }}><Copy size={16} className="text-white" /></div>
-          <h2 className="font-bold text-secondary-900 text-base">تحويل ومعالجة البيانات</h2>
-        </div>
-        <div className="grid grid-cols-2 gap-6">
-          <div className="card">
-            <h3 className="font-bold text-secondary-900 mb-4 flex items-center gap-2"><Send size={20} className="text-orange-600" /> إرسال رسائل للصفحات العامة</h3>
-            <div className="space-y-4">
-              <p className="text-xs text-secondary-500 bg-secondary-50 p-2 rounded-lg">آلية العمل: ينتقل لكل صفحة، يضغط زر "رسالة"، يكتب الرسالة ويرسلها تلقائياً.</p>
-              <div><label className="label-field">روابط الصفحات (سطر لكل رابط)</label><textarea className="textarea-field" rows={4} value={sendPageUrls} onChange={e => setSendPageUrls(e.target.value)} placeholder="https://facebook.com/page1&#10;https://facebook.com/page2" /></div>
-              <div><label className="label-field">نص الرسالة</label><textarea className="textarea-field" rows={3} value={sendPageMessage} onChange={e => setSendPageMessage(e.target.value)} placeholder="مرحباً، أود التعرف على خدماتكم..." /></div>
-              <button onClick={handleSendPageMessages} disabled={loading} className="btn-primary w-full bg-orange-600 hover:bg-orange-700">{loading ? <Loader2 size={18} className="animate-spin" /> : <><Send size={18} /> إرسال للصفحات</>}</button>
-            </div>
-          </div>
-          <div className="card">
-            <h3 className="font-bold text-secondary-900 mb-4 flex items-center gap-2"><Copy size={20} className="text-teal-600" /> تحويل Users إلى IDs</h3>
-            <div className="space-y-4">
-              <div><label className="label-field">أسماء المستخدمين (سطر لكل اسم)</label><textarea className="textarea-field" rows={4} value={usersToIds} onChange={e => setUsersToIds(e.target.value)} placeholder="username1&#10;username2" /></div>
-              <button onClick={handleUsersToIds} disabled={loading} className="btn-primary w-full bg-teal-600 hover:bg-teal-700">{loading ? <Loader2 size={18} className="animate-spin" /> : <><Copy size={18} /> تحويل</>}</button>
-            </div>
-          </div>
-          <div className="card col-span-2">
-            <h3 className="font-bold text-secondary-900 mb-4 flex items-center gap-2"><FileText size={20} className="text-amber-600" /> تحويل الروابط إلى IDs</h3>
-            <div className="space-y-4">
-              <div><label className="label-field">قائمة الروابط (سطر لكل رابط)</label><textarea className="textarea-field" rows={4} value={linksToIds} onChange={e => setLinksToIds(e.target.value)} placeholder="https://facebook.com/profile.php?id=...&#10;https://facebook.com/username" /></div>
-              <button onClick={handleLinksToIds} disabled={loading} className="btn-primary w-full bg-amber-600 hover:bg-amber-700">{loading ? <Loader2 size={18} className="animate-spin" /> : <><FileText size={18} /> تحويل</>}</button>
-            </div>
-          </div>
-        </div>
-      </div>
-      {toolResults.length > 0 && (
-        <div className="card">
-          <div className="flex items-center justify-between mb-4"><h3 className="font-bold text-secondary-900">النتائج ({toolResults.length})</h3><div className="flex gap-2"><button onClick={() => handleExport(['الاسم', 'معرف المستخدم', 'الرابط', 'الهاتف', 'الحالة'], 'facebook-tools', toolResults)} className="btn-success text-sm"><FileSpreadsheet size={16} /> تصدير</button><button onClick={() => { setToolResults([]); setStreamResults([]); streamResultsRef.current = [] }} className="btn-danger text-sm"><Trash2 size={16} /> مسح</button></div></div>
-          <div className="table-container" style={{ maxHeight: '300px', overflow: 'auto' }}>
-            <table className="data-table"><thead><tr><th>#</th><th>الاسم</th><th>معرف المستخدم</th><th>الرابط</th><th>الهاتف</th><th>الحالة</th></tr></thead>
-              <tbody>{toolResults.map((r: any, i: number) => {
-                const userId = r.userId || r.id || r.username || '-'
-                return (<tr key={i}><td className="text-secondary-500">{i + 1}</td><td className="font-medium text-sm">{r.name || r.recipient || r.group || '-'}</td><td className="text-xs font-mono text-primary-600">{userId}</td><td className="text-xs max-w-[150px] truncate">{r.profile || r.url || r.link || '-'}</td><td className="text-xs">{r.phone || '-'}</td><td><span className={`badge ${r.status === 'found' || r.status === 'sent' || r.status === 'liked' || r.status === 'loved' || r.status === 'shared' || r.status === 'posted' || r.status === 'replied' || r.status === 'mentioned' || r.status === 'deleted' ? 'badge-success' : r.status === 'not_found' || r.status === 'skipped' ? 'badge-warning' : 'badge-danger'}`}>{r.status}</span></td></tr>)
-              })}</tbody>
-            </table>
-          </div>
-        </div>
-      )}
+  const renderSharePostBody = () => (
+    <div className="space-y-4">
+      <div><label className="label-field">رابط المنشور</label><input type="url" className="input-field" placeholder="https://facebook.com/.../posts/..." value={sharePostUrl} onChange={e => setSharePostUrl(e.target.value)} /></div>
+      <div><label className="label-field">روابط المجموعات (سطر لكل مجموعة)</label><textarea className="textarea-field" rows={5} value={shareGroupUrls} onChange={e => setShareGroupUrls(e.target.value)} placeholder="https://facebook.com/groups/..." /></div>
+      {renderResultsTable('share-post', ['#', 'المجموعة', 'الحالة'], 'facebook-share-post', 'simple')}
     </div>
   )
+  const sharePostFooter = (<button onClick={handleSharePost} disabled={loading} className="btn-primary w-full" style={{ background: 'linear-gradient(135deg, #3b82f6, #1e40af)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><Share2 size={18} /> مشاركة</>}</button>)
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'login': return renderLogin()
-      case 'extract': return renderExtract()
-      case 'marketing': return renderMarketing()
-      case 'messaging': return renderMessaging()
-      case 'tools': return renderTools()
-      default: return renderLogin()
-    }
+  const renderAutoReplyBody = () => (
+    <div className="space-y-4">
+      <p className="text-xs text-secondary-500 bg-secondary-50 p-3 rounded-lg">آلية العمل: ينتقل لرابط المنشور، يمرر على التعليقات واحداً تلو الآخر، يضغط على زر "رد" ويكتب الرد تلقائياً</p>
+      <div><label className="label-field">رابط المنشور</label><input type="url" className="input-field" placeholder="https://facebook.com/.../posts/..." value={replyPostUrl} onChange={e => setReplyPostUrl(e.target.value)} /></div>
+      <div><label className="label-field">نص الرد</label><textarea className="textarea-field" rows={3} value={replyText} onChange={e => setReplyText(e.target.value)} placeholder="اكتب ردك التلقائي..." /></div>
+      <div><label className="label-field">عدد التعليقات: {replyLimit}</label><input type="range" min="1" max="50" value={replyLimit} onChange={e => setReplyLimit(parseInt(e.target.value))} className="w-full accent-purple-600" /></div>
+      {renderResultsTable('auto-reply', ['#', 'التفاصيل', 'الحالة'], 'facebook-auto-reply', 'simple')}
+    </div>
+  )
+  const autoReplyFooter = (<button onClick={handleAutoReply} disabled={loading} className="btn-primary w-full" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><Bot size={18} /> بدء الرد التلقائي</>}</button>)
+
+  const renderMentionBody = () => (
+    <div className="space-y-4">
+      <p className="text-xs text-secondary-500 bg-secondary-50 p-3 rounded-lg">آلية العمل: ينتقل لكل منشور، يكتب تعليق فيه @اسم_المستخدم لكل شخص في القائمة</p>
+      <div><label className="label-field">روابط المنشورات (سطر لكل منشور)</label><textarea className="textarea-field" rows={3} value={mentionUrls} onChange={e => setMentionUrls(e.target.value)} placeholder="https://facebook.com/.../posts/..." /></div>
+      <div><label className="label-field">أسماء المستخدمين للمنشن (سطر لكل اسم)</label><textarea className="textarea-field" rows={3} value={mentionUsernames} onChange={e => setMentionUsernames(e.target.value)} placeholder="username1&#10;user2&#10;@user3" /></div>
+      <div><label className="label-field">نص التعليق (اختياري)</label><textarea className="textarea-field" rows={2} value={mentionText} onChange={e => setMentionText(e.target.value)} placeholder="...تعليقك مع المنشن" /></div>
+      {renderResultsTable('mention', ['#', 'التفاصيل', 'الحالة'], 'facebook-mention', 'simple')}
+    </div>
+  )
+  const mentionFooter = (<button onClick={handleMention} disabled={loading} className="btn-primary w-full" style={{ background: 'linear-gradient(135deg, #f97316, #c2410c)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><AtSign size={18} /> بدء المنشن</>}</button>)
+
+  const renderSendMessagesBody = () => (
+    <div className="space-y-4">
+      <div><label className="label-field">قائمة المستلمين (اسم مستخدم أو ID - سطر لكل مستلم)</label><textarea className="textarea-field" rows={5} value={recipientsText} onChange={e => setRecipientsText(e.target.value)} placeholder="user1&#10;user2&#10;1000123456789" /></div>
+      <div><label className="label-field">نص الرسالة</label><textarea className="textarea-field" rows={5} value={broadcastMessage} onChange={e => setBroadcastMessage(e.target.value)} placeholder="اكتب رسالتك هنا..." /></div>
+      {renderResultsTable('send-messages', ['#', 'المستلم', 'الحالة', 'خطأ'], 'facebook-messages', 'recipient')}
+    </div>
+  )
+  const sendMessagesFooter = (<button onClick={handleSendMessages} disabled={loading} className="btn-primary w-full" style={{ background: 'linear-gradient(135deg, #0ea5e9, #0369a1)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><Send size={18} /> إرسال الرسائل</>}</button>)
+
+  const renderPageSendMessagesBody = () => (
+    <div className="space-y-4">
+      <p className="text-xs text-secondary-500 bg-secondary-50 p-3 rounded-lg">يجب أن تكون أدمن في الصفحة. سيتم التبديل للصفحة تلقائياً قبل الإرسال.</p>
+      <div><label className="label-field">رابط الصفحة</label><input type="url" className="input-field" placeholder="https://facebook.com/your-page" value={pageMsgUrl} onChange={e => setPageMsgUrl(e.target.value)} /></div>
+      <div><label className="label-field">قائمة المستلمين (سطر لكل مستلم)</label><textarea className="textarea-field" rows={4} value={pageMsgRecipients} onChange={e => setPageMsgRecipients(e.target.value)} placeholder="user1&#10;user2" /></div>
+      <div><label className="label-field">نص الرسالة</label><textarea className="textarea-field" rows={4} value={pageMsgText} onChange={e => setPageMsgText(e.target.value)} placeholder="اكتب رسالتك هنا..." /></div>
+      {renderResultsTable('page-send-messages', ['#', 'المستلم', 'الحالة', 'خطأ'], 'facebook-page-messages', 'recipient')}
+    </div>
+  )
+  const pageSendMessagesFooter = (<button onClick={handlePageSendMessages} disabled={loading} className="btn-primary w-full" style={{ background: 'linear-gradient(135deg, #0891b2, #155e75)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><Megaphone size={18} /> إرسال من الصفحة</>}</button>)
+
+  const renderFriendRequestsBody = () => (
+    <div className="space-y-4">
+      <div><label className="label-field">روابط الحسابات (سطر لكل رابط)</label><textarea className="textarea-field" rows={6} value={friendRequestUrls} onChange={e => setFriendRequestUrls(e.target.value)} placeholder="https://facebook.com/username1&#10;https://facebook.com/username2" /></div>
+      {renderResultsTable('friend-requests', ['#', 'التفاصيل', 'الحالة'], 'facebook-friend-requests', 'simple')}
+    </div>
+  )
+  const friendRequestsFooter = (<button onClick={handleFriendRequests} disabled={loading} className="btn-primary w-full" style={{ background: 'linear-gradient(135deg, #22c55e, #15803d)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><UserPlus size={18} /> إرسال الطلبات</>}</button>)
+
+  const renderDeleteFriendsBody = () => (
+    <div className="space-y-4">
+      <p className="text-sm text-red-500 flex items-center gap-1"><AlertCircle size={16} /> تحذير: هذا الإجراء لا يمكن التراجع عنه!</p>
+      <div className="flex gap-4">
+        <label className="flex items-center gap-2 cursor-pointer"><input type="radio" name="deleteMode" checked={deleteFriendsMode === 'all'} onChange={() => setDeleteFriendsMode('all')} className="w-4 h-4 accent-red-600" /><span className="text-sm">حذف الكل</span></label>
+        <label className="flex items-center gap-2 cursor-pointer"><input type="radio" name="deleteMode" checked={deleteFriendsMode === 'selected'} onChange={() => setDeleteFriendsMode('selected')} className="w-4 h-4 accent-red-600" /><span className="text-sm">تحديد أصدقاء</span></label>
+      </div>
+      {deleteFriendsMode === 'all' && (
+        <div><label className="label-field">عدد الأصدقاء: {deleteFriendsLimit}</label><input type="range" min="5" max="200" value={deleteFriendsLimit} onChange={e => setDeleteFriendsLimit(parseInt(e.target.value))} className="w-full accent-red-600" /></div>
+      )}
+      {deleteFriendsMode === 'selected' && (
+        <div><label className="label-field">روابط الأصدقاء (سطر لكل رابط)</label><textarea className="textarea-field" rows={5} value={deleteFriendsUrls} onChange={e => setDeleteFriendsUrls(e.target.value)} placeholder="https://facebook.com/username1" /></div>
+      )}
+      {renderResultsTable('delete-friends', ['#', 'التفاصيل', 'الحالة'], 'facebook-delete-friends', 'simple')}
+    </div>
+  )
+  const deleteFriendsFooter = (<button onClick={handleDeleteFriends} disabled={loading} className="btn-danger w-full">{loading ? <Loader2 size={18} className="animate-spin" /> : <><Trash2 size={18} /> حذف الأصدقاء</>}</button>)
+
+  const renderInteractionFarmBody = () => (
+    <div className="space-y-4">
+      <div><label className="label-field">نوع التفاعل</label><select className="select-field" value={interactionAction} onChange={e => setInteractionAction(e.target.value)}><option value="like">إعجاب</option><option value="love">حب</option><option value="comment">تعليق عشوائي</option></select></div>
+      <div><label className="label-field">روابط المنشورات (سطر لكل رابط)</label><textarea className="textarea-field" rows={6} value={interactionUrls} onChange={e => setInteractionUrls(e.target.value)} placeholder="https://facebook.com/.../posts/..." /></div>
+      {renderResultsTable('interaction-farm', ['#', 'التفاصيل', 'الحالة'], 'facebook-interaction', 'simple')}
+    </div>
+  )
+  const interactionFarmFooter = (<button onClick={handleInteractionFarm} disabled={loading} className="btn-primary w-full" style={{ background: 'linear-gradient(135deg, #a855f7, #7e22ce)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><ThumbsUp size={18} /> بدء التفاعل</>}</button>)
+
+  const renderDeletePostsBody = () => (
+    <div className="space-y-4">
+      <p className="text-sm text-red-500 flex items-center gap-1"><AlertCircle size={16} /> تحذير: هذا الإجراء لا يمكن التراجع عنه!</p>
+      <div><label className="label-field">عدد المنشورات: {deletePostsLimit}</label><input type="range" min="1" max="50" value={deletePostsLimit} onChange={e => setDeletePostsLimit(parseInt(e.target.value))} className="w-full accent-red-600" /></div>
+      {renderResultsTable('delete-posts', ['#', 'التفاصيل', 'الحالة'], 'facebook-delete-posts', 'simple')}
+    </div>
+  )
+  const deletePostsFooter = (<button onClick={handleDeletePosts} disabled={loading} className="btn-danger w-full">{loading ? <Loader2 size={18} className="animate-spin" /> : <><Trash2 size={18} /> حذف المنشورات</>}</button>)
+
+  const renderAnalyzeGroupBody = () => (
+    <div className="space-y-4">
+      <div><label className="label-field">رابط المجموعة</label><input type="url" className="input-field" placeholder="https://facebook.com/groups/..." value={analyzeGroupUrl} onChange={e => setAnalyzeGroupUrl(e.target.value)} /></div>
+      {renderResultsTable('analyze-group', ['#', 'التفاصيل', 'الحالة'], 'facebook-analyze-group', 'simple')}
+    </div>
+  )
+  const analyzeGroupFooter = (<button onClick={handleAnalyzeGroup} disabled={loading} className="btn-primary w-full" style={{ background: 'linear-gradient(135deg, #6366f1, #4338ca)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><BarChart3 size={18} /> تحليل</>}</button>)
+
+  const renderAddToGroupChatBody = () => (
+    <div className="space-y-4">
+      <p className="text-xs text-secondary-500 bg-secondary-50 p-3 rounded-lg">آلية العمل: يفتح رابط مجموعة الشات، يضغط "إضافة أعضاء"، يبحث عن كل اسم مستخدم ويضيفه واحد تلو الآخر.</p>
+      <div><label className="label-field">رابط مجموعة الشات</label><input type="url" className="input-field" placeholder="https://facebook.com/messages/t/..." value={groupChatUrl} onChange={e => setGroupChatUrl(e.target.value)} /></div>
+      <div><label className="label-field">أسماء المستخدمين (سطر لكل اسم)</label><textarea className="textarea-field" rows={5} value={addUsernames} onChange={e => setAddUsernames(e.target.value)} placeholder="username1&#10;user2" /></div>
+      {renderResultsTable('add-to-group-chat', ['#', 'التفاصيل', 'الحالة'], 'facebook-add-to-group-chat', 'simple')}
+    </div>
+  )
+  const addToGroupChatFooter = (<button onClick={handleAddToGroupChat} disabled={loading} className="btn-primary w-full" style={{ background: 'linear-gradient(135deg, #ec4899, #be185d)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><UserPlus size={18} /> إضافة للمجموعة</>}</button>)
+
+  const renderSendPageMessagesBody = () => (
+    <div className="space-y-4">
+      <p className="text-xs text-secondary-500 bg-secondary-50 p-3 rounded-lg">آلية العمل: ينتقل لكل صفحة، يضغط زر "رسالة"، يكتب الرسالة ويرسلها تلقائياً.</p>
+      <div><label className="label-field">روابط الصفحات (سطر لكل رابط)</label><textarea className="textarea-field" rows={5} value={sendPageUrls} onChange={e => setSendPageUrls(e.target.value)} placeholder="https://facebook.com/page1&#10;https://facebook.com/page2" /></div>
+      <div><label className="label-field">نص الرسالة</label><textarea className="textarea-field" rows={4} value={sendPageMessage} onChange={e => setSendPageMessage(e.target.value)} placeholder="مرحباً، أود التعرف على خدماتكم..." /></div>
+      {renderResultsTable('send-page-messages', ['#', 'الاسم', 'معرف المستخدم', 'الرابط', 'الهاتف', 'الحالة'], 'facebook-send-page-messages', 'detailed')}
+    </div>
+  )
+  const sendPageMessagesFooter = (<button onClick={handleSendPageMessages} disabled={loading} className="btn-primary w-full" style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><Send size={18} /> إرسال للصفحات</>}</button>)
+
+  const renderUsersToIdsBody = () => (
+    <div className="space-y-4">
+      <div><label className="label-field">أسماء المستخدمين (سطر لكل اسم)</label><textarea className="textarea-field" rows={6} value={usersToIds} onChange={e => setUsersToIds(e.target.value)} placeholder="username1&#10;username2" /></div>
+      {renderResultsTable('users-to-ids', ['#', 'الاسم', 'معرف المستخدم', 'الرابط', 'الهاتف', 'الحالة'], 'facebook-users-to-ids', 'detailed')}
+    </div>
+  )
+  const usersToIdsFooter = (<button onClick={handleUsersToIds} disabled={loading} className="btn-primary w-full" style={{ background: 'linear-gradient(135deg, #14b8a6, #0f766e)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><Copy size={18} /> تحويل</>}</button>)
+
+  const renderLinksToIdsBody = () => (
+    <div className="space-y-4">
+      <div><label className="label-field">قائمة الروابط (سطر لكل رابط)</label><textarea className="textarea-field" rows={6} value={linksToIds} onChange={e => setLinksToIds(e.target.value)} placeholder="https://facebook.com/profile.php?id=...&#10;https://facebook.com/username" /></div>
+      {renderResultsTable('links-to-ids', ['#', 'الاسم', 'معرف المستخدم', 'الرابط', 'الهاتف', 'الحالة'], 'facebook-links-to-ids', 'detailed')}
+    </div>
+  )
+  const linksToIdsFooter = (<button onClick={handleLinksToIds} disabled={loading} className="btn-primary w-full" style={{ background: 'linear-gradient(135deg, #eab308, #a16207)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><FileText size={18} /> تحويل</>}</button>)
+
+  const panelMap: Record<Exclude<ActiveTool, null>, { body: React.ReactNode; footer: React.ReactNode }> = {
+    extract: { body: renderExtractBody(), footer: extractFooter },
+    'post-to-groups': { body: renderPostToGroupsBody(), footer: postToGroupsFooter },
+    'share-post': { body: renderSharePostBody(), footer: sharePostFooter },
+    'auto-reply': { body: renderAutoReplyBody(), footer: autoReplyFooter },
+    mention: { body: renderMentionBody(), footer: mentionFooter },
+    'send-messages': { body: renderSendMessagesBody(), footer: sendMessagesFooter },
+    'page-send-messages': { body: renderPageSendMessagesBody(), footer: pageSendMessagesFooter },
+    'friend-requests': { body: renderFriendRequestsBody(), footer: friendRequestsFooter },
+    'delete-friends': { body: renderDeleteFriendsBody(), footer: deleteFriendsFooter },
+    'interaction-farm': { body: renderInteractionFarmBody(), footer: interactionFarmFooter },
+    'delete-posts': { body: renderDeletePostsBody(), footer: deletePostsFooter },
+    'analyze-group': { body: renderAnalyzeGroupBody(), footer: analyzeGroupFooter },
+    'add-to-group-chat': { body: renderAddToGroupChatBody(), footer: addToGroupChatFooter },
+    'send-page-messages': { body: renderSendPageMessagesBody(), footer: sendPageMessagesFooter },
+    'users-to-ids': { body: renderUsersToIdsBody(), footer: usersToIdsFooter },
+    'links-to-ids': { body: renderLinksToIdsBody(), footer: linksToIdsFooter },
   }
+
+  const openTool = (toolId: Exclude<ActiveTool, null>) => {
+    if (!sessionId) {
+      showMsg('يرجى تسجيل الدخول أولاً', true)
+      setShowLoginPanel(true)
+      return
+    }
+    setActiveTool(toolId)
+  }
+
+  const renderToolCard = (tool: ToolDef) => (
+    <ToolCard
+      key={tool.id}
+      icon={tool.icon}
+      name={tool.name}
+      description={tool.description}
+      accent={tool.accent}
+      accentGradient={tool.accentGradient}
+      badge={!sessionId ? 'يتطلب دخول' : undefined}
+      badgeTone={!sessionId ? 'warning' : 'primary'}
+      onClick={() => openTool(tool.id)}
+    />
+  )
 
   return (
     <div className="space-y-6">
@@ -852,29 +1025,52 @@ export default function FacebookModule() {
           {message || error}
         </div>
       )}
-      <div className="flex gap-1 p-1.5 rounded-xl overflow-x-auto" style={{ background: 'rgba(241,245,249,0.8)', backdropFilter: 'blur(8px)', border: '1px solid rgba(226,232,240,0.5)' }}>
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab.id
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className="tab-button"
-              style={isActive ? {
-                color: '#0A6CF1',
-                background: 'white',
-                borderRadius: '0.5rem',
-                boxShadow: '0 1px 4px rgba(10, 108, 241, 0.15), 0 4px 12px rgba(10, 108, 241, 0.08)',
-                fontWeight: 600,
-              } : {}}
-            >
-              <tab.icon size={16} />
-              <span>{tab.label}</span>
-            </button>
-          )
-        })}
-      </div>
-      {renderContent()}
+
+      {renderSessionCard()}
+
+      <ToolGrid title="استخراج وبحث" subtitle="استخراج بيانات شامل وبحث متقدم" icon={Download} accent="#0A6CF1" cols={4}>
+        {extractCategoryTools.map(renderToolCard)}
+      </ToolGrid>
+
+      <ToolGrid title="التسويق والنشر" subtitle="أدوات النشر والمشاركة والتفاعل" icon={Megaphone} accent="#10b981" cols={4}>
+        {marketingTools.map(renderToolCard)}
+      </ToolGrid>
+
+      <ToolGrid title="المراسلة" subtitle="إرسال رسائل من الملف الشخصي أو الصفحة" icon={Send} accent="#0ea5e9" cols={4}>
+        {messagingTools.map(renderToolCard)}
+      </ToolGrid>
+
+      <ToolGrid title="أدوات متقدمة" subtitle="إدارة الأصدقاء والمنشورات والتحويلات" icon={Bot} accent="#8b5cf6" cols={4}>
+        {advancedTools.map(renderToolCard)}
+      </ToolGrid>
+
+      <ToolPanel
+        open={showLoginPanel}
+        onClose={() => setShowLoginPanel(false)}
+        title="تسجيل الدخول إلى Facebook"
+        subtitle="ابدأ جلسة جديدة لتشغيل الأدوات"
+        icon={LogIn}
+        accent={ACCENT}
+        accentGradient={ACCENT_GRADIENT}
+        width="md"
+        footer={loginFooter}
+      >
+        {renderLoginPanelContent()}
+      </ToolPanel>
+
+      <ToolPanel
+        open={activeTool !== null}
+        onClose={() => setActiveTool(null)}
+        title={currentTool?.name ?? ''}
+        subtitle={currentTool?.description}
+        icon={currentTool?.icon}
+        accent={currentTool?.accent ?? ACCENT}
+        accentGradient={currentTool?.accentGradient}
+        width="lg"
+        footer={activeTool ? panelMap[activeTool].footer : null}
+      >
+        {activeTool ? panelMap[activeTool].body : null}
+      </ToolPanel>
     </div>
   )
 }

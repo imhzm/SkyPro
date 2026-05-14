@@ -2,19 +2,29 @@ import { useState, useRef } from 'react'
 import { usePlatform } from '../../hooks/usePlatform'
 import { useAccountsStore } from '../../stores/accountsStore'
 import AccountSelector from '../../components/common/AccountSelector'
+import ToolGrid from '../../components/tools/ToolGrid'
+import ToolCard from '../../components/tools/ToolCard'
+import ToolPanel from '../../components/tools/ToolPanel'
 import {
   LogIn, Download, Heart, UserPlus, AtSign, Upload,
   AlertCircle, CheckCircle, Loader2, Trash2, FileSpreadsheet,
-  Eye, EyeOff, Settings, Megaphone, ExternalLink, Users, MessageSquare
+  Eye, EyeOff, Settings, Megaphone, ExternalLink, MessageSquare,
+  LogOut, Wrench, Music, Play,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 
-type ToolTab = 'login' | 'extract' | 'mention' | 'upload' | 'tools'
+type ActiveTool = 'extract' | 'mention' | 'download' | 'upload' | 'more' | null
+type ResultsOwner = 'extract' | 'mention' | 'download' | 'upload' | null
 
-const TT = '#EE1174'
+const ACCENT = '#fe2c55'
+const ACCENT_GRADIENT = 'linear-gradient(135deg, #fe2c55, #25f4ee)'
 
 export default function TiktokModule() {
-  const [activeTab, setActiveTab] = useState<ToolTab>('login')
   const { loading, setLoading, message, error, showMsg, sessionId, setSessionId, accounts, results, loadResults, handleExport, clearResults, deleteResult, clearSession, cycleActive, cycleProgress, startCycle, stopCycle } = usePlatform('tiktok')
+
+  const [activeTool, setActiveTool] = useState<ActiveTool>(null)
+  const [showLoginPanel, setShowLoginPanel] = useState(false)
+  const [resultsOwner, setResultsOwner] = useState<ResultsOwner>(null)
 
   const [loginForm, setLoginForm] = useState({ username: '', password: '', proxy: '' })
   const [showPassword, setShowPassword] = useState(false)
@@ -45,7 +55,7 @@ export default function TiktokModule() {
     setLoading(true)
     try {
       const res = await window.electronAPI.launchBrowser({ platform: 'tiktok', headless: false, proxy: loginForm.proxy || undefined })
-      if (res.success) { setSessionId(res.sessionId || ''); showMsg('تم فتح المتصفح - سجل دخول يدوياً على TikTok'); await loadAllAccounts() }
+      if (res.success) { setSessionId(res.sessionId || ''); showMsg('تم فتح المتصفح - سجل دخول يدوياً على TikTok'); await loadAllAccounts(); setShowLoginPanel(false) }
       else showMsg(res.error || 'فشل فتح المتصفح', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
@@ -55,6 +65,7 @@ export default function TiktokModule() {
     if (!ensureSession()) return
     if (!extractInput) { showMsg('أدخل الرابط أو اسم المستخدم', true); return }
     setLoading(true)
+    setResultsOwner('extract')
     try {
       let res: any
       if (extractType === 'comments') res = await window.electronAPI.tiktokExtractComments({ sessionId, videoUrl: extractInput, limit: extractLimit })
@@ -68,6 +79,7 @@ export default function TiktokModule() {
   const handleDownload = async () => {
     if (!downloadVideoUrl) { showMsg('أدخل رابط الفيديو', true); return }
     setLoading(true)
+    setResultsOwner('download')
     try {
       const res = await window.electronAPI.videoDownload({ url: downloadVideoUrl, saveDir: downloadSavePath })
       if (res.success) showMsg(`تم التحميل: ${res.path}`)
@@ -76,7 +88,11 @@ export default function TiktokModule() {
     setLoading(false)
   }
 
-  const handleClearResults = () => { setToolResults([]); clearResults() }
+  const handleClearResults = () => {
+    setToolResults([])
+    setResultsOwner(null)
+    clearResults()
+  }
 
   const extractStubTools = [
     { id: 'search', name: 'استخراج من البحث', desc: 'نتائج البحث', icon: Download, soon: true },
@@ -90,245 +106,440 @@ export default function TiktokModule() {
     { id: 'schedule-posts', name: 'جدولة المنشورات', desc: 'نشر مجدول', icon: Upload, soon: true },
   ]
 
-  const tabs: { id: ToolTab; label: string; icon: any }[] = [
-    { id: 'login', label: 'تسجيل الدخول', icon: LogIn },
-    { id: 'extract', label: 'استخراج', icon: Download },
-    { id: 'mention', label: 'منشن', icon: AtSign },
-    { id: 'upload', label: 'رفع', icon: Upload },
-    { id: 'tools', label: 'أدوات إضافية', icon: Settings },
+  const tools: Array<{
+    id: Exclude<ActiveTool, null>
+    name: string
+    description: string
+    icon: LucideIcon
+    accent: string
+    accentGradient: string
+    requiresSession: boolean
+  }> = [
+    { id: 'extract', name: 'استخراج البيانات', description: 'تعليقات الفيديوهات والمتابعين', icon: Download, accent: '#fe2c55', accentGradient: 'linear-gradient(135deg, #fe2c55, #25f4ee)', requiresSession: true },
+    { id: 'mention', name: 'منشن جماعي', description: 'منشن مستخدمين في فيديوهات', icon: AtSign, accent: '#0ea5e9', accentGradient: 'linear-gradient(135deg, #0ea5e9, #0369a1)', requiresSession: true },
+    { id: 'download', name: 'تحميل فيديو', description: 'تحميل فيديوهات TikTok', icon: Play, accent: '#22c55e', accentGradient: 'linear-gradient(135deg, #22c55e, #15803d)', requiresSession: false },
+    { id: 'upload', name: 'نشر فيديو', description: 'نشر فيديوهات (قريباً)', icon: Upload, accent: '#a855f7', accentGradient: 'linear-gradient(135deg, #a855f7, #6d28d9)', requiresSession: true },
+    { id: 'more', name: 'أدوات إضافية', description: 'أدوات قيد التطوير', icon: Settings, accent: '#64748b', accentGradient: 'linear-gradient(135deg, #64748b, #334155)', requiresSession: false },
   ]
 
-  const renderLogin = () => (
-    <div className="grid grid-cols-2 gap-6">
-      <div className="card">
-        <h3 className="font-bold text-secondary-900 mb-4 text-lg flex items-center gap-2"><LogIn size={20} style={{ color: TT }} /> فتح TikTok</h3>
-        {sessionId && (
-          <div className="mb-4 p-4 bg-success-50 rounded-xl border border-success-100">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <CheckCircle size={20} className="text-success-600" />
-                <div><p className="font-bold text-success-700">جلسة نشطة</p><p className="text-xs text-success-600">يمكنك استخدام جميع الأدوات الآن</p></div>
-              </div>
-              <button onClick={clearSession} className="btn-danger text-xs px-3 py-1.5"><LogIn size={14} /> إنهاء الجلسة</button>
+  const currentTool = tools.find(t => t.id === activeTool) ?? null
+
+  // ----- Session card -----
+  const renderSessionCard = () => (
+    <div
+      className="rounded-2xl overflow-hidden"
+      style={{
+        background: 'linear-gradient(135deg, rgba(254,44,85,0.06), rgba(37,244,238,0.04))',
+        border: '1px solid rgba(254,44,85,0.18)',
+        boxShadow: '0 4px 20px rgba(254,44,85,0.06)',
+      }}
+    >
+      <div className="px-5 py-4 flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-3">
+          <div
+            className="w-12 h-12 rounded-2xl flex items-center justify-center text-white shrink-0"
+            style={{ background: ACCENT_GRADIENT, boxShadow: '0 4px 12px rgba(254,44,85,0.3)' }}
+          >
+            <Music size={22} />
+          </div>
+          <div>
+            <h3 className="font-bold text-secondary-900 text-base leading-tight">TikTok</h3>
+            <div className="flex items-center gap-2 mt-1">
+              <span
+                className="inline-block w-2 h-2 rounded-full"
+                style={{
+                  background: sessionId ? '#22c55e' : '#94a3b8',
+                  boxShadow: sessionId ? '0 0 8px rgba(34,197,94,0.6)' : 'none',
+                }}
+              />
+              <span className="text-xs font-medium" style={{ color: sessionId ? '#16a34a' : '#64748b' }}>
+                {sessionId ? 'جلسة نشطة — جاهز للعمل' : 'لا توجد جلسة — افتح المتصفح أولاً'}
+              </span>
+              {accounts.length > 0 && (
+                <span className="text-[11px] text-secondary-500">• {accounts.length} حساب محفوظ</span>
+              )}
             </div>
           </div>
-        )}
-        <div className="mb-4 p-3 rounded-lg text-sm" style={{ background: 'rgba(238,17,116,0.06)', border: '1px solid rgba(238,17,116,0.2)', color: '#D81268' }}>
-          <AlertCircle size={16} className="inline ml-1" /> TikTok يتطلب تسجيل الدخول يدوياً - سيتم فتح المتصفح وأنت تكمل الدخول بنفسك
         </div>
-        {tiktokAccounts.length > 0 && (
-          <div className="mb-4 p-4 rounded-xl border" style={{ background: 'rgba(238,17,116,0.04)', borderColor: 'rgba(238,17,116,0.1)' }}>
-            <label className="label-field">الحسابات المحفوظة</label>
-            <select className="select-field mb-2" value={selectedAccountId} onChange={e => {
-              const id = e.target.value; setSelectedAccountId(id)
+
+        <div className="flex items-center gap-2">
+          {sessionId ? (
+            <button onClick={clearSession} className="btn-secondary text-xs">
+              <LogOut size={14} /> إنهاء الجلسة
+            </button>
+          ) : (
+            <button
+              onClick={() => setShowLoginPanel(true)}
+              className="btn-primary text-sm"
+              style={{ background: ACCENT_GRADIENT }}
+            >
+              <LogIn size={16} /> تسجيل الدخول
+            </button>
+          )}
+        </div>
+      </div>
+
+      {tiktokAccounts.length > 0 && !sessionId && (
+        <div
+          className="px-5 py-3 border-t flex items-center gap-3 flex-wrap"
+          style={{ borderColor: 'rgba(254,44,85,0.12)', background: 'rgba(255,255,255,0.5)' }}
+        >
+          <span className="text-xs font-semibold text-secondary-600 shrink-0">حسابات محفوظة:</span>
+          <select
+            className="select-field flex-1 min-w-[200px] max-w-xs text-sm py-2"
+            value={selectedAccountId}
+            onChange={e => {
+              const id = e.target.value
+              setSelectedAccountId(id)
               const acc = tiktokAccounts.find(a => a.id.toString() === id)
               if (acc) setLoginForm({ ...loginForm, username: acc.username, password: acc.password || '' })
-            }}>
-              <option value="">-- اختر حساب --</option>
-              {tiktokAccounts.map(acc => (<option key={acc.id} value={acc.id}>{acc.username} {acc.password?.trim() ? '(باسورد محفوظ)' : '(بدون باسورد)'}</option>))}
-            </select>
-            <div className="my-3 border-t border-secondary-100" />
-          </div>
-        )}
-        <div className="space-y-4">
-          <div><label className="label-field">اسم المستخدم</label><input type="text" className="input-field" placeholder="@username" value={loginForm.username} onChange={e => setLoginForm({ ...loginForm, username: e.target.value })} /></div>
-          <div><label className="label-field">كلمة المرور (اختياري)</label><div className="relative"><input ref={passwordRef} type={showPassword ? 'text' : 'password'} className="input-field pl-10" placeholder="••••••••" value={loginForm.password} onChange={e => setLoginForm({ ...loginForm, password: e.target.value })} /><button onClick={() => setShowPassword(!showPassword)} className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400 hover:text-secondary-600">{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></div></div>
-          <div><label className="label-field">بروكسي (اختياري)</label><input type="text" className="input-field" placeholder="IP:Port أو http://user:pass@ip:port" value={loginForm.proxy} onChange={e => setLoginForm({ ...loginForm, proxy: e.target.value })} /></div>
-          <button onClick={handleLogin} disabled={loading || !loginForm.username} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #EE1174, #D81268)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><ExternalLink size={18} /> فتح المتصفح</>}</button>
-        </div>
-      </div>
-      <div className="card">
-        <h3 className="font-bold text-secondary-900 mb-4 text-lg">الحسابات المحفوظة</h3>
-        {accounts.length === 0 ? (
-          <div className="text-center py-12 text-secondary-400"><Users size={48} className="mx-auto mb-3 opacity-30" /><p>لا توجد حسابات محفوظة</p><p className="text-xs mt-1">افتح TikTok لحفظ حسابك</p></div>
-        ) : (
-          <div className="space-y-2 max-h-[400px] overflow-y-auto">
-            {accounts.map((acc: any) => (
-              <div key={acc.id} className="flex items-center justify-between p-3 rounded-xl bg-secondary-50 border border-secondary-100 hover:bg-secondary-100 transition-colors">
-                <div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold" style={{ background: 'rgba(238,17,116,0.1)', color: TT }}>{(acc.username || '?')[0].toUpperCase()}</div><div><p className="font-medium text-secondary-900 text-sm">{acc.username || 'حساب TikTok'}</p><p className="text-xs text-secondary-500">{new Date(acc.created_at || Date.now()).toLocaleDateString('ar-EG')}</p></div></div>
-                <span className={`badge ${acc.status === 'active' ? 'badge-success' : 'badge-danger'}`}>{acc.status === 'active' ? 'نشط' : 'غير نشط'}</span>
-              </div>
+            }}
+          >
+            <option value="">-- اختر حساب --</option>
+            {tiktokAccounts.map(acc => (
+              <option key={acc.id} value={acc.id}>
+                {acc.username} {acc.password?.trim() ? '(باسورد محفوظ)' : '(بدون باسورد)'}
+              </option>
             ))}
-          </div>
-        )}
-      </div>
+          </select>
+        </div>
+      )}
     </div>
   )
 
-  const renderExtract = () => {
-    const displayResults = toolResults.length > 0 ? toolResults : results
-    return (
-      <div className="space-y-6">
-        <AccountSelector
-          platformId="tiktok"
-          accounts={allAccounts}
-          cycleActive={cycleActive}
-          cycleProgress={cycleProgress}
-          onStartCycle={(selectedAccounts, task, settings) => startCycle(selectedAccounts, task, settings)}
-          onStopCycle={stopCycle}
-          extractTask={{ type: 'extract', params: { extractType, url: extractInput, limit: extractLimit } }}
-          sendTask={{ type: 'send', params: { message: mentionMessage } }}
-        />
-        <div className="card">
-          <h3 className="font-bold text-secondary-900 mb-4 text-lg flex items-center gap-2"><Download size={20} style={{ color: TT }} /> استخراج بيانات TikTok</h3>
-          {!sessionId && <div className="mb-4 p-3 bg-warning-50 text-warning-700 rounded-lg text-sm"><AlertCircle size={16} className="inline ml-1" /> يرجى فتح المتصفح أولاً من تبويب "تسجيل الدخول"</div>}
-          <div className="space-y-4">
-            <div><label className="label-field">نوع الاستخراج</label>
-              <select className="select-field" value={extractType} onChange={e => setExtractType(e.target.value)}>
-                <option value="comments">استخراج التعليقات (رابط فيديو)</option>
-                <option value="followers">استخراج المتابعين (اسم المستخدم)</option>
-              </select>
-            </div>
-            <div><label className="label-field">{extractType === 'comments' ? 'رابط الفيديو' : 'اسم المستخدم'}</label><input type="text" className="input-field" placeholder={extractType === 'comments' ? 'https://tiktok.com/...' : '@username'} value={extractInput} onChange={e => setExtractInput(e.target.value)} /></div>
-            <div><label className="label-field">الحد الأقصى: {extractLimit}</label><input type="range" min="10" max="500" value={extractLimit} onChange={e => setExtractLimit(parseInt(e.target.value))} className="w-full" style={{ accentColor: TT }} /></div>
-            <button onClick={handleExtract} disabled={loading || !sessionId} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #EE1174, #D81268)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><Download size={18} /> بدء الاستخراج</>}</button>
+  // ----- Login panel -----
+  const renderLoginPanelContent = () => (
+    <div className="space-y-5">
+      {sessionId && (
+        <div className="p-4 rounded-xl border" style={{ background: 'rgba(34,197,94,0.06)', borderColor: 'rgba(34,197,94,0.25)' }}>
+          <div className="flex items-center gap-2">
+            <CheckCircle size={18} className="text-success-600" />
+            <p className="font-semibold text-success-700 text-sm">جلسة نشطة — يمكنك استخدام جميع الأدوات</p>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-4">
-          {extractStubTools.map(tool => (
-            <div key={tool.id} className="tool-card text-center relative opacity-60 cursor-not-allowed">
-              <span className="absolute top-1 left-1 text-[9px] bg-secondary-200 text-secondary-600 px-1.5 py-0.5 rounded font-medium">قريباً</span>
-              <div className="w-10 h-10 rounded-xl mx-auto flex items-center justify-center" style={{ background: 'rgba(238,17,116,0.08)' }}><tool.icon size={20} style={{ color: TT }} /></div>
-              <h4 className="font-bold text-secondary-900 text-xs mt-2">{tool.name}</h4>
-              <p className="text-[10px] text-secondary-500">{tool.desc}</p>
-            </div>
-          ))}
+      )}
+      <div className="p-3 rounded-lg text-sm" style={{ background: 'rgba(254,44,85,0.06)', border: '1px solid rgba(254,44,85,0.2)', color: '#be123c' }}>
+        <AlertCircle size={16} className="inline ml-1" /> TikTok يتطلب تسجيل الدخول يدوياً — سيتم فتح المتصفح وأنت تكمل الدخول بنفسك
+      </div>
+      <div>
+        <label className="label-field">اسم المستخدم</label>
+        <input type="text" className="input-field" placeholder="@username" value={loginForm.username} onChange={e => setLoginForm({ ...loginForm, username: e.target.value })} />
+      </div>
+      <div>
+        <label className="label-field">كلمة المرور (اختياري)</label>
+        <div className="relative">
+          <input ref={passwordRef} type={showPassword ? 'text' : 'password'} className="input-field pl-10" placeholder="••••••••" value={loginForm.password} onChange={e => setLoginForm({ ...loginForm, password: e.target.value })} />
+          <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400 hover:text-secondary-600">
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
         </div>
-        {displayResults.length > 0 && (
-          <div className="card">
-            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-              <h3 className="font-bold text-secondary-900">النتائج ({displayResults.length})</h3>
-              <div className="flex gap-2">
-                <button onClick={() => handleExport(['الاسم', 'المعرف', 'النص', 'الرابط', 'المصدر', 'التاريخ'], 'tiktok-extract', toolResults)} className="btn-success text-sm"><FileSpreadsheet size={16} /> تصدير CSV</button>
-                <button onClick={handleClearResults} className="btn-danger text-sm"><Trash2 size={16} /> مسح الكل</button>
+      </div>
+      <div>
+        <label className="label-field">بروكسي (اختياري)</label>
+        <input type="text" className="input-field" placeholder="IP:Port أو http://user:pass@ip:port" value={loginForm.proxy} onChange={e => setLoginForm({ ...loginForm, proxy: e.target.value })} />
+      </div>
+
+      {accounts.length > 0 && (
+        <div>
+          <h4 className="font-bold text-secondary-900 text-sm mb-3">الحسابات المحفوظة على الجهاز</h4>
+          <div className="space-y-2 max-h-[280px] overflow-y-auto scroll-container pr-1">
+            {accounts.map((acc: any) => (
+              <div key={acc.id} className="flex items-center justify-between p-3 rounded-xl bg-white border border-secondary-100">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0" style={{ background: 'rgba(254,44,85,0.1)', color: ACCENT }}>
+                    {(acc.username || '?')[0].toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-medium text-secondary-900 text-sm truncate">{acc.username || 'حساب TikTok'}</p>
+                    <p className="text-[11px] text-secondary-500">
+                      {new Date(acc.created_at || Date.now()).toLocaleDateString('ar-EG')}
+                    </p>
+                  </div>
+                </div>
+                <span className={`badge ${acc.status === 'active' ? 'badge-success' : 'badge-danger'}`}>
+                  {acc.status === 'active' ? 'نشط' : 'غير نشط'}
+                </span>
               </div>
-            </div>
-            <div className="table-container" style={{ maxHeight: '500px', overflow: 'auto' }}>
-              <table className="data-table">
-                <thead><tr><th>#</th><th>الاسم</th><th>المعرف</th><th>النص</th><th>الرابط</th><th>التاريخ</th><th></th></tr></thead>
-                <tbody>
-                  {displayResults.map((r: any, i: number) => {
-                    const extra = (() => { try { return JSON.parse(r.extra_data || '{}') } catch { return {} as any } })()
-                    const name = r.name || r.username || extra.username || '-'
-                    const userId = r.username || extra.username || r.extra || '-'
-                    const text = r.text || r.content || extra.text || '-'
-                    const url = r.url || r.profile || r.link || extra.profile || extra.url || '-'
-                    return (
-                      <tr key={r.id || i}>
-                        <td className="text-secondary-500">{i + 1}</td>
-                        <td className="font-medium text-sm">{name}</td>
-                        <td className="text-xs font-mono" style={{ color: TT }}>{userId}</td>
-                        <td className="text-xs max-w-[200px] truncate">{text}</td>
-                        <td className="text-xs max-w-[150px] truncate">{url !== '-' ? <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{url.substring(0, 35)}...</a> : '-'}</td>
-                        <td className="text-xs text-secondary-400">{r.created_at ? new Date(r.created_at).toLocaleDateString('ar-EG') : '-'}</td>
-                        <td><button onClick={() => { if (r.id) { deleteResult(r.id); setToolResults(prev => prev.filter(item => item.id !== r.id)) } }} className="p-1 text-danger-500 hover:bg-danger-50 rounded"><Trash2 size={14} /></button></td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
+            ))}
           </div>
-        )}
+        </div>
+      )}
+    </div>
+  )
+
+  const loginFooter = (
+    <button
+      onClick={handleLogin}
+      disabled={loading || !loginForm.username}
+      className="btn-primary w-full disabled:opacity-50"
+      style={{ background: ACCENT_GRADIENT }}
+    >
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><ExternalLink size={18} /> فتح المتصفح</>}
+    </button>
+  )
+
+  // ----- Results table -----
+  const renderResultsTable = (owner: ResultsOwner, columns: string[], exportKey: string) => {
+    if (resultsOwner !== owner) return null
+    const displayResults = toolResults.length > 0 ? toolResults : results
+    if (displayResults.length === 0) return null
+    return (
+      <div className="mt-5 rounded-xl border border-secondary-200 bg-white/60 overflow-hidden">
+        <div className="flex items-center justify-between p-3 border-b border-secondary-100 flex-wrap gap-2">
+          <h4 className="font-bold text-secondary-900 text-sm">النتائج ({displayResults.length})</h4>
+          <div className="flex gap-2">
+            <button onClick={() => handleExport(columns, exportKey, toolResults)} className="btn-success text-xs">
+              <FileSpreadsheet size={14} /> تصدير CSV
+            </button>
+            <button onClick={handleClearResults} className="btn-danger text-xs">
+              <Trash2 size={14} /> مسح
+            </button>
+          </div>
+        </div>
+        <div className="table-container" style={{ maxHeight: '380px', overflow: 'auto' }}>
+          <table className="data-table">
+            <thead><tr>{columns.map((c, i) => <th key={i}>{c}</th>)}</tr></thead>
+            <tbody>
+              {displayResults.map((r: any, i: number) => {
+                if (owner === 'extract') {
+                  const extra = (() => { try { return JSON.parse(r.extra_data || '{}') } catch { return {} as any } })()
+                  const name = r.name || r.username || extra.username || '-'
+                  const userId = r.username || extra.username || r.extra || '-'
+                  const text = r.text || r.content || extra.text || '-'
+                  const url = r.url || r.profile || r.link || extra.profile || extra.url || '-'
+                  return (
+                    <tr key={r.id || i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium text-sm">{name}</td>
+                      <td className="text-xs font-mono" style={{ color: ACCENT }}>{userId}</td>
+                      <td className="text-xs max-w-[200px] truncate">{text}</td>
+                      <td className="text-xs max-w-[150px] truncate">{url !== '-' ? <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{url.substring(0, 35)}...</a> : '-'}</td>
+                      <td className="text-xs text-secondary-400">{r.created_at ? new Date(r.created_at).toLocaleDateString('ar-EG') : '-'}</td>
+                      <td><button onClick={() => { if (r.id) { deleteResult(r.id); setToolResults(prev => prev.filter(item => item.id !== r.id)) } }} className="p-1 text-danger-500 hover:bg-danger-50 rounded"><Trash2 size={14} /></button></td>
+                    </tr>
+                  )
+                }
+                return (
+                  <tr key={i}>
+                    <td className="text-secondary-500">{i + 1}</td>
+                    <td className="font-medium">{r.username || r.recipient || r.name || '-'}</td>
+                    <td><span className={`badge ${r.status === 'sent' || r.status === 'success' ? 'badge-success' : r.status === 'failed' || r.status === 'error' ? 'badge-danger' : 'badge-warning'}`}>{r.status || 'pending'}</span></td>
+                    <td className="text-xs text-secondary-500">{r.error || r.message || '-'}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
     )
   }
 
-  const renderMention = () => (
-    <div className="space-y-6">
-      <div className="card">
-        <h3 className="font-bold text-secondary-900 mb-4 text-lg flex items-center gap-2"><AtSign size={20} style={{ color: TT }} /> منشن</h3>
-        {!sessionId && <div className="mb-4 p-3 bg-warning-50 text-warning-700 rounded-lg text-sm"><AlertCircle size={16} className="inline ml-1" /> يرجى فتح المتصفح أولاً</div>}
-        <div className="mb-4 p-3 rounded-lg text-sm" style={{ background: 'rgba(238,17,116,0.06)', border: '1px solid rgba(238,17,116,0.2)', color: '#D81268' }}>
-          <AlertCircle size={16} className="inline ml-1" /> هذه الخاصية قيد التطوير - ستتوفر قريباً
-        </div>
-        <div className="space-y-4 opacity-60">
-          <div><label className="label-field">روابط الفيديو</label><textarea className="textarea-field" rows={4} value={mentionVideoUrls} onChange={e => setMentionVideoUrls(e.target.value)} placeholder="https://tiktok.com/..." /></div>
-          <div><label className="label-field">المستخدمين</label><textarea className="textarea-field" rows={4} value={mentionUsers} onChange={e => setMentionUsers(e.target.value)} placeholder="user1&#10;user2" /></div>
-          <div><label className="label-field">الرسالة (اختياري)</label><textarea className="textarea-field" rows={3} value={mentionMessage} onChange={e => setMentionMessage(e.target.value)} placeholder="..." /></div>
-          <button disabled className="btn-primary w-full opacity-50 cursor-not-allowed" style={{ background: 'linear-gradient(135deg, #EE1174, #D81268)' }}><AtSign size={18} /> بدء المنشن (قريباً)</button>
-        </div>
-      </div>
-    </div>
-  )
-
-  const renderUpload = () => (
-    <div className="grid grid-cols-2 gap-6">
-      <div className="card">
-        <h3 className="font-bold text-secondary-900 mb-4 text-lg flex items-center gap-2"><Download size={20} style={{ color: TT }} /> تحميل فيديو</h3>
-        <div className="space-y-4">
-          <div><label className="label-field">رابط الفيديو</label><input type="url" className="input-field" placeholder="https://tiktok.com/..." value={downloadVideoUrl} onChange={e => setDownloadVideoUrl(e.target.value)} /></div>
-          <div><label className="label-field">مسار الحفظ (اختياري)</label><input type="text" className="input-field" placeholder="C:\Downloads" value={downloadSavePath} onChange={e => setDownloadSavePath(e.target.value)} /></div>
-          <button onClick={handleDownload} disabled={loading || !downloadVideoUrl} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #EE1174, #D81268)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><Download size={18} /> تحميل</>}</button>
-        </div>
-      </div>
-      <div className="card">
-        <h3 className="font-bold text-secondary-900 mb-4 text-lg flex items-center gap-2"><Upload size={20} style={{ color: TT }} /> نشر فيديو</h3>
-        <div className="mb-4 p-3 rounded-lg text-sm" style={{ background: 'rgba(238,17,116,0.06)', border: '1px solid rgba(238,17,116,0.2)', color: '#D81268' }}>
-          <AlertCircle size={16} className="inline ml-1" /> هذه الخاصية قيد التطوير - ستتوفر قريباً
-        </div>
-        <div className="space-y-4 opacity-60">
-          <div><label className="label-field">مسار الفيديو</label><input type="text" className="input-field" placeholder="C:\video.mp4" value={uploadVideoPath} onChange={e => setUploadVideoPath(e.target.value)} /></div>
-          <div><label className="label-field">الوصف</label><textarea className="textarea-field" rows={4} value={uploadCaption} onChange={e => setUploadCaption(e.target.value)} placeholder="..." /></div>
-          <button disabled className="btn-primary w-full opacity-50 cursor-not-allowed" style={{ background: 'linear-gradient(135deg, #EE1174, #D81268)' }}><Upload size={18} /> نشر (قريباً)</button>
-        </div>
-      </div>
-    </div>
-  )
-
-  const renderTools = () => (
-    <div className="space-y-6">
+  // ----- Tool bodies -----
+  const renderExtractBody = () => (
+    <div className="space-y-5">
+      <AccountSelector
+        platformId="tiktok"
+        accounts={allAccounts}
+        cycleActive={cycleActive}
+        cycleProgress={cycleProgress}
+        onStartCycle={(selectedAccounts, task, settings) => startCycle(selectedAccounts, task, settings)}
+        onStopCycle={stopCycle}
+        extractTask={{ type: 'extract', params: { extractType, url: extractInput, limit: extractLimit } }}
+        sendTask={{ type: 'send', params: { message: mentionMessage } }}
+      />
       <div>
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #EE1174, #D81268)' }}><Settings size={16} className="text-white" /></div>
-          <h2 className="font-bold text-secondary-900 text-base">أدوات TikTok الإضافية</h2>
-        </div>
-        <div className="grid grid-cols-3 gap-4">
-          {stubTools.map(tool => (
+        <label className="label-field">نوع الاستخراج</label>
+        <select className="select-field" value={extractType} onChange={e => setExtractType(e.target.value)}>
+          <option value="comments">استخراج التعليقات (رابط فيديو)</option>
+          <option value="followers">استخراج المتابعين (اسم المستخدم)</option>
+        </select>
+      </div>
+      <div>
+        <label className="label-field">{extractType === 'comments' ? 'رابط الفيديو' : 'اسم المستخدم'}</label>
+        <input type="text" className="input-field" placeholder={extractType === 'comments' ? 'https://tiktok.com/...' : '@username'} value={extractInput} onChange={e => setExtractInput(e.target.value)} />
+      </div>
+      <div>
+        <label className="label-field">الحد الأقصى: {extractLimit}</label>
+        <input type="range" min="10" max="500" value={extractLimit} onChange={e => setExtractLimit(parseInt(e.target.value))} className="w-full" style={{ accentColor: ACCENT }} />
+      </div>
+      <div>
+        <h4 className="font-bold text-secondary-900 text-sm mb-2">أدوات استخراج إضافية</h4>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {extractStubTools.map(tool => (
             <div key={tool.id} className="tool-card text-center relative opacity-60 cursor-not-allowed">
               <span className="absolute top-1 left-1 text-[9px] bg-secondary-200 text-secondary-600 px-1.5 py-0.5 rounded font-medium">قريباً</span>
-              <div className="w-10 h-10 rounded-xl mx-auto flex items-center justify-center" style={{ background: 'rgba(238,17,116,0.08)' }}><tool.icon size={20} style={{ color: TT }} /></div>
+              <div className="w-10 h-10 rounded-xl mx-auto flex items-center justify-center" style={{ background: 'rgba(254,44,85,0.08)' }}><tool.icon size={20} style={{ color: ACCENT }} /></div>
               <h4 className="font-bold text-secondary-900 text-xs mt-2">{tool.name}</h4>
               <p className="text-[10px] text-secondary-500">{tool.desc}</p>
             </div>
           ))}
         </div>
       </div>
+      {renderResultsTable('extract', ['#', 'الاسم', 'المعرف', 'النص', 'الرابط', 'التاريخ', ''], 'tiktok-extract')}
     </div>
   )
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'login': return renderLogin()
-      case 'extract': return renderExtract()
-      case 'mention': return renderMention()
-      case 'upload': return renderUpload()
-      case 'tools': return renderTools()
-      default: return renderLogin()
-    }
+  const extractFooter = (
+    <button onClick={handleExtract} disabled={loading || !sessionId} className="btn-primary w-full disabled:opacity-50" style={{ background: ACCENT_GRADIENT }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Download size={18} /> بدء الاستخراج</>}
+    </button>
+  )
+
+  const renderMentionBody = () => (
+    <div className="space-y-5">
+      <div className="p-3 rounded-lg text-sm" style={{ background: 'rgba(254,44,85,0.06)', border: '1px solid rgba(254,44,85,0.2)', color: '#be123c' }}>
+        <AlertCircle size={16} className="inline ml-1" /> هذه الخاصية قيد التطوير - ستتوفر قريباً
+      </div>
+      <div className="space-y-4 opacity-60">
+        <div><label className="label-field">روابط الفيديو</label><textarea className="textarea-field" rows={4} value={mentionVideoUrls} onChange={e => setMentionVideoUrls(e.target.value)} placeholder="https://tiktok.com/..." /></div>
+        <div><label className="label-field">المستخدمين</label><textarea className="textarea-field" rows={4} value={mentionUsers} onChange={e => setMentionUsers(e.target.value)} placeholder="user1&#10;user2" /></div>
+        <div><label className="label-field">الرسالة (اختياري)</label><textarea className="textarea-field" rows={3} value={mentionMessage} onChange={e => setMentionMessage(e.target.value)} placeholder="..." /></div>
+      </div>
+      {renderResultsTable('mention', ['#', 'المستخدم', 'الحالة', 'التفاصيل'], 'tiktok-mention')}
+    </div>
+  )
+
+  const mentionFooter = (
+    <button disabled className="btn-primary w-full opacity-50 cursor-not-allowed" style={{ background: 'linear-gradient(135deg, #0ea5e9, #0369a1)' }}>
+      <AtSign size={18} /> بدء المنشن (قريباً)
+    </button>
+  )
+
+  const renderDownloadBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">رابط الفيديو</label>
+        <input type="url" className="input-field" placeholder="https://tiktok.com/..." value={downloadVideoUrl} onChange={e => setDownloadVideoUrl(e.target.value)} />
+      </div>
+      <div>
+        <label className="label-field">مسار الحفظ (اختياري)</label>
+        <input type="text" className="input-field" placeholder="C:\Downloads" value={downloadSavePath} onChange={e => setDownloadSavePath(e.target.value)} />
+      </div>
+      {renderResultsTable('download', ['#', 'الحالة'], 'tiktok-download')}
+    </div>
+  )
+
+  const downloadFooter = (
+    <button onClick={handleDownload} disabled={loading || !downloadVideoUrl} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #22c55e, #15803d)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Download size={18} /> تحميل</>}
+    </button>
+  )
+
+  const renderUploadBody = () => (
+    <div className="space-y-5">
+      <div className="p-3 rounded-lg text-sm" style={{ background: 'rgba(168,85,247,0.06)', border: '1px solid rgba(168,85,247,0.2)', color: '#7c3aed' }}>
+        <AlertCircle size={16} className="inline ml-1" /> هذه الخاصية قيد التطوير - ستتوفر قريباً
+      </div>
+      <div className="space-y-4 opacity-60">
+        <div><label className="label-field">مسار الفيديو</label><input type="text" className="input-field" placeholder="C:\video.mp4" value={uploadVideoPath} onChange={e => setUploadVideoPath(e.target.value)} /></div>
+        <div><label className="label-field">الوصف</label><textarea className="textarea-field" rows={4} value={uploadCaption} onChange={e => setUploadCaption(e.target.value)} placeholder="..." /></div>
+      </div>
+    </div>
+  )
+
+  const uploadFooter = (
+    <button disabled className="btn-primary w-full opacity-50 cursor-not-allowed" style={{ background: 'linear-gradient(135deg, #a855f7, #6d28d9)' }}>
+      <Upload size={18} /> نشر (قريباً)
+    </button>
+  )
+
+  const renderMoreBody = () => (
+    <div className="space-y-5">
+      <p className="text-xs text-secondary-500">أدوات قيد التطوير — ستتوفر قريباً</p>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        {stubTools.map(tool => (
+          <div key={tool.id} className="tool-card text-center relative opacity-60 cursor-not-allowed">
+            <span className="absolute top-1 left-1 text-[9px] bg-secondary-200 text-secondary-600 px-1.5 py-0.5 rounded font-medium">قريباً</span>
+            <div className="w-10 h-10 rounded-xl mx-auto flex items-center justify-center" style={{ background: 'rgba(254,44,85,0.08)' }}><tool.icon size={20} style={{ color: ACCENT }} /></div>
+            <h4 className="font-bold text-secondary-900 text-xs mt-2">{tool.name}</h4>
+            <p className="text-[10px] text-secondary-500">{tool.desc}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+
+  const panelMap: Record<Exclude<ActiveTool, null>, { body: React.ReactNode; footer: React.ReactNode }> = {
+    extract: { body: renderExtractBody(), footer: extractFooter },
+    mention: { body: renderMentionBody(), footer: mentionFooter },
+    download: { body: renderDownloadBody(), footer: downloadFooter },
+    upload: { body: renderUploadBody(), footer: uploadFooter },
+    more: { body: renderMoreBody(), footer: null },
   }
 
   return (
     <div className="space-y-6">
       {(message || error) && (
-        <div className={`flex items-center gap-3 p-4 rounded-xl text-sm font-medium ${message ? 'text-emerald-700' : 'text-red-600'}`} style={message ? { background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' } : { background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
+        <div
+          className={`flex items-center gap-3 p-4 rounded-xl text-sm font-medium ${message ? 'text-emerald-700' : 'text-red-600'}`}
+          style={message
+            ? { background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' }
+            : { background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}
+        >
           {message ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
           {message || error}
         </div>
       )}
-      <div className="flex gap-1 p-1.5 rounded-xl overflow-x-auto" style={{ background: 'rgba(241,245,249,0.8)', backdropFilter: 'blur(8px)', border: '1px solid rgba(226,232,240,0.5)' }}>
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab.id
-          return (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className="tab-button"
-              style={isActive ? { color: TT, background: 'white', borderRadius: '0.5rem', boxShadow: '0 1px 4px rgba(238,17,116,0.15), 0 4px 12px rgba(238,17,116,0.08)', fontWeight: 600 } : {}}>
-              <tab.icon size={16} />
-              <span>{tab.label}</span>
-            </button>
-          )
-        })}
-      </div>
-      {renderContent()}
+
+      {renderSessionCard()}
+
+      <ToolGrid
+        title="أدوات TikTok"
+        subtitle="اختر أداة لفتح إعدادات الحملة الخاصة بها"
+        icon={Wrench}
+        accent={ACCENT}
+        cols={5}
+      >
+        {tools.map(tool => (
+          <ToolCard
+            key={tool.id}
+            icon={tool.icon}
+            name={tool.name}
+            description={tool.description}
+            accent={tool.accent}
+            accentGradient={tool.accentGradient}
+            badge={tool.requiresSession && !sessionId ? 'يتطلب دخول' : undefined}
+            badgeTone={tool.requiresSession && !sessionId ? 'warning' : 'primary'}
+            onClick={() => {
+              if (tool.requiresSession && !sessionId) {
+                showMsg('يرجى تسجيل الدخول أولاً', true)
+                setShowLoginPanel(true)
+                return
+              }
+              setActiveTool(tool.id)
+            }}
+          />
+        ))}
+      </ToolGrid>
+
+      <ToolPanel
+        open={showLoginPanel}
+        onClose={() => setShowLoginPanel(false)}
+        title="تسجيل الدخول إلى TikTok"
+        subtitle="افتح المتصفح لتسجيل الدخول يدوياً"
+        icon={LogIn}
+        accent={ACCENT}
+        accentGradient={ACCENT_GRADIENT}
+        width="md"
+        footer={loginFooter}
+      >
+        {renderLoginPanelContent()}
+      </ToolPanel>
+
+      <ToolPanel
+        open={activeTool !== null}
+        onClose={() => setActiveTool(null)}
+        title={currentTool?.name ?? ''}
+        subtitle={currentTool?.description}
+        icon={currentTool?.icon}
+        accent={currentTool?.accent ?? ACCENT}
+        accentGradient={currentTool?.accentGradient}
+        width="lg"
+        footer={activeTool ? panelMap[activeTool].footer : null}
+      >
+        {activeTool ? panelMap[activeTool].body : null}
+      </ToolPanel>
     </div>
   )
 }

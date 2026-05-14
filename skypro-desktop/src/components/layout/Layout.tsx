@@ -62,7 +62,7 @@ export default function Layout() {
           style={{ background: 'linear-gradient(135deg, #f0f4f8 0%, #e8f0fe 40%, #f0f3ff 100%)' }}
         >
           <ErrorBoundary>
-            <Suspense fallback={<div className="flex items-center justify-center h-[60vh]"><div className="animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent" /></div>}>
+            <Suspense fallback={<div className="flex items-center justify-center h-[60vh]"><div className="text-center"><div className="animate-spin rounded-full h-10 w-10 border-4 border-t-transparent mx-auto mb-3" style={{ borderColor: 'rgba(10,108,241,0.2)', borderTopColor: 'transparent', background: 'conic-gradient(from 0deg, transparent, rgba(10,108,241,0.3))' }} /><p className="text-secondary-400 text-xs">جاري التحميل...</p></div></div>}>
               <ActiveModule />
             </Suspense>
           </ErrorBoundary>

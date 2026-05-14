@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Shield, AlertTriangle, CheckCircle, Save, Loader2, AlertCircle } from 'lucide-react'
+import { Shield, AlertTriangle, CheckCircle, Save, Loader2, AlertCircle, Lock, Fingerprint, Eye, Timer, Gauge } from 'lucide-react'
 
 const DEFAULT_SETTINGS = {
   enabled: true,
@@ -36,7 +36,7 @@ export default function SecurityModule() {
           maxRetries: d.maxRetries || 3,
         })
       }
-    } catch (err: any) { console.error('Failed to load security settings:', err.message) }
+    } catch { /* settings will use defaults */ }
   }, [])
 
   useEffect(() => { loadSettings() }, [loadSettings])
@@ -51,21 +51,25 @@ export default function SecurityModule() {
   }
 
   const handleSave = async () => {
+    if (settings.minDelay >= settings.maxDelay) {
+      showMsg('أقل تأخير يجب أن يكون أقل من أقصى تأخير', true)
+      return
+    }
     setLoading(true)
     try {
       const res = await window.electronAPI.saveSecuritySettings(settings)
       if (res.success) showMsg('تم حفظ الإعدادات')
       else showMsg(res.error || 'فشلت العملية', true)
-    } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
+    } catch { showMsg('فشلت العملية', true) }
     setLoading(false)
   }
 
   const features = [
-    { key: 'enabled' as const, label: 'تفعيل الحماية', desc: 'تفعيل جميع ميزات الحماية من الحظر' },
-    { key: 'randomDelays' as const, label: 'التأخير العشوائي', desc: `تأخير عشوائي بين ${settings.minDelay.toLocaleString()}ms و ${settings.maxDelay.toLocaleString()}ms` },
-    { key: 'rotateUserAgent' as const, label: 'تدوير User-Agent', desc: 'تغيير User-Agent بين كل طلب' },
-    { key: 'randomizeViewport' as const, label: 'تغيير حجم الشاشة', desc: 'تغيير viewport بشكل عشوائي' },
-    { key: 'useStealthMode' as const, label: 'وضع التخفي', desc: 'إخفاء علامات الأتمتة والتشغيل الآلي' },
+    { key: 'enabled' as const, label: 'تفعيل الحماية', desc: 'تفعيل جميع ميزات الحماية من الحظر', icon: Shield, color: '#10b981' },
+    { key: 'randomDelays' as const, label: 'التأخير العشوائي', desc: `تأخير عشوائي بين ${settings.minDelay.toLocaleString()}ms و ${settings.maxDelay.toLocaleString()}ms`, icon: Timer, color: '#0A6CF1' },
+    { key: 'rotateUserAgent' as const, label: 'تدوير User-Agent', desc: 'تغيير User-Agent بين كل طلب', icon: Fingerprint, color: '#8B2CF5' },
+    { key: 'randomizeViewport' as const, label: 'تغيير حجم الشاشة', desc: 'تغيير viewport بشكل عشوائي', icon: Eye, color: '#f59e0b' },
+    { key: 'useStealthMode' as const, label: 'وضع التخفي', desc: 'إخفاء علامات الأتمتة والتشغيل الآلي', icon: Lock, color: '#ef4444' },
   ]
 
   return (
@@ -76,48 +80,100 @@ export default function SecurityModule() {
           {message || error}
         </div>
       )}
-      <div className="card">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}>
-              <Shield size={20} className="text-white" />
+
+      {/* Hero */}
+      <div className="rounded-2xl overflow-hidden p-6" style={{ background: 'linear-gradient(135deg, #022c22 0%, #10b981 50%, #059669 100%)', boxShadow: '0 8px 32px rgba(16, 185, 129, 0.25)' }}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)' }}>
+              <Shield size={28} className="text-white" />
             </div>
             <div>
-              <h3 className="font-bold text-secondary-900">الحماية والأمان</h3>
-              <p className="text-sm text-secondary-500">إعدادات الحماية من الحظر</p>
+              <h1 className="text-xl font-bold text-white mb-1">الحماية والأمان</h1>
+              <p className="text-sm" style={{ color: 'rgba(255,255,255,0.6)' }}>إعدادات الحماية التلقائية من الحظر</p>
             </div>
           </div>
-          <span className={`badge ${settings.enabled ? 'badge-success' : 'badge-danger'}`}>{settings.enabled ? 'مفعّل' : 'معطّل'}</span>
-        </div>
-        <div className="space-y-3">
-          {features.map((feature) => (
-            <div key={feature.key} className="flex items-center justify-between p-4 rounded-xl bg-secondary-50 border border-secondary-100">
-              <div>
-                <span className="font-medium text-secondary-900">{feature.label}</span>
-                <p className="text-sm text-secondary-500">{feature.desc}</p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" checked={settings[feature.key] as boolean} onChange={() => handleToggle(feature.key)} className="sr-only peer" />
-                <div className="w-9 h-5 bg-secondary-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
-              </label>
-            </div>
-          ))}
-        </div>
-        <div className="mt-6 pt-4 border-t border-secondary-100">
-          <div className="grid grid-cols-3 gap-4 mb-4">
-            <div><label className="label-field">أقل تأخير (ms)</label><input type="number" className="input-field" value={settings.minDelay || 2000} onChange={e => { const v = parseInt(e.target.value) || 2000; if (v > 0) setSettings(prev => ({ ...prev, minDelay: v })) }} /></div>
-            <div><label className="label-field">أقصى تأخير (ms)</label><input type="number" className="input-field" value={settings.maxDelay || 8000} onChange={e => { const v = parseInt(e.target.value) || 8000; if (v > 0) setSettings(prev => ({ ...prev, maxDelay: v })) }} /></div>
-            <div><label className="label-field">إجراءات/ساعة</label><input type="number" className="input-field" value={settings.maxActionsPerHour || 50} onChange={e => { const v = parseInt(e.target.value) || 50; if (v > 0) setSettings(prev => ({ ...prev, maxActionsPerHour: v })) }} /></div>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full" style={{ background: settings.enabled ? 'rgba(255,255,255,0.15)' : 'rgba(239,68,68,0.3)', border: `1px solid ${settings.enabled ? 'rgba(255,255,255,0.2)' : 'rgba(239,68,68,0.4)'}` }}>
+            <span className="w-2 h-2 rounded-full" style={{ background: settings.enabled ? '#4ade80' : '#f87171', boxShadow: `0 0 6px ${settings.enabled ? 'rgba(74,222,128,0.5)' : 'rgba(248,113,113,0.5)'}` }} />
+            <span className="text-xs font-semibold text-white">{settings.enabled ? 'مفعّل' : 'معطّل'}</span>
           </div>
-          <button onClick={handleSave} disabled={loading} className="btn-primary w-full">{loading ? <Loader2 size={18} className="animate-spin" /> : <><Save size={18} /> حفظ الإعدادات</>}</button>
         </div>
       </div>
-      <div className="card" style={{ background: 'rgba(245,158,11,0.04)', borderColor: 'rgba(245,158,11,0.2)' }}>
+
+      {/* Feature Toggles */}
+      <div className="card-gradient-border">
+        <div className="space-y-1">
+          {features.map((feature, i) => {
+            const Icon = feature.icon
+            const isActive = settings[feature.key] as boolean
+            return (
+              <div key={feature.key} className={`flex items-center justify-between p-4 rounded-xl transition-all duration-200 ${i < features.length - 1 ? 'mb-1' : ''}`} style={{ background: isActive ? 'rgba(248,250,252,0.8)' : 'rgba(248,250,252,0.4)', border: `1px solid ${isActive ? 'rgba(226,232,240,0.6)' : 'rgba(226,232,240,0.3)'}` }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-200" style={{ background: isActive ? `${feature.color}15` : 'rgba(226,232,240,0.5)' }}>
+                    <Icon size={18} style={{ color: isActive ? feature.color : '#94a3b8' }} />
+                  </div>
+                  <div>
+                    <span className={`font-medium ${isActive ? 'text-secondary-900' : 'text-secondary-500'}`}>{feature.label}</span>
+                    <p className="text-xs text-secondary-400 mt-0.5">{feature.desc}</p>
+                  </div>
+                </div>
+                <button type="button" className={`sw-toggle ${isActive ? 'active' : ''}`} onClick={() => handleToggle(feature.key)} aria-label={feature.label} />
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Numeric Settings */}
+      <div className="card-gradient-border">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #0A6CF1, #8B2CF5)' }}>
+            <Gauge size={20} className="text-white" />
+          </div>
+          <div>
+            <h3 className="font-bold text-secondary-900">إعدادات متقدمة</h3>
+            <p className="text-xs text-secondary-500">ضبط أوقات التأخير والحدود</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-4 mb-5">
+          <div>
+            <label className="label-field">أقل تأخير (ms)</label>
+            <input type="number" className="input-field" value={settings.minDelay} onChange={e => { const v = parseInt(e.target.value) || 2000; if (v > 0) setSettings(prev => ({ ...prev, minDelay: v })) }} />
+          </div>
+          <div>
+            <label className="label-field">أقصى تأخير (ms)</label>
+            <input type="number" className="input-field" value={settings.maxDelay} onChange={e => { const v = parseInt(e.target.value) || 8000; if (v > 0) setSettings(prev => ({ ...prev, maxDelay: v })) }} />
+          </div>
+          <div>
+            <label className="label-field">إجراءات/ساعة</label>
+            <input type="number" className="input-field" value={settings.maxActionsPerHour} onChange={e => { const v = parseInt(e.target.value) || 50; if (v > 0) setSettings(prev => ({ ...prev, maxActionsPerHour: v })) }} />
+          </div>
+        </div>
+
+        {/* Delay Visual Bar */}
+        <div className="p-3 rounded-xl mb-5" style={{ background: 'rgba(248,250,252,0.8)', border: '1px solid rgba(226,232,240,0.4)' }}>
+          <div className="flex items-center justify-between text-xs text-secondary-500 mb-2">
+            <span>{settings.minDelay.toLocaleString()}ms</span>
+            <span className="font-medium text-secondary-700">نطاق التأخير</span>
+            <span>{settings.maxDelay.toLocaleString()}ms</span>
+          </div>
+          <div className="progress-bar">
+            <div className="progress-bar-fill" style={{ width: `${Math.min((settings.maxDelay / 15000) * 100, 100)}%` }} />
+          </div>
+        </div>
+
+        <button onClick={handleSave} disabled={loading} className="btn-primary w-full">
+          {loading ? <Loader2 size={18} className="animate-spin" /> : <><Save size={18} /> حفظ الإعدادات</>}
+        </button>
+      </div>
+
+      {/* Warning */}
+      <div className="rounded-xl p-4" style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.2)' }}>
         <div className="flex items-start gap-3">
           <AlertTriangle size={20} className="text-amber-500 flex-shrink-0 mt-0.5" />
           <div>
-            <h4 className="font-bold text-amber-800">تنبيه</h4>
-            <p className="text-sm text-amber-700">هذه الإعدادات تساعد في تقليل خطر الحظر، لكنها لا تضمن الحماية 100%. استخدم بروكسي للحماية الأفضل.</p>
+            <h4 className="font-bold text-amber-800 text-sm">تنبيه</h4>
+            <p className="text-sm text-amber-700 mt-1">هذه الإعدادات تساعد في تقليل خطر الحظر، لكنها لا تضمن الحماية 100%. استخدم بروكسي للحماية الأفضل.</p>
           </div>
         </div>
       </div>

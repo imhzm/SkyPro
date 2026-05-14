@@ -1,10 +1,16 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Settings, PenTool, Send, Save, AlertCircle, CheckCircle, Loader2, Trash2, Eye, EyeOff } from 'lucide-react'
+import ToolGrid from '../../components/tools/ToolGrid'
+import ToolCard from '../../components/tools/ToolCard'
+import ToolPanel from '../../components/tools/ToolPanel'
+import { Settings, PenTool, Send, Save, AlertCircle, CheckCircle, Loader2, Trash2, Eye, EyeOff, Mail } from 'lucide-react'
 
-type ToolTab = 'smtp' | 'compose' | 'send'
+type ActiveTool = 'smtp' | 'compose' | 'send' | null
+
+const ACCENT = '#6366F1'
+const ACCENT_GRADIENT = 'linear-gradient(135deg, #6366F1, #4f46e5)'
 
 export default function SendEmailsModule() {
-  const [activeTab, setActiveTab] = useState<ToolTab>('smtp')
+  const [activeTool, setActiveTool] = useState<ActiveTool>(null)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
@@ -86,75 +92,117 @@ export default function SendEmailsModule() {
     setLoading(false)
   }
 
-  const tabs: { id: ToolTab; label: string; icon: any }[] = [
-    { id: 'smtp', label: 'SMTP', icon: Settings },
-    { id: 'compose', label: 'كتابة', icon: PenTool },
-    { id: 'send', label: 'إرسال', icon: Send },
+  const tools: Array<{
+    id: Exclude<ActiveTool, null>
+    name: string
+    description: string
+    icon: typeof Settings
+    accent: string
+    accentGradient: string
+    requiresSession: boolean
+  }> = [
+    { id: 'smtp', name: 'إعدادات SMTP', description: 'إضافة وإدارة حسابات SMTP', icon: Settings, accent: '#6366F1', accentGradient: 'linear-gradient(135deg, #6366F1, #4f46e5)', requiresSession: false },
+    { id: 'compose', name: 'كتابة الرسالة', description: 'إنشاء محتوى الرسالة والقالب', icon: PenTool, accent: '#0ea5e9', accentGradient: 'linear-gradient(135deg, #0ea5e9, #0369a1)', requiresSession: false },
+    { id: 'send', name: 'إرسال الرسائل', description: 'إرسال الرسائل لقائمة المستلمين', icon: Send, accent: '#10b981', accentGradient: 'linear-gradient(135deg, #10b981, #047857)', requiresSession: false },
   ]
 
-  const renderSmtp = () => (
-    <div className="space-y-6">
-      <div className="card">
-        <h3 className="font-bold text-secondary-900 mb-4 text-lg flex items-center gap-2"><Settings size={20} style={{ color: '#ea4335' }} /> إعدادات SMTP</h3>
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div><label className="label-field">الإيميل</label><input type="email" className="input-field" placeholder="smtp@example.com" value={smtp.email} onChange={e => setSmtp({ ...smtp, email: e.target.value })} /></div>
-            <div><label className="label-field">كلمة المرور (App Password)</label><div className="relative"><input type={showPassword ? 'text' : 'password'} className="input-field pr-10" placeholder="••••••••" value={smtp.password} onChange={e => setSmtp({ ...smtp, password: e.target.value })} /><button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary-400 hover:text-secondary-600" onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff size={16} /> : <Eye size={16} />}</button></div></div>
-          </div>
-          <div className="grid grid-cols-3 gap-4">
-            <div><label className="label-field">HOST</label><input type="text" className="input-field" placeholder="smtp.gmail.com" value={smtp.host} onChange={e => setSmtp({ ...smtp, host: e.target.value })} /></div>
-            <div><label className="label-field">PORT</label><input type="number" className="input-field" value={smtp.port} onChange={e => setSmtp({ ...smtp, port: parseInt(e.target.value) })} /></div>
-            <div><label className="label-field">SSL</label><select className="select-field" value={smtp.ssl} onChange={e => setSmtp({ ...smtp, ssl: e.target.value })}><option value="yes">TLS/SSL</option><option value="no">بدون</option></select></div>
-          </div>
-          <button onClick={handleSaveSMTP} disabled={loading} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #ea4335, #dd4b39)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><Save size={18} /> حفظ الإعدادات</>}</button>
+  const currentTool = tools.find(t => t.id === activeTool) ?? null
+
+  // ----- Tool panel bodies -----
+  const renderSmtpBody = () => (
+    <div className="space-y-5">
+      <div>
+        <div className="grid grid-cols-2 gap-4">
+          <div><label className="label-field">الإيميل</label><input type="email" className="input-field" placeholder="smtp@example.com" value={smtp.email} onChange={e => setSmtp({ ...smtp, email: e.target.value })} /></div>
+          <div><label className="label-field">كلمة المرور (App Password)</label><div className="relative"><input type={showPassword ? 'text' : 'password'} className="input-field pr-10" placeholder="••••••••" value={smtp.password} onChange={e => setSmtp({ ...smtp, password: e.target.value })} /><button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary-400 hover:text-secondary-600" onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff size={16} /> : <Eye size={16} />}</button></div></div>
+        </div>
+        <div className="grid grid-cols-3 gap-4 mt-4">
+          <div><label className="label-field">HOST</label><input type="text" className="input-field" placeholder="smtp.gmail.com" value={smtp.host} onChange={e => setSmtp({ ...smtp, host: e.target.value })} /></div>
+          <div><label className="label-field">PORT</label><input type="number" className="input-field" value={smtp.port} onChange={e => setSmtp({ ...smtp, port: parseInt(e.target.value) })} /></div>
+          <div><label className="label-field">SSL</label><select className="select-field" value={smtp.ssl} onChange={e => setSmtp({ ...smtp, ssl: e.target.value })}><option value="yes">TLS/SSL</option><option value="no">بدون</option></select></div>
         </div>
       </div>
+
       {smtpList.length > 0 && (
-        <div className="card">
-          <h3 className="font-bold text-secondary-900 mb-4">حسابات SMTP المحفوظة ({smtpList.length})</h3>
-          <div className="table-container"><table className="data-table"><thead><tr><th>#</th><th>الإيميل</th><th>HOST</th><th>PORT</th><th>SSL</th><th></th></tr></thead>
-            <tbody>{smtpList.map((s, i) => (<tr key={s.id}><td className="text-secondary-500">{i + 1}</td><td className="font-medium text-sm">{s.email}</td><td className="text-sm">{s.host}</td><td className="text-sm">{s.port}</td><td><span className={`badge ${s.ssl === 'yes' ? 'badge-success' : 'badge-warning'}`}>{s.ssl === 'yes' ? 'TLS' : 'بدون'}</span></td><td><button onClick={() => handleDeleteSMTP(s.id)} className="p-1 text-danger-500 hover:bg-danger-50 rounded"><Trash2 size={14} /></button></td></tr>))}</tbody>
-          </table></div>
+        <div className="mt-5 rounded-xl border border-secondary-200 bg-white/60 overflow-hidden">
+          <div className="flex items-center justify-between p-3 border-b border-secondary-100 flex-wrap gap-2">
+            <h4 className="font-bold text-secondary-900 text-sm">حسابات SMTP المحفوظة ({smtpList.length})</h4>
+          </div>
+          <div className="table-container" style={{ maxHeight: '380px', overflow: 'auto' }}>
+            <table className="data-table">
+              <thead><tr><th>#</th><th>الإيميل</th><th>HOST</th><th>PORT</th><th>SSL</th><th></th></tr></thead>
+              <tbody>{smtpList.map((s, i) => (<tr key={s.id}><td className="text-secondary-500">{i + 1}</td><td className="font-medium text-sm">{s.email}</td><td className="text-sm">{s.host}</td><td className="text-sm">{s.port}</td><td><span className={`badge ${s.ssl === 'yes' ? 'badge-success' : 'badge-warning'}`}>{s.ssl === 'yes' ? 'TLS' : 'بدون'}</span></td><td><button onClick={() => handleDeleteSMTP(s.id)} className="p-1 text-danger-500 hover:bg-danger-50 rounded"><Trash2 size={14} /></button></td></tr>))}</tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
   )
 
-  const renderCompose = () => (
-    <div className="card">
-      <h3 className="font-bold text-secondary-900 mb-4 text-lg flex items-center gap-2"><PenTool size={20} style={{ color: '#ea4335' }} /> كتابة الرسالة</h3>
-      <div className="space-y-4">
-        <div><label className="label-field">اسم الشركة</label><input type="text" className="input-field" placeholder="اسم شركتك..." value={compose.company} onChange={e => setCompose({ ...compose, company: e.target.value })} /></div>
-        <div><label className="label-field">عنوان الرسالة</label><input type="text" className="input-field" placeholder="عنوان الرسالة..." value={compose.subject} onChange={e => setCompose({ ...compose, subject: e.target.value })} /></div>
-        <div><label className="label-field">المحتوى النصي</label><textarea className="textarea-field" rows={6} value={compose.body} onChange={e => setCompose({ ...compose, body: e.target.value })} placeholder="اكتب محتوى الرسالة هنا..." /></div>
-        <div><label className="label-field">قالب HTML (اختياري - يتجاوز النص)</label><textarea className="textarea-field" rows={4} value={compose.html} onChange={e => setCompose({ ...compose, html: e.target.value })} placeholder="<html>...</html>" /></div>
-      </div>
+  const smtpFooter = (
+    <button
+      onClick={handleSaveSMTP}
+      disabled={loading}
+      className="btn-primary w-full disabled:opacity-50"
+      style={{ background: ACCENT_GRADIENT }}
+    >
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Save size={18} /> حفظ الإعدادات</>}
+    </button>
+  )
+
+  const renderComposeBody = () => (
+    <div className="space-y-5">
+      <div><label className="label-field">اسم الشركة</label><input type="text" className="input-field" placeholder="اسم شركتك..." value={compose.company} onChange={e => setCompose({ ...compose, company: e.target.value })} /></div>
+      <div><label className="label-field">عنوان الرسالة</label><input type="text" className="input-field" placeholder="عنوان الرسالة..." value={compose.subject} onChange={e => setCompose({ ...compose, subject: e.target.value })} /></div>
+      <div><label className="label-field">المحتوى النصي</label><textarea className="textarea-field" rows={6} value={compose.body} onChange={e => setCompose({ ...compose, body: e.target.value })} placeholder="اكتب محتوى الرسالة هنا..." /></div>
+      <div><label className="label-field">قالب HTML (اختياري - يتجاوز النص)</label><textarea className="textarea-field" rows={4} value={compose.html} onChange={e => setCompose({ ...compose, html: e.target.value })} placeholder="<html>...</html>" /></div>
     </div>
   )
 
-  const renderSend = () => (
-    <div className="card">
-      <h3 className="font-bold text-secondary-900 mb-4 text-lg flex items-center gap-2"><Send size={20} style={{ color: '#ea4335' }} /> إرسال الرسائل</h3>
-      <div className="space-y-4">
-        {smtpList.length === 0 && <div className="mb-4 p-3 rounded-lg text-sm" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#dc2626' }}><AlertCircle size={16} className="inline ml-1" /> يرجى إضافة حساب SMTP أولاً من تبويب SMTP</div>}
-        <div><label className="label-field">حساب SMTP المرسل</label><select className="select-field" value={selectedSmtpId || ''} onChange={e => setSelectedSmtpId(parseInt(e.target.value))}>
+  const composeFooter = (
+    <button
+      onClick={() => { showMsg('تم حفظ محتوى الرسالة. انتقل إلى تبويب الإرسال.'); setActiveTool(null) }}
+      className="btn-primary w-full"
+      style={{ background: 'linear-gradient(135deg, #0ea5e9, #0369a1)' }}
+    >
+      <CheckCircle size={18} /> حفظ المحتوى
+    </button>
+  )
+
+  const renderSendBody = () => (
+    <div className="space-y-5">
+      {smtpList.length === 0 && (
+        <div className="p-3 rounded-lg text-sm" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#dc2626' }}>
+          <AlertCircle size={16} className="inline ml-1" /> يرجى إضافة حساب SMTP أولاً من أداة SMTP
+        </div>
+      )}
+      <div>
+        <label className="label-field">حساب SMTP المرسل</label>
+        <select className="select-field" value={selectedSmtpId || ''} onChange={e => setSelectedSmtpId(parseInt(e.target.value))}>
           <option value="">-- اختر حساب SMTP --</option>
           {smtpList.map(s => <option key={s.id} value={s.id}>{s.email} ({s.host})</option>)}
-        </select></div>
-        <div><label className="label-field">قائمة المستلمين (سطر لكل إيميل)</label><textarea className="textarea-field" rows={6} value={recipients} onChange={e => setRecipients(e.target.value)} placeholder="email1@example.com&#10;email2@example.com" /></div>
-        <div><label className="label-field">الفاصل الزمني: {timer} ثانية</label><input type="range" min="1" max="60" value={timer} onChange={e => setTimer(parseInt(e.target.value))} className="w-full" /></div>
-        <button onClick={handleSend} disabled={loading || smtpList.length === 0 || !selectedSmtpId} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #ea4335, #dd4b39)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><Send size={18} /> إرسال الرسائل ({recipients.split('\n').filter(s => s.trim()).length} مستلم)</>}</button>
+        </select>
       </div>
+      <div><label className="label-field">قائمة المستلمين (سطر لكل إيميل)</label><textarea className="textarea-field" rows={6} value={recipients} onChange={e => setRecipients(e.target.value)} placeholder="email1@example.com&#10;email2@example.com" /></div>
+      <div><label className="label-field">الفاصل الزمني: {timer} ثانية</label><input type="range" min="1" max="60" value={timer} onChange={e => setTimer(parseInt(e.target.value))} className="w-full" /></div>
     </div>
   )
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'smtp': return renderSmtp()
-      case 'compose': return renderCompose()
-      case 'send': return renderSend()
-      default: return renderSmtp()
-    }
+  const sendFooter = (
+    <button
+      onClick={handleSend}
+      disabled={loading || smtpList.length === 0 || !selectedSmtpId}
+      className="btn-primary w-full disabled:opacity-50"
+      style={{ background: 'linear-gradient(135deg, #10b981, #047857)' }}
+    >
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Send size={18} /> إرسال الرسائل ({recipients.split('\n').filter(s => s.trim()).length} مستلم)</>}
+    </button>
+  )
+
+  const panelMap: Record<Exclude<ActiveTool, null>, { body: React.ReactNode; footer: React.ReactNode }> = {
+    smtp: { body: renderSmtpBody(), footer: smtpFooter },
+    compose: { body: renderComposeBody(), footer: composeFooter },
+    send: { body: renderSendBody(), footer: sendFooter },
   }
 
   return (
@@ -165,19 +213,40 @@ export default function SendEmailsModule() {
           {message || error}
         </div>
       )}
-      <div className="flex gap-1 p-1.5 rounded-xl overflow-x-auto" style={{ background: 'rgba(241,245,249,0.8)', backdropFilter: 'blur(8px)', border: '1px solid rgba(226,232,240,0.5)' }}>
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab.id
-          return (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className="tab-button"
-              style={isActive ? { color: '#ea4335', background: 'white', borderRadius: '0.5rem', boxShadow: '0 1px 4px rgba(234,67,53,0.15), 0 4px 12px rgba(234,67,53,0.08)', fontWeight: 600 } : {}}>
-              <tab.icon size={16} />
-              <span>{tab.label}</span>
-            </button>
-          )
-        })}
-      </div>
-      {renderContent()}
+
+      <ToolGrid
+        title="أدوات Send Emails"
+        subtitle="إعداد SMTP، كتابة الرسائل، وإرسالها"
+        icon={Mail}
+        accent={ACCENT}
+        cols={3}
+      >
+        {tools.map(tool => (
+          <ToolCard
+            key={tool.id}
+            icon={tool.icon}
+            name={tool.name}
+            description={tool.description}
+            accent={tool.accent}
+            accentGradient={tool.accentGradient}
+            onClick={() => setActiveTool(tool.id)}
+          />
+        ))}
+      </ToolGrid>
+
+      <ToolPanel
+        open={activeTool !== null}
+        onClose={() => setActiveTool(null)}
+        title={currentTool?.name ?? ''}
+        subtitle={currentTool?.description}
+        icon={currentTool?.icon}
+        accent={currentTool?.accent ?? ACCENT}
+        accentGradient={currentTool?.accentGradient}
+        width="lg"
+        footer={activeTool ? panelMap[activeTool].footer : null}
+      >
+        {activeTool ? panelMap[activeTool].body : null}
+      </ToolPanel>
     </div>
   )
 }
