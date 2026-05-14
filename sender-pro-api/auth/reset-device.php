@@ -35,6 +35,9 @@ if (empty($key)) {
 if (!preg_match('/^[A-Z0-9\\-]+$/', $key)) {
     sendResponse(false, 'Invalid key');
 }
+if (!empty($deviceFingerprint) && !RateLimit::isValidDeviceId($deviceFingerprint)) {
+    sendResponse(false, 'Invalid device fingerprint');
+}
 
 // Check if key exists (key_code matches Prisma schema)
 $stmt = $pdo->prepare('SELECT * FROM activation_keys WHERE key_code = ?');
@@ -53,14 +56,14 @@ if (in_array($keyData['status'], ['revoked', 'expired', 'suspended'], true)) {
 $stmt = $pdo->prepare('UPDATE activation_keys SET device_id = NULL, status = "pending" WHERE key_code = ?');
 $stmt->execute([$key]);
 
-// Remove device record if exists (device_fingerprint matches Prisma)
-if (!empty($deviceFingerprint)) {
-    $stmt = $pdo->prepare('DELETE FROM devices WHERE device_fingerprint = ?');
-    $stmt->execute([$deviceFingerprint]);
+// Remove device record scoped to this key
+if (!empty($deviceFingerprint) && !empty($keyData['id'])) {
+    $stmt = $pdo->prepare('DELETE FROM devices WHERE device_fingerprint = ? AND key_id = ?');
+    $stmt->execute([$deviceFingerprint, $keyData['id']]);
 }
 
 // Log the action
-logAction($pdo, 'device_reset', "Key: $key, Old Device: $deviceFingerprint, Admin: {$payload['email']}, IP: $clientIP");
+logAction($pdo, 'device_reset', "Key: $key, IP: $clientIP");
 
 sendResponse(true, 'Device reset successfully', [
     'key' => $key,

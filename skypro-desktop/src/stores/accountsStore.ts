@@ -16,6 +16,14 @@ export interface Account {
   created_at: string
 }
 
+function sanitizeAccount(raw: any): Account {
+  const { password, ...rest } = raw
+  return {
+    ...rest,
+    has_password: !!password,
+  }
+}
+
 interface AccountsStore {
   accounts: Account[]
   loading: boolean
@@ -33,7 +41,7 @@ export const useAccountsStore = create<AccountsStore>((set, get) => ({
   loadAccounts: async () => {
     try {
       const res = await window.electronAPI.dbQuery({ table: 'accounts', limit: 1000 })
-      if (res.success && res.data) set({ accounts: res.data || [] })
+      if (res.success && res.data) set({ accounts: (res.data || []).map(sanitizeAccount) })
     } catch (err: unknown) { console.error('Failed to load accounts:', errorMessage(err)) }
   },
 

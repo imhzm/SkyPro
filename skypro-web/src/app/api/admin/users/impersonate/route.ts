@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db'
 import { successResponse, errorResponse, getErrorMessage } from '@/lib/api'
 import { getClientIp, requireAdmin } from '@/lib/admin-security'
 import { rejectLargeJson } from '@/lib/request-security'
+import { encryptToken, decryptToken } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -105,8 +106,9 @@ export async function POST(req: NextRequest) {
       maxAge,
     })
 
-    // Save the original admin session so we can restore it
-    response.cookies.set(IMPERSONATION_COOKIE, originalSessionToken, {
+    // Save the original admin session so we can restore it (encrypted with NEXTAUTH_SECRET)
+    const encrypted = encryptToken(originalSessionToken)
+    response.cookies.set(IMPERSONATION_COOKIE, encrypted, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
@@ -127,9 +129,14 @@ export async function POST(req: NextRequest) {
  */
 export async function DELETE(req: NextRequest) {
   try {
-    const original = req.cookies.get(IMPERSONATION_COOKIE)?.value || ''
-    if (!original) {
+    const encrypted = req.cookies.get(IMPERSONATION_COOKIE)?.value || ''
+    if (!encrypted) {
       return NextResponse.json(errorResponse('لا يوجد جلسة انتحال نشطة'), { status: 400 })
+    }
+
+    const original = decryptToken(encrypted)
+    if (!original) {
+      return NextResponse.json(errorResponse('جلسة الانتحال غير صالحة أو معدلة'), { status: 403 })
     }
 
     // Best-effort audit log — uses current (impersonated) session, fine

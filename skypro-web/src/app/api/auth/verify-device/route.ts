@@ -157,7 +157,7 @@ export async function POST(req: NextRequest) {
         data: {
           userId: activationKey.userId,
           action: 'device_verified',
-          details: { deviceFingerprint, deviceId: device.id },
+          details: { deviceFingerprint: deviceFingerprint.slice(0, 16) + '...', deviceId: device.id },
           ipAddress
         }
       })
@@ -185,9 +185,6 @@ function incrementVerifyAttempts(ip: string) {
     verifyDeviceAttempts.forEach((value, key) => {
       if (value.lockedUntil <= now) verifyDeviceAttempts.delete(key)
     })
-    if (verifyDeviceAttempts.size > MAX_VERIFY_DEVICE_ATTEMPT_BUCKETS) {
-      verifyDeviceAttempts.clear()
-    }
   }
 
   const attempt = verifyDeviceAttempts.get(ip) || { count: 0, lockedUntil: 0 }

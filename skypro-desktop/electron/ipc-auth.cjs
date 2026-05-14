@@ -4,11 +4,28 @@ const fs = require('fs')
 const path = require('path')
 const { app } = require('electron')
 
-const WEB_API_URL = 'https://skypro.skywaveads.com/api'
-const SERVER_API_URL = 'https://skypro.skywaveads.com/sender-pro-api'
+const WEB_API_URL = process.env.VITE_API_URL || 'https://skypro.skywaveads.com/api'
 const OFFLINE_FALLBACK_ENABLED = process.env.SKYPRO_ALLOW_OFFLINE_KEY_FALLBACK === 'true'
 const NETWORK_TIMEOUT_MS = 20_000
 const INSTALL_ID_FILE = 'install-id'
+
+// Client-side rate limiting to prevent renderer brute-force
+const ipcRateLimits = new Map()
+const IPC_RATE_LIMIT = 10
+const IPC_RATE_WINDOW_MS = 60_000
+
+function checkIpcRateLimit(channel) {
+  const now = Date.now()
+  const key = `${channel}`
+  const entry = ipcRateLimits.get(key)
+  if (!entry || entry.resetAt <= now) {
+    ipcRateLimits.set(key, { count: 1, resetAt: now + IPC_RATE_WINDOW_MS })
+    return true
+  }
+  if (entry.count >= IPC_RATE_LIMIT) return false
+  entry.count++
+  return true
+}
 
 function normalizeText(value, max = 256) {
   return typeof value === 'string' ? value.trim().slice(0, max) : ''
@@ -122,6 +139,9 @@ function normalizeWebActivationResult(result, fallbackKey, fallbackDeviceId) {
 
 function registerAuthIPC({ ipcm, bm, db }) {
   ipcm('activate-key', async (e, { key } = {}) => {
+    if (!checkIpcRateLimit('activate-key')) {
+      return { success: false, message: 'طلبات كثيرة. حاول لاحقاً.' }
+    }
     key = normalizeText(key, 80)
     const deviceInfo = getDeviceCapabilities()
     const fingerprint = deviceInfo.fingerprint
@@ -149,6 +169,9 @@ function registerAuthIPC({ ipcm, bm, db }) {
   })
 
   ipcm('validate-key', async (e, { key } = {}) => {
+    if (!checkIpcRateLimit('validate-key')) {
+      return { success: false, message: 'طلبات كثيرة. حاول لاحقاً.' }
+    }
     key = normalizeText(key, 80)
     const deviceInfo = getDeviceCapabilities()
     const fingerprint = deviceInfo.fingerprint
@@ -188,6 +211,9 @@ function registerAuthIPC({ ipcm, bm, db }) {
   })
 
   ipcm('reset-device', async (e, { key, deviceId, token } = {}) => {
+    if (!checkIpcRateLimit('reset-device')) {
+      return { success: false, message: 'طلبات كثيرة. حاول لاحقاً.' }
+    }
     key = normalizeText(key, 80)
     deviceId = normalizeText(deviceId, 256)
     token = normalizeText(token, 512)
@@ -210,6 +236,9 @@ function registerAuthIPC({ ipcm, bm, db }) {
   })
 
   ipcm('login', async (e, { email, password, serial } = {}) => {
+    if (!checkIpcRateLimit('login')) {
+      return { success: false, message: 'طلبات كثيرة. حاول لاحقاً.' }
+    }
     email = normalizeText(email, 254).toLowerCase()
     password = typeof password === 'string' ? password.slice(0, 512) : ''
     serial = normalizeText(serial, 80).toUpperCase()

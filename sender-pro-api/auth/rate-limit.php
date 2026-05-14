@@ -3,20 +3,15 @@
 
 class RateLimit {
     private $pdo;
-    private $cacheDir;
+    private static $tableChecked = false;
 
     public function __construct($pdo) {
         $this->pdo = $pdo;
-        $this->cacheDir = dirname(__DIR__) . '/cache';
-        if (!is_dir($this->cacheDir)) {
-            @mkdir($this->cacheDir, 0755, true);
-        }
     }
 
     // Database-backed rate limiting (more reliable)
     public function check($identifier, $maxRequests = 10, $windowSeconds = 60) {
-        $tableCheck = $this->pdo->query("SHOW TABLES LIKE 'rate_limits'");
-        if ($tableCheck->rowCount() === 0) {
+        if (!self::$tableChecked) {
             $this->pdo->exec("CREATE TABLE IF NOT EXISTS rate_limits (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 identifier VARCHAR(255) NOT NULL,
@@ -25,34 +20,40 @@ class RateLimit {
                 INDEX idx_identifier (identifier),
                 INDEX idx_time (request_time)
             ) ENGINE=InnoDB");
+            self::$tableChecked = true;
         }
 
         $now = time();
         $windowStart = $now - $windowSeconds;
+        $endpoint = $_SERVER['SCRIPT_NAME'] ?? 'unknown';
 
-        // Clean old entries
-        $cleanStmt = $this->pdo->prepare("DELETE FROM rate_limits WHERE request_time < ?");
-        $cleanStmt->execute([$windowStart]);
+        $this->pdo->beginTransaction();
+        try {
+            $cleanStmt = $this->pdo->prepare("DELETE FROM rate_limits WHERE request_time < ?");
+            $cleanStmt->execute([$windowStart]);
 
-        // Count requests in window
-        $countStmt = $this->pdo->prepare(
-            "SELECT COUNT(*) as cnt FROM rate_limits WHERE identifier = ? AND endpoint = ? AND request_time >= ?"
-        );
-        $countStmt->execute([$identifier, $_SERVER['SCRIPT_NAME'] ?? 'unknown', $windowStart]);
-        $result = $countStmt->fetch();
-        $count = $result['cnt'];
+            $countStmt = $this->pdo->prepare(
+                "SELECT COUNT(*) as cnt FROM rate_limits WHERE identifier = ? AND endpoint = ? AND request_time >= ? LOCK IN SHARE MODE"
+            );
+            $countStmt->execute([$identifier, $endpoint, $windowStart]);
+            $result = $countStmt->fetch();
+            $count = $result['cnt'];
 
-        if ($count >= $maxRequests) {
-            return false; // Rate limit exceeded
+            if ($count >= $maxRequests) {
+                $this->pdo->commit();
+                return false;
+            }
+
+            $insertStmt = $this->pdo->prepare(
+                "INSERT INTO rate_limits (identifier, endpoint, request_time) VALUES (?, ?, ?)"
+            );
+            $insertStmt->execute([$identifier, $endpoint, $now]);
+            $this->pdo->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->pdo->rollBack();
+            return false;
         }
-
-        // Log this request
-        $insertStmt = $this->pdo->prepare(
-            "INSERT INTO rate_limits (identifier, endpoint, request_time) VALUES (?, ?, ?)"
-        );
-        $insertStmt->execute([$identifier, $_SERVER['SCRIPT_NAME'] ?? 'unknown', $now]);
-
-        return true; // Allowed
     }
 
     // Get client IP for rate limiting
@@ -69,5 +70,11 @@ class RateLimit {
             }
         }
         return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+    }
+
+    // Validate device fingerprint format (SHA-256 hex or install-id hex)
+    public static function isValidDeviceId($deviceId) {
+        if (!is_string($deviceId) || strlen($deviceId) < 8 || strlen($deviceId) > 256) return false;
+        return (bool) preg_match('/^[a-f0-9\-]{8,256}$/i', $deviceId);
     }
 }

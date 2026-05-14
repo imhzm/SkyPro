@@ -5,7 +5,8 @@ const globals = require('../globals.cjs')
 const { app, BrowserWindow, dialog } = require('electron')
 
 module.exports = function(ipcm, helpers) {
-  const { safeGoto, humanMouseMove, smartType, smartClick, randomDelay, saveAccount, encryptSecret, decryptSecret, unprotectRow, getSender, sendProgress } = helpers;
+  const { safeGoto, humanMouseMove, smartType, smartClick, smartActionClick, randomDelay, saveAccount, encryptSecret, decryptSecret, unprotectRow, getSender, sendProgress, saveLeads } = helpers;
+  let jobIdCounter = 0
 
 // ==================== IPC: FACEBOOK ====================
 ipcm('facebook-login', async (e, { username, password, headless = false, proxy }) => {

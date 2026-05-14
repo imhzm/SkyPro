@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth'
 import { resetDeviceSchema } from '@/lib/validations'
 import { successResponse, errorResponse, getErrorMessage } from '@/lib/api'
 import { checkRateLimit, getClientIp, rateLimitedResponse, rejectCrossSite, rejectLargeJson } from '@/lib/request-security'
+import { verifySessionToken } from '@/lib/utils'
 
 async function getActor(req: NextRequest) {
   const session = await auth()
@@ -18,25 +19,35 @@ async function getActor(req: NextRequest) {
   const bearer = authHeader?.startsWith('Bearer ') ? authHeader.slice(7).trim() : ''
   if (!bearer) return null
 
-  const desktopSession = await prisma.auditLog.findFirst({
-    where: {
-      action: 'desktop_login',
-      details: { path: ['token'] as any, equals: bearer },
-    },
-    select: { userId: true },
-    orderBy: { createdAt: 'desc' },
-  })
+  const userIdStr = extractTokenUserId(bearer)
+  if (!userIdStr) return null
 
-  if (!desktopSession?.userId) return null
+  const userId = parseInt(userIdStr, 10)
+  if (!Number.isFinite(userId)) return null
 
   const user = await prisma.user.findUnique({
-    where: { id: desktopSession.userId },
+    where: { id: userId },
     select: { id: true, role: true, status: true }
   })
 
   if (!user || user.status !== 'active') return null
 
   return { id: user.id, role: user.role || 'user' }
+}
+
+function extractTokenUserId(token: string): string | null {
+  try {
+    const dotIndex = token.lastIndexOf('.')
+    if (dotIndex === -1) return null
+    const left = token.slice(0, dotIndex)
+    const colonIndex = left.indexOf(':')
+    if (colonIndex === -1) return null
+    const data = left.slice(colonIndex + 1)
+    const parts = data.split(':')
+    return parts.length >= 4 ? parts[0] : null
+  } catch {
+    return null
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -110,7 +121,7 @@ export async function POST(req: NextRequest) {
         data: {
           userId: actor.id,
           action: 'device_reset',
-          details: { keyCode: key, deviceFingerprint, previousDeviceId: device.id, ownerUserId: activationKey.userId },
+          details: { keyCode: key, deviceFingerprint: deviceFingerprint.slice(0, 16) + '...', previousDeviceId: device.id, ownerUserId: activationKey.userId },
           ipAddress
         }
       })
