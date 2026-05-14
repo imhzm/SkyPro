@@ -9,6 +9,9 @@ export function EmailNoticeBanner() {
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
+    // Only show when redirected from successful registration (?welcome=1)
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('welcome') !== '1') return
     const dismissed = sessionStorage.getItem(DISMISS_KEY)
     if (!dismissed) setVisible(true)
   }, [])
@@ -18,6 +21,14 @@ export function EmailNoticeBanner() {
   const dismiss = () => {
     setVisible(false)
     sessionStorage.setItem(DISMISS_KEY, '1')
+    // Clean the ?welcome=1 from URL so a refresh won't re-show it
+    try {
+      const url = new URL(window.location.href)
+      url.searchParams.delete('welcome')
+      window.history.replaceState({}, '', url.toString())
+    } catch {
+      // ignore
+    }
   }
 
   return (
