@@ -49,7 +49,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   facebookPageSendMessages: (data) => ipcRenderer.invoke('facebook-page-send-messages', data),
   facebookAddToGroupChat: (data) => ipcRenderer.invoke('facebook-add-to-group-chat', data),
   facebookSendPageMessages: (data) => ipcRenderer.invoke('facebook-send-page-messages', data),
-  cancelExtraction: (data) => ipcRenderer.send('cancel-extraction', data),
+  cancelExtraction: (data) => ipcRenderer.invoke('cancel-extraction', data),
   onExtractionProgress: (callback) => {
     const handler = (_, data) => callback(data)
     ipcRenderer.on('extraction-progress', handler)

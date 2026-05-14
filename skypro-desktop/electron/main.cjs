@@ -175,8 +175,10 @@ function migrateStoredSecrets() {
 
 function saveAccount(platform, username, password, status = 'active') {
   if (!globals.db) return
-  globals.db.prepare('INSERT OR REPLACE INTO accounts (platform, username, password, status) VALUES (?, ?, ?, ?)')
+  globals.db.prepare('INSERT OR IGNORE INTO accounts (platform, username, password, status) VALUES (?, ?, ?, ?)')
     .run(platform, username, encryptSecret(password), status)
+  globals.db.prepare('UPDATE accounts SET password = ?, status = ? WHERE platform = ? AND username = ?')
+    .run(encryptSecret(password), status, platform, username)
 }
 
 function openExternalUrl(rawUrl) {
@@ -479,8 +481,8 @@ function sendProgress(sender, status, message) {
 }
 
 const helpers = {
-  safeGoto, humanMouseMove, smartType, smartClick, randomDelay, saveAccount,
-  encryptSecret, decryptSecret, unprotectRow, getSender, sendProgress
+  safeGoto, humanMouseMove, smartType, smartClick, smartActionClick, randomDelay, saveAccount,
+  encryptSecret, decryptSecret, unprotectRow, getSender, sendProgress, saveLeads
 }
 require("./ipc/social.cjs")(ipcm, helpers)
 
@@ -854,22 +856,22 @@ ipcm('db-count', async (e, { table, filters }) => {
 // ==================== GENERIC TOOL RUNNER ====================
 ipcm('run-tool', async (e, { platform, toolId, toolName, params, execute = false }) => {
   try {
-    if (globals.db) globals.db.prepare('INSERT INTO leads (platform, name, source, extra_data) VALUES (?, ?, ?, ?)')
-      .run(platform, toolName, 'tool-run', JSON.stringify({ toolId, params, executed: execute }))
-
     if (!execute) {
-      return { success: true, message: `تم حفظ أداة ${toolName} للتشغيل لاحقاً` }
+      if (globals.db) globals.db.prepare('INSERT INTO leads (platform, name, source, extra_data) VALUES (?, ?, ?, ?)')
+        .run(platform, toolName || toolId, 'tool-saved', JSON.stringify({ toolId, params }))
+      return { success: true, message: `تم حفظ أداة ${toolName || toolId} للتشغيل لاحقاً` }
     }
 
-    let result = { success: true, message: `تم تشغيل ${toolName}` }
-
     if (platform === 'facebook') {
-      if (toolId.includes('post') || toolId.includes('group')) {
-        result.message = 'أداة النشر - تأكد من تسجيل الدخول أولاً'
+      if (toolId.includes('mention')) {
+        return { success: false, error: 'ميزة المنشن غير مفعلة حالياً - سيتم تفعيلها قريباً', message: 'ميزة المنشن غير مفعلة حالياً' }
       }
     }
 
-    return result
+    if (globals.db) globals.db.prepare('INSERT INTO leads (platform, name, source, extra_data) VALUES (?, ?, ?, ?)')
+      .run(platform, toolName || toolId, 'tool-run', JSON.stringify({ toolId, params, executed: true, status: 'queued' }))
+
+    return { success: true, message: `تم تسجيل أداة ${toolName || toolId} - سيتم تنفيذها عند تفعيل الدعم الكامل` }
   } catch (err) {
     return { success: false, error: err.message }
   }
@@ -925,14 +927,24 @@ async function executeCampaign(task) {
   }
 }
 
+let schedulerRunning = false
+
 setInterval(async () => {
-  if (!globals.db) return
+  if (!globals.db || schedulerRunning) return
+  schedulerRunning = true
   try {
-    const tasks = globals.db.prepare("SELECT * FROM campaigns WHERE status = 'pending' AND datetime(scheduled_at) <= datetime('now')").all()
+    const tasks = globals.db.prepare("SELECT * FROM campaigns WHERE status = 'pending' AND scheduled_at IS NOT NULL AND datetime(scheduled_at) <= datetime('now')").all()
     for (const task of tasks) {
-      await executeCampaign(task)
+      globals.db.prepare("UPDATE campaigns SET status = 'running' WHERE id = ?").run(task.id)
+      try {
+        await executeCampaign(task)
+      } catch (err) {
+        globals.db.prepare("UPDATE campaigns SET status = 'failed', results = ? WHERE id = ?")
+          .run(JSON.stringify({ error: err.message }), task.id)
+      }
     }
   } catch (e) { console.error('Scheduler error:', e.message) }
+  finally { schedulerRunning = false }
 }, 30000)
 
 // ==================== WINDOW ====================
@@ -1005,6 +1017,28 @@ app.whenReady().then(() => {
   registerAuthIPC({ ipcm, bm: globals.bm, db: globals.db })
 
   createWindow()
+
+  // Content Security Policy
+  const { session } = require('electron')
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [
+          "default-src 'self'; " +
+          "script-src 'self'; " +
+          "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+          "font-src 'self' https://fonts.gstatic.com; " +
+          "img-src 'self' data: blob:; " +
+          "connect-src 'self' https://skypro.skywaveads.com; " +
+          "frame-ancestors 'none'; " +
+          "base-uri 'self'; " +
+          "form-action 'self'"
+        ],
+      },
+    })
+  })
+
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow() })
 
   if (!isDev) {
@@ -1034,9 +1068,10 @@ function ipcm(channel, handler) {
   })
 }
 
-ipcMain.on('cancel-extraction', (event, payload = {}) => {
-  if (!isTrustedIpcSender(event)) return
+ipcMain.handle('cancel-extraction', (event, payload = {}) => {
+  if (!isTrustedIpcSender(event)) return { success: false, error: 'Untrusted' }
   const jobId = typeof payload.jobId === 'string' ? payload.jobId.slice(0, 120) : ''
   if (jobId) globals.cancelFlags.set(jobId, true)
+  return { success: true }
 })
 

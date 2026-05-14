@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/db'
-import { errorResponse, getErrorMessage } from '@/lib/api'
-import { requireAdmin } from '@/lib/admin-security'
+import { successResponse, errorResponse, getErrorMessage } from '@/lib/api'
+import { getClientIp, requireAdmin } from '@/lib/admin-security'
 import { rowsToCsv, csvResponse } from '@/lib/csv'
 
 export const dynamic = 'force-dynamic'
@@ -35,8 +35,18 @@ export async function GET(req: NextRequest) {
     }
 
     const { type, status, search, limit } = parsed.data
+    const adminId = Number(guard.session?.user.id)
     const dateStamp = new Date().toISOString().slice(0, 10)
     const filename = `skypro-${TYPE_LABELS[type]}-${dateStamp}.csv`
+
+    await prisma.auditLog.create({
+      data: {
+        userId: adminId,
+        action: 'admin_export',
+        details: { type, status: status || null, search: search || null, limit },
+        ipAddress: getClientIp(req),
+      },
+    }).catch(() => {})
 
     if (type === 'users') {
       const where: any = {}

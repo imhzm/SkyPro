@@ -9,13 +9,15 @@ import { useEffect, useState } from 'react'
 import './index.css'
 
 // Grace period: allow offline usage for up to 72 hours after last successful validation
-const GRACE_PERIOD_MS = 72 * 60 * 60 * 1000
+const GRACE_PERIOD_MS = 24 * 60 * 60 * 1000
 const LAST_VALIDATED_KEY = 'skypro_last_validated_at'
 
 function isGracePeriodExpired(): boolean {
   const lastValidated = localStorage.getItem(LAST_VALIDATED_KEY)
   if (!lastValidated) return true
-  const elapsed = Date.now() - Number(lastValidated)
+  const parsed = Number(lastValidated)
+  if (!Number.isFinite(parsed) || parsed <= 0) return true
+  const elapsed = Date.now() - parsed
   return elapsed > GRACE_PERIOD_MS
 }
 

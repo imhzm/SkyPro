@@ -2,8 +2,16 @@
 // generate_keys.php - Generate new activation keys (Admin only)
 
 require_once 'config.php';
+require_once 'auth/rate-limit.php';
 
 requirePostRequest();
+
+// Rate limiting: max 10 requests per hour per IP
+$rateLimiter = new RateLimit($pdo);
+$clientIP = RateLimit::getClientIP();
+if (!$rateLimiter->check($clientIP . '_generate_keys', 10, 3600)) {
+    sendResponse(false, 'Too many requests. Please try again later.', null, 429);
+}
 
 $expectedAdminKey = getenv('ADMIN_API_KEY') ?: '';
 if ($expectedAdminKey === '' || strlen($expectedAdminKey) < 24) {
@@ -38,21 +46,25 @@ if ($parsedExpiry === false) {
 $expiryDate = date('Y-m-d', $parsedExpiry);
 
 $generated = [];
+$maxTotalRetries = $count * 3;
+$totalRetries = 0;
 
-for ($i = 0; $i < $count; $i++) {
+for ($i = 0; $i < $count && $totalRetries < $maxTotalRetries; $i++) {
     $key = generateKey();
+    $totalRetries++;
     
     try {
         $stmt = $pdo->prepare("INSERT INTO activation_keys (key_code, expires_at) VALUES (?, ?)");
         $stmt->execute([$key, $expiryDate]);
         $generated[] = $key;
     } catch (PDOException $e) {
-        // Key already exists, try again
-        $i--;
+        if ($e->getCode() === '23000' || str_contains($e->getMessage(), 'Duplicate')) {
+            $i--;
+        }
     }
 }
 
-sendResponse(true, "Generated {$count} keys", [
+sendResponse(true, "Generated " . count($generated) . " keys", [
     'keys' => $generated,
     'expiryDate' => $expiryDate
 ]);

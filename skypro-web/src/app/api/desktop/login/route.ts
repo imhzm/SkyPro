@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { errorResponse, getErrorMessage, successResponse } from '@/lib/api'
-import { generateSessionId, getActivationExpiry, isKeyExpired, verifyPassword } from '@/lib/utils'
+import { generateSessionId, signSessionToken, getActivationExpiry, isKeyExpired, verifyPassword } from '@/lib/utils'
 import { checkRateLimit, getClientIp, rateLimitedResponse, rejectLargeJson } from '@/lib/request-security'
 
 export const dynamic = 'force-dynamic'
@@ -64,12 +64,8 @@ export async function POST(req: NextRequest) {
       include: { devices: true }
     })
 
-    if (!activationKey) {
-      return NextResponse.json(errorResponse('السيريال غير صحيح'), { status: 404 })
-    }
-
-    if (activationKey.userId && activationKey.userId !== user.id) {
-      return NextResponse.json(errorResponse('السيريال غير مرتبط بهذا الحساب'), { status: 403 })
+    if (!activationKey || (activationKey.userId && activationKey.userId !== user.id)) {
+      return NextResponse.json(errorResponse('بيانات تسجيل الدخول غير صحيحة'), { status: 401 })
     }
 
     if (activationKey.status === 'suspended') {
@@ -92,8 +88,16 @@ export async function POST(req: NextRequest) {
     const existingDevice = activeDevices.find((device) => device.deviceFingerprint === deviceFingerprint)
     const inactiveDevice = activationKey.devices.find((device) => !device.isActive && device.deviceFingerprint === deviceFingerprint)
 
-    let deviceId = existingDevice?.id || inactiveDevice?.id
-    const sessionId = generateSessionId()
+    const otherActiveDevice = activeDevices.find((d) => d.deviceFingerprint !== deviceFingerprint)
+
+    let deviceId: number | string = existingDevice?.id || inactiveDevice?.id || ''
+    const sessionId = signSessionToken({
+      userId: user.id,
+      keyId: activationKey.id,
+      deviceId: deviceId || deviceFingerprint,
+      fingerprint: deviceFingerprint
+    })
+
     await prisma.$transaction(async (tx) => {
       if (!activationKey.userId || activationKey.status === 'available' || activationKey.status === 'assigned') {
         await tx.activationKey.update({
@@ -142,11 +146,23 @@ export async function POST(req: NextRequest) {
         deviceId = device.id
       }
 
+      const logDetails: Record<string, string | number | boolean | object | null> = {
+        keyId: activationKey.id,
+        deviceId: deviceId || deviceFingerprint,
+        fingerprint: deviceFingerprint.slice(0, 16) + '...'
+      }
+
+      if (otherActiveDevice && !existingDevice) {
+        logDetails.warning = 'NEW_DEVICE_ON_ACTIVE_KEY'
+        logDetails.existingDevices = activeDevices.map(d => ({ id: d.id, fp: d.deviceFingerprint.slice(0, 16) + '...' }))
+      }
+      logDetails.token = sessionId
+
       await tx.auditLog.create({
         data: {
           userId: user.id,
           action: 'desktop_login',
-          details: { token: sessionId, keyId: activationKey.id, deviceFingerprint, deviceId },
+          details: logDetails as any,
           ipAddress
         }
       })
