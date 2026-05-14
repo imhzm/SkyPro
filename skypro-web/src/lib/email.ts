@@ -156,7 +156,6 @@ function htmlShell(content: string) {
 export async function sendEmail({ to, subject, text, html }: EmailOptions): Promise<EmailResult> {
   const fromEmail = env('SMTP_FROM') || DEFAULT_FROM_EMAIL
   const fromName = env('SMTP_FROM_NAME') || APP_NAME
-  const user = env('SMTP_USER')
 
   const transporter = getTransporter()
   if (!transporter) {
@@ -169,20 +168,32 @@ export async function sendEmail({ to, subject, text, html }: EmailOptions): Prom
       .map((recipient) => recipient.trim())
       .filter(Boolean)
 
+    const domain = fromEmail.split('@')[1] || 'skywaveads.com'
+    const messageId = `<${Date.now()}.${Math.random().toString(36).slice(2)}@${domain}>`
+    const unsubMailto = `mailto:${fromEmail}?subject=unsubscribe`
+    const unsubUrl = `${APP_WEBSITE_URL}/unsubscribe`
+
     const info = await transporter.sendMail({
       from: `"${fromName}" <${fromEmail}>`,
-      envelope: { from: user, to: recipients.length > 0 ? recipients : [to] },
+      sender: fromEmail,
       replyTo: fromEmail,
       to,
       subject,
       text,
       html: html || text,
+      messageId,
       headers: {
+        'Message-ID': messageId,
+        'X-Mailer': `${APP_NAME} Mailer`,
         'X-Entity-Ref-ID': `${APP_NAME}-${Date.now()}`,
+        'X-Priority': '3',
         Organization: APP_NAME,
+        'List-Unsubscribe': `<${unsubMailto}>, <${unsubUrl}>`,
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
       },
     })
 
+    console.log(`[Email] Sent to ${recipients.join(',')}: ${info.messageId}`)
     return { success: true, messageId: info.messageId }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)

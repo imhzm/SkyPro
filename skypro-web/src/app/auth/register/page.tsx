@@ -115,10 +115,10 @@ export default function RegisterPage() {
             </div>
 
             <button
-              onClick={() => router.push(`/auth/register-success?email=${encodeURIComponent(email)}`)}
+              onClick={() => router.push(`/?welcome=1&email=${encodeURIComponent(email)}`)}
               className="btn-primary w-full justify-center text-base py-3.5"
             >
-              فهمت — الذهاب لتسجيل الدخول
+              فهمت — العودة للصفحة الرئيسية
             </button>
 
             <p className="text-amber-400/80 text-xs mt-4 animate-pulse">
