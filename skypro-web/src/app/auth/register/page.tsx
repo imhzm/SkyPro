@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react'
+import { Eye, EyeOff, Mail, Lock, User, Inbox, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { Logo } from '@/components/marketing/Logo'
 
 export default function RegisterPage() {
@@ -16,6 +16,7 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showEmailModal, setShowEmailModal] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -46,7 +47,7 @@ export default function RegisterPage() {
           setError(data.message || 'تم إنشاء الحساب لكن فشل إرسال بيانات التفعيل إلى الإيميل')
           return
         }
-        router.push(`/auth/register-success?email=${encodeURIComponent(email)}`)
+        setShowEmailModal(true)
       } else {
         setError(data.error || 'فشل إنشاء الحساب')
       }
@@ -58,6 +59,75 @@ export default function RegisterPage() {
   }
 
   return (
+    <>
+    {showEmailModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm px-4" dir="rtl">
+        <div className="w-full max-w-md animate-in fade-in zoom-in duration-300">
+          <div className="gradient-border p-8 text-center">
+            {/* Animated mail icon */}
+            <div className="flex justify-center mb-6">
+              <div className="relative">
+                <div className="w-20 h-20 rounded-full bg-sky-500/15 border-2 border-sky-500/30 flex items-center justify-center animate-pulse">
+                  <Mail className="w-10 h-10 text-sky-400" />
+                </div>
+              </div>
+            </div>
+
+            <h2 className="text-2xl font-bold text-white mb-2">تم إنشاء حسابك بنجاح!</h2>
+            <p className="text-slate-400 mb-4">أرسلنا بيانات التفعيل والسيريال إلى بريدك الإلكتروني</p>
+
+            {email && (
+              <div className="bg-sky-500/10 border border-sky-500/20 rounded-xl px-4 py-2.5 mb-5">
+                <p className="text-sky-300 text-sm font-mono" dir="ltr">{email}</p>
+              </div>
+            )}
+
+            <div className="space-y-3 mb-6 text-right">
+              <div className="flex items-center gap-3 bg-white/[0.03] border border-white/8 rounded-xl p-3">
+                <div className="w-8 h-8 rounded-lg bg-sky-500/15 flex items-center justify-center shrink-0">
+                  <Inbox className="w-4 h-4 text-sky-400" />
+                </div>
+                <div>
+                  <p className="text-white font-semibold text-sm">1. افتح البريد الإلكتروني</p>
+                  <p className="text-slate-500 text-xs">ابحث عن رسالة من SkyPro</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 bg-amber-500/5 border border-amber-500/15 rounded-xl p-3">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center shrink-0">
+                  <AlertTriangle className="w-4 h-4 text-amber-400" />
+                </div>
+                <div>
+                  <p className="text-amber-300 font-semibold text-sm">2. تحقق من Spam / Junk</p>
+                  <p className="text-slate-500 text-xs">قد تصل الرسالة في البريد غير المرغوب</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 bg-white/[0.03] border border-white/8 rounded-xl p-3">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/15 flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                </div>
+                <div>
+                  <p className="text-white font-semibold text-sm">3. اضغط رابط التأكيد</p>
+                  <p className="text-slate-500 text-xs">لتفعيل حسابك والتجربة المجانية</p>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => router.push(`/auth/register-success?email=${encodeURIComponent(email)}`)}
+              className="btn-primary w-full justify-center text-base py-3.5"
+            >
+              فهمت — الذهاب لتسجيل الدخول
+            </button>
+
+            <p className="text-amber-400/80 text-xs mt-4 animate-pulse">
+              الرسالة قد تصل خلال دقائق — لا تنسَ مراجعة Spam/Junk
+            </p>
+          </div>
+        </div>
+      </div>
+    )}
     <div className="min-h-screen flex items-center justify-center bg-[#060d1b] px-4" dir="rtl">
       <div className="absolute inset-0">
         <div className="absolute top-1/4 right-1/4 w-[400px] h-[400px] bg-sky-500/5 rounded-full blur-[120px]" />
@@ -222,5 +292,6 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
+    </>
   )
 }
