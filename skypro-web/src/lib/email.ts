@@ -23,6 +23,14 @@ export interface WelcomeEmailData {
   verifyLink?: string
 }
 
+export interface ActivationConfirmEmailData {
+  name?: string | null
+  email: string
+  serial: string
+  expiryDate: string
+  planLabel?: string
+}
+
 export interface PasswordResetEmailData {
   name?: string | null
   resetUrl: string
@@ -246,5 +254,52 @@ export function generateAccountSuspendedEmail(data: AccountSuspendedEmailData): 
       ${reason ? `<p><strong>سبب الحظر:</strong> ${escapeHtml(reason)}</p>` : ''}
     </div>
     <p>إذا كنت تعتقد أن هذا القرار تم بالخطأ، يرجى التواصل مع الدعم من خلال الموقع.</p>
+  `)
+}
+
+export function generateActivationConfirmEmailText(data: ActivationConfirmEmailData): string {
+  const name = data.name || 'عميلنا الكريم'
+
+  return `مرحباً ${name}
+
+تم تأكيد بريدك الإلكتروني وتفعيل حسابك في ${APP_NAME} بنجاح!
+
+بيانات حسابك:
+البريد: ${data.email}
+السيريال: ${data.serial}
+الخطة: ${data.planLabel || 'تجربة مجانية'}
+تاريخ الانتهاء: ${data.expiryDate}
+
+يمكنك الآن:
+- تسجيل الدخول إلى لوحة التحكم من الموقع
+- تحميل تطبيق SkyPro Desktop واستخدام السيريال لتفعيله على جهازك
+
+${baseTextFooter()}`
+}
+
+export function generateActivationConfirmEmail(data: ActivationConfirmEmailData): string {
+  const name = escapeHtml(data.name || 'عميلنا الكريم')
+  const email = escapeHtml(data.email)
+  const serial = escapeHtml(data.serial)
+  const expiryDate = escapeHtml(data.expiryDate)
+  const planLabel = escapeHtml(data.planLabel || 'تجربة مجانية')
+
+  return htmlShell(`
+    <p style="margin-top:0;">مرحباً ${name} 🎉</p>
+    <p>تم تأكيد بريدك الإلكتروني وتفعيل حسابك في ${APP_NAME} بنجاح!</p>
+    <div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:12px;padding:18px;margin:18px 0;">
+      <p style="color:#065f46;font-weight:bold;margin-top:0;">✅ حسابك مفعّل الآن</p>
+      <p><strong>البريد الإلكتروني:</strong> ${email}</p>
+      <p><strong>السيريال:</strong> <code style="background:#d1fae5;padding:4px 10px;border-radius:6px;font-size:15px;color:#065f46;font-weight:bold;">${serial}</code></p>
+      <p><strong>الخطة:</strong> ${planLabel}</p>
+      <p><strong>تاريخ الانتهاء:</strong> ${expiryDate}</p>
+    </div>
+    <p><strong>الخطوات التالية:</strong></p>
+    <ol style="padding-right:18px;line-height:2;">
+      <li>سجّل الدخول إلى <a href="${APP_WEBSITE_URL}/auth/login" style="color:#0A6CF1;text-decoration:none;font-weight:bold;">لوحة التحكم</a></li>
+      <li>حمّل تطبيق SkyPro Desktop من لوحة التحكم</li>
+      <li>استخدم السيريال أعلاه لتفعيل التطبيق على جهازك</li>
+    </ol>
+    <p style="margin-bottom:0;color:#64748b;font-size:13px;">لو لم تطلب هذا الحساب، تجاهل هذه الرسالة.</p>
   `)
 }

@@ -40,6 +40,12 @@ function LoginContent() {
     if (params.get('message') === 'trial-created') {
       setNotice('تم إنشاء حسابك وتفعيل تجربة SkyPro لمدة يومين. أرسلنا بيانات الدخول والسيريال إلى بريدك، وإذا لم تظهر الرسالة في الوارد راجع قسم Spam/Junk.')
     }
+    if (params.get('logged_out') === '1') {
+      setNotice('تم تسجيل الخروج بنجاح')
+    }
+    if (params.get('verified') === '1') {
+      setNotice('تم تأكيد بريدك الإلكتروني بنجاح! يمكنك الآن تسجيل الدخول.')
+    }
     const errParam = params.get('error')
     if (errParam) {
       setError(decodeURIComponent(errParam))
