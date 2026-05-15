@@ -1005,7 +1005,7 @@ function createWindow() {
     width: 1600, height: 980, minWidth: 1240, minHeight: 760,
     frame: false,
     backgroundColor: '#001A3A', autoHideMenuBar: true, title: 'SkyPro',
-    icon: path.join(__dirname, '..', 'public', 'icon.png'),
+    icon: path.join(__dirname, '..', 'public', process.platform === 'win32' ? 'icon.ico' : 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true, nodeIntegration: false, sandbox: true,
