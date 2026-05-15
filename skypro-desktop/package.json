@@ -71,6 +71,7 @@
     "asarUnpack": [
       "node_modules/better-sqlite3/**"
     ],
+    "icon": "public/icon.ico",
     "win": {
       "target": [
         {
@@ -82,7 +83,15 @@
         "portable"
       ],
       "icon": "public/icon.ico",
-      "signAndEditExecutable": false
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "installerIcon": "public/icon.ico",
+      "uninstallerIcon": "public/icon.ico",
+      "installerHeaderIcon": "public/icon.ico"
     },
     "publish": {
       "provider": "generic",
