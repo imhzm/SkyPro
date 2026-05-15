@@ -1,5 +1,4 @@
-'use server'
-
+import { Suspense } from 'react'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { redirect } from 'next/navigation'
@@ -10,6 +9,7 @@ import {
 import CopyButton from '@/components/dashboard/CopyButton'
 import RenewButton from '@/components/dashboard/RenewButton'
 import ActivityFeed from '@/components/dashboard/ActivityFeed'
+import WelcomeModal from '@/components/dashboard/WelcomeModal'
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
@@ -65,6 +65,11 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8">
+      {/* Welcome Modal — shown only once after first-time registration */}
+      <Suspense fallback={null}>
+        <WelcomeModal serial={serial} email={session.user.email ?? null} />
+      </Suspense>
+
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-white">لوحة التحكم</h1>
