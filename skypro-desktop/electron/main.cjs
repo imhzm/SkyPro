@@ -26,23 +26,58 @@ const SECRET_COLUMNS = {
 }
 const REMEMBERED_LOGIN_FILE = 'remembered-login.json'
 
-// Auto updater logging
+// ==================== AUTO UPDATER ====================
 autoUpdater.autoDownload = false
+autoUpdater.autoInstallOnAppQuit = true
 autoUpdater.logger = console
-autoUpdater.on('checking-for-update', () => console.log('Checking for update...'))
-autoUpdater.on('update-available', (info) => console.log('Update available.', info))
-autoUpdater.on('update-not-available', (info) => console.log('Update not available.', info))
-autoUpdater.on('error', (err) => console.log('Error in auto-updater. ' + err))
-autoUpdater.on('download-progress', (progressObj) => {
-  let log_message = `Download speed: ${progressObj.bytesPerSecond}`
-  log_message += ` - Downloaded ${progressObj.percent}%`
-  log_message += ` (${progressObj.transferred}/${progressObj.total})`
-  console.log(log_message)
+
+function sendToAllWindows(channel, data) {
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (!win.isDestroyed()) {
+      win.webContents.send(channel, data)
+    }
+  }
+}
+
+autoUpdater.on('checking-for-update', () => {
+  console.log('[AutoUpdate] Checking for update...')
 })
+
+autoUpdater.on('update-available', (info) => {
+  console.log('[AutoUpdate] Update available:', info.version)
+  sendToAllWindows('update-status', {
+    status: 'available',
+    version: info.version,
+    releaseDate: info.releaseDate,
+  })
+})
+
+autoUpdater.on('update-not-available', (info) => {
+  console.log('[AutoUpdate] Up to date:', info.version)
+  sendToAllWindows('update-status', { status: 'not-available', version: info.version })
+})
+
+autoUpdater.on('error', (err) => {
+  console.error('[AutoUpdate] Error:', err?.message || err)
+  sendToAllWindows('update-status', { status: 'error', error: err?.message || 'Unknown error' })
+})
+
+autoUpdater.on('download-progress', (progress) => {
+  sendToAllWindows('update-status', {
+    status: 'downloading',
+    percent: Math.round(progress.percent),
+    transferred: progress.transferred,
+    total: progress.total,
+    bytesPerSecond: progress.bytesPerSecond,
+  })
+})
+
 autoUpdater.on('update-downloaded', (info) => {
-  console.log('Update downloaded', info)
-  // Quit and install after 5 seconds
-  // setTimeout(() => autoUpdater.quitAndInstall(), 5000)
+  console.log('[AutoUpdate] Downloaded:', info.version)
+  sendToAllWindows('update-status', {
+    status: 'downloaded',
+    version: info.version,
+  })
 })
 
 // ==================== HELPERS ====================
@@ -795,20 +830,37 @@ ipcm('check-for-updates', async () => {
   try {
     if (isDev) return { success: false, message: 'التحديثات غير متاحة في وضع التطوير' }
     const result = await autoUpdater.checkForUpdates()
-    return { success: true, updateAvailable: !!result?.updateInfo?.version, version: result?.updateInfo?.version || app.getVersion() }
+    const updateAvailable = !!result?.updateInfo?.version && result.updateInfo.version !== app.getVersion()
+    return {
+      success: true,
+      updateAvailable,
+      version: result?.updateInfo?.version || app.getVersion(),
+      currentVersion: app.getVersion(),
+    }
   } catch (err) {
-    console.error('check-for-updates error:', err)
-    return { success: false, error: 'فشل التحقق من التحديثات' }
+    console.error('[AutoUpdate] check-for-updates error:', err)
+    return { success: false, error: err?.message || 'فشل التحقق من التحديثات' }
+  }
+})
+
+ipcm('download-update', async () => {
+  try {
+    if (isDev) return { success: false, message: 'التحديثات غير متاحة في وضع التطوير' }
+    await autoUpdater.downloadUpdate()
+    return { success: true }
+  } catch (err) {
+    console.error('[AutoUpdate] download-update error:', err)
+    return { success: false, error: err?.message || 'فشل تحميل التحديث' }
   }
 })
 
 ipcm('install-update', async () => {
   try {
-    autoUpdater.quitAndInstall()
+    setTimeout(() => autoUpdater.quitAndInstall(false, true), 1000)
     return { success: true }
   } catch (err) {
-    console.error('install-update error:', err)
-    return { success: false, error: 'فشل تثبيت التحديث' }
+    console.error('[AutoUpdate] install-update error:', err)
+    return { success: false, error: err?.message || 'فشل تثبيت التحديث' }
   }
 })
 
@@ -1043,8 +1095,10 @@ app.whenReady().then(() => {
 
   if (!isDev) {
     setTimeout(() => {
-      autoUpdater.checkForUpdatesAndNotify().catch(() => {})
-    }, 5000)
+      autoUpdater.checkForUpdates().catch((err) => {
+        console.error('[AutoUpdate] Startup check failed:', err?.message)
+      })
+    }, 10000)
   }
 })
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit() })

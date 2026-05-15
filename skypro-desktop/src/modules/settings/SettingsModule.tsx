@@ -1,13 +1,18 @@
 import { useState, useEffect } from 'react'
-import { Settings, RotateCcw, Info, Download, CheckCircle, AlertCircle, Loader2, Globe, Monitor, Code, Cpu } from 'lucide-react'
+import { Settings, RotateCcw, Info, CheckCircle, AlertCircle, Loader2, Globe, Monitor, Code, Cpu } from 'lucide-react'
 
 export default function SettingsModule() {
   const [version, setVersion] = useState('1.0.0')
   const [platform, setPlatform] = useState('')
   const [downloadPath, setDownloadPath] = useState('')
   const [language, setLanguage] = useState('ar')
-  const [checkingUpdate, setCheckingUpdate] = useState(false)
-  const [updateMsg, setUpdateMsg] = useState('')
+  const [updateState, setUpdateState] = useState<{
+    status: 'idle' | 'checking' | 'available' | 'downloading' | 'downloaded' | 'error' | 'up-to-date'
+    version?: string
+    percent?: number
+    speed?: number
+    error?: string
+  }>({ status: 'idle' })
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [confirmReset, setConfirmReset] = useState(false)
@@ -27,16 +32,47 @@ export default function SettingsModule() {
     setTimeout(() => { setMessage(''); setError('') }, 5000)
   }
 
+  useEffect(() => {
+    const cleanup = window.electronAPI.onUpdateStatus((data: { status: string; version?: string; percent?: number; bytesPerSecond?: number; error?: string }) => {
+      switch (data.status) {
+        case 'available':
+          setUpdateState({ status: 'available', version: data.version })
+          break
+        case 'downloading':
+          setUpdateState(prev => ({ ...prev, status: 'downloading', percent: data.percent, speed: data.bytesPerSecond }))
+          break
+        case 'downloaded':
+          setUpdateState(prev => ({ ...prev, status: 'downloaded' }))
+          break
+        case 'not-available':
+          setUpdateState({ status: 'up-to-date', version: data.version })
+          break
+        case 'error':
+          setUpdateState({ status: 'error', error: data.error })
+          break
+      }
+    })
+    return cleanup
+  }, [])
+
   const handleCheckUpdate = async () => {
-    setCheckingUpdate(true)
-    setUpdateMsg('')
-    try {
-      const res = await window.electronAPI.checkForUpdates()
-      if (res.success && (res as { updateAvailable?: boolean }).updateAvailable) setUpdateMsg(`تحديث جديد متاح: ${(res as { version?: string }).version}`)
-      else if (res.success) setUpdateMsg('لا يوجد تحديثات جديدة — أنت على آخر إصدار')
-      else setUpdateMsg((res as { error?: string }).error || 'فشل التحقق من التحديثات')
-    } catch { setUpdateMsg('فشل التحقق من التحديثات — تحقق من الاتصال بالإنترنت') }
-    setCheckingUpdate(false)
+    setUpdateState({ status: 'checking' })
+    const res = await window.electronAPI.checkForUpdates()
+    if (!res.success) {
+      setUpdateState({ status: 'error', error: (res as { error?: string; message?: string }).error || (res as { message?: string }).message })
+    }
+  }
+
+  const handleDownloadUpdate = async () => {
+    setUpdateState(prev => ({ ...prev, status: 'downloading', percent: 0 }))
+    const res = await window.electronAPI.downloadUpdate()
+    if (!res.success) {
+      setUpdateState({ status: 'error', error: (res as { error?: string }).error })
+    }
+  }
+
+  const handleInstallUpdate = async () => {
+    await window.electronAPI.installUpdate()
   }
 
   const handleReset = async () => {
@@ -112,14 +148,79 @@ export default function SettingsModule() {
             )
           })}
         </div>
-        <button onClick={handleCheckUpdate} disabled={checkingUpdate} className="btn-primary w-full">
-          {checkingUpdate ? <Loader2 size={18} className="animate-spin" /> : <><Download size={18} /> التحقق من التحديثات</>}
-        </button>
-        {updateMsg && (
-          <div className="mt-3 p-3 rounded-xl text-sm font-medium" style={{ background: updateMsg.includes('جديد') ? 'rgba(245,158,11,0.08)' : 'rgba(34,197,94,0.08)', color: updateMsg.includes('جديد') ? '#b45309' : '#16a34a', border: `1px solid ${updateMsg.includes('جديد') ? 'rgba(245,158,11,0.2)' : 'rgba(34,197,94,0.2)'}` }}>
-            {updateMsg}
+        {/* Update Section */}
+        <div className="mt-4 p-4 rounded-xl" style={{ background: 'rgba(248,250,252,0.6)', border: '1px solid rgba(226,232,240,0.4)' }}>
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-sm font-medium text-secondary-900">التحديثات</p>
+              <p className="text-xs text-secondary-500 mt-0.5">v{version}</p>
+            </div>
+
+            {updateState.status === 'idle' && (
+              <button onClick={handleCheckUpdate} className="px-4 py-2 text-xs font-medium rounded-lg transition-colors" style={{ background: 'rgba(10,108,241,0.08)', color: '#0A6CF1', border: '1px solid rgba(10,108,241,0.2)' }}>
+                التحقق من التحديثات
+              </button>
+            )}
+
+            {updateState.status === 'checking' && (
+              <div className="flex items-center gap-2 text-xs text-secondary-500">
+                <Loader2 size={14} className="animate-spin" style={{ color: '#0A6CF1' }} />
+                جارٍ التحقق...
+              </div>
+            )}
+
+            {updateState.status === 'up-to-date' && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs" style={{ color: '#16a34a' }}>
+                  <CheckCircle size={14} className="inline ml-1" />
+                  أحدث إصدار
+                </span>
+                <button onClick={handleCheckUpdate} className="px-3 py-1.5 text-xs text-secondary-500 hover:text-secondary-900 transition-colors">
+                  إعادة التحقق
+                </button>
+              </div>
+            )}
+
+            {updateState.status === 'available' && (
+              <button onClick={handleDownloadUpdate} className="px-4 py-2 text-xs font-medium rounded-lg transition-colors" style={{ background: 'rgba(16,185,129,0.08)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)' }}>
+                تحميل v{updateState.version}
+              </button>
+            )}
+
+            {updateState.status === 'downloaded' && (
+              <button onClick={handleInstallUpdate} className="px-4 py-2 text-xs font-bold text-white rounded-lg transition-colors" style={{ background: 'linear-gradient(135deg, #0A6CF1, #8B2CF5)' }}>
+                تثبيت وإعادة التشغيل
+              </button>
+            )}
+
+            {updateState.status === 'error' && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-red-500">{updateState.error}</span>
+                <button onClick={handleCheckUpdate} className="px-3 py-1.5 text-xs text-secondary-500 hover:text-secondary-900 transition-colors">
+                  إعادة المحاولة
+                </button>
+              </div>
+            )}
           </div>
-        )}
+
+          {/* Download Progress Bar */}
+          {updateState.status === 'downloading' && (
+            <div className="space-y-2">
+              <div className="w-full rounded-full h-2 overflow-hidden" style={{ background: 'rgba(226,232,240,0.6)' }}>
+                <div
+                  className="h-full rounded-full transition-all duration-300"
+                  style={{ width: `${updateState.percent || 0}%`, background: 'linear-gradient(90deg, #0A6CF1, #8B2CF5)' }}
+                />
+              </div>
+              <div className="flex items-center justify-between text-xs text-secondary-500">
+                <span>جارٍ التحميل... {Math.round(updateState.percent || 0)}%</span>
+                {updateState.speed != null && updateState.speed > 0 && (
+                  <span>{(updateState.speed / 1024 / 1024).toFixed(1)} MB/s</span>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* General Settings */}

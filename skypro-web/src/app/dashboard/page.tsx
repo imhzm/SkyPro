@@ -4,9 +4,10 @@ import { prisma } from '@/lib/db'
 import { redirect } from 'next/navigation'
 import {
   Key, Calendar, Monitor, Clock, ArrowUpRight,
-  CheckCircle2, AlertCircle, XCircle, Download, Mail
+  CheckCircle2, AlertCircle, XCircle, Mail
 } from 'lucide-react'
 import CopyButton from '@/components/dashboard/CopyButton'
+import DesktopDownloadButton from '@/components/dashboard/DesktopDownloadButton'
 import RenewButton from '@/components/dashboard/RenewButton'
 import ActivityFeed from '@/components/dashboard/ActivityFeed'
 import WelcomeModal from '@/components/dashboard/WelcomeModal'
@@ -190,13 +191,7 @@ export default async function DashboardPage() {
           <p className="text-slate-400 text-sm mb-4">إجراءات سريعة</p>
           <div className="flex flex-wrap gap-3">
             <RenewButton />
-            <a
-              href={process.env.DESKTOP_APP_DOWNLOAD_URL ?? '#'}
-              className="inline-flex items-center gap-2 rounded-xl bg-white/5 border border-white/10 px-5 py-2.5 text-sm text-slate-300 hover:bg-white/10 hover:text-white transition-all"
-            >
-              <Download className="w-4 h-4" />
-              تحميل البرنامج
-            </a>
+            <DesktopDownloadButton />
             <a
               href="/dashboard/devices"
               className="inline-flex items-center gap-2 rounded-xl bg-white/5 border border-white/10 px-5 py-2.5 text-sm text-slate-300 hover:bg-white/10 hover:text-white transition-all"
