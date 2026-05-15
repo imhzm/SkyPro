@@ -802,7 +802,7 @@ ipcm('export-excel', async (e, { filename, data, headers }) => {
   }
 })
 
-ipcm('get-app-version', () => ({ success: true, version: app.getVersion() }))
+ipcm('get-app-version', () => ({ success: true, data: app.getVersion(), version: app.getVersion() }))
 
 // ==================== WINDOW CONTROLS ====================
 ipcMain.on('window:minimize', (event) => {
@@ -833,9 +833,11 @@ ipcm('check-for-updates', async () => {
     const updateAvailable = !!result?.updateInfo?.version && result.updateInfo.version !== app.getVersion()
     return {
       success: true,
-      updateAvailable,
-      version: result?.updateInfo?.version || app.getVersion(),
-      currentVersion: app.getVersion(),
+      data: {
+        updateAvailable,
+        version: result?.updateInfo?.version || app.getVersion(),
+        currentVersion: app.getVersion(),
+      }
     }
   } catch (err) {
     console.error('[AutoUpdate] check-for-updates error:', err)

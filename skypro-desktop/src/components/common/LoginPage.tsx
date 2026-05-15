@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Mail, Lock, Key, Loader2, AlertCircle, CheckCircle } from 'lucide-react'
+import { useEffect, useState, useCallback } from 'react'
+import { Mail, Lock, Key, Loader2, AlertCircle, CheckCircle, Download, RefreshCw } from 'lucide-react'
 import logoSrc from '../../assets/logo.png'
 import { useAuthStore } from '../../stores/appStore'
 import { activationApi } from '../../services/api/activation'
@@ -12,6 +12,15 @@ interface RememberedLogin {
   remember: boolean
 }
 
+type UpdateStatus =
+  | { state: 'idle' }
+  | { state: 'checking' }
+  | { state: 'available'; version: string }
+  | { state: 'downloading'; percent: number }
+  | { state: 'downloaded'; version: string }
+  | { state: 'up-to-date'; version: string }
+  | { state: 'error'; message: string }
+
 const emptyRememberedLogin: RememberedLogin = { email: '', serial: '', remember: false }
 
 export default function LoginPage() {
@@ -23,11 +32,46 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatus>({ state: 'idle' })
+  const [appVersion, setAppVersion] = useState('')
   const { setActivation, setLoginUser, setToken } = useAuthStore()
 
+  // Fetch app version on mount
+  useEffect(() => {
+    window.electronAPI.getAppVersion?.()
+      .then((res) => {
+        if (res?.success) setAppVersion(String(res.data || res.version || ''))
+      })
+      .catch(() => {})
+  }, [])
+
+  // Listen for update events from main process
+  useEffect(() => {
+    const unsub = window.electronAPI.onUpdateStatus?.((data) => {
+      switch (data.status) {
+        case 'available':
+          setUpdateStatus({ state: 'available', version: data.version || '' })
+          break
+        case 'not-available':
+          setUpdateStatus({ state: 'up-to-date', version: data.version || appVersion })
+          break
+        case 'downloading':
+          setUpdateStatus({ state: 'downloading', percent: data.percent || 0 })
+          break
+        case 'downloaded':
+          setUpdateStatus({ state: 'downloaded', version: data.version || '' })
+          break
+        case 'error':
+          setUpdateStatus({ state: 'error', message: data.error || 'فشل التحديث' })
+          break
+      }
+    })
+    return () => { unsub?.() }
+  }, [appVersion])
+
+  // Remember login effects
   useEffect(() => {
     let cancelled = false
-
     window.electronAPI.getRememberedLogin()
       .then((res) => {
         if (cancelled || !res?.success || !res.data?.remember) return
@@ -37,70 +81,51 @@ export default function LoginPage() {
         setSerial(data.serial || '')
         setRememberDetails(true)
       })
-      .finally(() => {
-        if (!cancelled) setRememberLoaded(true)
-      })
-
+      .finally(() => { if (!cancelled) setRememberLoaded(true) })
     return () => { cancelled = true }
   }, [])
 
   useEffect(() => {
     if (!rememberLoaded) return
-
     if (!rememberDetails) {
       window.electronAPI.clearRememberedLogin().catch(() => {})
       return
     }
-
     const timer = window.setTimeout(() => {
       window.electronAPI.saveRememberedLogin({
-        email: email.trim(),
-        password,
-        serial: serial.trim(),
-        remember: true,
+        email: email.trim(), password, serial: serial.trim(), remember: true,
       }).catch(() => {})
     }, 350)
-
     return () => window.clearTimeout(timer)
   }, [email, password, serial, rememberDetails, rememberLoaded])
 
   const rememberCurrentLogin = async () => {
     if (!rememberDetails) return
     await window.electronAPI.saveRememberedLogin({
-      email: email.trim(),
-      password,
-      serial: serial.trim(),
-      remember: true,
+      email: email.trim(), password, serial: serial.trim(), remember: true,
     })
   }
 
   const handleLogin = async () => {
     const normalizedEmail = email.trim()
     const normalizedSerial = serial.trim().toUpperCase()
-
     if (!normalizedEmail || !password || !normalizedSerial) {
       setError('يرجى إدخال البريد الإلكتروني وكلمة المرور والسيريال')
       return
     }
-
     setLoading(true)
     setError('')
     setSuccess('')
-
     try {
       const deviceInfo = await activationApi.getDeviceInfo()
       const deviceFingerprint = deviceInfo?.fingerprint || deviceInfo?.hostname || ''
-      const result = await activationApi.login(normalizedEmail, password, normalizedSerial, deviceFingerprint, deviceInfo as any)
+      const result = await activationApi.login(normalizedEmail, password, normalizedSerial, deviceFingerprint, deviceInfo as Record<string, unknown>)
 
       if (result.success && result.data) {
         await rememberCurrentLogin().catch(() => {})
         setSuccess('تم تسجيل الدخول بنجاح!')
         setLoginUser({ email: result.data.email, role: result.data.role })
-
-        if (result.data.token) {
-          setToken(result.data.token)
-        }
-
+        if (result.data.token) setToken(result.data.token)
         if (result.data.key) {
           setActivation({
             key: result.data.key,
@@ -110,13 +135,157 @@ export default function LoginPage() {
           })
         }
       } else {
-        setError(result.message || (result as Record<string, unknown>).error as string || 'فشل تسجيل الدخول')
+        setError(result.message || result.error || 'فشل تسجيل الدخول')
       }
     } catch {
       setError('فشل الاتصال بالخادم')
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleCheckForUpdates = useCallback(async () => {
+    setUpdateStatus({ state: 'checking' })
+    try {
+      const res = await window.electronAPI.checkForUpdates()
+      if (!res?.success) {
+        setUpdateStatus({ state: 'error', message: res?.message || res?.error || 'فشل التحقق' })
+        return
+      }
+      if (res.data?.updateAvailable) {
+        setUpdateStatus({ state: 'available', version: res.data.version })
+      } else {
+        setUpdateStatus({ state: 'up-to-date', version: res.data?.currentVersion || appVersion })
+      }
+    } catch {
+      setUpdateStatus({ state: 'error', message: 'فشل الاتصال بخادم التحديثات' })
+    }
+  }, [appVersion])
+
+  const handleDownloadUpdate = useCallback(async () => {
+    setUpdateStatus((prev) => prev.state === 'available' ? { ...prev, state: 'downloading', percent: 0 } as UpdateStatus : prev)
+    try {
+      const res = await window.electronAPI.downloadUpdate()
+      if (!res?.success) {
+        setUpdateStatus({ state: 'error', message: res?.error || 'فشل تحميل التحديث' })
+      }
+    } catch {
+      setUpdateStatus({ state: 'error', message: 'فشل تحميل التحديث' })
+    }
+  }, [])
+
+  const handleInstallUpdate = useCallback(async () => {
+    try {
+      await window.electronAPI.installUpdate()
+    } catch {
+      setUpdateStatus({ state: 'error', message: 'فشل تثبيت التحديث' })
+    }
+  }, [])
+
+  const renderUpdateSection = () => {
+    const { state } = updateStatus
+
+    if (state === 'idle') {
+      return (
+        <button
+          onClick={handleCheckForUpdates}
+          className="flex items-center justify-center gap-2 text-sm text-white/50 hover:text-blue-400 transition-colors"
+        >
+          <RefreshCw size={14} />
+          <span>التحقق من التحديثات</span>
+        </button>
+      )
+    }
+
+    if (state === 'checking') {
+      return (
+        <div className="flex items-center justify-center gap-2 text-sm text-blue-400">
+          <Loader2 size={14} className="animate-spin" />
+          <span>جاري التحقق...</span>
+        </div>
+      )
+    }
+
+    if (state === 'up-to-date') {
+      return (
+        <div className="flex items-center justify-center gap-2 text-sm text-green-400">
+          <CheckCircle size={14} />
+          <span>البرنامج محدث - الإصدار {updateStatus.version}</span>
+        </div>
+      )
+    }
+
+    if (state === 'available') {
+      return (
+        <div className="flex flex-col items-center gap-2">
+          <p className="text-sm text-amber-400">يتوفر تحديث جديد: v{updateStatus.version}</p>
+          <button
+            onClick={handleDownloadUpdate}
+            className="flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors"
+            style={{
+              background: 'linear-gradient(135deg, #0A6CF1, #8B2CF5)',
+              boxShadow: '0 2px 12px rgba(10,108,241,0.3)',
+            }}
+          >
+            <Download size={14} />
+            <span>تحميل التحديث</span>
+          </button>
+        </div>
+      )
+    }
+
+    if (state === 'downloading') {
+      return (
+        <div className="flex flex-col items-center gap-2 w-full">
+          <p className="text-sm text-blue-400">جاري التحميل... {updateStatus.percent}%</p>
+          <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.1)' }}>
+            <div
+              className="h-full rounded-full transition-all duration-300"
+              style={{
+                width: `${updateStatus.percent}%`,
+                background: 'linear-gradient(90deg, #0A6CF1, #8B2CF5)',
+              }}
+            />
+          </div>
+        </div>
+      )
+    }
+
+    if (state === 'downloaded') {
+      return (
+        <div className="flex flex-col items-center gap-2">
+          <p className="text-sm text-green-400">التحديث جاهز للتثبيت: v{updateStatus.version}</p>
+          <button
+            onClick={handleInstallUpdate}
+            className="flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors"
+            style={{
+              background: 'linear-gradient(135deg, #16a34a, #059669)',
+              boxShadow: '0 2px 12px rgba(22,163,74,0.3)',
+            }}
+          >
+            <Download size={14} />
+            <span>تثبيت وإعادة التشغيل</span>
+          </button>
+        </div>
+      )
+    }
+
+    if (state === 'error') {
+      return (
+        <div className="flex flex-col items-center gap-2">
+          <p className="text-sm text-red-400">{updateStatus.message}</p>
+          <button
+            onClick={handleCheckForUpdates}
+            className="flex items-center justify-center gap-2 text-sm text-white/50 hover:text-blue-400 transition-colors"
+          >
+            <RefreshCw size={14} />
+            <span>إعادة المحاولة</span>
+          </button>
+        </div>
+      )
+    }
+
+    return null
   }
 
   return (
@@ -270,9 +439,18 @@ export default function LoginPage() {
             </button>
           </div>
 
-          <div className="mt-6 pt-6 text-center" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          {/* Update Section */}
+          <div
+            className="mt-5 pt-4 flex flex-col items-center gap-3"
+            style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
+          >
+            {renderUpdateSection()}
+          </div>
+
+          <div className="mt-4 pt-4 text-center" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
             <p className="text-sm text-white/40">تواصل معنا للحصول على السيريال</p>
             <p className="text-sm text-white/25 mt-1">السعر: 2,000 ج.م / سنة</p>
+            {appVersion && <p className="text-xs text-white/20 mt-2">v{appVersion}</p>}
           </div>
         </div>
       </div>
