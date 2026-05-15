@@ -25,7 +25,7 @@ const desktopLoginSchema = z.object({
     ram: z.string().max(120).optional(),
     gpu: z.string().max(255).optional(),
     screenResolution: z.string().max(80).optional()
-  }).strict().optional()
+  }).passthrough().optional()
 })
 
 export async function POST(req: NextRequest) {

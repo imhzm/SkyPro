@@ -110,7 +110,7 @@ export default function LoginPage() {
           })
         }
       } else {
-        setError(result.message || 'فشل تسجيل الدخول')
+        setError(result.message || (result as Record<string, unknown>).error as string || 'فشل تسجيل الدخول')
       }
     } catch {
       setError('فشل الاتصال بالخادم')
