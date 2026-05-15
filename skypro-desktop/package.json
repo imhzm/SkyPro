@@ -86,7 +86,7 @@
     },
     "publish": {
       "provider": "generic",
-      "url": "https://www.skywaveads.com/updates"
+      "url": "https://downloads.skywaveads.com/skypro"
     }
   }
 }

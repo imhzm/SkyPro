@@ -104,7 +104,9 @@ if (typeof window !== 'undefined' && !window.electronAPI) {
 
     getAppVersion: () => Promise.resolve({ success: true, data: 'browser-preview' }),
     checkForUpdates: noop,
+    downloadUpdate: noop,
     installUpdate: noop,
+    onUpdateStatus: () => noopVoid,
     getPlatform: () => 'browser',
 
     minimizeWindow: noopVoid,
