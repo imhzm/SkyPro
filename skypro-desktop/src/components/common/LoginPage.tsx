@@ -5,6 +5,13 @@ import { useAuthStore } from '../../stores/appStore'
 import { activationApi } from '../../services/api/activation'
 import AppTitleBar from '../layout/AppTitleBar'
 
+interface RememberedLogin {
+  email: string
+  password?: string
+  serial: string
+  remember: boolean
+}
+
 const emptyRememberedLogin: RememberedLogin = { email: '', serial: '', remember: false }
 
 export default function LoginPage() {
