@@ -60,6 +60,7 @@ function normalizeActivationResult(result: unknown, fallbackKey: string, fallbac
 export interface LoginResponse {
   success: boolean
   message?: string
+  error?: string
   data?: {
     token?: string
     email: string
