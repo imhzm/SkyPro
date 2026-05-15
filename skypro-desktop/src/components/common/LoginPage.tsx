@@ -119,7 +119,7 @@ export default function LoginPage() {
     try {
       const deviceInfo = await activationApi.getDeviceInfo()
       const deviceFingerprint = deviceInfo?.fingerprint || deviceInfo?.hostname || ''
-      const result = await activationApi.login(normalizedEmail, password, normalizedSerial, deviceFingerprint, deviceInfo as Record<string, unknown>)
+      const result = await activationApi.login(normalizedEmail, password, normalizedSerial, deviceFingerprint, deviceInfo ? { ...deviceInfo } : undefined)
 
       if (result.success && result.data) {
         await rememberCurrentLogin().catch(() => {})
