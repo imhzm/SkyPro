@@ -242,14 +242,21 @@ function registerAuthIPC({ ipcm, bm, db }) {
     email = normalizeText(email, 254).toLowerCase()
     password = typeof password === 'string' ? password.slice(0, 512) : ''
     serial = normalizeText(serial, 80).toUpperCase()
-    const deviceInfo = getDeviceCapabilities()
-    const deviceFingerprint = deviceInfo.fingerprint
+    const caps = getDeviceCapabilities()
+    const deviceFingerprint = caps.fingerprint
+    // Strip fingerprint from deviceInfo — server schema uses strict() and
+    // fingerprint is already sent as a top-level field.
+    const { fingerprint: _fp, ...deviceInfo } = caps
     try {
       const { data: result } = await fetchJson(`${WEB_API_URL}/desktop/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, serial, deviceFingerprint, deviceInfo })
       })
+      // Normalize: server uses 'error' field but client expects 'message'
+      if (!result.success && result.error && !result.message) {
+        result.message = result.error
+      }
       return result
     } catch (err) {
       console.error('Login IPC error:', err.message)
