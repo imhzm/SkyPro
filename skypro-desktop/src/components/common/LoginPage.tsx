@@ -5,14 +5,7 @@ import { useAuthStore } from '../../stores/appStore'
 import { activationApi } from '../../services/api/activation'
 import AppTitleBar from '../layout/AppTitleBar'
 
-interface RememberedLogin {
-  email: string
-  hasPassword: boolean
-  serial: string
-  remember: boolean
-}
-
-const emptyRememberedLogin: RememberedLogin = { email: '', hasPassword: false, serial: '', remember: false }
+const emptyRememberedLogin: RememberedLogin = { email: '', serial: '', remember: false }
 
 export default function LoginPage() {
   const [email, setEmail] = useState(emptyRememberedLogin.email)
@@ -55,7 +48,7 @@ export default function LoginPage() {
     const timer = window.setTimeout(() => {
       window.electronAPI.saveRememberedLogin({
         email: email.trim(),
-        hasPassword: !!password,
+        password,
         serial: serial.trim(),
         remember: true,
       }).catch(() => {})
@@ -68,7 +61,7 @@ export default function LoginPage() {
     if (!rememberDetails) return
     await window.electronAPI.saveRememberedLogin({
       email: email.trim(),
-      hasPassword: !!password,
+      password,
       serial: serial.trim(),
       remember: true,
     })
