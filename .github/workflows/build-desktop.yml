@@ -1,0 +1,72 @@
+name: Build & Deploy Desktop App
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'skypro-desktop/**'
+      - '.github/workflows/build-desktop.yml'
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: skypro-desktop/package-lock.json
+
+      - name: Install dependencies
+        working-directory: skypro-desktop
+        run: npm ci
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+
+      - name: Build renderer + Electron package
+        working-directory: skypro-desktop
+        run: npm run build:desktop
+
+      - name: Generate version.json
+        working-directory: skypro-desktop
+        shell: bash
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          SETUP_FILE="SkyPro-Setup-${VERSION}.exe"
+          cat > dist/release/version.json << EOF
+          {
+            "version": "${VERSION}",
+            "releaseDate": "${DATE}",
+            "setupFile": "${SETUP_FILE}",
+            "downloadUrl": "https://downloads.skywaveads.com/skypro/${SETUP_FILE}"
+          }
+          EOF
+          echo "Generated version.json for v${VERSION}"
+
+      - name: Deploy to server
+        uses: burnett01/rsync-deployments@7.0.1
+        with:
+          switches: -avz --chmod=D755,F644
+          path: skypro-desktop/dist/release/
+          remote_path: /var/www/downloads.skywaveads.com/skypro/
+          remote_host: 147.79.66.116
+          remote_user: root
+          remote_key: ${{ secrets.DEPLOY_SSH_KEY }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-release-${{ github.sha }}
+          path: |
+            skypro-desktop/dist/release/SkyPro-Setup-*.exe
+            skypro-desktop/dist/release/latest.yml
+            skypro-desktop/dist/release/version.json
+          retention-days: 30

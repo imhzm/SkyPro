@@ -388,8 +388,19 @@ declare global {
       stopCycle: () => Promise<IpcResult>
 
       getAppVersion: () => Promise<IpcResult<string>>
-      checkForUpdates: () => Promise<IpcResult>
+      checkForUpdates: () => Promise<IpcResult<{ updateAvailable: boolean; version: string; currentVersion: string }>>
+      downloadUpdate: () => Promise<IpcResult>
       installUpdate: () => Promise<IpcResult>
+      onUpdateStatus: (callback: (data: {
+        status: 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error'
+        version?: string
+        percent?: number
+        transferred?: number
+        total?: number
+        bytesPerSecond?: number
+        error?: string
+        releaseDate?: string
+      }) => void) => () => void
       getPlatform: () => string
 
       // Window Controls
