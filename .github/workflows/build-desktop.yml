@@ -41,13 +41,12 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           SETUP_FILE="SkyPro Setup ${VERSION}.exe"
-          ENCODED_FILE="SkyPro%20Setup%20${VERSION}.exe"
           cat > dist/release/version.json <<VEOF
           {
             "version": "${VERSION}",
             "releaseDate": "${DATE}",
             "setupFile": "${SETUP_FILE}",
-            "downloadUrl": "https://downloads.skywaveads.com/skypro/${ENCODED_FILE}"
+            "downloadUrl": "https://downloads.skywaveads.com/skypro/latest"
           }
           VEOF
           echo "Generated version.json for v${VERSION}"
@@ -63,8 +62,11 @@ jobs:
           ssh-keyscan -H 147.79.66.116 >> ~/.ssh/known_hosts 2>/dev/null
           SCP_OPTS="-o StrictHostKeyChecking=no -i ~/.ssh/deploy_key"
           DEST="root@147.79.66.116:/var/www/downloads.skywaveads.com/skypro/"
+          VERSION=$(node -p "require('./skypro-desktop/package.json').version")
           cd skypro-desktop/dist/release
           scp $SCP_OPTS "SkyPro Setup"*.exe latest.yml *.blockmap version.json "$DEST"
+          # Update the latest.exe symlink on the server
+          ssh $SCP_OPTS root@147.79.66.116 "cd /var/www/downloads.skywaveads.com/skypro && ln -sf 'SkyPro Setup ${VERSION}.exe' latest.exe"
           rm -f ~/.ssh/deploy_key
 
       - name: Upload artifacts
