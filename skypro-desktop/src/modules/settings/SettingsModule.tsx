@@ -83,7 +83,7 @@ export default function SettingsModule() {
       for (const table of tables) {
         try {
           const countRes = await window.electronAPI.dbCount({ table, filters: [] })
-          if (countRes.count > 0) {
+          if ((countRes.count ?? 0) > 0) {
             const queryRes = await window.electronAPI.dbQuery({ table, filters: [], limit: 1000 })
             const rows = (queryRes.data as { id: number }[]) || []
             for (const row of rows) {
