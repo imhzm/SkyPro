@@ -1,5 +1,17 @@
 import { useEffect, useState, useCallback } from 'react'
-import { Mail, Lock, Key, Loader2, AlertCircle, CheckCircle, Download, RefreshCw } from 'lucide-react'
+import {
+  Mail,
+  Lock,
+  Key,
+  Loader2,
+  AlertCircle,
+  CheckCircle2,
+  Download,
+  RefreshCw,
+  ExternalLink,
+  Sparkles,
+  ShieldCheck,
+} from 'lucide-react'
 import logoSrc from '../../assets/logo.png'
 import { useAuthStore } from '../../stores/appStore'
 import { activationApi } from '../../services/api/activation'
@@ -69,7 +81,7 @@ export default function LoginPage() {
     return () => { unsub?.() }
   }, [appVersion])
 
-  // Remember login effects
+  // Remember-login effects
   useEffect(() => {
     let cancelled = false
     window.electronAPI.getRememberedLogin()
@@ -93,7 +105,10 @@ export default function LoginPage() {
     }
     const timer = window.setTimeout(() => {
       window.electronAPI.saveRememberedLogin({
-        email: email.trim(), password, serial: serial.trim(), remember: true,
+        email: email.trim(),
+        password,
+        serial: serial.trim(),
+        remember: true,
       }).catch(() => {})
     }, 350)
     return () => window.clearTimeout(timer)
@@ -102,7 +117,10 @@ export default function LoginPage() {
   const rememberCurrentLogin = async () => {
     if (!rememberDetails) return
     await window.electronAPI.saveRememberedLogin({
-      email: email.trim(), password, serial: serial.trim(), remember: true,
+      email: email.trim(),
+      password,
+      serial: serial.trim(),
+      remember: true,
     })
   }
 
@@ -119,11 +137,17 @@ export default function LoginPage() {
     try {
       const deviceInfo = await activationApi.getDeviceInfo()
       const deviceFingerprint = deviceInfo?.fingerprint || deviceInfo?.hostname || ''
-      const result = await activationApi.login(normalizedEmail, password, normalizedSerial, deviceFingerprint, deviceInfo ? { ...deviceInfo } : undefined)
+      const result = await activationApi.login(
+        normalizedEmail,
+        password,
+        normalizedSerial,
+        deviceFingerprint,
+        deviceInfo ? { ...deviceInfo } : undefined,
+      )
 
       if (result.success && result.data) {
         await rememberCurrentLogin().catch(() => {})
-        setSuccess('تم تسجيل الدخول بنجاح!')
+        setSuccess('تم تسجيل الدخول بنجاح')
         setLoginUser({ email: result.data.email, role: result.data.role })
         if (result.data.token) setToken(result.data.token)
         if (result.data.key) {
@@ -163,7 +187,11 @@ export default function LoginPage() {
   }, [appVersion])
 
   const handleDownloadUpdate = useCallback(async () => {
-    setUpdateStatus((prev) => prev.state === 'available' ? { ...prev, state: 'downloading', percent: 0 } as UpdateStatus : prev)
+    setUpdateStatus((prev) =>
+      prev.state === 'available'
+        ? ({ ...prev, state: 'downloading', percent: 0 } as UpdateStatus)
+        : prev,
+    )
     try {
       const res = await window.electronAPI.downloadUpdate()
       if (!res?.success) {
@@ -189,28 +217,28 @@ export default function LoginPage() {
       return (
         <button
           onClick={handleCheckForUpdates}
-          className="flex items-center justify-center gap-2 text-sm text-white/50 hover:text-blue-400 transition-colors"
+          className="group flex items-center justify-center gap-2 text-xs text-white/45 hover:text-white/85 transition-colors"
         >
-          <RefreshCw size={14} />
-          <span>التحقق من التحديثات</span>
+          <RefreshCw size={12} className="transition-transform group-hover:rotate-180 duration-500" />
+          <span>التحقق من وجود تحديثات</span>
         </button>
       )
     }
 
     if (state === 'checking') {
       return (
-        <div className="flex items-center justify-center gap-2 text-sm text-blue-400">
-          <Loader2 size={14} className="animate-spin" />
-          <span>جاري التحقق...</span>
+        <div className="flex items-center justify-center gap-2 text-xs" style={{ color: '#7da8ff' }}>
+          <Loader2 size={12} className="animate-spin" />
+          <span>جاري التحقق…</span>
         </div>
       )
     }
 
     if (state === 'up-to-date') {
       return (
-        <div className="flex items-center justify-center gap-2 text-sm text-green-400">
-          <CheckCircle size={14} />
-          <span>البرنامج محدث - الإصدار {updateStatus.version}</span>
+        <div className="flex items-center justify-center gap-2 text-xs" style={{ color: '#86efac' }}>
+          <CheckCircle2 size={13} />
+          <span>أحدث إصدار · v{updateStatus.version}</span>
         </div>
       )
     }
@@ -218,16 +246,21 @@ export default function LoginPage() {
     if (state === 'available') {
       return (
         <div className="flex flex-col items-center gap-2">
-          <p className="text-sm text-amber-400">يتوفر تحديث جديد: v{updateStatus.version}</p>
+          <div className="flex items-center gap-1.5">
+            <Sparkles size={12} style={{ color: '#fbbf24' }} />
+            <p className="text-xs font-semibold" style={{ color: '#fbbf24' }}>
+              يتوفر تحديث جديد · v{updateStatus.version}
+            </p>
+          </div>
           <button
             onClick={handleDownloadUpdate}
-            className="flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors"
+            className="flex items-center justify-center gap-2 rounded-lg px-4 py-1.5 text-xs font-semibold text-white transition-all hover:-translate-y-0.5"
             style={{
-              background: 'linear-gradient(135deg, #0A6CF1, #8B2CF5)',
-              boxShadow: '0 2px 12px rgba(10,108,241,0.3)',
+              background: 'linear-gradient(135deg, #0a6cf1, #5c3df0, #8b2cf5)',
+              boxShadow: '0 4px 14px rgba(10,108,241,0.35)',
             }}
           >
-            <Download size={14} />
+            <Download size={12} />
             <span>تحميل التحديث</span>
           </button>
         </div>
@@ -237,13 +270,19 @@ export default function LoginPage() {
     if (state === 'downloading') {
       return (
         <div className="flex flex-col items-center gap-2 w-full">
-          <p className="text-sm text-blue-400">جاري التحميل... {updateStatus.percent}%</p>
-          <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.1)' }}>
+          <p className="text-xs font-medium" style={{ color: '#7da8ff' }}>
+            جاري التحميل… {updateStatus.percent}%
+          </p>
+          <div
+            className="w-full h-1.5 rounded-full overflow-hidden"
+            style={{ background: 'rgba(255,255,255,0.08)' }}
+          >
             <div
               className="h-full rounded-full transition-all duration-300"
               style={{
                 width: `${updateStatus.percent}%`,
-                background: 'linear-gradient(90deg, #0A6CF1, #8B2CF5)',
+                background: 'linear-gradient(90deg, #0a6cf1, #5c3df0, #8b2cf5)',
+                boxShadow: '0 0 12px rgba(10,108,241,0.5)',
               }}
             />
           </div>
@@ -254,16 +293,18 @@ export default function LoginPage() {
     if (state === 'downloaded') {
       return (
         <div className="flex flex-col items-center gap-2">
-          <p className="text-sm text-green-400">التحديث جاهز للتثبيت: v{updateStatus.version}</p>
+          <p className="text-xs font-semibold" style={{ color: '#86efac' }}>
+            ✦ التحديث جاهز للتثبيت · v{updateStatus.version}
+          </p>
           <button
             onClick={handleInstallUpdate}
-            className="flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors"
+            className="flex items-center justify-center gap-2 rounded-lg px-4 py-1.5 text-xs font-semibold text-white transition-all hover:-translate-y-0.5"
             style={{
-              background: 'linear-gradient(135deg, #16a34a, #059669)',
-              boxShadow: '0 2px 12px rgba(22,163,74,0.3)',
+              background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+              boxShadow: '0 4px 14px rgba(34,197,94,0.4)',
             }}
           >
-            <Download size={14} />
+            <Download size={12} />
             <span>تثبيت وإعادة التشغيل</span>
           </button>
         </div>
@@ -272,13 +313,13 @@ export default function LoginPage() {
 
     if (state === 'error') {
       return (
-        <div className="flex flex-col items-center gap-2">
-          <p className="text-sm text-red-400">{updateStatus.message}</p>
+        <div className="flex flex-col items-center gap-1.5">
+          <p className="text-xs" style={{ color: '#fca5a5' }}>{updateStatus.message}</p>
           <button
             onClick={handleCheckForUpdates}
-            className="flex items-center justify-center gap-2 text-sm text-white/50 hover:text-blue-400 transition-colors"
+            className="flex items-center justify-center gap-1.5 text-xs text-white/55 hover:text-white/90 transition-colors"
           >
-            <RefreshCw size={14} />
+            <RefreshCw size={11} />
             <span>إعادة المحاولة</span>
           </button>
         </div>
@@ -288,169 +329,355 @@ export default function LoginPage() {
     return null
   }
 
+  const formValid = !!email.trim() && !!password && !!serial.trim()
+
   return (
-    <div className="flex h-screen flex-col overflow-hidden">
+    <div className="flex h-screen flex-col overflow-hidden relative">
       <AppTitleBar />
+
+      {/* ===== Animated aurora background ===== */}
       <div
-        className="flex flex-1 items-center justify-center overflow-y-auto px-4 py-6"
-        style={{ background: 'linear-gradient(135deg, #001A3A, #0A1628, #0D1137)' }}
+        className="absolute inset-0 -z-10"
+        style={{
+          background:
+            'radial-gradient(ellipse at top, #0a1437 0%, #050a1c 60%, #03061a 100%)',
+        }}
+        aria-hidden
       >
+        {/* Aurora blobs */}
         <div
-          className="card max-w-md w-full"
+          className="absolute w-[60rem] h-[60rem] rounded-full sw-aurora -z-10"
           style={{
-            background: 'rgba(255,255,255,0.05)',
-            backdropFilter: 'blur(16px)',
-            border: '1px solid rgba(10,108,241,0.15)',
-            boxShadow: '0 0 60px rgba(10,108,241,0.08), 0 0 120px rgba(139,44,245,0.04)',
+            top: '-25%',
+            insetInlineStart: '-20%',
+            background:
+              'radial-gradient(circle at center, rgba(10, 108, 241, 0.32) 0%, rgba(10, 108, 241, 0) 60%)',
+            filter: 'blur(60px)',
           }}
-        >
-          <div className="text-center mb-6">
-            <img
-              src={logoSrc}
-              alt="SkyPro"
-              className="w-20 h-20 mx-auto mb-4 object-contain"
-              style={{ filter: 'drop-shadow(0 4px 20px rgba(10, 108, 241, 0.4))' }}
-            />
-            <h2 className="text-2xl font-bold text-white mb-2">تسجيل الدخول</h2>
-            <p className="text-white/50">أدخل البيانات للدخول إلى التطبيق</p>
-          </div>
+        />
+        <div
+          className="absolute w-[55rem] h-[55rem] rounded-full sw-aurora-alt -z-10"
+          style={{
+            bottom: '-30%',
+            insetInlineEnd: '-15%',
+            background:
+              'radial-gradient(circle at center, rgba(139, 44, 245, 0.28) 0%, rgba(139, 44, 245, 0) 60%)',
+            filter: 'blur(60px)',
+          }}
+        />
+        <div
+          className="absolute w-[45rem] h-[45rem] rounded-full sw-aurora -z-10"
+          style={{
+            top: '20%',
+            insetInlineEnd: '30%',
+            background:
+              'radial-gradient(circle at center, rgba(255, 79, 216, 0.16) 0%, rgba(255, 79, 216, 0) 60%)',
+            filter: 'blur(80px)',
+            animationDelay: '-8s',
+          }}
+        />
 
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-white/70 mb-1">البريد الإلكتروني</label>
-              <div className="relative">
-                <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
-                <input
-                  type="email"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl text-right"
-                  style={{
-                    background: 'rgba(255,255,255,0.08)',
-                    border: '1.5px solid rgba(10,108,241,0.3)',
-                    color: '#EAF3FF',
-                  }}
-                  placeholder="admin@skywaveads.com"
-                  value={email}
-                  onChange={(e) => { setEmail(e.target.value); setError(''); setSuccess('') }}
-                  onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-                  autoComplete="email"
-                  dir="ltr"
-                  autoFocus
-                />
-              </div>
-            </div>
+        {/* Subtle grid */}
+        <div
+          className="absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage:
+              'linear-gradient(rgba(255,255,255,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.4) 1px, transparent 1px)',
+            backgroundSize: '40px 40px',
+            maskImage: 'radial-gradient(ellipse at center, black 30%, transparent 70%)',
+            WebkitMaskImage: 'radial-gradient(ellipse at center, black 30%, transparent 70%)',
+          }}
+        />
+      </div>
 
-            <div>
-              <label className="block text-sm font-medium text-white/70 mb-1">كلمة المرور</label>
-              <div className="relative">
-                <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
-                <input
-                  type="password"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl text-right"
-                  style={{
-                    background: 'rgba(255,255,255,0.08)',
-                    border: '1.5px solid rgba(10,108,241,0.3)',
-                    color: '#EAF3FF',
-                  }}
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => { setPassword(e.target.value); setError(''); setSuccess('') }}
-                  onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-                  autoComplete="current-password"
-                  dir="ltr"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-white/70 mb-1">السيريال</label>
-              <div className="relative">
-                <Key size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
-                <input
-                  type="text"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl font-mono text-lg tracking-wider text-right"
-                  style={{
-                    background: 'rgba(255,255,255,0.08)',
-                    border: '1.5px solid rgba(10,108,241,0.3)',
-                    color: '#EAF3FF',
-                  }}
-                  placeholder="SKY-XXXX-XXXX"
-                  value={serial}
-                  onChange={(e) => { setSerial(e.target.value.toUpperCase()); setError(''); setSuccess('') }}
-                  onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-                  autoComplete="off"
-                  dir="ltr"
-                />
-              </div>
-            </div>
-
-            <label
-              className="flex cursor-pointer items-center justify-between gap-3 rounded-xl px-3 py-2"
-              style={{
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(10,108,241,0.18)',
-              }}
-            >
-              <span className="text-sm text-white/70">تذكر بياناتي</span>
-              <input
-                type="checkbox"
-                checked={rememberDetails}
-                onChange={(e) => setRememberDetails(e.target.checked)}
-                className="h-4 w-4 accent-blue-500"
+      {/* ===== Main content ===== */}
+      <div className="flex flex-1 items-center justify-center overflow-y-auto px-4 py-8">
+        <div className="w-full max-w-md sw-fade-in-up">
+          {/* Logo + brand */}
+          <div className="text-center mb-7">
+            <div className="inline-flex relative mb-4">
+              <div
+                className="absolute inset-0 -m-3 rounded-full"
+                style={{
+                  background:
+                    'radial-gradient(circle, rgba(10,108,241,0.3) 0%, transparent 65%)',
+                  filter: 'blur(20px)',
+                }}
               />
-            </label>
-
-            {error && (
-              <div
-                className="flex items-center gap-2 p-3 rounded-xl text-sm"
-                style={{
-                  background: 'rgba(239,68,68,0.1)',
-                  border: '1px solid rgba(239,68,68,0.2)',
-                  color: '#f87171',
-                }}
-              >
-                <AlertCircle size={18} /> {error}
-              </div>
-            )}
-
-            {success && (
-              <div
-                className="flex items-center gap-2 p-3 rounded-xl text-sm"
-                style={{
-                  background: 'rgba(34,197,94,0.1)',
-                  border: '1px solid rgba(34,197,94,0.2)',
-                  color: '#4ade80',
-                }}
-              >
-                <CheckCircle size={18} /> {success}
-              </div>
-            )}
-
-            <button
-              onClick={handleLogin}
-              disabled={loading || !email.trim() || !password || !serial.trim()}
-              className="btn-primary w-full"
-              style={
-                !loading && email.trim() && password && serial.trim()
-                  ? { boxShadow: '0 4px 20px rgba(10, 108, 241, 0.4), 0 0 30px rgba(139, 44, 245, 0.15)' }
-                  : {}
-              }
-            >
-              {loading ? <Loader2 size={20} className="animate-spin mx-auto" /> : 'تسجيل الدخول'}
-            </button>
+              <img
+                src={logoSrc}
+                alt="SkyPro"
+                className="relative w-20 h-20 object-contain"
+                style={{ filter: 'drop-shadow(0 8px 32px rgba(10, 108, 241, 0.4))' }}
+              />
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight">
+              <span className="text-white">Sky</span>
+              <span className="text-gradient">Pro</span>
+            </h1>
+            <p className="mt-1.5 text-xs uppercase tracking-[0.32em] font-medium"
+               style={{ color: 'rgba(167, 139, 250, 0.7)' }}>
+              Marketing Automation Suite
+            </p>
           </div>
 
-          {/* Update Section */}
+          {/* Card */}
           <div
-            className="mt-5 pt-4 flex flex-col items-center gap-3"
-            style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
+            className="relative rounded-2xl p-7"
+            style={{
+              background:
+                'linear-gradient(160deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 100%)',
+              backdropFilter: 'blur(24px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+              border: '1px solid rgba(255,255,255,0.10)',
+              boxShadow:
+                '0 24px 60px rgba(5, 10, 28, 0.5), inset 0 1px 0 rgba(255,255,255,0.08)',
+            }}
           >
-            {renderUpdateSection()}
+            {/* Gradient border accent */}
+            <div
+              aria-hidden
+              className="absolute inset-x-12 -top-px h-px"
+              style={{
+                background:
+                  'linear-gradient(90deg, transparent, rgba(139, 44, 245, 0.6), transparent)',
+              }}
+            />
+
+            <div className="mb-5">
+              <h2 className="text-xl font-bold text-white">تسجيل الدخول</h2>
+              <p className="text-xs mt-1" style={{ color: 'rgba(234, 243, 255, 0.5)' }}>
+                ادخل بياناتك للوصول إلى لوحة التحكم
+              </p>
+            </div>
+
+            <div className="space-y-3.5">
+              {/* Email */}
+              <div>
+                <label className="block text-[11px] font-semibold mb-1.5 tracking-wide"
+                       style={{ color: 'rgba(234, 243, 255, 0.7)' }}>
+                  البريد الإلكتروني
+                </label>
+                <div className="relative">
+                  <Mail
+                    size={15}
+                    className="absolute left-3 top-1/2 -translate-y-1/2"
+                    style={{ color: 'rgba(125, 168, 255, 0.55)' }}
+                  />
+                  <input
+                    type="email"
+                    className="w-full pl-9 pr-3 py-2.5 rounded-xl text-sm transition-all"
+                    style={{
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(125, 168, 255, 0.18)',
+                      color: '#EAF3FF',
+                      fontFamily: "'Inter', sans-serif",
+                    }}
+                    placeholder="admin@example.com"
+                    value={email}
+                    onChange={(e) => { setEmail(e.target.value); setError(''); setSuccess('') }}
+                    onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                    autoComplete="email"
+                    dir="ltr"
+                    autoFocus
+                    onFocus={(e) => {
+                      e.target.style.borderColor = 'rgba(125, 168, 255, 0.5)'
+                      e.target.style.boxShadow = '0 0 0 4px rgba(10, 108, 241, 0.12)'
+                      e.target.style.background = 'rgba(255,255,255,0.06)'
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = 'rgba(125, 168, 255, 0.18)'
+                      e.target.style.boxShadow = 'none'
+                      e.target.style.background = 'rgba(255,255,255,0.04)'
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Password */}
+              <div>
+                <label className="block text-[11px] font-semibold mb-1.5 tracking-wide"
+                       style={{ color: 'rgba(234, 243, 255, 0.7)' }}>
+                  كلمة المرور
+                </label>
+                <div className="relative">
+                  <Lock
+                    size={15}
+                    className="absolute left-3 top-1/2 -translate-y-1/2"
+                    style={{ color: 'rgba(125, 168, 255, 0.55)' }}
+                  />
+                  <input
+                    type="password"
+                    className="w-full pl-9 pr-3 py-2.5 rounded-xl text-sm transition-all"
+                    style={{
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(125, 168, 255, 0.18)',
+                      color: '#EAF3FF',
+                      fontFamily: "'Inter', sans-serif",
+                    }}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => { setPassword(e.target.value); setError(''); setSuccess('') }}
+                    onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                    autoComplete="current-password"
+                    dir="ltr"
+                    onFocus={(e) => {
+                      e.target.style.borderColor = 'rgba(125, 168, 255, 0.5)'
+                      e.target.style.boxShadow = '0 0 0 4px rgba(10, 108, 241, 0.12)'
+                      e.target.style.background = 'rgba(255,255,255,0.06)'
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = 'rgba(125, 168, 255, 0.18)'
+                      e.target.style.boxShadow = 'none'
+                      e.target.style.background = 'rgba(255,255,255,0.04)'
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Serial */}
+              <div>
+                <label className="block text-[11px] font-semibold mb-1.5 tracking-wide"
+                       style={{ color: 'rgba(234, 243, 255, 0.7)' }}>
+                  مفتاح التفعيل
+                </label>
+                <div className="relative">
+                  <Key
+                    size={15}
+                    className="absolute left-3 top-1/2 -translate-y-1/2"
+                    style={{ color: 'rgba(125, 168, 255, 0.55)' }}
+                  />
+                  <input
+                    type="text"
+                    className="w-full pl-9 pr-3 py-2.5 rounded-xl text-sm font-mono tracking-widest transition-all"
+                    style={{
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(125, 168, 255, 0.18)',
+                      color: '#EAF3FF',
+                    }}
+                    placeholder="SKY-XXXX-XXXX"
+                    value={serial}
+                    onChange={(e) => { setSerial(e.target.value.toUpperCase()); setError(''); setSuccess('') }}
+                    onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                    autoComplete="off"
+                    dir="ltr"
+                    onFocus={(e) => {
+                      e.target.style.borderColor = 'rgba(125, 168, 255, 0.5)'
+                      e.target.style.boxShadow = '0 0 0 4px rgba(10, 108, 241, 0.12)'
+                      e.target.style.background = 'rgba(255,255,255,0.06)'
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = 'rgba(125, 168, 255, 0.18)'
+                      e.target.style.boxShadow = 'none'
+                      e.target.style.background = 'rgba(255,255,255,0.04)'
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Remember */}
+              <label
+                className="flex cursor-pointer items-center justify-between gap-3 rounded-xl px-3 py-2 transition-colors"
+                style={{
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(125, 168, 255, 0.12)',
+                }}
+              >
+                <span className="flex items-center gap-2 text-xs" style={{ color: 'rgba(234, 243, 255, 0.7)' }}>
+                  <ShieldCheck size={13} style={{ color: 'rgba(125, 168, 255, 0.7)' }} />
+                  تذكر بياناتي
+                </span>
+                <button
+                  type="button"
+                  className={`sw-toggle ${rememberDetails ? 'active' : ''}`}
+                  onClick={() => setRememberDetails(!rememberDetails)}
+                  aria-pressed={rememberDetails}
+                />
+              </label>
+
+              {/* Error / Success */}
+              {error && (
+                <div
+                  className="flex items-center gap-2 p-3 rounded-xl text-xs sw-fade-in-up"
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.10)',
+                    border: '1px solid rgba(239, 68, 68, 0.25)',
+                    color: '#fca5a5',
+                  }}
+                >
+                  <AlertCircle size={15} />
+                  <span className="flex-1 leading-snug">{error}</span>
+                </div>
+              )}
+
+              {success && (
+                <div
+                  className="flex items-center gap-2 p-3 rounded-xl text-xs sw-fade-in-up"
+                  style={{
+                    background: 'rgba(34, 197, 94, 0.10)',
+                    border: '1px solid rgba(34, 197, 94, 0.25)',
+                    color: '#86efac',
+                  }}
+                >
+                  <CheckCircle2 size={15} />
+                  <span>{success}</span>
+                </div>
+              )}
+
+              {/* Submit */}
+              <button
+                onClick={handleLogin}
+                disabled={loading || !formValid}
+                className="relative w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-all overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  background:
+                    'linear-gradient(135deg, #0a6cf1 0%, #5c3df0 55%, #8b2cf5 100%)',
+                  boxShadow:
+                    !loading && formValid
+                      ? '0 8px 28px rgba(10,108,241,0.45), 0 0 24px rgba(139,44,245,0.18), inset 0 1px 0 rgba(255,255,255,0.2)'
+                      : 'none',
+                }}
+                onMouseEnter={(e) => {
+                  if (!loading && formValid) e.currentTarget.style.transform = 'translateY(-1px)'
+                }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)' }}
+              >
+                {loading ? (
+                  <Loader2 size={18} className="animate-spin mx-auto" />
+                ) : (
+                  <span className="relative inline-flex items-center justify-center gap-1.5">
+                    تسجيل الدخول
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* Update section */}
+            <div
+              className="mt-5 pt-4 flex flex-col items-center gap-3"
+              style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
+            >
+              {renderUpdateSection()}
+            </div>
           </div>
 
-          <div className="mt-4 pt-4 text-center" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-            <p className="text-sm text-white/40">تواصل معنا للحصول على السيريال</p>
-            <p className="text-sm text-white/25 mt-1">السعر: 2,000 ج.م / سنة</p>
-            {appVersion && <p className="text-xs text-white/20 mt-2">v{appVersion}</p>}
+          {/* Footer */}
+          <div className="mt-5 flex flex-col items-center gap-2 text-center">
+            <button
+              onClick={() => window.open('https://www.skywaveads.com', '_blank', 'noopener,noreferrer')}
+              className="group inline-flex items-center gap-1.5 text-xs hover:text-white/85 transition-colors"
+              style={{ color: 'rgba(234, 243, 255, 0.5)' }}
+            >
+              <span>زوّر موقعنا</span>
+              <span className="font-semibold text-gradient">www.skywaveads.com</span>
+              <ExternalLink size={11} className="opacity-60 group-hover:opacity-100" />
+            </button>
+            {appVersion && (
+              <p className="text-[10px] tracking-widest font-mono uppercase"
+                 style={{ color: 'rgba(234, 243, 255, 0.25)' }}>
+                build v{appVersion}
+              </p>
+            )}
           </div>
         </div>
       </div>

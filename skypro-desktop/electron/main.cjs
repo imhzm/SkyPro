@@ -27,8 +27,12 @@ const SECRET_COLUMNS = {
 const REMEMBERED_LOGIN_FILE = 'remembered-login.json'
 
 // ==================== AUTO UPDATER ====================
-autoUpdater.autoDownload = false
+// Aggressive update strategy: download in background as soon as available,
+// install on next app launch. User just experiences "app updated itself".
+autoUpdater.autoDownload = true
 autoUpdater.autoInstallOnAppQuit = true
+autoUpdater.allowDowngrade = false
+autoUpdater.disableWebInstaller = true
 autoUpdater.logger = console
 
 function sendToAllWindows(channel, data) {
@@ -1096,11 +1100,18 @@ app.whenReady().then(() => {
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow() })
 
   if (!isDev) {
+    // Initial check 2s after window is shown (down from 10s — user wants snappy updates)
     setTimeout(() => {
       autoUpdater.checkForUpdates().catch((err) => {
         console.error('[AutoUpdate] Startup check failed:', err?.message)
       })
-    }, 10000)
+    }, 2000)
+    // Periodic re-check every 30 minutes while the app is open
+    setInterval(() => {
+      autoUpdater.checkForUpdates().catch((err) => {
+        console.error('[AutoUpdate] Periodic check failed:', err?.message)
+      })
+    }, 30 * 60 * 1000)
   }
 })
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit() })
