@@ -3,6 +3,7 @@ import { usePlatform } from '../../hooks/usePlatform'
 import { useAccountsStore } from '../../stores/accountsStore'
 import type { Account } from '../../stores/accountsStore'
 import AccountSelector from '../../components/common/AccountSelector'
+import AccountCycleBanner from '../../components/common/AccountCycleBanner'
 import ToolGrid from '../../components/tools/ToolGrid'
 import ToolCard from '../../components/tools/ToolCard'
 import ToolPanel from '../../components/tools/ToolPanel'
@@ -1011,8 +1012,6 @@ export default function FacebookModule() {
       description={tool.description}
       accent={tool.accent}
       accentGradient={tool.accentGradient}
-      badge={!sessionId ? 'يتطلب دخول' : undefined}
-      badgeTone={!sessionId ? 'warning' : 'primary'}
       onClick={() => openTool(tool.id)}
     />
   )
@@ -1027,6 +1026,15 @@ export default function FacebookModule() {
       )}
 
       {renderSessionCard()}
+
+      <AccountCycleBanner
+        platformId="facebook"
+        platformName="Facebook"
+        platformGradient={ACCENT_GRADIENT}
+        accounts={allAccounts}
+        cycleActive={cycleActive}
+        onOpenCycle={() => setActiveTool('extract')}
+      />
 
       <ToolGrid title="استخراج وبحث" subtitle="استخراج بيانات شامل وبحث متقدم" icon={Download} accent="#0A6CF1" cols={4}>
         {extractCategoryTools.map(renderToolCard)}

@@ -206,6 +206,22 @@ model SystemSetting {
   @@map("system_settings")
 }
 
+model Offer {
+  id           Int      @id @default(autoincrement())
+  title        String?
+  description  String?  @db.Text
+  imageUrl     String?  @map("image_url") @db.Text
+  externalUrl  String   @map("external_url") @db.Text
+  badge        String?
+  isActive     Boolean  @default(true) @map("is_active")
+  sortOrder    Int      @default(0) @map("sort_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@index([isActive, sortOrder])
+  @@map("offers")
+}
+
 model VerificationToken {
   identifier String
   token      String   @unique

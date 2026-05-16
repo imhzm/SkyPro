@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { User, CreditCard, Calendar, CheckCircle, Loader2, KeyRound, AlertCircle, Database, Users, BarChart3, Shield, Copy } from 'lucide-react'
+import { User, CreditCard, Calendar, CheckCircle, Loader2, KeyRound, AlertCircle, Database, Users, BarChart3, Copy } from 'lucide-react'
 import { useAuthStore } from '../../stores/appStore'
+import ModuleHeader, { HeaderChip } from '../../components/common/ModuleHeader'
 
 export default function AccountModule() {
   const { isAuthenticated, keyData } = useAuthStore()
@@ -69,29 +70,16 @@ export default function AccountModule() {
         </div>
       )}
 
-      {/* Hero Banner */}
-      <div className="rounded-2xl overflow-hidden p-6" style={{ background: 'linear-gradient(135deg, #1a0533 0%, #8B2CF5 50%, #0A6CF1 100%)', boxShadow: '0 8px 32px rgba(139, 44, 245, 0.25)' }}>
-        <div className="flex items-center gap-5">
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)' }}>
-            <User size={32} className="text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-bold text-white mb-1">{profile.name || 'المستخدم'}</h1>
-            <p className="text-sm" style={{ color: 'rgba(255,255,255,0.6)' }}>{profile.email || 'لم يتم إعداد البريد الإلكتروني'}</p>
-            <div className="flex gap-2 mt-2">
-              <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold text-white" style={{ background: isAuthenticated ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)', border: `1px solid ${isAuthenticated ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)'}` }}>
-                {isAuthenticated ? 'حساب مفعّل' : 'غير مفعّل'}
-              </span>
-              <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold text-white" style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.15)' }}>
-                SkyPro
-              </span>
-            </div>
-          </div>
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)' }}>
-            <Shield size={28} className="text-white/60" />
-          </div>
-        </div>
-      </div>
+      <ModuleHeader
+        title={profile.name || 'الملف الشخصي'}
+        subtitle={profile.email || 'لم يتم إعداد البريد الإلكتروني — قم بتعديل بياناتك أدناه'}
+        icon={User}
+        badge={{
+          label: isAuthenticated ? 'حساب مفعّل' : 'غير مفعّل',
+          tone: isAuthenticated ? 'success' : 'danger',
+        }}
+        meta={<HeaderChip>SkyPro Pro Account</HeaderChip>}
+      />
 
       {/* Stats Grid */}
       <div className="grid grid-cols-3 gap-4">

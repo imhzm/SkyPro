@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useAccountsStore } from '../../stores/accountsStore'
 import { getPlatformGradient } from '../../data/platformGradients'
-import { Users, Plus, Trash2, Edit3, Save, X, Search, Facebook, MessageCircle, Instagram, Twitter, Linkedin, Send, Globe, AtSign, Bookmark, Eye, EyeOff, CheckCircle, AlertCircle, Shield } from 'lucide-react'
+import { Users, Plus, Trash2, Edit3, Save, X, Search, Facebook, MessageCircle, Instagram, Twitter, Linkedin, Send, Globe, AtSign, Bookmark, Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react'
+import ModuleHeader from '../../components/common/ModuleHeader'
 
 const PLATFORMS = [
   { id: 'facebook', label: 'Facebook', icon: Facebook },
@@ -107,28 +108,30 @@ export default function AccountsModule() {
         </div>
       )}
 
-      {/* Hero Header */}
-      <div className="rounded-2xl overflow-hidden p-6" style={{ background: 'linear-gradient(135deg, #001a0a 0%, #22c55e 50%, #16a34a 100%)', boxShadow: '0 8px 32px rgba(34, 197, 94, 0.2)' }}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)' }}>
-              <Shield size={28} className="text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-white mb-1">إدارة الحسابات</h1>
-              <p className="text-sm" style={{ color: 'rgba(255,255,255,0.6)' }}>إدارة جميع حسابات السوشيال ميديا في مكان واحد</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="px-3 py-1.5 rounded-full text-xs font-semibold text-white" style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)' }}>
-              {accounts.length} حساب
-            </div>
-            <button onClick={() => { setShowForm(!showForm); setEditingId(null); setForm({ platform: 'facebook', username: '', password: '', proxy: '', notes: '', status: 'active' }) }} className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all hover:shadow-lg" style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)' }}>
-              {showForm ? <><X size={16} className="inline ml-1" /> إغلاق</> : <><Plus size={16} className="inline ml-1" /> إضافة حساب</>}
-            </button>
-          </div>
-        </div>
-      </div>
+      <ModuleHeader
+        title="الحسابات المحفوظة"
+        subtitle="إدارة جميع حسابات السوشيال ميديا في مكان واحد · يمكنك استخدامها للتدوير التلقائي بين المنصات"
+        icon={Users}
+        badge={{ label: `${accounts.length} حساب`, tone: 'neutral' }}
+        action={
+          <button
+            onClick={() => {
+              setShowForm(!showForm)
+              setEditingId(null)
+              setForm({ platform: 'facebook', username: '', password: '', proxy: '', notes: '', status: 'active' })
+            }}
+            className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all flex items-center gap-1.5"
+            style={{
+              background:
+                'linear-gradient(135deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0.08) 100%)',
+              border: '1px solid rgba(255,255,255,0.25)',
+              backdropFilter: 'blur(8px)',
+            }}
+          >
+            {showForm ? (<><X size={15} /> إغلاق</>) : (<><Plus size={15} /> إضافة حساب</>)}
+          </button>
+        }
+      />
 
       {/* Platform Stats Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-6 gap-2.5">

@@ -11,6 +11,8 @@ import {
   ExternalLink,
   Sparkles,
   ShieldCheck,
+  UserCheck,
+  Zap,
 } from 'lucide-react'
 import logoSrc from '../../assets/logo.png'
 import { useAuthStore } from '../../stores/appStore'
@@ -22,6 +24,12 @@ interface RememberedLogin {
   password?: string
   serial: string
   remember: boolean
+}
+
+interface SavedLoginPreview {
+  email: string
+  serial: string
+  hasPassword: boolean
 }
 
 type UpdateStatus =
@@ -46,6 +54,8 @@ export default function LoginPage() {
   const [success, setSuccess] = useState('')
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus>({ state: 'idle' })
   const [appVersion, setAppVersion] = useState('')
+  const [savedLogin, setSavedLogin] = useState<SavedLoginPreview | null>(null)
+  const [savedPasswordCache, setSavedPasswordCache] = useState<string>('')
   const { setActivation, setLoginUser, setToken } = useAuthStore()
 
   // Fetch app version on mount
@@ -81,7 +91,7 @@ export default function LoginPage() {
     return () => { unsub?.() }
   }, [appVersion])
 
-  // Remember-login effects
+  // Remember-login effects + saved-login preview
   useEffect(() => {
     let cancelled = false
     window.electronAPI.getRememberedLogin()
@@ -92,6 +102,17 @@ export default function LoginPage() {
         setPassword('')
         setSerial(data.serial || '')
         setRememberDetails(true)
+        // Stash the saved-login preview so the user can one-click Quick Login.
+        if (data.email && data.serial) {
+          setSavedLogin({
+            email: data.email,
+            serial: data.serial,
+            hasPassword: !!(data.password && data.password.length > 0),
+          })
+          // Keep the password in renderer memory only for the quick-login button
+          // (the IPC already returned it, so this isn't a new leak).
+          setSavedPasswordCache(data.password || '')
+        }
       })
       .finally(() => { if (!cancelled) setRememberLoaded(true) })
     return () => { cancelled = true }
@@ -124,10 +145,11 @@ export default function LoginPage() {
     })
   }
 
-  const handleLogin = async () => {
-    const normalizedEmail = email.trim()
-    const normalizedSerial = serial.trim().toUpperCase()
-    if (!normalizedEmail || !password || !normalizedSerial) {
+  const submitLogin = useCallback(async (overrideEmail?: string, overridePassword?: string, overrideSerial?: string) => {
+    const normalizedEmail = (overrideEmail ?? email).trim()
+    const finalPassword = overridePassword ?? password
+    const normalizedSerial = (overrideSerial ?? serial).trim().toUpperCase()
+    if (!normalizedEmail || !finalPassword || !normalizedSerial) {
       setError('يرجى إدخال البريد الإلكتروني وكلمة المرور والسيريال')
       return
     }
@@ -139,7 +161,7 @@ export default function LoginPage() {
       const deviceFingerprint = deviceInfo?.fingerprint || deviceInfo?.hostname || ''
       const result = await activationApi.login(
         normalizedEmail,
-        password,
+        finalPassword,
         normalizedSerial,
         deviceFingerprint,
         deviceInfo ? { ...deviceInfo } : undefined,
@@ -166,7 +188,34 @@ export default function LoginPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [email, password, serial, setActivation, setLoginUser, setToken])
+
+  const handleLogin = useCallback(() => submitLogin(), [submitLogin])
+
+  const handleQuickLogin = useCallback(() => {
+    if (!savedLogin) return
+    setEmail(savedLogin.email)
+    setSerial(savedLogin.serial)
+    if (savedPasswordCache) {
+      setPassword(savedPasswordCache)
+      // Fire-and-forget; submitLogin reads from overrides.
+      submitLogin(savedLogin.email, savedPasswordCache, savedLogin.serial)
+    } else {
+      setError('كلمة المرور غير محفوظة. يرجى إدخالها يدوياً.')
+    }
+  }, [savedLogin, savedPasswordCache, submitLogin])
+
+  const handleForgetSavedLogin = useCallback(async () => {
+    try {
+      await window.electronAPI.clearRememberedLogin()
+    } catch { /* ignore */ }
+    setSavedLogin(null)
+    setSavedPasswordCache('')
+    setEmail('')
+    setPassword('')
+    setSerial('')
+    setRememberDetails(false)
+  }, [])
 
   const handleCheckForUpdates = useCallback(async () => {
     setUpdateStatus({ state: 'checking' })
@@ -450,6 +499,63 @@ export default function LoginPage() {
                 ادخل بياناتك للوصول إلى لوحة التحكم
               </p>
             </div>
+
+            {/* Quick-login chip for saved account */}
+            {savedLogin && (
+              <div
+                className="mb-4 rounded-xl p-3 flex items-center gap-3 sw-fade-in-up"
+                style={{
+                  background:
+                    'linear-gradient(135deg, rgba(10, 108, 241, 0.16) 0%, rgba(139, 44, 245, 0.10) 100%)',
+                  border: '1px solid rgba(125, 168, 255, 0.30)',
+                }}
+              >
+                <div
+                  className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{
+                    background: 'linear-gradient(135deg, #0a6cf1, #5c3df0, #8b2cf5)',
+                    boxShadow: '0 4px 12px rgba(10,108,241,0.35)',
+                  }}
+                >
+                  <UserCheck size={16} className="text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] uppercase tracking-wider font-bold mb-0.5"
+                     style={{ color: 'rgba(167, 139, 250, 0.7)' }}>
+                    حساب محفوظ
+                  </p>
+                  <p className="text-xs font-mono text-white truncate" dir="ltr">{savedLogin.email}</p>
+                </div>
+                {savedLogin.hasPassword ? (
+                  <button
+                    type="button"
+                    onClick={handleQuickLogin}
+                    disabled={loading}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-all hover:-translate-y-0.5 disabled:opacity-50"
+                    style={{
+                      background: 'linear-gradient(135deg, #0a6cf1, #5c3df0, #8b2cf5)',
+                      boxShadow: '0 4px 14px rgba(10,108,241,0.40)',
+                    }}
+                    title="دخول مباشر بالحساب المحفوظ"
+                  >
+                    {loading ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} />}
+                    دخول سريع
+                  </button>
+                ) : (
+                  <span className="text-[10px]" style={{ color: 'rgba(234, 243, 255, 0.45)' }}>
+                    أدخل كلمة المرور
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={handleForgetSavedLogin}
+                  className="text-[10px] text-white/40 hover:text-white/80 transition-colors px-2"
+                  title="نسيان الحساب"
+                >
+                  حذف
+                </button>
+              </div>
+            )}
 
             <div className="space-y-3.5">
               {/* Email */}

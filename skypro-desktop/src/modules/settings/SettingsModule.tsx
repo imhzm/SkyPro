@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Settings, RotateCcw, Info, CheckCircle, AlertCircle, Loader2, Globe, Monitor, Code, Cpu } from 'lucide-react'
+import ModuleHeader from '../../components/common/ModuleHeader'
 
 export default function SettingsModule() {
   const [version, setVersion] = useState('1.0.0')
@@ -120,6 +121,13 @@ export default function SettingsModule() {
           {message || error}
         </div>
       )}
+
+      <ModuleHeader
+        title="الإعدادات"
+        subtitle="إدارة إعدادات التطبيق والتحديثات والنسخ الاحتياطي"
+        icon={Settings}
+        badge={{ label: `v${version}`, tone: 'neutral' }}
+      />
 
       {/* About Section */}
       <div className="card-gradient-border">

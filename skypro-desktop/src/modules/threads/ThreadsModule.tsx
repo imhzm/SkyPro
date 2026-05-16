@@ -3,6 +3,7 @@ import { usePlatform } from '../../hooks/usePlatform'
 import { useAccountsStore } from '../../stores/accountsStore'
 import type { Account } from '../../stores/accountsStore'
 import AccountSelector from '../../components/common/AccountSelector'
+import AccountCycleBanner from '../../components/common/AccountCycleBanner'
 import ToolGrid from '../../components/tools/ToolGrid'
 import ToolCard from '../../components/tools/ToolCard'
 import ToolPanel from '../../components/tools/ToolPanel'
@@ -516,6 +517,15 @@ export default function ThreadsModule() {
 
       {renderSessionCard()}
 
+      <AccountCycleBanner
+        platformId="threads"
+        platformName="Threads"
+        platformGradient={ACCENT_GRADIENT}
+        accounts={allAccounts}
+        cycleActive={cycleActive}
+        onOpenCycle={() => setActiveTool('extract')}
+      />
+
       <ToolGrid
         title="أدوات Threads"
         subtitle="اختر أداة لفتح إعدادات الحملة الخاصة بها"
@@ -531,8 +541,6 @@ export default function ThreadsModule() {
             description={tool.description}
             accent={tool.accent}
             accentGradient={tool.accentGradient}
-            badge={tool.requiresSession && !sessionId ? 'يتطلب دخول' : undefined}
-            badgeTone={tool.requiresSession && !sessionId ? 'warning' : 'primary'}
             onClick={() => {
               if (tool.requiresSession && !sessionId) {
                 showMsg('يرجى تسجيل الدخول أولاً', true)
