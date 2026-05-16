@@ -43,11 +43,13 @@
   --color-ink-800: #1e293b;
   --color-ink-900: #0f172a;
 
-  /* === Deep (sidebar / titlebar dark surfaces) === */
-  --color-deep-900: #050a1c;
-  --color-deep-800: #0a0f24;
-  --color-deep-700: #0d1437;
-  --color-deep-600: #15205a;
+  /* === Deep (sidebar / titlebar dark surfaces — refined 2026 palette) === */
+  --color-deep-950: #050518;
+  --color-deep-900: #0a0a23;
+  --color-deep-800: #0e0d2e;
+  --color-deep-700: #11102d;
+  --color-deep-600: #1e1b4b;
+  --color-deep-500: #312e81;
 
   /* === Semantic === */
   --color-success-500: #22c55e;
@@ -117,8 +119,8 @@
     --shadow-md: 0 4px 12px rgb(15 23 42 / 0.06), 0 2px 4px rgb(15 23 42 / 0.04);
     --shadow-lg: 0 12px 32px rgb(15 23 42 / 0.08), 0 4px 12px rgb(15 23 42 / 0.05);
     --shadow-xl: 0 24px 48px rgb(15 23 42 / 0.10), 0 8px 16px rgb(15 23 42 / 0.06);
-    --shadow-brand: 0 8px 24px rgb(10 108 241 / 0.18), 0 2px 8px rgb(139 44 245 / 0.10);
-    --shadow-brand-lg: 0 16px 40px rgb(10 108 241 / 0.25), 0 4px 16px rgb(139 44 245 / 0.15);
+    --shadow-brand: 0 8px 24px rgb(99 102 241 / 0.22), 0 2px 8px rgb(168 85 247 / 0.12);
+    --shadow-brand-lg: 0 16px 40px rgb(99 102 241 / 0.28), 0 4px 16px rgb(168 85 247 / 0.16);
   }
 
   * { box-sizing: border-box; }
@@ -126,10 +128,13 @@
   body {
     font-family: var(--font-sans);
     color: var(--color-ink-900);
+    /* Soft indigo/violet wash on a clean white-blue base — feels modern
+       without competing with the dark module headers. */
     background:
-      radial-gradient(ellipse 80% 50% at 20% 0%,  rgb(10 108 241 / 0.07), transparent 60%),
-      radial-gradient(ellipse 80% 50% at 80% 100%, rgb(139 44 245 / 0.06), transparent 60%),
-      linear-gradient(180deg, #fafbff 0%, #eef2fb 100%);
+      radial-gradient(ellipse 70% 50% at 18% 0%,   rgb(99 102 241 / 0.08), transparent 60%),
+      radial-gradient(ellipse 70% 50% at 82% 100%, rgb(168 85 247 / 0.07), transparent 60%),
+      radial-gradient(ellipse 50% 30% at 50% 50%,  rgb(56 189 248 / 0.04), transparent 70%),
+      linear-gradient(180deg, #f7f8ff 0%, #ecedfa 100%);
     background-attachment: fixed;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -157,13 +162,14 @@
     gap: 0.5rem;
     padding: 0.625rem 1.25rem;
     border-radius: var(--radius-md);
-    background: linear-gradient(135deg, #0a6cf1 0%, #5c3df0 55%, #8b2cf5 100%);
+    /* Modernized brand gradient — indigo to violet to magenta. */
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
     color: white;
     font-weight: 600;
     font-size: 0.875rem;
     letter-spacing: -0.005em;
     transition: transform 0.2s var(--ease-out), box-shadow 0.3s var(--ease-out), filter 0.2s ease;
-    box-shadow: var(--shadow-brand);
+    box-shadow: 0 8px 24px rgb(99 102 241 / 0.30), 0 2px 8px rgb(168 85 247 / 0.14);
     cursor: pointer;
     border: none;
     position: relative;
@@ -405,12 +411,12 @@
     color: rgb(234 243 255 / 0.95);
   }
   .sidebar-item.active {
-    background: linear-gradient(135deg, rgb(10 108 241 / 0.22), rgb(139 44 245 / 0.16));
+    background: linear-gradient(135deg, rgb(99 102 241 / 0.24), rgb(168 85 247 / 0.16));
     color: #fff;
     font-weight: 600;
     box-shadow:
-      inset 0 0 0 1px rgb(10 108 241 / 0.35),
-      0 4px 16px rgb(10 108 241 / 0.12);
+      inset 0 0 0 1px rgb(124 58 237 / 0.40),
+      0 4px 16px rgb(99 102 241 / 0.14);
   }
   .sidebar-item.active::before {
     content: '';
@@ -420,8 +426,8 @@
     bottom: 18%;
     width: 3px;
     border-radius: 0 4px 4px 0;
-    background: linear-gradient(180deg, #4d83ff, #8b2cf5);
-    box-shadow: 0 0 10px rgb(10 108 241 / 0.6);
+    background: linear-gradient(180deg, #6366f1, #a855f7);
+    box-shadow: 0 0 10px rgb(124 58 237 / 0.65);
   }
 
   /* ---------- Table ---------- */
@@ -460,8 +466,8 @@
   }
   .progress-bar-fill {
     height: 100%; border-radius: inherit;
-    background: linear-gradient(90deg, #0a6cf1, #5c3df0, #8b2cf5);
-    box-shadow: 0 0 12px rgb(10 108 241 / 0.4);
+    background: linear-gradient(90deg, #6366f1, #a855f7, #ec4899);
+    box-shadow: 0 0 12px rgb(124 58 237 / 0.45);
     transition: width 0.5s var(--ease-out);
   }
 
@@ -518,17 +524,17 @@ input[type="range"]::-moz-range-thumb {
   box-shadow: 0 2px 8px rgb(10 108 241 / 0.35);
 }
 
-/* Gradient text helpers */
+/* Gradient text helpers — refined 2026 palette */
 .text-gradient,
 .sw-icon-gradient {
-  background: linear-gradient(135deg, #0a6cf1 0%, #5c3df0 55%, #8b2cf5 100%);
+  background: linear-gradient(135deg, #6366f1 0%, #a855f7 55%, #ec4899 100%);
   -webkit-background-clip: text;
           background-clip: text;
   -webkit-text-fill-color: transparent;
           color: transparent;
 }
 .text-gradient-pink {
-  background: linear-gradient(135deg, #8b2cf5 0%, #ff4fd8 100%);
+  background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
   -webkit-background-clip: text;
           background-clip: text;
   -webkit-text-fill-color: transparent;

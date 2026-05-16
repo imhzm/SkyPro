@@ -388,41 +388,56 @@ export default function LoginPage() {
       <div
         className="absolute inset-0 -z-10"
         style={{
+          /* Deeper indigo base with very subtle violet tint at top. */
           background:
-            'radial-gradient(ellipse at top, #0a1437 0%, #050a1c 60%, #03061a 100%)',
+            'radial-gradient(ellipse 80% 60% at top, #1e1b4b 0%, #0e0d2e 50%, #050518 100%)',
         }}
         aria-hidden
       >
-        {/* Aurora blobs */}
+        {/* Aurora — indigo blob, top-left */}
         <div
           className="absolute w-[60rem] h-[60rem] rounded-full sw-aurora -z-10"
           style={{
             top: '-25%',
             insetInlineStart: '-20%',
             background:
-              'radial-gradient(circle at center, rgba(10, 108, 241, 0.32) 0%, rgba(10, 108, 241, 0) 60%)',
+              'radial-gradient(circle at center, rgba(99, 102, 241, 0.38) 0%, rgba(99, 102, 241, 0) 60%)',
             filter: 'blur(60px)',
           }}
         />
+        {/* Aurora — violet blob, bottom-right */}
         <div
           className="absolute w-[55rem] h-[55rem] rounded-full sw-aurora-alt -z-10"
           style={{
             bottom: '-30%',
             insetInlineEnd: '-15%',
             background:
-              'radial-gradient(circle at center, rgba(139, 44, 245, 0.28) 0%, rgba(139, 44, 245, 0) 60%)',
+              'radial-gradient(circle at center, rgba(168, 85, 247, 0.34) 0%, rgba(168, 85, 247, 0) 60%)',
             filter: 'blur(60px)',
           }}
         />
+        {/* Aurora — magenta accent, mid-right */}
         <div
           className="absolute w-[45rem] h-[45rem] rounded-full sw-aurora -z-10"
           style={{
-            top: '20%',
-            insetInlineEnd: '30%',
+            top: '15%',
+            insetInlineEnd: '25%',
             background:
-              'radial-gradient(circle at center, rgba(255, 79, 216, 0.16) 0%, rgba(255, 79, 216, 0) 60%)',
+              'radial-gradient(circle at center, rgba(236, 72, 153, 0.20) 0%, rgba(236, 72, 153, 0) 60%)',
             filter: 'blur(80px)',
             animationDelay: '-8s',
+          }}
+        />
+        {/* Aurora — cyan accent for cool contrast */}
+        <div
+          className="absolute w-[35rem] h-[35rem] rounded-full sw-aurora-alt -z-10"
+          style={{
+            bottom: '15%',
+            insetInlineStart: '25%',
+            background:
+              'radial-gradient(circle at center, rgba(56, 189, 248, 0.14) 0%, transparent 60%)',
+            filter: 'blur(70px)',
+            animationDelay: '-12s',
           }}
         />
 

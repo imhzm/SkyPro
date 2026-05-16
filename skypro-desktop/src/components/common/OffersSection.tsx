@@ -141,30 +141,33 @@ export default function OffersSection({ hideWhenEmpty = false }: OffersSectionPr
         onClick={handleOpen}
         className="group relative w-full text-right rounded-2xl overflow-hidden transition-all hover:-translate-y-0.5"
         style={{
+          /* Slightly more "offer-energetic" gradient — leans into magenta/violet
+             to differentiate from the regular ModuleHeader. */
           background:
-            'linear-gradient(135deg, #050a1c 0%, #0a1437 35%, #0a3a8a 70%, #6d23c0 100%)',
+            'linear-gradient(135deg, #1a0b2e 0%, #2e1065 25%, #6d28d9 55%, #c026d3 85%, #ec4899 100%)',
           boxShadow:
-            '0 12px 32px rgba(10, 108, 241, 0.18), 0 4px 16px rgba(139, 44, 245, 0.10)',
+            '0 16px 40px rgba(192, 38, 211, 0.22), 0 6px 18px rgba(124, 58, 237, 0.16), inset 0 1px 0 rgba(255,255,255,0.10)',
           minHeight: '140px',
         }}
       >
-        {/* Decorative aurora */}
+        {/* Aurora blob — vibrant pink top right */}
         <div
           aria-hidden
-          className="absolute -top-20 -right-20 w-72 h-72 rounded-full pointer-events-none"
+          className="absolute -top-24 -right-16 w-80 h-80 rounded-full pointer-events-none"
           style={{
             background:
-              'radial-gradient(circle, rgba(255, 79, 216, 0.30) 0%, transparent 65%)',
-            filter: 'blur(40px)',
+              'radial-gradient(circle, rgba(244, 114, 182, 0.48) 0%, rgba(236, 72, 153, 0.20) 40%, transparent 70%)',
+            filter: 'blur(48px)',
           }}
         />
+        {/* Aurora blob — indigo bottom left */}
         <div
           aria-hidden
-          className="absolute -bottom-24 -left-12 w-72 h-72 rounded-full pointer-events-none"
+          className="absolute -bottom-24 -left-16 w-80 h-80 rounded-full pointer-events-none"
           style={{
             background:
-              'radial-gradient(circle, rgba(10, 108, 241, 0.30) 0%, transparent 65%)',
-            filter: 'blur(40px)',
+              'radial-gradient(circle, rgba(99, 102, 241, 0.36) 0%, rgba(56, 189, 248, 0.18) 40%, transparent 70%)',
+            filter: 'blur(48px)',
           }}
         />
 
