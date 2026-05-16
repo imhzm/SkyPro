@@ -541,6 +541,7 @@ export default function ThreadsModule() {
             description={tool.description}
             accent={tool.accent}
             accentGradient={tool.accentGradient}
+            locked={tool.requiresSession && !sessionId}
             onClick={() => {
               if (tool.requiresSession && !sessionId) {
                 showMsg('يرجى تسجيل الدخول أولاً', true)

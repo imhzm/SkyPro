@@ -505,6 +505,7 @@ export default function WhatsappModule() {
             description={tool.description}
             accent={tool.accent}
             accentGradient={tool.accentGradient}
+            locked={tool.requiresSession && !sessionId}
             onClick={() => {
               if (tool.requiresSession && !sessionId) {
                 showMsg('يرجى فتح WhatsApp أولاً', true)
