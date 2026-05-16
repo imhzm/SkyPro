@@ -151,6 +151,16 @@ export default function AdminUsersPage() {
     loadUsers()
   }, [loadUsers, reloadToken])
 
+  // Live refresh every 20s when the tab is visible so admin sees status
+  // updates without manual reload.
+  useEffect(() => {
+    const tick = () => {
+      if (!document.hidden) setReloadToken((value) => value + 1)
+    }
+    const handle = setInterval(tick, 20_000)
+    return () => clearInterval(handle)
+  }, [])
+
   const summaryCards = useMemo(() => {
     const active = statusCounts.active || 0
     const suspended = statusCounts.suspended || 0
@@ -282,16 +292,20 @@ export default function AdminUsersPage() {
     }
   }
 
-  const deleteUser = async (user: User) => {
+  const deleteUser = async (user: User, hard = false) => {
     setActionUserId(user.id)
     setNotice(null)
 
     try {
-      const res = await fetch(`/api/admin/users?id=${user.id}`, { method: 'DELETE' })
+      const qs = hard ? `id=${user.id}&hard=true` : `id=${user.id}`
+      const res = await fetch(`/api/admin/users?${qs}`, { method: 'DELETE' })
       const data = await res.json()
 
       if (data.success) {
-        setNotice({ type: 'success', message: data.message || 'تم حذف المستخدم بنجاح' })
+        setNotice({
+          type: 'success',
+          message: data.message || (hard ? 'تم الحذف النهائي بنجاح' : 'تم حذف المستخدم بنجاح'),
+        })
         setPendingDeleteUser(null)
         setDeleteConfirmText('')
         refreshUsers()
@@ -869,12 +883,23 @@ export default function AdminUsersPage() {
                 إلغاء
               </button>
               <button
-                onClick={() => deleteUser(pendingDeleteUser)}
+                onClick={() => deleteUser(pendingDeleteUser, false)}
                 disabled={deleteConfirmText !== 'DELETE' || actionUserId === pendingDeleteUser.id}
                 className="admin-btn-danger disabled:cursor-not-allowed disabled:opacity-50"
+                title="إخفاء المستخدم (يحتفظ بالبيانات في قاعدة البيانات)"
               >
                 <Trash2 size={16} />
-                حذف نهائي
+                إخفاء (Soft)
+              </button>
+              <button
+                onClick={() => deleteUser(pendingDeleteUser, true)}
+                disabled={deleteConfirmText !== 'DELETE' || actionUserId === pendingDeleteUser.id}
+                className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50 flex items-center gap-2"
+                style={{ boxShadow: '0 4px 14px rgba(220, 38, 38, 0.40)' }}
+                title="حذف نهائي مع جميع البيانات المرتبطة من قاعدة البيانات"
+              >
+                <Trash2 size={16} />
+                حذف نهائي من DB
               </button>
             </div>
           </div>

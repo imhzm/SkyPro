@@ -4,7 +4,8 @@ import { prisma } from '@/lib/db'
 import { redirect } from 'next/navigation'
 import {
   Key, Calendar, Monitor, Clock, ArrowUpRight,
-  CheckCircle2, AlertCircle, XCircle, Mail
+  CheckCircle2, AlertCircle, XCircle, Mail, Receipt,
+  CreditCard, Sparkles, Shield, TrendingUp,
 } from 'lucide-react'
 import CopyButton from '@/components/dashboard/CopyButton'
 import DesktopDownloadButton from '@/components/dashboard/DesktopDownloadButton'
@@ -40,7 +41,15 @@ export default async function DashboardPage() {
 
   const userId = Number(session.user.id)
 
-  const [subscription, devices] = await Promise.all([
+  const [
+    subscription,
+    devices,
+    allKeys,
+    recentInvoices,
+    recentPayments,
+    totalSpentAgg,
+    deviceCount,
+  ] = await Promise.all([
     prisma.subscription.findFirst({
       where: { userId },
       include: { key: true },
@@ -49,8 +58,44 @@ export default async function DashboardPage() {
     prisma.device.findMany({
       where: { userId, isActive: true },
       orderBy: { lastSeenAt: 'desc' },
-      take: 3,
+      take: 5,
     }),
+    prisma.activationKey.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+      select: { id: true, keyCode: true, status: true, expiresAt: true, createdAt: true },
+    }),
+    prisma.invoice.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: 4,
+      select: {
+        id: true,
+        invoiceNumber: true,
+        status: true,
+        totalAmount: true,
+        currency: true,
+        createdAt: true,
+      },
+    }),
+    prisma.payment.findMany({
+      where: { userId, status: 'paid' },
+      orderBy: { paidAt: 'desc' },
+      take: 4,
+      select: {
+        id: true,
+        amount: true,
+        currency: true,
+        method: true,
+        paidAt: true,
+      },
+    }),
+    prisma.payment.aggregate({
+      where: { userId, status: 'paid' },
+      _sum: { amount: true },
+    }),
+    prisma.device.count({ where: { userId } }),
   ])
 
   const serial   = subscription?.key?.keyCode ?? null
@@ -63,6 +108,11 @@ export default async function DashboardPage() {
   const expiryFormatted = expiresAt
     ? expiresAt.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })
     : 'غير متاح'
+
+  const totalSpent = Math.round((totalSpentAgg._sum.amount || 0) * 100) / 100
+  const totalSpentCurrency = recentPayments[0]?.currency || 'EGP'
+  const maxDevices = subscription?.key?.maxDevices ?? 1
+  const activeDevicesCount = devices.length
 
   return (
     <div className="space-y-8">
@@ -204,8 +254,200 @@ export default async function DashboardPage() {
         </div>
       </div>
 
+      {/* Account Summary Strip (new) */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <SummaryStat
+          label="إجمالي المدفوع"
+          value={totalSpent > 0 ? `${totalSpent.toLocaleString('ar-EG')} ${totalSpentCurrency}` : '—'}
+          icon={CreditCard}
+          tone="emerald"
+        />
+        <SummaryStat
+          label="مفاتيح التفعيل"
+          value={`${allKeys.length}`}
+          sub={allKeys.length > 0 ? `${allKeys.filter((k) => k.status === 'active').length} نشط` : 'لا يوجد'}
+          icon={Key}
+          tone="sky"
+        />
+        <SummaryStat
+          label="الأجهزة المتاحة"
+          value={`${activeDevicesCount} / ${maxDevices}`}
+          sub={deviceCount > activeDevicesCount ? `${deviceCount - activeDevicesCount} غير نشط` : 'الكل نشط'}
+          icon={Monitor}
+          tone="violet"
+        />
+        <SummaryStat
+          label="حالة الحساب"
+          value={status === 'active' ? 'نشط ✓' : status === 'trial' ? 'تجريبي' : 'منتهي'}
+          sub={daysLeft !== null && !isExpired ? `${daysLeft} يوم متبقي` : 'يحتاج تجديد'}
+          icon={Shield}
+          tone={status === 'active' ? 'emerald' : status === 'trial' ? 'amber' : 'red'}
+        />
+      </div>
+
+      {/* Recent Invoices + Payments side by side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Recent Invoices */}
+        <div className="bg-white/[0.03] border border-white/8 rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Receipt className="w-4 h-4 text-violet-400" />
+              <h3 className="text-white font-semibold text-sm">آخر الفواتير</h3>
+            </div>
+            <a href="/dashboard/billing" className="text-xs text-sky-400 hover:text-sky-300 flex items-center gap-1">
+              عرض الكل <ArrowUpRight className="w-3 h-3" />
+            </a>
+          </div>
+          {recentInvoices.length === 0 ? (
+            <p className="text-slate-500 text-sm py-6 text-center">لا توجد فواتير بعد.</p>
+          ) : (
+            <div className="space-y-2">
+              {recentInvoices.map((inv) => (
+                <div key={inv.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-white/[0.02] border border-white/5">
+                  <div className="w-8 h-8 rounded-lg bg-violet-500/15 border border-violet-500/25 flex items-center justify-center flex-shrink-0">
+                    <Receipt size={14} className="text-violet-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs text-white font-mono truncate" dir="ltr">
+                      {inv.invoiceNumber}
+                    </div>
+                    <div className="text-[10px] text-slate-500">
+                      {new Date(inv.createdAt).toLocaleDateString('ar-EG')}
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                    <span className="text-sm font-bold text-white" dir="ltr">
+                      {inv.totalAmount.toLocaleString('ar-EG')} {inv.currency}
+                    </span>
+                    <span
+                      className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md ${
+                        inv.status === 'paid'
+                          ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/25'
+                          : inv.status === 'overdue'
+                            ? 'bg-red-500/15 text-red-300 border border-red-500/25'
+                            : 'bg-amber-500/15 text-amber-300 border border-amber-500/25'
+                      }`}
+                    >
+                      {inv.status === 'paid' ? 'مدفوعة' : inv.status === 'overdue' ? 'متأخرة' : 'صادرة'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Recent Payments */}
+        <div className="bg-white/[0.03] border border-white/8 rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <CreditCard className="w-4 h-4 text-emerald-400" />
+              <h3 className="text-white font-semibold text-sm">آخر المدفوعات</h3>
+            </div>
+            <a href="/dashboard/billing" className="text-xs text-sky-400 hover:text-sky-300 flex items-center gap-1">
+              عرض الكل <ArrowUpRight className="w-3 h-3" />
+            </a>
+          </div>
+          {recentPayments.length === 0 ? (
+            <p className="text-slate-500 text-sm py-6 text-center">لا توجد مدفوعات بعد.</p>
+          ) : (
+            <div className="space-y-2">
+              {recentPayments.map((p) => (
+                <div key={p.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-white/[0.02] border border-white/5">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center flex-shrink-0">
+                    <TrendingUp size={14} className="text-emerald-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs text-white font-medium truncate">{p.method || 'دفعة'}</div>
+                    <div className="text-[10px] text-slate-500">
+                      {p.paidAt ? new Date(p.paidAt).toLocaleDateString('ar-EG') : '—'}
+                    </div>
+                  </div>
+                  <div className="text-sm font-bold text-emerald-400 flex-shrink-0" dir="ltr">
+                    {p.amount.toLocaleString('ar-EG')} {p.currency}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Key History */}
+      {allKeys.length > 1 && (
+        <div className="bg-white/[0.03] border border-white/8 rounded-2xl p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Sparkles className="w-4 h-4 text-sky-400" />
+            <h3 className="text-white font-semibold text-sm">تاريخ مفاتيح التفعيل</h3>
+          </div>
+          <div className="space-y-2">
+            {allKeys.map((k) => (
+              <div key={k.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-white/[0.02] border border-white/5">
+                <div className="w-8 h-8 rounded-lg bg-sky-500/15 border border-sky-500/25 flex items-center justify-center flex-shrink-0">
+                  <Key size={14} className="text-sky-400" />
+                </div>
+                <code className="text-[11px] font-mono text-slate-300 flex-1 truncate" dir="ltr">
+                  {k.keyCode}
+                </code>
+                <span
+                  className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md whitespace-nowrap ${
+                    k.status === 'active'
+                      ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/25'
+                      : k.status === 'expired' || k.status === 'revoked'
+                        ? 'bg-red-500/15 text-red-300 border border-red-500/25'
+                        : 'bg-slate-500/15 text-slate-400 border border-slate-500/25'
+                  }`}
+                >
+                  {k.status === 'active' ? 'نشط' : k.status === 'expired' ? 'منتهي' : k.status === 'revoked' ? 'ملغي' : k.status}
+                </span>
+                <span className="text-[10px] text-slate-500 whitespace-nowrap">
+                  {k.expiresAt ? new Date(k.expiresAt).toLocaleDateString('ar-EG') : '—'}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Activity Feed */}
       <ActivityFeed limit={10} />
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* Helper: summary stat card                                          */
+/* ------------------------------------------------------------------ */
+function SummaryStat({
+  label,
+  value,
+  sub,
+  icon: Icon,
+  tone,
+}: {
+  label: string
+  value: string
+  sub?: string
+  icon: React.ComponentType<{ className?: string }>
+  tone: 'emerald' | 'sky' | 'violet' | 'amber' | 'red'
+}) {
+  const toneStyles = {
+    emerald: { ring: 'border-emerald-500/25', bg: 'bg-emerald-500/10', text: 'text-emerald-400' },
+    sky:     { ring: 'border-sky-500/25',     bg: 'bg-sky-500/10',     text: 'text-sky-400' },
+    violet:  { ring: 'border-violet-500/25',  bg: 'bg-violet-500/10',  text: 'text-violet-400' },
+    amber:   { ring: 'border-amber-500/25',   bg: 'bg-amber-500/10',   text: 'text-amber-400' },
+    red:     { ring: 'border-red-500/25',     bg: 'bg-red-500/10',     text: 'text-red-400' },
+  }[tone]
+  return (
+    <div className={`bg-white/[0.03] border ${toneStyles.ring} rounded-xl p-4`}>
+      <div className="flex items-center gap-2 mb-2">
+        <div className={`w-7 h-7 rounded-lg ${toneStyles.bg} flex items-center justify-center`}>
+          <Icon className={`w-3.5 h-3.5 ${toneStyles.text}`} />
+        </div>
+        <p className="text-[10.5px] text-slate-400 font-medium">{label}</p>
+      </div>
+      <p className="text-lg font-bold text-white tracking-tight">{value}</p>
+      {sub && <p className="text-[10px] text-slate-500 mt-0.5">{sub}</p>}
     </div>
   )
 }

@@ -6,6 +6,11 @@ import { generateApiKey } from '@/lib/utils'
 import { errorResponse, getErrorMessage, successResponse } from '@/lib/api'
 import { getClientIp, requireAdmin } from '@/lib/admin-security'
 import { rejectLargeJson } from '@/lib/request-security'
+import {
+  sendEmail,
+  generateGrantAccessEmail,
+  generateGrantAccessEmailText,
+} from '@/lib/email'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,6 +34,8 @@ const grantAccessSchema = z.object({
   markPaid: z.boolean().default(true),
   paymentMethod: z.string().trim().max(50).optional(),
   notes: z.string().trim().max(2000).optional(),
+  /** Send a welcome email with the serial + subscription details to the user. */
+  sendEmail: z.boolean().default(true),
 })
 
 function generateInvoiceNumber(): string {
@@ -182,6 +189,47 @@ export async function POST(req: NextRequest) {
       return { key, subscription, invoice, payment, user }
     })
 
+    // Send welcome/grant-access email (best-effort — failure shouldn't roll
+    // back the DB transaction since the access is already granted).
+    let emailStatus: 'sent' | 'failed' | 'skipped' = 'skipped'
+    let emailError: string | null = null
+    if (data.sendEmail) {
+      try {
+        const expiryFormatted = expiresAt.toLocaleDateString('ar-EG', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        })
+        const emailData = {
+          name: result.user.name,
+          email: result.user.email,
+          serial: result.key.keyCode,
+          expiryDate: expiryFormatted,
+          planLabel: data.plan,
+          durationDays: data.durationDays,
+          isTrial,
+          amount: isTrial ? undefined : price,
+          currency: data.currency.toUpperCase(),
+          invoiceNumber: result.invoice?.invoiceNumber || undefined,
+        }
+        const subject = isTrial
+          ? `🎁 تم تفعيل فترتك التجريبية في SkyPro`
+          : `✅ تم تفعيل اشتراكك في SkyPro — ${data.durationDays} يوم`
+        const sent = await sendEmail({
+          to: result.user.email,
+          subject,
+          text: generateGrantAccessEmailText(emailData),
+          html: generateGrantAccessEmail(emailData),
+        })
+        emailStatus = sent.success ? 'sent' : 'failed'
+        emailError = sent.success ? null : sent.error || null
+      } catch (err) {
+        emailStatus = 'failed'
+        emailError = err instanceof Error ? err.message : String(err)
+        console.error('Grant access email error:', err)
+      }
+    }
+
     return NextResponse.json(
       successResponse(
         {
@@ -212,10 +260,11 @@ export async function POST(req: NextRequest) {
                 status: result.payment.status,
               }
             : null,
+          email: { status: emailStatus, error: emailError },
         },
         isTrial
-          ? `تم فتح فترة تجريبية ${data.durationDays} يوم`
-          : `تم فتح اشتراك ${data.durationDays} يوم بقيمة ${price} ${data.currency.toUpperCase()}`,
+          ? `تم فتح فترة تجريبية ${data.durationDays} يوم${emailStatus === 'sent' ? ' وإرسال البيانات بالبريد' : ''}`
+          : `تم فتح اشتراك ${data.durationDays} يوم بقيمة ${price} ${data.currency.toUpperCase()}${emailStatus === 'sent' ? ' وإرسال البيانات بالبريد' : ''}`,
       ),
     )
   } catch (err) {
