@@ -102,44 +102,102 @@ export default function AccountSelector({
   return (
     <div className="card-gradient-border space-y-4" style={{ padding: '1.25rem' }}>
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(10,108,241,0.1), rgba(139,44,245,0.1))' }}>
-            <Users size={16} style={{ color: '#0A6CF1' }} />
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-white flex-shrink-0"
+            style={{
+              background: 'linear-gradient(135deg, #6366f1, #a855f7)',
+              boxShadow: '0 4px 12px rgba(99, 102, 241, 0.30)',
+            }}
+          >
+            <Users size={16} />
           </div>
-          <div>
-            <h3 className="font-bold text-secondary-900 text-sm">تدوير الحسابات</h3>
-            <p className="text-[10px] text-secondary-400">{platformAccounts.length} حساب متاح</p>
+          <div className="min-w-0">
+            <h3 className="font-bold text-secondary-900 text-sm tracking-tight">
+              تدوير الحسابات
+            </h3>
+            <p className="text-[10.5px] text-secondary-500 mt-0.5">
+              {platformAccounts.length === 0
+                ? 'لا توجد حسابات لهذه المنصة'
+                : `${platformAccounts.length} حساب متاح · ${selectedIds.size} محدد`}
+            </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button onClick={toggleAll} className="flex items-center gap-1 text-xs font-medium transition-colors" style={{ color: '#0A6CF1' }}>
-            {allSelected ? <CheckSquare size={14} /> : <Square size={14} />}
-            {allSelected ? 'إلغاء الكل' : 'تحديد الكل'}
-          </button>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          {platformAccounts.length > 1 && (
+            <button
+              onClick={toggleAll}
+              className="flex items-center gap-1 text-[11.5px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors"
+              style={{
+                color: '#6366f1',
+                background: 'rgba(99, 102, 241, 0.08)',
+                border: '1px solid rgba(99, 102, 241, 0.20)',
+              }}
+            >
+              {allSelected ? <CheckSquare size={12} /> : <Square size={12} />}
+              {allSelected ? 'إلغاء الكل' : 'تحديد الكل'}
+            </button>
+          )}
           {onAddAccount && (
-            <button onClick={onAddAccount} className="text-xs font-semibold px-2.5 py-1 rounded-lg text-white" style={{ background: 'linear-gradient(135deg, #0A6CF1, #8B2CF5)' }}>+ إضافة</button>
+            <button
+              onClick={onAddAccount}
+              className="text-[11.5px] font-semibold px-2.5 py-1.5 rounded-lg text-white flex items-center gap-1 transition-all hover:-translate-y-0.5"
+              style={{
+                background: 'linear-gradient(135deg, #4f46e5, #7c3aed, #a855f7)',
+                boxShadow: '0 4px 12px rgba(99, 102, 241, 0.30)',
+              }}
+            >
+              <span>+</span> إضافة
+            </button>
           )}
         </div>
       </div>
 
       {/* Account List */}
       {platformAccounts.length === 0 ? (
-        <div className="text-center py-6">
-          <Users size={28} className="mx-auto mb-2" style={{ color: '#cbd5e1' }} />
-          <p className="text-xs text-secondary-400">لا توجد حسابات محفوظة لهذه المنصة</p>
+        <div
+          className="text-center py-6 rounded-xl"
+          style={{
+            background: 'rgba(248, 250, 252, 0.6)',
+            border: '1px dashed rgba(99, 102, 241, 0.25)',
+          }}
+        >
+          <Users size={28} className="mx-auto mb-2" style={{ color: 'rgba(99, 102, 241, 0.40)' }} />
+          <p className="text-xs text-secondary-500 font-medium">
+            لا توجد حسابات محفوظة لهذه المنصة
+          </p>
+          {onAddAccount && (
+            <button
+              onClick={onAddAccount}
+              className="mt-3 text-xs font-semibold px-3 py-1.5 rounded-lg text-white inline-flex items-center gap-1.5"
+              style={{
+                background: 'linear-gradient(135deg, #4f46e5, #7c3aed, #a855f7)',
+                boxShadow: '0 4px 12px rgba(99, 102, 241, 0.30)',
+              }}
+            >
+              <span>+</span> إضافة حساب
+            </button>
+          )}
         </div>
       ) : (
-        <div className="max-h-48 overflow-y-auto space-y-1 scroll-container">
-          {platformAccounts.map(account => {
+        <div
+          className="max-h-56 overflow-y-auto space-y-1 scroll-container rounded-xl p-1"
+          style={{ background: 'rgba(248, 250, 252, 0.4)' }}
+        >
+          {platformAccounts.map((account) => {
             const isSelected = selectedIds.has(account.id)
             return (
               <label
                 key={account.id}
-                className="flex items-center gap-2.5 p-2.5 rounded-xl cursor-pointer transition-all duration-150"
+                className="flex items-center gap-2.5 p-2.5 rounded-lg cursor-pointer transition-all duration-150"
                 style={{
-                  background: isSelected ? 'rgba(10,108,241,0.06)' : 'transparent',
-                  border: `1px solid ${isSelected ? 'rgba(10,108,241,0.15)' : 'transparent'}`,
+                  background: isSelected
+                    ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.10), rgba(168, 85, 247, 0.06))'
+                    : 'rgba(255, 255, 255, 0.6)',
+                  border: `1px solid ${isSelected ? 'rgba(99, 102, 241, 0.30)' : 'rgba(226, 232, 240, 0.5)'}`,
+                  opacity: cycleActive ? 0.7 : 1,
+                  cursor: cycleActive ? 'not-allowed' : 'pointer',
                 }}
               >
                 <input
@@ -149,15 +207,69 @@ export default function AccountSelector({
                   className="sr-only"
                   disabled={cycleActive}
                 />
-                <div className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 transition-all ${isSelected ? 'text-white' : 'border border-secondary-300'}`} style={isSelected ? { background: 'linear-gradient(135deg, #0A6CF1, #8B2CF5)' } : {}}>
-                  {isSelected && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+                <div
+                  className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0 transition-all"
+                  style={
+                    isSelected
+                      ? {
+                          background: 'linear-gradient(135deg, #6366f1, #a855f7)',
+                          boxShadow: '0 2px 6px rgba(99, 102, 241, 0.35)',
+                        }
+                      : {
+                          background: 'white',
+                          border: '1.5px solid #cbd5e1',
+                        }
+                  }
+                >
+                  {isSelected && (
+                    <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                      <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
                 </div>
-                <span className="text-sm text-secondary-700 flex-1 truncate">{account.username}</span>
+                <span
+                  className="text-sm flex-1 truncate"
+                  style={{
+                    color: isSelected ? '#312e81' : '#475569',
+                    fontWeight: isSelected ? 600 : 500,
+                  }}
+                  dir="ltr"
+                >
+                  {account.username}
+                </span>
                 {account.proxy && (
-                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md" style={{ background: 'rgba(10,108,241,0.08)', color: '#0A6CF1' }}>بروكسي</span>
+                  <span
+                    className="text-[10px] font-bold px-1.5 py-0.5 rounded-md flex-shrink-0"
+                    style={{
+                      background: 'rgba(99, 102, 241, 0.10)',
+                      color: '#4f46e5',
+                      border: '1px solid rgba(99, 102, 241, 0.22)',
+                    }}
+                  >
+                    بروكسي
+                  </span>
                 )}
-                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md ${account.status === 'active' ? '' : ''}`} style={account.status === 'active' ? { background: 'rgba(34,197,94,0.1)', color: '#16a34a' } : { background: 'rgba(226,232,240,0.5)', color: '#94a3b8' }}>
-                  {account.status === 'active' ? 'نشط' : 'غير نشط'}
+                <span
+                  className="text-[10px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-1 flex-shrink-0"
+                  style={
+                    account.status === 'active'
+                      ? {
+                          background: 'rgba(34, 197, 94, 0.10)',
+                          color: '#15803d',
+                          border: '1px solid rgba(34, 197, 94, 0.25)',
+                        }
+                      : {
+                          background: 'rgba(148, 163, 184, 0.10)',
+                          color: '#64748b',
+                          border: '1px solid rgba(148, 163, 184, 0.25)',
+                        }
+                  }
+                >
+                  <span
+                    className="w-1.5 h-1.5 rounded-full"
+                    style={{ background: account.status === 'active' ? '#22c55e' : '#94a3b8' }}
+                  />
+                  {account.status === 'active' ? 'نشط' : 'معطل'}
                 </span>
               </label>
             )

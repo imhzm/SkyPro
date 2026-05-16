@@ -1012,6 +1012,7 @@ export default function FacebookModule() {
       description={tool.description}
       accent={tool.accent}
       accentGradient={tool.accentGradient}
+      locked={!sessionId}
       onClick={() => openTool(tool.id)}
     />
   )

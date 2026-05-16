@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAccountsStore } from '../../stores/accountsStore'
 import { getPlatformGradient } from '../../data/platformGradients'
-import { Users, Plus, Trash2, Edit3, Save, X, Search, Facebook, MessageCircle, Instagram, Twitter, Linkedin, Send, Globe, AtSign, Bookmark, Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react'
+import { Users, Plus, Trash2, Edit3, Save, X, Search, Facebook, MessageCircle, Instagram, Twitter, Linkedin, Send, Globe, AtSign, Bookmark, Eye, EyeOff, CheckCircle, AlertCircle, Shield } from 'lucide-react'
 import ModuleHeader from '../../components/common/ModuleHeader'
 
 const PLATFORMS = [
@@ -160,20 +160,124 @@ export default function AccountsModule() {
 
       {/* Add/Edit Form */}
       {showForm && (
-        <div className="card-gradient-border">
-          <h3 className="font-bold text-secondary-900 mb-4">{editingId ? 'تعديل الحساب' : 'إضافة حساب جديد'}</h3>
-          <div className="grid grid-cols-3 gap-4">
-            <div><label className="label-field">المنصة</label><select className="select-field" value={form.platform} onChange={e => setForm({...form, platform: e.target.value})}>
-              {PLATFORMS.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
-            </select></div>
-            <div><label className="label-field">اسم المستخدم / البريد</label><input type="text" className="input-field" dir="ltr" value={form.username} onChange={e => setForm({...form, username: e.target.value})} placeholder="username أو email" /></div>
-            <div><label className="label-field">كلمة المرور</label><div className="relative"><input type={showPassword ? 'text' : 'password'} className="input-field pr-10" dir="ltr" value={form.password} onChange={e => setForm({...form, password: e.target.value})} placeholder="••••••••" /><button type="button" className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400 hover:text-secondary-600" onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff size={16} /> : <Eye size={16} />}</button></div></div>
-            <div><label className="label-field">بروكسي (اختياري)</label><input type="text" className="input-field" dir="ltr" value={form.proxy} onChange={e => setForm({...form, proxy: e.target.value})} placeholder="IP:Port" /></div>
-            <div className="col-span-2"><label className="label-field">ملاحظات</label><input type="text" className="input-field" value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} placeholder="ملاحظات عن الحساب..." /></div>
+        <div className="card-gradient-border sw-fade-in-up">
+          <div className="flex items-center gap-3 mb-5">
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-white flex-shrink-0"
+              style={{
+                background: editingId
+                  ? 'linear-gradient(135deg, #6366f1, #a855f7)'
+                  : 'linear-gradient(135deg, #4f46e5, #7c3aed, #a855f7)',
+                boxShadow: '0 6px 16px rgba(99, 102, 241, 0.30)',
+              }}
+            >
+              {editingId ? <Edit3 size={18} /> : <Plus size={18} />}
+            </div>
+            <div>
+              <h3 className="font-bold text-secondary-900 text-base leading-tight">
+                {editingId ? 'تعديل الحساب' : 'إضافة حساب جديد'}
+              </h3>
+              <p className="text-xs text-secondary-500 mt-0.5">
+                {editingId
+                  ? 'حدّث بيانات الحساب — اترك الباسورد فارغاً للإبقاء على القديم'
+                  : 'أضف حساب سوشيال ميديا لاستخدامه في الأتمتة والتدوير'}
+              </p>
+            </div>
           </div>
-          <div className="flex gap-2 mt-4">
-            <button onClick={handleSave} disabled={!form.username} className="btn-primary"><Save size={18} /> حفظ</button>
-            <button onClick={() => setShowForm(false)} className="btn-secondary"><X size={18} /> إلغاء</button>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
+              <label htmlFor="acc-platform" className="label-field">المنصة</label>
+              <select
+                id="acc-platform"
+                className="select-field"
+                value={form.platform}
+                onChange={(e) => setForm({ ...form, platform: e.target.value })}
+              >
+                {PLATFORMS.map((p) => (
+                  <option key={p.id} value={p.id}>{p.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="acc-username" className="label-field">اسم المستخدم / البريد</label>
+              <input
+                id="acc-username"
+                type="text"
+                className="input-field"
+                dir="ltr"
+                value={form.username}
+                onChange={(e) => setForm({ ...form, username: e.target.value })}
+                placeholder="username أو email"
+              />
+            </div>
+            <div>
+              <label htmlFor="acc-password" className="label-field">كلمة المرور</label>
+              <div className="relative">
+                <input
+                  id="acc-password"
+                  type={showPassword ? 'text' : 'password'}
+                  className="input-field pl-10"
+                  dir="ltr"
+                  value={form.password}
+                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  placeholder={editingId ? '••• (اتركه فارغاً للإبقاء)' : '••••••••'}
+                />
+                <button
+                  type="button"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400 hover:text-brand-700 transition-colors"
+                  onClick={() => setShowPassword(!showPassword)}
+                  title={showPassword ? 'إخفاء' : 'إظهار'}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+            <div>
+              <label htmlFor="acc-proxy" className="label-field">بروكسي (اختياري)</label>
+              <input
+                id="acc-proxy"
+                type="text"
+                className="input-field font-mono text-sm"
+                dir="ltr"
+                value={form.proxy}
+                onChange={(e) => setForm({ ...form, proxy: e.target.value })}
+                placeholder="user:pass@host:port"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label htmlFor="acc-notes" className="label-field">ملاحظات</label>
+              <input
+                id="acc-notes"
+                type="text"
+                className="input-field"
+                value={form.notes}
+                onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                placeholder="مثال: حساب صفحات المتاجر / حساب رئيسي / ..."
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 mt-5 pt-4" style={{ borderTop: '1px solid rgba(226, 232, 240, 0.6)' }}>
+            <p className="text-[11px] text-secondary-500 flex items-center gap-1.5">
+              <Shield size={12} style={{ color: '#a855f7' }} />
+              <span>الباسورد محفوظ مشفر — يستخدم فقط داخل البرنامج</span>
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setShowForm(false); setEditingId(null) }}
+                className="btn-secondary"
+              >
+                <X size={16} /> إلغاء
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={!form.username}
+                className="btn-primary"
+              >
+                <Save size={16} /> {editingId ? 'حفظ التعديلات' : 'إضافة الحساب'}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -191,42 +295,138 @@ export default function AccountsModule() {
       </div>
 
       {/* Accounts Table */}
-      <div className="card-gradient-border" style={{ padding: '0' }}>
+      <div className="card-gradient-border" style={{ padding: '0', overflow: 'hidden' }}>
         {filtered.length === 0 ? (
           <div className="text-center py-16 px-6">
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'linear-gradient(135deg, rgba(34,197,94,0.1), rgba(22,163,74,0.1))' }}>
-              <Users size={32} style={{ color: '#94a3b8' }} />
+            <div
+              className="relative w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4"
+              style={{
+                background:
+                  'linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(168, 85, 247, 0.08))',
+                border: '1px solid rgba(99, 102, 241, 0.20)',
+              }}
+            >
+              <span
+                aria-hidden
+                className="absolute inset-0 -m-2 rounded-2xl"
+                style={{
+                  background:
+                    'radial-gradient(circle, rgba(168, 85, 247, 0.18) 0%, transparent 65%)',
+                  filter: 'blur(12px)',
+                }}
+              />
+              <Users size={34} className="relative" style={{ color: '#7c3aed' }} />
             </div>
-            <p className="text-secondary-500 font-medium">لا توجد حسابات</p>
-            <p className="text-xs text-secondary-400 mt-1">أضف حساباتك من مختلف المنصات لإدارتها بسهولة</p>
+            <p className="text-secondary-700 font-bold">
+              {searchQuery || filterPlatform ? 'لا توجد نتائج مطابقة' : 'لا توجد حسابات بعد'}
+            </p>
+            <p className="text-xs text-secondary-400 mt-1.5 max-w-md mx-auto">
+              {searchQuery || filterPlatform
+                ? 'جرّب تغيير كلمة البحث أو إزالة الفلتر'
+                : 'أضف حساباتك من مختلف المنصات لاستخدامها في الأتمتة والتدوير'}
+            </p>
+            {!(searchQuery || filterPlatform) && (
+              <button
+                onClick={() => { setShowForm(true); setEditingId(null) }}
+                className="btn-primary mt-5 mx-auto"
+              >
+                <Plus size={16} /> أضف حسابك الأول
+              </button>
+            )}
           </div>
         ) : (
           <div className="table-container" style={{ border: 'none' }}>
             <table className="data-table">
-              <thead><tr><th>المنصة</th><th>اسم المستخدم</th><th>البروكسي</th><th>الملاحظات</th><th>الحالة</th><th>التاريخ</th><th></th></tr></thead>
+              <thead>
+                <tr>
+                  <th>المنصة</th>
+                  <th>اسم المستخدم</th>
+                  <th>البروكسي</th>
+                  <th>الملاحظات</th>
+                  <th>الحالة</th>
+                  <th>التاريخ</th>
+                  <th></th>
+                </tr>
+              </thead>
               <tbody>
-                {filtered.map(acc => {
+                {filtered.map((acc) => {
                   const p = platformInfo(acc.platform)
                   const gradient = getPlatformGradient(acc.platform)
+                  const isConfirming = deleteConfirmId === acc.id
                   return (
                     <tr key={acc.id}>
                       <td>
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white" style={{ background: gradient }}>
-                            <p.icon size={14} />
+                        <div className="flex items-center gap-2.5">
+                          <div
+                            className="w-9 h-9 rounded-lg flex items-center justify-center text-white flex-shrink-0"
+                            style={{
+                              background: gradient,
+                              boxShadow: `0 4px 12px ${gradient.includes('#') ? 'rgba(0,0,0,0.10)' : 'transparent'}`,
+                            }}
+                          >
+                            <p.icon size={15} />
                           </div>
-                          <span className="font-medium text-sm">{p.label}</span>
+                          <span className="font-semibold text-sm text-secondary-800">{p.label}</span>
                         </div>
                       </td>
-                      <td className="font-medium">{acc.username}</td>
-                      <td className="text-xs text-secondary-500 font-mono">{acc.proxy || '-'}</td>
-                      <td className="text-xs text-secondary-500 max-w-[200px] truncate">{acc.notes || '-'}</td>
-                      <td><span className={`badge ${acc.status === 'active' ? 'badge-success' : 'badge-danger'} text-[10px]`}>{acc.status === 'active' ? 'نشط' : 'غير نشط'}</span></td>
-                      <td className="text-xs">{new Date(acc.created_at).toLocaleDateString('ar-EG')}</td>
+                      <td>
+                        <span className="font-medium text-secondary-800" dir="ltr">{acc.username}</span>
+                      </td>
+                      <td>
+                        {acc.proxy ? (
+                          <code className="text-[10.5px] font-mono px-1.5 py-0.5 rounded-md bg-brand-50 text-brand-700 border border-brand-200" dir="ltr">
+                            {acc.proxy.replace(/^.*@/, '*****@')}
+                          </code>
+                        ) : (
+                          <span className="text-secondary-400">—</span>
+                        )}
+                      </td>
+                      <td className="text-xs text-secondary-500 max-w-[220px] truncate">
+                        {acc.notes || <span className="text-secondary-300">—</span>}
+                      </td>
+                      <td>
+                        <span className={`badge ${acc.status === 'active' ? 'badge-success' : 'badge-danger'} text-[10px]`}>
+                          <span
+                            className="w-1.5 h-1.5 rounded-full"
+                            style={{
+                              background: acc.status === 'active' ? '#22c55e' : '#94a3b8',
+                              boxShadow: acc.status === 'active' ? '0 0 6px rgba(34,197,94,0.5)' : 'none',
+                            }}
+                          />
+                          {acc.status === 'active' ? 'نشط' : 'غير نشط'}
+                        </span>
+                      </td>
+                      <td className="text-xs text-secondary-500">
+                        {new Date(acc.created_at).toLocaleDateString('ar-EG')}
+                      </td>
                       <td>
                         <div className="flex gap-1">
-                          <button onClick={() => handleEdit(acc)} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"><Edit3 size={14} /></button>
-                          <button onClick={() => handleDelete(acc.id)} className={`p-1.5 rounded-lg transition-colors ${deleteConfirmId === acc.id ? 'bg-red-50 text-red-600 animate-pulse' : 'text-red-400 hover:bg-red-50 hover:text-red-600'}`}><Trash2 size={14} /></button>
+                          <button
+                            onClick={() => handleEdit(acc)}
+                            className="p-1.5 rounded-lg transition-colors"
+                            style={{
+                              color: '#6366f1',
+                              background: 'rgba(99, 102, 241, 0.08)',
+                              border: '1px solid rgba(99, 102, 241, 0.15)',
+                            }}
+                            title="تعديل"
+                          >
+                            <Edit3 size={13} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(acc.id)}
+                            className={`p-1.5 rounded-lg transition-colors ${isConfirming ? 'animate-pulse' : ''}`}
+                            style={{
+                              color: isConfirming ? '#dc2626' : '#ef4444',
+                              background: isConfirming
+                                ? 'rgba(239, 68, 68, 0.18)'
+                                : 'rgba(239, 68, 68, 0.08)',
+                              border: `1px solid rgba(239, 68, 68, ${isConfirming ? 0.35 : 0.15})`,
+                            }}
+                            title={isConfirming ? 'اضغط مرة أخرى للتأكيد' : 'حذف'}
+                          >
+                            <Trash2 size={13} />
+                          </button>
                         </div>
                       </td>
                     </tr>

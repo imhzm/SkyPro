@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, Lock } from 'lucide-react'
 
 export interface ToolCardProps {
   icon: LucideIcon
@@ -11,6 +11,8 @@ export interface ToolCardProps {
   badgeTone?: 'success' | 'warning' | 'danger' | 'primary'
   disabled?: boolean
   active?: boolean
+  /** Show a subtle lock icon + dimmed look for tools that need an active session. */
+  locked?: boolean
   onClick: () => void
 }
 
@@ -31,6 +33,7 @@ export default function ToolCard({
   badgeTone = 'primary',
   disabled = false,
   active = false,
+  locked = false,
   onClick,
 }: ToolCardProps) {
   const iconBg = accentGradient || `linear-gradient(135deg, ${accent}, ${accent}dd)`
@@ -41,6 +44,7 @@ export default function ToolCard({
       type="button"
       disabled={disabled}
       onClick={onClick}
+      title={locked ? 'سجل الدخول أولاً لاستخدام هذه الأداة' : undefined}
       className="group relative text-right rounded-2xl p-4 transition-all duration-300 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:transform-none focus:outline-none overflow-hidden"
       style={{
         background: active
@@ -52,18 +56,21 @@ export default function ToolCard({
         boxShadow: active
           ? `0 0 0 3px ${accent}1f, 0 8px 24px ${accent}1c, inset 0 1px 0 rgba(255,255,255,0.6)`
           : '0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 14px rgba(15, 23, 42, 0.03), inset 0 1px 0 rgba(255,255,255,0.5)',
+        opacity: locked ? 0.72 : 1,
       }}
       onMouseEnter={(e) => {
         if (disabled || active) return
         e.currentTarget.style.transform = 'translateY(-3px)'
         e.currentTarget.style.boxShadow = `0 12px 32px ${accent}22, 0 4px 14px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255,255,255,0.6)`
         e.currentTarget.style.borderColor = accent + '60'
+        if (locked) e.currentTarget.style.opacity = '1'
       }}
       onMouseLeave={(e) => {
         if (disabled || active) return
         e.currentTarget.style.transform = 'translateY(0)'
         e.currentTarget.style.boxShadow = '0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 14px rgba(15, 23, 42, 0.03), inset 0 1px 0 rgba(255,255,255,0.5)'
         e.currentTarget.style.borderColor = 'rgba(226, 232, 240, 0.7)'
+        if (locked) e.currentTarget.style.opacity = '0.72'
       }}
     >
       {/* Hover sheen */}
@@ -75,16 +82,32 @@ export default function ToolCard({
         }}
       />
 
-      {/* Top-right indicator chevron (RTL: top-left) */}
-      <span
-        aria-hidden
-        className="absolute top-3 left-3 transition-all duration-300 opacity-0 group-hover:opacity-60 -translate-x-1 group-hover:translate-x-0"
-        style={{ color: accent }}
-      >
-        <ChevronLeft size={14} />
-      </span>
+      {/* Top-leading indicator: chevron on hover, OR lock when locked */}
+      {locked ? (
+        <span
+          aria-hidden
+          className="absolute top-3 left-3 w-6 h-6 rounded-full flex items-center justify-center transition-transform duration-300 group-hover:scale-110"
+          style={{
+            background: 'rgba(15, 23, 42, 0.08)',
+            border: '1px solid rgba(15, 23, 42, 0.10)',
+            color: 'rgba(71, 85, 105, 0.85)',
+            backdropFilter: 'blur(6px)',
+          }}
+          title="تسجيل الدخول مطلوب"
+        >
+          <Lock size={11} />
+        </span>
+      ) : (
+        <span
+          aria-hidden
+          className="absolute top-3 left-3 transition-all duration-300 opacity-0 group-hover:opacity-60 -translate-x-1 group-hover:translate-x-0"
+          style={{ color: accent }}
+        >
+          <ChevronLeft size={14} />
+        </span>
+      )}
 
-      {badge && (
+      {badge && !locked && (
         <span
           className="absolute top-3 left-3 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide"
           style={{
@@ -104,6 +127,7 @@ export default function ToolCard({
             background: iconBg,
             color: 'white',
             boxShadow: `0 8px 20px ${accent}48, inset 0 1px 0 rgba(255,255,255,0.20)`,
+            filter: locked ? 'saturate(0.7)' : 'none',
           }}
         >
           {/* Icon glow */}
