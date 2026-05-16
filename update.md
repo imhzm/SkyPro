@@ -94,16 +94,20 @@ cd skypro-release/desktop-release-*
 scp "SkyPro Setup"*.exe latest.yml *.blockmap version.json root@147.79.66.116:/var/www/downloads.skywaveads.com/skypro/
 ```
 
-هيطلب منك باسورد السيرفر. بعد ما يخلص الرفع:
+هيطلب منك باسورد السيرفر. بعد ما يخلص الرفع، شغّل سكريبت **التحديث + التنظيف التلقائي** (يحدّث الـ symlink ويحذف النسخ القديمة فيما عدا أحدث 2):
 
 ```bash
-ssh root@147.79.66.116 "cd /var/www/downloads.skywaveads.com/skypro && ln -sf 'SkyPro Setup VERSION.exe' latest.exe"
+ssh root@147.79.66.116 'cd /var/www/downloads.skywaveads.com/skypro && ln -sf "SkyPro Setup VERSION.exe" latest.exe && mapfile -t EXES < <(ls -t1 SkyPro\ Setup\ *.exe 2>/dev/null) && if [ "${#EXES[@]}" -gt 2 ]; then for ((i=2; i<${#EXES[@]}; i++)); do rm -f -- "${EXES[$i]}" "${EXES[$i]}.blockmap"; echo "removed: ${EXES[$i]}"; done; fi'
 ```
 
-> **مهم:** استبدل `VERSION` برقم الإصدار الفعلي. مثال:
-> ```bash
-> ssh root@147.79.66.116 "cd /var/www/downloads.skywaveads.com/skypro && ln -sf 'SkyPro Setup 1.2.0.exe' latest.exe"
-> ```
+> **مهم:** استبدل `VERSION` برقم الإصدار الفعلي (مثل `1.4.0`).
+>
+> هذا السكريبت:
+> 1. يحدّث `latest.exe` ليشير للنسخة الجديدة
+> 2. يحفظ أحدث نسختين فقط (الحالية + السابقة للـ rollback)
+> 3. يحذف باقي النسخ القديمة + ملفات `.blockmap` بتاعتها لتخفيف الحمل على السيرفر
+>
+> CI deploy بيعمل نفس التنظيف تلقائي.
 
 ---
 
@@ -136,6 +140,26 @@ curl -sI https://downloads.skywaveads.com/skypro/latest
 
 ---
 
+## نسخ التحديثات على السيرفر
+
+**مكان التخزين:** `/var/www/downloads.skywaveads.com/skypro/`
+
+**سياسة الاحتفاظ:** السيرفر بيحتفظ بـ **أحدث نسختين فقط** (الحالية + السابقة).
+
+النسخ الأقدم بتتحذف **تلقائياً** بعد كل deploy، سواء من:
+- ✅ GitHub Actions CI (في خطوة "Deploy to server")
+- ✅ السكريبت اليدوي في الخطوة 7 فوق
+
+ده بيقلّل الحمل من ~110MB × N نسخة إلى ~220MB ثابت بغض النظر عن عدد الإصدارات.
+
+**لتفقّد النسخ الموجودة دلوقتي:**
+
+```bash
+ssh root@147.79.66.116 "ls -lh /var/www/downloads.skywaveads.com/skypro/ | grep -E 'SkyPro Setup'"
+```
+
+---
+
 ## تحديث الموقع (Web App) - لو عدّلت ملفات في skypro-web
 
 لو التعديل كان في مجلد `skypro-web/` (الموقع)، لازم تحدّث السيرفر كمان:
@@ -145,9 +169,16 @@ ssh root@147.79.66.116
 
 cd /var/www/skypro.skywaveads.com/skypro-web
 git pull origin main
+
+# مهم لو في تعديل في Prisma schema:
+npx prisma migrate deploy
+npx prisma generate
+
 npm run build
 pm2 restart skypro
 ```
+
+> **ملاحظة:** عند إضافة model جديد أو migration جديد، لازم `prisma generate` قبل `npm run build` وإلا الـ build هيفشل.
 
 ---
 
