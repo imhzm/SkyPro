@@ -59,6 +59,22 @@ gh run list --limit 3
 gh run view <run-id> --log
 ```
 
+**If the deploy step fails (SSH timeout from GitHub to server):**
+The build artifacts are still uploaded to GitHub. Download and deploy manually:
+```bash
+# Download artifacts from GitHub
+gh run download <run-id> --dir /tmp/skypro-release
+
+# Find the release directory
+cd /tmp/skypro-release/desktop-release-*
+
+# Deploy manually via SCP
+scp "SkyPro Setup"*.exe latest.yml *.blockmap version.json root@147.79.66.116:/var/www/downloads.skywaveads.com/skypro/
+
+# Update symlink (replace X.X.X with actual version)
+ssh root@147.79.66.116 "cd /var/www/downloads.skywaveads.com/skypro && ln -sf 'SkyPro Setup X.X.X.exe' latest.exe"
+```
+
 ### Method 2: Manual Trigger (No Code Changes)
 
 ```bash
