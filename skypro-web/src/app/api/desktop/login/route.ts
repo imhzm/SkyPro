@@ -171,7 +171,8 @@ export async function POST(req: NextRequest) {
         data: {
           userId: user.id,
           action: 'desktop_login',
-          details: logDetails as any,
+          // Serialize then re-parse to coerce nested values into Prisma JSON-safe primitives.
+          details: JSON.parse(JSON.stringify(logDetails)),
           ipAddress
         }
       })
