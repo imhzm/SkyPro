@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
     }).catch(() => {})
 
     if (type === 'users') {
-      const where: any = {}
+      const where: Record<string, unknown> = {}
       if (status) where.status = status
       if (search) {
         where.OR = [{ email: { contains: search } }, { name: { contains: search } }]
@@ -87,7 +87,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (type === 'subscriptions') {
-      const where: any = {}
+      const where: Record<string, unknown> = {}
       if (status) where.status = status
       const rows = await prisma.subscription.findMany({
         where, take: limit, orderBy: { createdAt: 'desc' },
@@ -154,7 +154,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (type === 'keys') {
-      const where: any = {}
+      const where: Record<string, unknown> = {}
       if (status) where.status = status
       const rows = await prisma.activationKey.findMany({
         where, take: limit, orderBy: { createdAt: 'desc' },

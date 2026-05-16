@@ -418,6 +418,9 @@ export async function DELETE(req: NextRequest) {
 
     const url = new URL(req.url)
     const id = Number(url.searchParams.get('id'))
+    // ?hard=true → permanent delete: removes user + all their data from DB.
+    // Otherwise → soft delete: status='deleted', keys revoked, devices off.
+    const hard = url.searchParams.get('hard') === 'true'
     const adminId = guard.session?.user?.id ? Number(guard.session.user.id) : null
 
     if (!Number.isInteger(id) || id <= 0) {
@@ -428,6 +431,40 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json(errorResponse('لا يمكن حذف حساب الأدمن الحالي'), { status: 400 })
     }
 
+    // Capture the email for the audit log BEFORE we wipe the row.
+    const target = await prisma.user.findUnique({
+      where: { id },
+      select: { id: true, email: true },
+    })
+    if (!target) {
+      return NextResponse.json(errorResponse('المستخدم غير موجود'), { status: 404 })
+    }
+
+    if (hard) {
+      // Hard delete — cascade through all relations.
+      const { hardDeleteUser } = await import('@/lib/subscription-maintenance')
+      const counts = await hardDeleteUser(id)
+      // Audit log AFTER the user is deleted (userId is nulled by the helper).
+      await prisma.auditLog.create({
+        data: {
+          userId: adminId,
+          action: 'hard_delete_user',
+          details: {
+            deletedUserId: id,
+            deletedEmail: target.email,
+            ...counts,
+          },
+          ipAddress: getClientIp(req),
+        },
+      })
+      return NextResponse.json({
+        success: true,
+        message: 'تم حذف المستخدم وكل بياناته نهائياً من قاعدة البيانات',
+        data: counts,
+      })
+    }
+
+    // Soft delete (default) — flag as deleted, revoke keys, disable devices.
     await prisma.$transaction(async (tx) => {
       await tx.user.update({
         where: { id },
@@ -441,11 +478,16 @@ export async function DELETE(req: NextRequest) {
         where: { userId: id },
         data: { isActive: false }
       })
+      // Cancel any active subscriptions so revenue counts stay accurate.
+      await tx.subscription.updateMany({
+        where: { userId: id, status: { in: ['active', 'trial'] } },
+        data: { status: 'cancelled' }
+      })
       await tx.auditLog.create({
         data: {
           userId: adminId,
           action: 'delete_user',
-          details: { targetUserId: id },
+          details: { targetUserId: id, targetEmail: target.email },
           ipAddress: getClientIp(req)
         }
       })

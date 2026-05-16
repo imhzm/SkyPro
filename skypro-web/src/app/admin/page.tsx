@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Activity, Ban, CreditCard, DollarSign, Key, Monitor, ShieldCheck, Users } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Activity, Ban, CreditCard, DollarSign, Key, Monitor, RefreshCw, ShieldCheck, Users } from 'lucide-react'
 
 interface Stats {
   totalUsers: number
@@ -29,7 +29,11 @@ interface Stats {
     createdAt: string
     user: { email: string; name: string | null } | null
   }>
+  autoExpire?: { expiredKeys: number; expiredSubscriptions: number; disabledDevices: number }
+  generatedAt?: string
 }
+
+const REFRESH_INTERVAL_MS = 15_000
 
 const statusLabel: Record<string, string> = {
   active: 'نشط',
@@ -48,8 +52,21 @@ const actionLabel: Record<string, string> = {
   delete_user: 'حذف مستخدم',
   admin_generate_keys: 'إنشاء مفاتيح',
   admin_reset_device: 'إعادة تعيين جهاز',
+  admin_revoke_key: 'إلغاء مفتاح',
+  admin_update_key: 'تحديث مفتاح',
+  admin_grant_access: 'فتح اشتراك لعميل',
   update_subscription: 'تحديث اشتراك',
-  update_setting: 'تحديث إعداد'
+  update_setting: 'تحديث إعداد',
+  bulk_update_settings: 'تحديث إعدادات',
+  create_invoice: 'إنشاء فاتورة',
+  update_invoice: 'تحديث فاتورة',
+  create_payment: 'تسجيل دفعة',
+  update_payment: 'تحديث دفعة',
+  hard_delete_user: 'حذف نهائي لمستخدم',
+  auto_expire_sweep: 'انتهاء سيريالات تلقائي',
+  create_offer: 'إضافة عرض',
+  update_offer: 'تحديث عرض',
+  delete_offer: 'حذف عرض',
 }
 
 function statusBadge(status: string) {
@@ -71,16 +88,47 @@ function formatDate(value: string) {
 export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [error, setError] = useState('')
+  const liveRef = useRef(true)
+
+  const load = useCallback(async (showSpinner = false) => {
+    if (showSpinner) setRefreshing(true)
+    try {
+      const res = await fetch('/api/admin/stats', { cache: 'no-store' })
+      const data = await res.json()
+      if (data?.success) {
+        setStats(data.data)
+        setLastUpdated(new Date())
+        setError('')
+      } else {
+        setError(data?.error || 'فشل تحميل البيانات')
+      }
+    } catch {
+      setError('فشل الاتصال بالخادم')
+    } finally {
+      setLoading(false)
+      setRefreshing(false)
+    }
+  }, [])
 
   useEffect(() => {
-    fetch('/api/admin/stats')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) setStats(data.data)
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false))
-  }, [])
+    load()
+    // Live auto-refresh every 15s, but pause when the tab is hidden.
+    const tick = () => {
+      if (liveRef.current && !document.hidden) load(false)
+    }
+    const handle = setInterval(tick, REFRESH_INTERVAL_MS)
+    const onVis = () => {
+      if (!document.hidden) load(false)
+    }
+    document.addEventListener('visibilitychange', onVis)
+    return () => {
+      clearInterval(handle)
+      document.removeEventListener('visibilitychange', onVis)
+    }
+  }, [load])
 
   if (loading) {
     return (
@@ -141,10 +189,73 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-white">لوحة التحكم</h1>
-        <p className="mt-1 text-sm text-slate-400">ملخص التشغيل، الحسابات، المفاتيح، الاشتراكات، وآخر أحداث النظام.</p>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-white">لوحة التحكم</h1>
+          <p className="mt-1 text-sm text-slate-400">
+            ملخص التشغيل، الحسابات، المفاتيح، الاشتراكات، وآخر أحداث النظام.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Live indicator */}
+          <div
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold"
+            style={{
+              background: 'rgba(34, 197, 94, 0.10)',
+              border: '1px solid rgba(34, 197, 94, 0.25)',
+              color: '#86efac',
+            }}
+          >
+            <span
+              className="w-1.5 h-1.5 rounded-full"
+              style={{
+                background: '#22c55e',
+                boxShadow: '0 0 8px rgba(34,197,94,0.6)',
+                animation: 'sw-pulse 2s ease-in-out infinite',
+              }}
+            />
+            مباشر
+          </div>
+          {lastUpdated && (
+            <span className="text-[11px] text-slate-500">
+              آخر تحديث: {lastUpdated.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </span>
+          )}
+          <button
+            onClick={() => load(true)}
+            disabled={refreshing}
+            className="admin-btn-secondary !py-1.5 flex items-center gap-2"
+            title="تحديث الآن"
+          >
+            <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
+            تحديث
+          </button>
+        </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          {error}
+        </div>
+      )}
+
+      {/* Auto-expire summary (only shown when something actually expired in last fetch) */}
+      {stats.autoExpire && (stats.autoExpire.expiredKeys > 0 || stats.autoExpire.expiredSubscriptions > 0) && (
+        <div
+          className="rounded-xl border px-4 py-3 text-sm flex items-center gap-2"
+          style={{
+            background: 'rgba(245, 158, 11, 0.10)',
+            border: '1px solid rgba(245, 158, 11, 0.25)',
+            color: '#fcd34d',
+          }}
+        >
+          <Activity size={14} />
+          تم تنظيف تلقائي:
+          <strong className="text-amber-200">{stats.autoExpire.expiredKeys}</strong> مفتاح منتهي ·
+          <strong className="text-amber-200">{stats.autoExpire.expiredSubscriptions}</strong> اشتراك منتهي ·
+          <strong className="text-amber-200">{stats.autoExpire.disabledDevices}</strong> جهاز معطّل
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {cards.map((card) => (

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { errorResponse, getErrorMessage } from '@/lib/api'
 import { requireAdmin } from '@/lib/admin-security'
+import { sweepExpiredAccess } from '@/lib/subscription-maintenance'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,6 +10,16 @@ export async function GET() {
   try {
     const guard = await requireAdmin()
     if (guard.response) return guard.response
+
+    // Run the auto-expire sweep BEFORE collecting counts so the dashboard
+    // numbers reflect the latest state. Fire-and-forget logging — failures
+    // shouldn't block the stats response.
+    let sweepResult = { expiredKeys: 0, expiredSubscriptions: 0, disabledDevices: 0 }
+    try {
+      sweepResult = await sweepExpiredAccess()
+    } catch (e) {
+      console.error('[Stats] sweepExpiredAccess failed:', e)
+    }
 
     const [
       totalUsers,
@@ -110,7 +121,9 @@ export async function GET() {
         monthlyRevenue,
         revenueSource,
         recentUsers,
-        recentAuditLogs
+        recentAuditLogs,
+        autoExpire: sweepResult,
+        generatedAt: new Date().toISOString(),
       }
     })
   } catch (err) {

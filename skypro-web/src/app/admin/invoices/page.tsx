@@ -36,6 +36,11 @@ interface CreateForm {
   currency: string
   dueDate: string
   notes: string
+  /** When true, also generates a serial + subscription and emails the user. */
+  fullActivation: boolean
+  durationDays: number
+  plan: string
+  maxDevices: number
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -62,6 +67,10 @@ const EMPTY_FORM: CreateForm = {
   currency: 'EGP',
   dueDate: '',
   notes: '',
+  fullActivation: true,
+  durationDays: 365,
+  plan: 'pro',
+  maxDevices: 1,
 }
 
 function fmt(n: number, currency: string): string {
@@ -190,6 +199,48 @@ export default function AdminInvoicesPage() {
         setResolvingUser(false)
         return
       }
+      // Two paths:
+      // 1. fullActivation=true → use grant-access (creates key + sub + invoice + payment + email)
+      // 2. fullActivation=false → just create a standalone invoice (legacy behavior)
+      if (form.fullActivation) {
+        const total = subtotal + (parseFloat(form.taxAmount) || 0) - (parseFloat(form.discountAmount) || 0)
+        const res = await fetch('/api/admin/users/grant-access', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: u.id,
+            plan: form.plan || 'pro',
+            durationDays: form.durationDays || 365,
+            maxDevices: form.maxDevices || 1,
+            type: 'paid',
+            price: Math.max(0, total),
+            currency: form.currency || 'EGP',
+            createInvoice: true,
+            markPaid: true,
+            paymentMethod: 'manual',
+            notes: form.notes || undefined,
+            sendEmail: true,
+          }),
+        })
+        const data = await res.json()
+        if (res.ok && data?.success) {
+          const emailStatus = data?.data?.email?.status
+          const msg = emailStatus === 'sent'
+            ? `${data.message || 'تم'} · تم إرسال السيريال للعميل بالبريد ✉️`
+            : emailStatus === 'failed'
+              ? `${data.message || 'تم'} · لكن فشل إرسال البريد`
+              : data.message || 'تم إنشاء الفاتورة + السيريال'
+          success(msg)
+          setShowForm(false)
+          setForm(EMPTY_FORM)
+          await load()
+        } else {
+          error(data?.error || 'فشل إنشاء الفاتورة الكاملة')
+        }
+        return
+      }
+
+      // Legacy path: just an invoice, no key/sub/email
       const res = await fetch('/api/admin/invoices', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -205,7 +256,7 @@ export default function AdminInvoicesPage() {
       })
       const data = await res.json()
       if (res.ok && data?.success) {
-        success('تم إنشاء الفاتورة')
+        success('تم إنشاء الفاتورة (بدون سيريال أو إيميل)')
         setShowForm(false)
         setForm(EMPTY_FORM)
         await load()
@@ -245,6 +296,41 @@ export default function AdminInvoicesPage() {
       {showForm && (
         <div className="admin-card mb-6 !border-violet-500/30 !border">
           <h2 className="text-lg font-bold text-white mb-4">إنشاء فاتورة جديدة</h2>
+
+          {/* Mode toggle */}
+          <div className="mb-5 p-3 rounded-xl bg-white/[0.03] border border-white/8">
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, fullActivation: true })}
+                className={`p-3 rounded-xl border-2 text-right transition-all ${
+                  form.fullActivation
+                    ? 'bg-emerald-500/15 border-emerald-500 text-white'
+                    : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
+                }`}
+              >
+                <div className="font-bold text-sm">فاتورة كاملة 💎</div>
+                <div className="text-[11px] mt-0.5 opacity-80">
+                  فاتورة + دفعة + سيريال + إيميل للعميل
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, fullActivation: false })}
+                className={`p-3 rounded-xl border-2 text-right transition-all ${
+                  !form.fullActivation
+                    ? 'bg-slate-500/15 border-slate-500 text-white'
+                    : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
+                }`}
+              >
+                <div className="font-bold text-sm">فاتورة فقط 📄</div>
+                <div className="text-[11px] mt-0.5 opacity-80">
+                  بدون سيريال أو إيميل
+                </div>
+              </button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
               <label htmlFor="inv-email" className="admin-label">بريد العميل</label>
@@ -331,6 +417,59 @@ export default function AdminInvoicesPage() {
                 maxLength={500}
               />
             </div>
+
+            {/* Activation fields — only when fullActivation is on */}
+            {form.fullActivation && (
+              <div className="md:col-span-2 p-4 rounded-xl bg-emerald-500/[0.05] border border-emerald-500/20 space-y-4">
+                <div className="flex items-center gap-2 text-xs font-bold text-emerald-300">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"
+                        style={{ boxShadow: '0 0 6px rgba(34,197,94,0.6)' }} />
+                  بيانات السيريال والاشتراك (سيُرسل للعميل بالبريد)
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label htmlFor="inv-plan" className="admin-label">الخطة</label>
+                    <select
+                      id="inv-plan"
+                      className="admin-input"
+                      value={form.plan}
+                      onChange={(e) => setForm({ ...form, plan: e.target.value })}
+                    >
+                      <option value="pro">Pro</option>
+                      <option value="enterprise">Enterprise</option>
+                      <option value="basic">Basic</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="inv-duration" className="admin-label">المدة (يوم)</label>
+                    <select
+                      id="inv-duration"
+                      className="admin-input"
+                      value={form.durationDays}
+                      onChange={(e) => setForm({ ...form, durationDays: parseInt(e.target.value) || 365 })}
+                    >
+                      <option value="30">شهر (30)</option>
+                      <option value="90">3 شهور (90)</option>
+                      <option value="180">6 شهور (180)</option>
+                      <option value="365">سنة (365)</option>
+                      <option value="730">سنتين (730)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="inv-maxdev" className="admin-label">حد الأجهزة</label>
+                    <input
+                      id="inv-maxdev"
+                      type="number"
+                      min="1"
+                      max="50"
+                      className="admin-input"
+                      value={form.maxDevices}
+                      onChange={(e) => setForm({ ...form, maxDevices: parseInt(e.target.value) || 1 })}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-3 mt-5 pt-4 border-t border-white/5">
             <button onClick={submitForm} disabled={resolvingUser} className="admin-btn-primary flex items-center gap-2">

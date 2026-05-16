@@ -32,6 +32,19 @@ export interface ActivationConfirmEmailData {
   planLabel?: string
 }
 
+export interface GrantAccessEmailData {
+  name?: string | null
+  email: string
+  serial: string
+  expiryDate: string
+  planLabel?: string
+  durationDays: number
+  isTrial: boolean
+  amount?: number
+  currency?: string
+  invoiceNumber?: string
+}
+
 export interface PasswordResetEmailData {
   name?: string | null
   resetUrl: string
@@ -182,14 +195,27 @@ export async function sendEmail({ to, subject, text, html }: EmailOptions): Prom
       text,
       html: html || text,
       messageId,
+      date: new Date(),
+      // Deliverability headers — these signals tell receiving servers (Gmail,
+      // Outlook, Yahoo) this is a legitimate transactional message, not spam:
+      // - MIME-Version + Message-ID + Date: required by RFC-5322
+      // - List-Unsubscribe + List-Unsubscribe-Post: required by Gmail (Feb 2024)
+      // - Feedback-ID: helps Gmail postmaster track reputation per-campaign
+      // - Auto-Submitted: marks as automated (not a personal reply)
+      // - Precedence + X-Auto-Response-Suppress: prevents auto-reply loops
       headers: {
+        'MIME-Version': '1.0',
         'Message-ID': messageId,
-        'X-Mailer': `${APP_NAME} Mailer`,
+        'X-Mailer': `${APP_NAME} Mailer 1.0`,
         'X-Entity-Ref-ID': `${APP_NAME}-${Date.now()}`,
         'X-Priority': '3',
         Organization: APP_NAME,
         'List-Unsubscribe': `<${unsubMailto}>, <${unsubUrl}>`,
         'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        'Feedback-ID': `transactional:${APP_NAME}:${domain}`,
+        'Auto-Submitted': 'auto-generated',
+        Precedence: 'bulk',
+        'X-Auto-Response-Suppress': 'OOF, AutoReply',
       },
     })
 
@@ -423,5 +449,132 @@ export function generateActivationConfirmEmail(data: ActivationConfirmEmailData)
       <li>استخدم السيريال أعلاه لتفعيل التطبيق على جهازك</li>
     </ol>
     <p style="margin-bottom:0;color:#64748b;font-size:13px;">لو لم تطلب هذا الحساب، تجاهل هذه الرسالة.</p>
+  `)
+}
+
+/* ------------------------------------------------------------------ */
+/*  Grant Access Email (admin issues a new subscription/key manually) */
+/* ------------------------------------------------------------------ */
+
+export function generateGrantAccessEmailText(data: GrantAccessEmailData): string {
+  const name = data.name || 'عميلنا الكريم'
+  const typeLabel = data.isTrial ? 'فترة تجريبية مجانية' : 'اشتراك مدفوع'
+  const planLabel = data.planLabel || (data.isTrial ? 'تجريبي' : 'Pro')
+  const priceLine = !data.isTrial && data.amount && data.amount > 0
+    ? `قيمة الاشتراك: ${data.amount} ${data.currency || 'EGP'}\n`
+    : ''
+  const invoiceLine = data.invoiceNumber ? `رقم الفاتورة: ${data.invoiceNumber}\n` : ''
+
+  return `مرحباً ${name}
+
+تم تفعيل حسابك في ${APP_NAME} بنجاح من قِبل فريق الدعم.
+
+تفاصيل الاشتراك:
+${typeLabel}
+الخطة: ${planLabel}
+المدة: ${data.durationDays} يوم
+تاريخ الانتهاء: ${data.expiryDate}
+${priceLine}${invoiceLine}
+بيانات تسجيل الدخول:
+البريد الإلكتروني: ${data.email}
+السيريال (مفتاح التفعيل): ${data.serial}
+
+الخطوات التالية:
+1. سجّل دخول إلى لوحة التحكم: ${APP_WEBSITE_URL}/auth/login
+2. حمّل تطبيق SkyPro Desktop من لوحة التحكم
+3. استخدم السيريال أعلاه لتفعيل التطبيق على جهازك
+
+ابدأ الآن واستمتع بكامل ميزات ${APP_NAME}!
+
+${baseTextFooter()}`
+}
+
+export function generateGrantAccessEmail(data: GrantAccessEmailData): string {
+  const name = escapeHtml(data.name || 'عميلنا الكريم')
+  const email = escapeHtml(data.email)
+  const serial = escapeHtml(data.serial)
+  const expiryDate = escapeHtml(data.expiryDate)
+  const planLabel = escapeHtml(data.planLabel || (data.isTrial ? 'تجريبي' : 'Pro'))
+  const typeLabel = data.isTrial ? 'فترة تجريبية مجانية' : 'اشتراك مدفوع'
+  const typeColor = data.isTrial ? '#f59e0b' : '#10b981'
+  const typeBg = data.isTrial ? '#fef3c7' : '#d1fae5'
+  const typeBorder = data.isTrial ? '#fcd34d' : '#6ee7b7'
+  const headlineEmoji = data.isTrial ? '🎁' : '✅'
+
+  const priceRow = !data.isTrial && data.amount && data.amount > 0
+    ? `<tr>
+        <td style="padding:10px 16px;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:13px;white-space:nowrap;">قيمة الاشتراك</td>
+        <td style="padding:10px 16px;border-bottom:1px solid #f1f5f9;font-weight:600;color:#059669;">${data.amount.toLocaleString('ar-EG')} ${escapeHtml(data.currency || 'EGP')}</td>
+      </tr>`
+    : ''
+
+  const invoiceRow = data.invoiceNumber
+    ? `<tr>
+        <td style="padding:10px 16px;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:13px;white-space:nowrap;">رقم الفاتورة</td>
+        <td style="padding:10px 16px;border-bottom:1px solid #f1f5f9;font-weight:600;color:#1e293b;font-family:Consolas,monospace;direction:ltr;text-align:right;">${escapeHtml(data.invoiceNumber)}</td>
+      </tr>`
+    : ''
+
+  return htmlShell(`
+    <p style="margin-top:0;font-size:17px;">مرحباً <strong>${name}</strong> ${headlineEmoji}</p>
+    <p>تم تفعيل حسابك في <strong>${APP_NAME}</strong> بنجاح من قِبل فريق الدعم. هذه تفاصيل اشتراكك:</p>
+
+    <!-- Subscription Type Banner -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0;">
+      <tr><td style="background:${typeBg};border:1px solid ${typeBorder};border-radius:12px;padding:16px;text-align:center;">
+        <p style="margin:0;font-size:11px;color:#64748b;font-weight:600;letter-spacing:1px;">نوع الاشتراك</p>
+        <p style="margin:4px 0 0;font-size:18px;font-weight:800;color:${typeColor};">${typeLabel}</p>
+      </td></tr>
+    </table>
+
+    <!-- Subscription Details Card -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
+      <tr>
+        <td style="padding:10px 16px;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:13px;white-space:nowrap;">الخطة</td>
+        <td style="padding:10px 16px;border-bottom:1px solid #f1f5f9;font-weight:600;color:#1e293b;">${planLabel}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px 16px;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:13px;white-space:nowrap;">المدة</td>
+        <td style="padding:10px 16px;border-bottom:1px solid #f1f5f9;font-weight:600;color:#1e293b;">${data.durationDays} يوم</td>
+      </tr>
+      <tr>
+        <td style="padding:10px 16px;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:13px;white-space:nowrap;">ينتهي في</td>
+        <td style="padding:10px 16px;border-bottom:1px solid #f1f5f9;font-weight:700;color:#dc2626;">${expiryDate}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px 16px;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:13px;white-space:nowrap;">البريد الإلكتروني</td>
+        <td style="padding:10px 16px;border-bottom:1px solid #f1f5f9;font-weight:600;color:#1e293b;direction:ltr;text-align:right;">${email}</td>
+      </tr>
+      ${priceRow}
+      ${invoiceRow}
+    </table>
+
+    <!-- Serial Key Highlight -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0;">
+      <tr><td style="background:#f0f9ff;border:2px dashed #0ea5e9;border-radius:12px;padding:20px;text-align:center;">
+        <p style="margin:0 0 8px;font-size:12px;color:#64748b;font-weight:700;letter-spacing:1px;">مفتاح التفعيل · SERIAL KEY</p>
+        <p style="margin:0;font-size:22px;font-weight:800;color:#0ea5e9;letter-spacing:2px;font-family:Consolas,monospace;direction:ltr;word-break:break-all;">${serial}</p>
+        <p style="margin:8px 0 0;font-size:11px;color:#94a3b8;">انسخ هذا الكود واستخدمه في تطبيق SkyPro</p>
+      </td></tr>
+    </table>
+
+    <!-- CTA -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;">
+      <tr><td style="text-align:center;">
+        <a href="${APP_WEBSITE_URL}/auth/login" style="display:inline-block;background:linear-gradient(135deg,#4f46e5,#7c3aed,#a855f7);color:#ffffff;text-decoration:none;padding:14px 36px;border-radius:10px;font-weight:700;font-size:15px;letter-spacing:0.5px;box-shadow:0 4px 14px rgba(99,102,241,0.30);">
+          ادخل إلى لوحة التحكم
+        </a>
+      </td></tr>
+    </table>
+
+    <!-- Steps -->
+    <p style="margin:24px 0 12px;font-weight:700;font-size:15px;color:#0f172a;">الخطوات التالية:</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+      <tr><td style="padding:6px 0;"><span style="display:inline-block;width:28px;height:28px;background:#6366f1;color:#fff;border-radius:50%;text-align:center;line-height:28px;font-size:13px;font-weight:700;">1</span></td><td style="padding:6px 12px;color:#1e293b;">سجّل دخول إلى <a href="${APP_WEBSITE_URL}/auth/login" style="color:#6366f1;text-decoration:none;font-weight:600;">لوحة التحكم</a></td></tr>
+      <tr><td style="padding:6px 0;"><span style="display:inline-block;width:28px;height:28px;background:#7c3aed;color:#fff;border-radius:50%;text-align:center;line-height:28px;font-size:13px;font-weight:700;">2</span></td><td style="padding:6px 12px;color:#1e293b;">حمّل تطبيق SkyPro Desktop</td></tr>
+      <tr><td style="padding:6px 0;"><span style="display:inline-block;width:28px;height:28px;background:#a855f7;color:#fff;border-radius:50%;text-align:center;line-height:28px;font-size:13px;font-weight:700;">3</span></td><td style="padding:6px 12px;color:#1e293b;">استخدم السيريال لتفعيل التطبيق على جهازك</td></tr>
+    </table>
+
+    <p style="margin-bottom:0;color:#94a3b8;font-size:12px;">إذا كان لديك أي استفسار، تواصل معنا على ${APP_WEBSITE_LABEL}</p>
   `)
 }
