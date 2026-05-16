@@ -82,7 +82,28 @@ jobs:
           cd skypro-desktop/dist/release
           echo "Deploying SkyPro v${VERSION} to server..."
           scp $SCP_OPTS "SkyPro Setup"*.exe latest.yml *.blockmap version.json "$DEST"
-          echo "Updating latest.exe symlink..."
-          ssh $SCP_OPTS root@147.79.66.116 "cd /var/www/downloads.skywaveads.com/skypro && ln -sf 'SkyPro Setup ${VERSION}.exe' latest.exe"
+          echo "Updating latest.exe symlink + cleaning up old versions..."
+          ssh $SCP_OPTS root@147.79.66.116 "bash -s ${VERSION}" <<'REMOTE_EOF'
+            set -e
+            CURRENT_VERSION="$1"
+            cd /var/www/downloads.skywaveads.com/skypro
+            # Point latest.exe at the freshly uploaded build.
+            ln -sf "SkyPro Setup ${CURRENT_VERSION}.exe" latest.exe
+            # Keep ONLY the two newest .exe files (current + previous for rollback).
+            # Older installers + their .blockmap files are removed to save disk space.
+            mapfile -t EXES < <(ls -t1 SkyPro\ Setup\ *.exe 2>/dev/null | grep -v '^latest.exe$' || true)
+            if [ "${#EXES[@]}" -gt 2 ]; then
+              echo "Found ${#EXES[@]} installers, keeping 2 newest..."
+              for ((i = 2; i < ${#EXES[@]}; i++)); do
+                exe="${EXES[$i]}"
+                rm -f -- "$exe" "${exe}.blockmap"
+                echo "  removed: $exe"
+              done
+            else
+              echo "Found ${#EXES[@]} installer(s), nothing to clean."
+            fi
+            echo "Disk usage after cleanup:"
+            du -sh /var/www/downloads.skywaveads.com/skypro
+REMOTE_EOF
           rm -f ~/.ssh/deploy_key
           echo "Deploy complete: v${VERSION}"

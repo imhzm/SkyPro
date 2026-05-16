@@ -36,3 +36,7 @@ skypro-desktop/runtime-data/
 # Cache
 .vite/
 .vite-temp/
+
+# Release artifacts downloaded from CI (large, regenerable)
+skypro-release-*/
+*temp_build_log*

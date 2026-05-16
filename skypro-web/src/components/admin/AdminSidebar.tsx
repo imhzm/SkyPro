@@ -28,6 +28,7 @@ const navItems = [
   { href: '/admin/devices', label: 'الأجهزة', icon: Monitor },
   { href: '/admin/subscriptions', label: 'الاشتراكات', icon: CreditCard },
   { href: '/admin/billing', label: 'الفوترة', icon: Receipt },
+  { href: '/admin/offers', label: 'العروض والإعلانات', icon: Megaphone },
   { href: '/admin/audit-log', label: 'سجل الأحداث', icon: FileText },
   { href: '/admin/broadcast', label: 'إشعار جماعي', icon: Megaphone },
   { href: '/admin/settings', label: 'الإعدادات', icon: Settings },

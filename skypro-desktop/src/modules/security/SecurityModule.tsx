@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Shield, AlertTriangle, CheckCircle, Save, Loader2, AlertCircle, Lock, Fingerprint, Eye, Timer, Gauge } from 'lucide-react'
+import ModuleHeader from '../../components/common/ModuleHeader'
 
 const DEFAULT_SETTINGS = {
   enabled: true,
@@ -81,24 +82,12 @@ export default function SecurityModule() {
         </div>
       )}
 
-      {/* Hero */}
-      <div className="rounded-2xl overflow-hidden p-6" style={{ background: 'linear-gradient(135deg, #022c22 0%, #10b981 50%, #059669 100%)', boxShadow: '0 8px 32px rgba(16, 185, 129, 0.25)' }}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)' }}>
-              <Shield size={28} className="text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-white mb-1">الحماية والأمان</h1>
-              <p className="text-sm" style={{ color: 'rgba(255,255,255,0.6)' }}>إعدادات الحماية التلقائية من الحظر</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full" style={{ background: settings.enabled ? 'rgba(255,255,255,0.15)' : 'rgba(239,68,68,0.3)', border: `1px solid ${settings.enabled ? 'rgba(255,255,255,0.2)' : 'rgba(239,68,68,0.4)'}` }}>
-            <span className="w-2 h-2 rounded-full" style={{ background: settings.enabled ? '#4ade80' : '#f87171', boxShadow: `0 0 6px ${settings.enabled ? 'rgba(74,222,128,0.5)' : 'rgba(248,113,113,0.5)'}` }} />
-            <span className="text-xs font-semibold text-white">{settings.enabled ? 'مفعّل' : 'معطّل'}</span>
-          </div>
-        </div>
-      </div>
+      <ModuleHeader
+        title="الحماية والأمان"
+        subtitle="إعدادات الحماية التلقائية من الحظر والكشف"
+        icon={Shield}
+        badge={{ label: settings.enabled ? 'مفعّل' : 'معطّل', tone: settings.enabled ? 'success' : 'danger' }}
+      />
 
       {/* Feature Toggles */}
       <div className="card-gradient-border">

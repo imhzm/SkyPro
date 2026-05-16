@@ -25,7 +25,7 @@ import {
   Users,
   Loader2,
   Sparkles,
-  Rocket,
+  LayoutDashboard,
   BarChart3,
   Mail,
   Send,
@@ -34,6 +34,8 @@ import {
   X,
 } from 'lucide-react'
 import { activationApi } from '../../services/api/activation'
+import ModuleHeader, { HeaderChip } from '../../components/common/ModuleHeader'
+import OffersSection from '../../components/common/OffersSection'
 
 export default function DashboardModule() {
   const { setActivePlatform } = useAppStore()
@@ -128,46 +130,35 @@ export default function DashboardModule() {
 
   return (
     <div className="space-y-5">
-      {/* Hero Banner */}
-      <div
-        className="rounded-2xl overflow-hidden p-6"
-        style={{
-          background: 'linear-gradient(135deg, #001A3A 0%, #0A6CF1 50%, #8B2CF5 100%)',
-          boxShadow: '0 8px 32px rgba(10, 108, 241, 0.2)',
-        }}
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="sw-status-dot" />
-              <span className="text-[11px] font-semibold" style={{ color: 'rgba(234, 243, 255, 0.6)' }}>SkyPro</span>
-            </div>
-            <h1 className="text-xl font-bold text-white mb-1">مرحباً بك</h1>
-            <p className="text-sm leading-relaxed max-w-lg" style={{ color: 'rgba(234, 243, 255, 0.6)' }}>
-              اختر منصة من القائمة الجانبية للبدء في التسويق واستخراج البيانات.
-            </p>
-            <div className="flex gap-2 mt-3 flex-wrap">
-              <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold text-white" style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.15)' }}>18+ منصة</span>
-              <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold text-white" style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.15)' }}>أتمتة كاملة</span>
-              <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold text-white" style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.15)' }}>استخراج بيانات</span>
-              <button
-                onClick={() => { setShowActivateModal(true); setActError(''); setActSuccess(''); setActivationResult(null) }}
-                className="px-3 py-1 rounded-full text-[11px] font-semibold text-white transition-all hover:shadow-lg"
-                style={{ background: 'linear-gradient(135deg, #10b981, #059669)', boxShadow: '0 2px 10px rgba(16, 185, 129, 0.3)' }}
-              >
-                <Send size={12} className="inline mr-1" />
-                إنشاء تفعيل
-              </button>
-            </div>
-          </div>
-          <div
-            className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 mr-4"
-            style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)' }}
+      <ModuleHeader
+        title="لوحة التحكم"
+        subtitle="نظرة عامة على كل المنصات والإحصائيات · ابدأ بحملتك من القائمة الجانبية"
+        icon={LayoutDashboard}
+        meta={
+          <>
+            <HeaderChip>18+ منصة</HeaderChip>
+            <HeaderChip>أتمتة كاملة</HeaderChip>
+            <HeaderChip>استخراج بيانات</HeaderChip>
+          </>
+        }
+        action={
+          <button
+            onClick={() => { setShowActivateModal(true); setActError(''); setActSuccess(''); setActivationResult(null) }}
+            className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all flex items-center gap-1.5"
+            style={{
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0.08) 100%)',
+              border: '1px solid rgba(255,255,255,0.25)',
+              backdropFilter: 'blur(8px)',
+            }}
           >
-            <Rocket size={28} className="text-white" />
-          </div>
-        </div>
-      </div>
+            <Send size={14} />
+            إنشاء تفعيل
+          </button>
+        }
+      />
+
+      {/* Offers / Ads */}
+      <OffersSection />
 
       {/* Stats - Responsive grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

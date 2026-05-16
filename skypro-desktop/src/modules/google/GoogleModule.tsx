@@ -3,6 +3,7 @@ import { usePlatform } from '../../hooks/usePlatform'
 import { useAccountsStore } from '../../stores/accountsStore'
 import type { Account } from '../../stores/accountsStore'
 import AccountSelector from '../../components/common/AccountSelector'
+import AccountCycleBanner from '../../components/common/AccountCycleBanner'
 import ToolGrid from '../../components/tools/ToolGrid'
 import ToolCard from '../../components/tools/ToolCard'
 import ToolPanel from '../../components/tools/ToolPanel'
@@ -472,6 +473,15 @@ export default function GoogleModule() {
 
       {renderSessionCard()}
 
+      <AccountCycleBanner
+        platformId="google"
+        platformName="Google"
+        platformGradient={ACCENT_GRADIENT}
+        accounts={allAccounts}
+        cycleActive={cycleActive}
+        onOpenCycle={() => setActiveTool('maps')}
+      />
+
       <ToolGrid
         title="أدوات Google"
         subtitle="اختر أداة لفتح إعداداتها"
@@ -487,8 +497,6 @@ export default function GoogleModule() {
             description={tool.description}
             accent={tool.accent}
             accentGradient={tool.accentGradient}
-            badge={tool.requiresSession && !sessionId ? 'يتطلب دخول' : undefined}
-            badgeTone={tool.requiresSession && !sessionId ? 'warning' : 'primary'}
             onClick={() => {
               if (tool.requiresSession && !sessionId) {
                 showMsg('يرجى تسجيل الدخول أولاً', true)
