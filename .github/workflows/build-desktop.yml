@@ -58,6 +58,7 @@ jobs:
           name: desktop-release-${{ github.sha }}
           path: |
             skypro-desktop/dist/release/SkyPro Setup *.exe
+            skypro-desktop/dist/release/*.blockmap
             skypro-desktop/dist/release/latest.yml
             skypro-desktop/dist/release/version.json
           retention-days: 30
