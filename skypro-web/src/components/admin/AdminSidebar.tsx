@@ -18,20 +18,39 @@ import {
   X,
   ChevronLeft,
   Megaphone,
+  Wallet,
+  Sparkles,
 } from 'lucide-react'
 import { Logo } from '@/components/marketing/Logo'
 
-const navItems = [
-  { href: '/admin', label: 'لوحة التحكم', icon: LayoutDashboard },
-  { href: '/admin/users', label: 'المستخدمين', icon: Users },
-  { href: '/admin/keys', label: 'المفاتيح', icon: Key },
-  { href: '/admin/devices', label: 'الأجهزة', icon: Monitor },
-  { href: '/admin/subscriptions', label: 'الاشتراكات', icon: CreditCard },
-  { href: '/admin/billing', label: 'الفوترة', icon: Receipt },
-  { href: '/admin/offers', label: 'العروض والإعلانات', icon: Megaphone },
-  { href: '/admin/audit-log', label: 'سجل الأحداث', icon: FileText },
-  { href: '/admin/broadcast', label: 'إشعار جماعي', icon: Megaphone },
-  { href: '/admin/settings', label: 'الإعدادات', icon: Settings },
+interface NavItem {
+  href: string
+  label: string
+  icon: typeof LayoutDashboard
+  section?: string
+}
+
+const navItems: NavItem[] = [
+  { href: '/admin', label: 'لوحة التحكم', icon: LayoutDashboard, section: 'الرئيسية' },
+
+  // Users + access
+  { href: '/admin/users', label: 'المستخدمين', icon: Users, section: 'الحسابات' },
+  { href: '/admin/keys', label: 'المفاتيح', icon: Key, section: 'الحسابات' },
+  { href: '/admin/devices', label: 'الأجهزة', icon: Monitor, section: 'الحسابات' },
+
+  // Billing & subscriptions
+  { href: '/admin/subscriptions', label: 'الاشتراكات', icon: CreditCard, section: 'الفوترة' },
+  { href: '/admin/billing', label: 'الإيرادات', icon: Wallet, section: 'الفوترة' },
+  { href: '/admin/invoices', label: 'الفواتير', icon: Receipt, section: 'الفوترة' },
+  { href: '/admin/payments', label: 'المدفوعات', icon: CreditCard, section: 'الفوترة' },
+
+  // Marketing
+  { href: '/admin/offers', label: 'العروض والإعلانات', icon: Sparkles, section: 'التسويق' },
+  { href: '/admin/broadcast', label: 'إشعار جماعي', icon: Megaphone, section: 'التسويق' },
+
+  // System
+  { href: '/admin/audit-log', label: 'سجل الأحداث', icon: FileText, section: 'النظام' },
+  { href: '/admin/settings', label: 'الإعدادات', icon: Settings, section: 'النظام' },
 ]
 
 export function AdminSidebar() {
@@ -74,23 +93,31 @@ export function AdminSidebar() {
             </Link>
           </div>
 
-          <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-            {navItems.map((item) => {
+          <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
+            {navItems.map((item, idx) => {
               const isActive = pathname === item.href
+              const prevSection = idx > 0 ? navItems[idx - 1].section : null
+              const showSectionHeader = !collapsed && item.section && item.section !== prevSection
               return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMobileOpen(false)}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
-                    isActive
-                      ? 'bg-sky-500/15 text-sky-400 font-semibold border border-sky-500/20'
-                      : 'text-slate-400 hover:bg-white/5 hover:text-white border border-transparent'
-                  }`}
-                >
-                  <item.icon size={20} />
-                  {!collapsed && <span className="text-sm">{item.label}</span>}
-                </Link>
+                <div key={item.href}>
+                  {showSectionHeader && (
+                    <div className="px-3 pt-3 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-600">
+                      {item.section}
+                    </div>
+                  )}
+                  <Link
+                    href={item.href}
+                    onClick={() => setMobileOpen(false)}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
+                      isActive
+                        ? 'bg-sky-500/15 text-sky-400 font-semibold border border-sky-500/20'
+                        : 'text-slate-400 hover:bg-white/5 hover:text-white border border-transparent'
+                    }`}
+                  >
+                    <item.icon size={19} />
+                    {!collapsed && <span className="text-sm">{item.label}</span>}
+                  </Link>
+                </div>
               )
             })}
           </nav>
