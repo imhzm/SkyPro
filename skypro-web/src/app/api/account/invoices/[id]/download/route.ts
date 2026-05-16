@@ -76,7 +76,24 @@ function fmtDate(d: Date | null | undefined): string {
   return d.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })
 }
 
-function renderInvoiceHTML(inv: any): string {
+interface InvoiceForRender {
+  invoiceNumber: string
+  status: string
+  subtotal: number
+  taxAmount: number
+  discountAmount: number
+  totalAmount: number
+  currency: string
+  createdAt: Date
+  dueDate?: Date | null
+  paidAt?: Date | null
+  notes?: string | null
+  user: { name: string | null; email: string } | null
+  subscription: { key: { keyCode: string; plan: string } | null } | null
+  payments: Array<{ amount: number; method: string | null; paidAt: Date | null }>
+}
+
+function renderInvoiceHTML(inv: InvoiceForRender): string {
   const subtotal = Number(inv.subtotal ?? 0)
   const tax = Number(inv.taxAmount ?? 0)
   const discount = Number(inv.discountAmount ?? 0)

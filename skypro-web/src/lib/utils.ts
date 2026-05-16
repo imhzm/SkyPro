@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs'
-import { createHmac, createCipheriv, createDecipheriv, createHash, randomBytes } from 'crypto'
+import { createHmac, createCipheriv, createDecipheriv, createHash, randomBytes, timingSafeEqual } from 'crypto'
 
 function randomHex(byteLength: number): string {
   const bytes = new Uint8Array(byteLength)
@@ -63,7 +63,7 @@ function cryptoTimingSafeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false
   const bufA = Buffer.from(a)
   const bufB = Buffer.from(b)
-  return require('crypto').timingSafeEqual(bufA, bufB)
+  return timingSafeEqual(bufA, bufB)
 }
 
 export function encryptToken(plaintext: string): string {

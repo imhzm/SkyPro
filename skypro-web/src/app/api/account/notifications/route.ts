@@ -67,7 +67,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json(errorResponse('بيانات غير صالحة'), { status: 400 })
     }
 
-    const where: any = parsed.data.all
+    const where: Record<string, unknown> = parsed.data.all
       ? { OR: [{ userId }, { userId: null }], readAt: null }
       : { id: { in: parsed.data.ids ?? [] }, OR: [{ userId }, { userId: null }] }
 

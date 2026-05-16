@@ -51,7 +51,8 @@ export async function GET(req: NextRequest) {
 
     const enriched = events.map((e) => {
       // Strip __chain meta from details (security implementation detail)
-      const details: any = { ...(e.details as any || {}) }
+      const rawDetails = (e.details as Record<string, unknown> | null) ?? {}
+      const details: Record<string, unknown> = { ...rawDetails }
       delete details.__chain
 
       // Strip "security:" prefix used by notifySecurityEvent
