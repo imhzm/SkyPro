@@ -143,9 +143,11 @@ function registerAuthIPC({ ipcm, bm, db }) {
       return { success: false, message: 'طلبات كثيرة. حاول لاحقاً.' }
     }
     key = normalizeText(key, 80)
-    const deviceInfo = getDeviceCapabilities()
-    const fingerprint = deviceInfo.fingerprint
-    deviceInfo.fingerprint = fingerprint
+    const caps = getDeviceCapabilities()
+    const fingerprint = caps.fingerprint
+    // Strip fingerprint from deviceInfo — server schema uses strict() and
+    // fingerprint is already sent as a top-level field.
+    const { fingerprint: _fp, ...deviceInfo } = caps
     try {
       const { data: result } = await fetchJson(`${WEB_API_URL}/auth/verify-device`, {
         method: 'POST',
@@ -173,9 +175,11 @@ function registerAuthIPC({ ipcm, bm, db }) {
       return { success: false, message: 'طلبات كثيرة. حاول لاحقاً.' }
     }
     key = normalizeText(key, 80)
-    const deviceInfo = getDeviceCapabilities()
-    const fingerprint = deviceInfo.fingerprint
-    deviceInfo.fingerprint = fingerprint
+    const caps = getDeviceCapabilities()
+    const fingerprint = caps.fingerprint
+    // Strip fingerprint from deviceInfo — server schema uses strict() and
+    // fingerprint is already sent as a top-level field.
+    const { fingerprint: _fp, ...deviceInfo } = caps
     try {
       const { data: result } = await fetchJson(`${WEB_API_URL}/auth/verify-device`, {
         method: 'POST',

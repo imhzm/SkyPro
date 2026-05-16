@@ -1,236 +1,206 @@
-# SkyPro Desktop - Update & Deployment Guide
-
-## Server Details
-
-| Item | Value |
-|------|-------|
-| Server IP | `147.79.66.116` |
-| SSH User | `root` |
-| Web App Path | `/var/www/skypro.skywaveads.com/skypro-web` |
-| Downloads Path | `/var/www/downloads.skywaveads.com/skypro/` |
-| PM2 Process | `skypro` (id: 41, port: 3200) |
-| Database | MySQL `skypro` on `127.0.0.1:3306` |
-| DB User | `skypro_app` |
-| GitHub Repo | `https://github.com/imhzm/SkyPro.git` |
-| Download URL | `https://downloads.skywaveads.com/skypro/latest` |
-| Auto-Update URL | `https://downloads.skywaveads.com/skypro/latest.yml` |
+# دليل تحديث تطبيق SkyPro Desktop
 
 ---
 
-## How Auto-Updates Work
+## الخطوات بالترتيب (من أول ما تعدل الكود لحد ما التحديث يوصل للعملاء)
 
-1. The desktop app uses `electron-updater` with "generic" provider
-2. On startup (and via the update button), the app fetches `latest.yml` from `https://downloads.skywaveads.com/skypro/`
-3. If the version in `latest.yml` is newer than the installed version, the app shows an update prompt
-4. User clicks "Download" → app downloads the new `.exe` using delta updates (`.blockmap`)
-5. User clicks "Install & Restart" → app quits and runs the installer
+### الخطوة 1: عدّل الكود اللي عايزه
+
+عدّل أي ملف في مجلد `skypro-desktop/` — سواء إصلاح مشكلة أو إضافة ميزة جديدة.
 
 ---
 
-## How to Release a New Version (Step by Step)
+### الخطوة 2: غيّر رقم الإصدار
 
-### Method 1: Automatic (Recommended) - Push to GitHub
+افتح ملف `skypro-desktop/package.json` وغيّر رقم `version`:
 
-This is the easiest way. Just change code and push:
+```
+مثال: غيّر "version": "1.1.0" إلى "version": "1.2.0"
+```
+
+> ⚠️ **مهم جداً:** لازم تغيّر الرقم! لو ما غيّرته، العملاء مش هيشوفوا التحديث.
+>
+> - إصلاح بسيط: غيّر الرقم الأخير (1.1.0 → 1.1.1)
+> - ميزة جديدة: غيّر الرقم الأوسط (1.1.0 → 1.2.0)
+> - تغيير كبير: غيّر الرقم الأول (1.0.0 → 2.0.0)
+
+---
+
+### الخطوة 3: تأكد إن الكود شغال قبل ما ترفعه
+
+افتح Terminal في مجلد `skypro-desktop` وشغّل:
 
 ```bash
-# 1. Edit your code in skypro-desktop/
+npx tsc --noEmit
+```
 
-# 2. Bump the version in package.json
-cd skypro-desktop
-# Change "version": "1.1.0" to "version": "1.2.0" (or whatever)
+لو طلعت أخطاء → صلّحها الأول. لو ما طلعش حاجة = كل حاجة تمام ✅
 
-# 3. Commit and push to main
+---
+
+### الخطوة 4: ارفع الكود على GitHub
+
+```bash
 git add .
-git commit -m "feat: your change description"
+git commit -m "وصف التعديل اللي عملته"
 git push origin main
 ```
 
-**What happens automatically:**
-- GitHub Actions detects the push (because `skypro-desktop/**` changed)
-- Builds the app on `windows-latest`
-- Creates `SkyPro Setup X.X.X.exe`, `latest.yml`, `.blockmap`, `version.json`
-- Deploys all files to the server via SCP
-- Updates the `latest.exe` symlink
+بمجرد ما ترفع، GitHub Actions هيبدأ يبني التطبيق تلقائي (بياخد حوالي 15-25 دقيقة).
 
-**Monitor the build:**
+---
+
+### الخطوة 5: تابع البناء على GitHub
+
 ```bash
-gh run list --limit 3
-gh run view <run-id> --log
+gh run list --limit 1
 ```
 
-**If the deploy step fails (SSH timeout from GitHub to server):**
-The build artifacts are still uploaded to GitHub. Download and deploy manually:
+هتشوف حاجة زي كده:
+
+```
+STATUS  NAME                         BRANCH
+✓       Build & Deploy Desktop App   main
+```
+
+- ✅ `✓` = البناء نجح
+- ❌ `X` = فيه مشكلة (شوف قسم "حل المشاكل" تحت)
+- 🔄 `*` = لسه شغال، استنى شوية
+
+---
+
+### الخطوة 6: نزّل ملفات البناء من GitHub
+
+بعد ما البناء ينجح، نزّل الملفات:
+
 ```bash
-# Download artifacts from GitHub
-gh run download <run-id> --dir /tmp/skypro-release
+gh run download <run-id> --dir skypro-release
+```
 
-# Find the release directory
-cd /tmp/skypro-release/desktop-release-*
+> **ملاحظة:** استبدل `<run-id>` بالرقم اللي ظهرلك في الخطوة 5.
+>
+> مثال: لو الرقم كان `12345`:
+> ```bash
+> gh run download 12345 --dir skypro-release
+> ```
 
-# Deploy manually via SCP
+---
+
+### الخطوة 7: ارفع الملفات على السيرفر
+
+```bash
+cd skypro-release/desktop-release-*
+
 scp "SkyPro Setup"*.exe latest.yml *.blockmap version.json root@147.79.66.116:/var/www/downloads.skywaveads.com/skypro/
-
-# Update symlink (replace X.X.X with actual version)
-ssh root@147.79.66.116 "cd /var/www/downloads.skywaveads.com/skypro && ln -sf 'SkyPro Setup X.X.X.exe' latest.exe"
 ```
 
-### Method 2: Manual Trigger (No Code Changes)
+هيطلب منك باسورد السيرفر. بعد ما يخلص الرفع:
 
 ```bash
-gh workflow run build-desktop.yml
+ssh root@147.79.66.116 "cd /var/www/downloads.skywaveads.com/skypro && ln -sf 'SkyPro Setup VERSION.exe' latest.exe"
 ```
 
-### Method 3: Manual Build & Deploy (Local Machine)
+> **مهم:** استبدل `VERSION` برقم الإصدار الفعلي. مثال:
+> ```bash
+> ssh root@147.79.66.116 "cd /var/www/downloads.skywaveads.com/skypro && ln -sf 'SkyPro Setup 1.2.0.exe' latest.exe"
+> ```
+
+---
+
+### الخطوة 8: تأكد إن كل حاجة شغالة
 
 ```bash
-# 1. Build locally
-cd skypro-desktop
-npm run build:desktop
+# تأكد إن رقم الإصدار اتغيّر
+curl -s https://downloads.skywaveads.com/skypro/latest.yml
 
-# 2. Files will be in skypro-desktop/dist/release/
-# - SkyPro Setup X.X.X.exe
-# - latest.yml
-# - SkyPro Setup X.X.X.exe.blockmap
+# تأكد إن رابط التحميل شغال
+curl -sI https://downloads.skywaveads.com/skypro/latest
+```
 
-# 3. Upload to server
-scp "dist/release/SkyPro Setup"*.exe dist/release/latest.yml dist/release/*.blockmap root@147.79.66.116:/var/www/downloads.skywaveads.com/skypro/
+**كده خلاص!** ✅ العملاء هيشوفوا التحديث لما يفتحوا التطبيق أو يضغطوا "التحقق من التحديثات".
 
-# 4. Generate and upload version.json
-VERSION=$(node -p "require('./package.json').version")
-cat > /tmp/version.json << EOF
-{
-  "version": "$VERSION",
-  "releaseDate": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "setupFile": "SkyPro Setup $VERSION.exe",
-  "downloadUrl": "https://downloads.skywaveads.com/skypro/latest"
-}
-EOF
-scp /tmp/version.json root@147.79.66.116:/var/www/downloads.skywaveads.com/skypro/
+---
 
-# 5. Update the latest.exe symlink on server
-ssh root@147.79.66.116 "cd /var/www/downloads.skywaveads.com/skypro && ln -sf 'SkyPro Setup $VERSION.exe' latest.exe"
+## ملخص سريع (الخطوات في سطور)
+
+```
+1. عدّل الكود
+2. غيّر رقم الإصدار في package.json
+3. شغّل npx tsc --noEmit (تأكد مفيش أخطاء)
+4. git add . && git commit -m "وصف" && git push origin main
+5. استنى البناء: gh run list --limit 1
+6. نزّل الملفات: gh run download <run-id> --dir skypro-release
+7. ارفع على السيرفر: scp + ssh (الأوامر فوق)
+8. تأكد: curl https://downloads.skywaveads.com/skypro/latest.yml
 ```
 
 ---
 
-## How to Update the Web App (Server-Side)
+## تحديث الموقع (Web App) - لو عدّلت ملفات في skypro-web
+
+لو التعديل كان في مجلد `skypro-web/` (الموقع)، لازم تحدّث السيرفر كمان:
 
 ```bash
 ssh root@147.79.66.116
 
 cd /var/www/skypro.skywaveads.com/skypro-web
-
-# Pull latest code
 git pull origin main
-
-# Rebuild
 npm run build
-
-# Restart
 pm2 restart skypro
-
-# Verify
-pm2 status skypro
-curl -s https://skypro.skywaveads.com/api/health
 ```
 
 ---
 
-## Important Files on the Server
+## حل المشاكل
 
-### Downloads Directory (`/var/www/downloads.skywaveads.com/skypro/`)
-
-| File | Purpose |
-|------|---------|
-| `SkyPro Setup X.X.X.exe` | Installer for each version |
-| `latest.yml` | electron-updater reads this to check for updates |
-| `latest.exe` | Symlink to the newest .exe (for download link) |
-| `version.json` | Version info (for web dashboard) |
-| `*.blockmap` | Delta update data (smaller downloads) |
-
-### Nginx Config
-
-```
-/etc/nginx/sites-available/downloads.skywaveads.com
-```
-
-Key rules:
-- `/skypro/latest` → 302 redirect to `/skypro/latest.exe`
-- `latest.yml` → no-cache (electron-updater must always get fresh data)
-- `version.json` → no-cache + CORS
-- `.exe` files → immutable cache (versioned by filename)
-
----
-
-## Version Bumping Rules
-
-The version in `skypro-desktop/package.json` controls everything:
-- **Patch** (1.0.0 → 1.0.1): Bug fixes only
-- **Minor** (1.0.0 → 1.1.0): New features
-- **Major** (1.0.0 → 2.0.0): Breaking changes
-
-**IMPORTANT:** You MUST bump the version before pushing, otherwise:
-- The build will overwrite the existing version files
-- Users won't see an update (same version number)
-
----
-
-## Troubleshooting
-
-### Build fails on GitHub Actions
+### البناء فشل على GitHub
 
 ```bash
-# Check the logs
+# شوف الأخطاء
 gh run view <run-id> --log-failed
-
-# Common issues:
-# - TypeScript errors → fix locally first: cd skypro-desktop && npx tsc --noEmit
-# - Missing dependencies → npm ci
-# - Icon issues → verify public/icon.ico exists
 ```
 
-### Users don't see the update
+**أشهر المشاكل:**
+- أخطاء TypeScript → صلّحها محلي: `cd skypro-desktop && npx tsc --noEmit`
+- Dependencies مش موجودة → شغّل: `npm ci`
+
+---
+
+### العملاء مش شايفين التحديث
 
 ```bash
-# Check latest.yml on server
+# شوف الإصدار اللي على السيرفر
 curl -s https://downloads.skywaveads.com/skypro/latest.yml
 
-# Should show the new version number
-# If it shows the old version, the deploy step failed
-
-# Check the symlink
-ssh root@147.79.66.116 "ls -la /var/www/downloads.skywaveads.com/skypro/latest.exe"
-
-# Should point to the newest .exe
+# لو الرقم قديم = الرفع ما اشتغلش، أعد الخطوة 7
 ```
 
-### Login fails for a user
+---
+
+### مستخدم مش قادر يعمل لوجن
 
 ```bash
 ssh root@147.79.66.116
 
-# Check user status
-mysql -u skypro_app -p'F4-ejjoe_0k2qpNX2Q3hZ-REyoFtebuR' skypro -e "SELECT id, email, status, email_verified_at FROM users WHERE email='USER_EMAIL';"
+# شوف حالة المستخدم (غيّر USER_EMAIL بإيميل المستخدم)
+mysql -u skypro_app -p'F4-ejjoe_0k2qpNX2Q3hZ-REyoFtebuR' skypro -e "SELECT id, email, status FROM users WHERE email='USER_EMAIL';"
 
-# If status is 'pending_verification', the user hasn't verified their email
-# To manually activate:
+# لو الحالة pending_verification → فعّله يدوي:
 mysql -u skypro_app -p'F4-ejjoe_0k2qpNX2Q3hZ-REyoFtebuR' skypro -e "UPDATE users SET status='active', email_verified_at=NOW() WHERE email='USER_EMAIL';"
 
-# Check activation key
-mysql -u skypro_app -p'F4-ejjoe_0k2qpNX2Q3hZ-REyoFtebuR' skypro -e "SELECT id, key_code, status, user_id, expires_at FROM activation_keys WHERE user_id=(SELECT id FROM users WHERE email='USER_EMAIL');"
-
-# If key status is 'pending', activate it:
+# فعّل مفتاح التفعيل كمان:
 mysql -u skypro_app -p'F4-ejjoe_0k2qpNX2Q3hZ-REyoFtebuR' skypro -e "UPDATE activation_keys SET status='active', activated_at=NOW(), expires_at=DATE_ADD(NOW(), INTERVAL 1 YEAR) WHERE user_id=(SELECT id FROM users WHERE email='USER_EMAIL') AND status='pending';"
 ```
 
-### Reset a user's password
+---
+
+### إعادة تعيين كلمة سر مستخدم
 
 ```bash
 ssh root@147.79.66.116
 cd /var/www/skypro.skywaveads.com/skypro-web
 
-# Generate new hash and update (replace NEW_PASSWORD)
+# غيّر USER_EMAIL و NEW_PASSWORD
 node -e "
 const bcrypt = require('bcryptjs');
 const { PrismaClient } = require('@prisma/client');
@@ -245,45 +215,38 @@ main();
 "
 ```
 
-### PM2 Commands
+---
 
-```bash
-pm2 status                  # List all processes
-pm2 restart skypro          # Restart the web app
-pm2 logs skypro             # View logs
-pm2 logs skypro --lines 50  # View last 50 lines
-pm2 monit                   # Live monitoring
-```
+## بيانات السيرفر (للرجوع إليها)
 
-### Nginx Commands
-
-```bash
-nginx -t                    # Test config
-systemctl reload nginx      # Apply changes
-systemctl status nginx      # Check status
-```
+| البيان | القيمة |
+|--------|--------|
+| IP السيرفر | `147.79.66.116` |
+| مستخدم SSH | `root` |
+| مسار الموقع | `/var/www/skypro.skywaveads.com/skypro-web` |
+| مسار التحميلات | `/var/www/downloads.skywaveads.com/skypro/` |
+| GitHub Repo | `https://github.com/imhzm/SkyPro.git` |
+| رابط التحميل | `https://downloads.skywaveads.com/skypro/latest` |
+| قاعدة البيانات | MySQL `skypro` — مستخدم: `skypro_app` |
+| PM2 Process | `skypro` (port 3200) |
 
 ---
 
-## GitHub Secrets Required
+## أوامر مفيدة
 
-The CI/CD pipeline needs this secret in your GitHub repo settings:
+```bash
+# حالة التطبيق على السيرفر
+pm2 status skypro
 
-| Secret Name | Value | Purpose |
-|------------|-------|---------|
-| `DEPLOY_SSH_KEY` | SSH private key for root@147.79.66.116 | SCP deploy to server |
+# لوجات التطبيق
+pm2 logs skypro --lines 50
 
-To update: GitHub Repo → Settings → Secrets and variables → Actions → `DEPLOY_SSH_KEY`
+# إعادة تشغيل التطبيق
+pm2 restart skypro
 
----
+# اختبار إعدادات Nginx
+nginx -t
 
-## Full Deployment Checklist
-
-1. [ ] Bump version in `skypro-desktop/package.json`
-2. [ ] Test locally: `cd skypro-desktop && npx tsc --noEmit`
-3. [ ] Commit and push to `main`
-4. [ ] Monitor CI: `gh run list --limit 1`
-5. [ ] Verify download: `curl -s https://downloads.skywaveads.com/skypro/version.json`
-6. [ ] Verify auto-update: `curl -s https://downloads.skywaveads.com/skypro/latest.yml`
-7. [ ] Test download link: `https://downloads.skywaveads.com/skypro/latest`
-8. [ ] Open the desktop app → login page → "Check for updates" button
+# تطبيق تعديلات Nginx
+systemctl reload nginx
+```
