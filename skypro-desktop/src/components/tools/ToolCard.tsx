@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
+import { ChevronLeft } from 'lucide-react'
 
 export interface ToolCardProps {
   icon: LucideIcon
@@ -14,10 +15,10 @@ export interface ToolCardProps {
 }
 
 const badgeTones = {
-  success: { bg: 'rgba(34, 197, 94, 0.12)', color: '#16a34a', border: 'rgba(34, 197, 94, 0.25)' },
-  warning: { bg: 'rgba(245, 158, 11, 0.12)', color: '#d97706', border: 'rgba(245, 158, 11, 0.25)' },
-  danger: { bg: 'rgba(239, 68, 68, 0.12)', color: '#dc2626', border: 'rgba(239, 68, 68, 0.25)' },
-  primary: { bg: 'rgba(10, 108, 241, 0.1)', color: '#0A6CF1', border: 'rgba(10, 108, 241, 0.25)' },
+  success: { bg: 'rgba(34, 197, 94, 0.12)', color: '#15803d', border: 'rgba(34, 197, 94, 0.30)' },
+  warning: { bg: 'rgba(245, 158, 11, 0.12)', color: '#b45309', border: 'rgba(245, 158, 11, 0.30)' },
+  danger:  { bg: 'rgba(239, 68, 68, 0.12)',  color: '#b91c1c', border: 'rgba(239, 68, 68, 0.30)' },
+  primary: { bg: 'rgba(10, 108, 241, 0.10)', color: '#0a4fc4', border: 'rgba(10, 108, 241, 0.28)' },
 }
 
 export default function ToolCard({
@@ -40,33 +41,52 @@ export default function ToolCard({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className="group relative text-right rounded-2xl p-4 transition-all duration-300 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:transform-none focus:outline-none"
+      className="group relative text-right rounded-2xl p-4 transition-all duration-300 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:transform-none focus:outline-none overflow-hidden"
       style={{
         background: active
-          ? `linear-gradient(135deg, ${accent}10, ${accent}05)`
+          ? `linear-gradient(135deg, ${accent}12 0%, ${accent}06 100%)`
           : 'rgba(255, 255, 255, 0.85)',
-        backdropFilter: 'blur(16px)',
+        backdropFilter: 'blur(20px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(180%)',
         border: `1.5px solid ${active ? accent + '60' : 'rgba(226, 232, 240, 0.7)'}`,
         boxShadow: active
-          ? `0 0 0 3px ${accent}1f, 0 6px 20px ${accent}1a`
-          : '0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 14px rgba(0, 0, 0, 0.03)',
+          ? `0 0 0 3px ${accent}1f, 0 8px 24px ${accent}1c, inset 0 1px 0 rgba(255,255,255,0.6)`
+          : '0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 14px rgba(15, 23, 42, 0.03), inset 0 1px 0 rgba(255,255,255,0.5)',
       }}
       onMouseEnter={(e) => {
         if (disabled || active) return
         e.currentTarget.style.transform = 'translateY(-3px)'
-        e.currentTarget.style.boxShadow = `0 10px 28px ${accent}22, 0 4px 14px rgba(0, 0, 0, 0.05)`
-        e.currentTarget.style.borderColor = accent + '55'
+        e.currentTarget.style.boxShadow = `0 12px 32px ${accent}22, 0 4px 14px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255,255,255,0.6)`
+        e.currentTarget.style.borderColor = accent + '60'
       }}
       onMouseLeave={(e) => {
         if (disabled || active) return
         e.currentTarget.style.transform = 'translateY(0)'
-        e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 14px rgba(0, 0, 0, 0.03)'
+        e.currentTarget.style.boxShadow = '0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 14px rgba(15, 23, 42, 0.03), inset 0 1px 0 rgba(255,255,255,0.5)'
         e.currentTarget.style.borderColor = 'rgba(226, 232, 240, 0.7)'
       }}
     >
+      {/* Hover sheen */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 -top-px h-px transition-opacity duration-300 opacity-0 group-hover:opacity-100"
+        style={{
+          background: `linear-gradient(90deg, transparent, ${accent}, transparent)`,
+        }}
+      />
+
+      {/* Top-right indicator chevron (RTL: top-left) */}
+      <span
+        aria-hidden
+        className="absolute top-3 left-3 transition-all duration-300 opacity-0 group-hover:opacity-60 -translate-x-1 group-hover:translate-x-0"
+        style={{ color: accent }}
+      >
+        <ChevronLeft size={14} />
+      </span>
+
       {badge && (
         <span
-          className="absolute top-3 left-3 px-2 py-0.5 rounded-full text-[10px] font-bold"
+          className="absolute top-3 left-3 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide"
           style={{
             background: tone.bg,
             color: tone.color,
@@ -77,20 +97,29 @@ export default function ToolCard({
         </span>
       )}
 
-      <div className="flex flex-col items-center text-center gap-3">
+      <div className="flex flex-col items-center text-center gap-3 relative z-10">
         <div
-          className="w-14 h-14 rounded-2xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110"
+          className="relative w-14 h-14 rounded-2xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3"
           style={{
             background: iconBg,
             color: 'white',
-            boxShadow: `0 6px 16px ${accent}40`,
+            boxShadow: `0 8px 20px ${accent}48, inset 0 1px 0 rgba(255,255,255,0.20)`,
           }}
         >
-          <Icon size={26} />
+          {/* Icon glow */}
+          <span
+            aria-hidden
+            className="absolute inset-0 -m-1 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+            style={{
+              background: `radial-gradient(circle, ${accent}40 0%, transparent 70%)`,
+              filter: 'blur(8px)',
+            }}
+          />
+          <Icon size={26} className="relative" />
         </div>
-        <div className="space-y-1">
+        <div className="space-y-1 w-full">
           <h4
-            className="font-bold text-sm leading-tight"
+            className="font-bold text-sm leading-tight tracking-tight"
             style={{ color: active ? accent : '#0f172a' }}
           >
             {name}

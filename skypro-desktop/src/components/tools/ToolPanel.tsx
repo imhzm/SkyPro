@@ -50,24 +50,30 @@ export default function ToolPanel({
     }
   }, [open, onClose])
 
-  const headerGradient = accentGradient || `linear-gradient(135deg, ${accent}, ${accent}cc)`
+  const headerGradient =
+    accentGradient || `linear-gradient(135deg, ${accent}, ${accent}cc)`
 
   return createPortal(
     <div
       aria-hidden={!open}
       className="fixed inset-0 z-[100] pointer-events-none"
-      style={{ top: '48px' }}
+      style={{ top: '44px' }}
     >
+      {/* Backdrop */}
       <div
         onClick={onClose}
         className="absolute inset-0 transition-opacity duration-300"
         style={{
-          background: 'rgba(15, 23, 42, 0.45)',
-          backdropFilter: 'blur(4px)',
+          background:
+            'radial-gradient(ellipse at center, rgba(15, 23, 42, 0.55) 0%, rgba(15, 23, 42, 0.40) 100%)',
+          backdropFilter: 'blur(6px)',
+          WebkitBackdropFilter: 'blur(6px)',
           opacity: open ? 1 : 0,
           pointerEvents: open ? 'auto' : 'none',
         }}
       />
+
+      {/* Slide-out panel */}
       <div
         ref={panelRef}
         role="dialog"
@@ -76,54 +82,108 @@ export default function ToolPanel({
         className={`absolute top-0 bottom-0 right-0 w-full ${widthMap[width]} flex flex-col`}
         style={{
           background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
-          boxShadow: '-20px 0 60px rgba(15, 23, 42, 0.18), -4px 0 20px rgba(10, 108, 241, 0.08)',
+          boxShadow:
+            '-24px 0 80px rgba(15, 23, 42, 0.24), -8px 0 24px rgba(10, 108, 241, 0.08)',
           borderInlineStart: '1px solid rgba(226, 232, 240, 0.8)',
           transform: open ? 'translateX(0)' : 'translateX(100%)',
-          transition: 'transform 0.32s cubic-bezier(0.4, 0, 0.2, 1)',
+          transition: 'transform 0.36s cubic-bezier(0.22, 1, 0.36, 1)',
           pointerEvents: open ? 'auto' : 'none',
         }}
       >
+        {/* Header */}
         <div
-          className="flex items-center justify-between px-6 py-4 border-b"
+          className="relative flex items-center justify-between px-6 py-4 overflow-hidden"
           style={{
             background: headerGradient,
-            borderColor: 'rgba(255, 255, 255, 0.15)',
           }}
         >
-          <div className="flex items-center gap-3 min-w-0">
+          {/* Decorative top hairline */}
+          <span
+            aria-hidden
+            className="absolute inset-x-12 top-0 h-px pointer-events-none"
+            style={{
+              background:
+                'linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)',
+            }}
+          />
+          {/* Decorative aurora blob */}
+          <span
+            aria-hidden
+            className="pointer-events-none absolute -top-8 -right-8 w-40 h-40 rounded-full"
+            style={{
+              background:
+                'radial-gradient(circle, rgba(255,255,255,0.25) 0%, transparent 65%)',
+              filter: 'blur(20px)',
+            }}
+          />
+
+          <div className="flex items-center gap-3 min-w-0 relative">
             {Icon && (
               <div
                 className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                style={{ background: 'rgba(255, 255, 255, 0.18)', backdropFilter: 'blur(8px)' }}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.20)',
+                  backdropFilter: 'blur(12px)',
+                  WebkitBackdropFilter: 'blur(12px)',
+                  border: '1px solid rgba(255, 255, 255, 0.20)',
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.20)',
+                }}
               >
-                <span className="text-white"><Icon size={20} /></span>
+                <span className="text-white">
+                  <Icon size={20} />
+                </span>
               </div>
             )}
             <div className="min-w-0">
-              <h2 className="text-white font-bold text-lg leading-tight truncate">{title}</h2>
-              {subtitle && <p className="text-white/75 text-xs mt-0.5 truncate">{subtitle}</p>}
+              <h2 className="text-white font-bold text-lg leading-tight truncate tracking-tight">
+                {title}
+              </h2>
+              {subtitle && (
+                <p className="text-white/80 text-xs mt-0.5 truncate">
+                  {subtitle}
+                </p>
+              )}
             </div>
           </div>
+
           <button
             onClick={onClose}
             aria-label="إغلاق"
-            className="w-9 h-9 rounded-lg flex items-center justify-center transition-colors text-white shrink-0"
-            style={{ background: 'rgba(255, 255, 255, 0.12)' }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.22)' }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)' }}
+            className="w-9 h-9 rounded-lg flex items-center justify-center transition-all text-white shrink-0 relative"
+            style={{
+              background: 'rgba(255, 255, 255, 0.14)',
+              border: '1px solid rgba(255, 255, 255, 0.18)',
+              backdropFilter: 'blur(8px)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.26)'
+              e.currentTarget.style.transform = 'rotate(90deg)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.14)'
+              e.currentTarget.style.transform = 'rotate(0)'
+            }}
           >
             <X size={18} />
           </button>
         </div>
 
+        {/* Body */}
         <div className="flex-1 overflow-y-auto scroll-container px-6 py-6">
           {children}
         </div>
 
+        {/* Footer */}
         {footer && (
           <div
-            className="px-6 py-4 border-t bg-white/80 backdrop-blur-sm"
-            style={{ borderColor: 'rgba(226, 232, 240, 0.8)' }}
+            className="px-6 py-4 border-t"
+            style={{
+              background:
+                'linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(248,250,252,0.95) 100%)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              borderColor: 'rgba(226, 232, 240, 0.8)',
+            }}
           >
             {footer}
           </div>
