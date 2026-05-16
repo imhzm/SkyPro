@@ -120,18 +120,29 @@ export default function Sidebar() {
         isSidebarOpen ? 'w-[260px]' : 'w-[68px]'
       }`}
       style={{
+        /* Refined dark sidebar — slightly violet-tinted instead of flat navy
+           so it visually links to the ModuleHeader brand gradient. */
         background:
-          'linear-gradient(180deg, #050a1c 0%, #08102b 40%, #0a0e27 100%)',
-        borderInlineEnd: '1px solid rgba(10, 108, 241, 0.10)',
+          'linear-gradient(180deg, #0a0a23 0%, #0e0d2e 30%, #11102d 70%, #0a0a23 100%)',
+        borderInlineEnd: '1px solid rgba(124, 58, 237, 0.12)',
       }}
     >
-      {/* Subtle radial accent at top */}
+      {/* Radial accent — violet glow at top */}
       <div
         aria-hidden
-        className="absolute inset-x-0 top-0 h-40 pointer-events-none"
+        className="absolute inset-x-0 top-0 h-44 pointer-events-none"
         style={{
           background:
-            'radial-gradient(circle at 50% 0%, rgba(10, 108, 241, 0.15) 0%, transparent 65%)',
+            'radial-gradient(circle at 50% 0%, rgba(124, 58, 237, 0.18) 0%, rgba(99, 102, 241, 0.08) 35%, transparent 70%)',
+        }}
+      />
+      {/* Subtle bottom accent */}
+      <div
+        aria-hidden
+        className="absolute inset-x-0 bottom-0 h-32 pointer-events-none"
+        style={{
+          background:
+            'radial-gradient(ellipse at 50% 100%, rgba(56, 189, 248, 0.08) 0%, transparent 65%)',
         }}
       />
 

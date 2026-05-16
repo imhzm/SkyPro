@@ -61,40 +61,53 @@ export default function ModuleHeader({
     <div
       className="relative rounded-2xl overflow-hidden p-5 sm:p-6"
       style={{
+        /* 2026 brand gradient — deep indigo to vivid violet, smoother stops
+           so the transition zone doesn't feel muddy. */
         background:
-          'linear-gradient(135deg, #050a1c 0%, #0a1437 35%, #0a3a8a 70%, #6d23c0 100%)',
+          'linear-gradient(135deg, #0b0a1f 0%, #1e1b4b 28%, #4338ca 56%, #7c3aed 80%, #a855f7 100%)',
         boxShadow:
-          '0 24px 48px rgba(10, 108, 241, 0.18), 0 8px 24px rgba(139, 44, 245, 0.10), inset 0 1px 0 rgba(255,255,255,0.08)',
+          '0 20px 50px rgba(67, 56, 202, 0.22), 0 6px 20px rgba(168, 85, 247, 0.14), inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -1px 0 rgba(0,0,0,0.20)',
       }}
     >
-      {/* Decorative aurora blobs */}
+      {/* Aurora blob — magenta/pink top right */}
       <div
         aria-hidden
-        className="absolute -top-20 -right-20 w-72 h-72 rounded-full pointer-events-none"
+        className="absolute -top-24 -right-16 w-80 h-80 rounded-full pointer-events-none"
         style={{
           background:
-            'radial-gradient(circle, rgba(139, 44, 245, 0.32) 0%, transparent 65%)',
-          filter: 'blur(40px)',
+            'radial-gradient(circle, rgba(236, 72, 153, 0.45) 0%, rgba(168, 85, 247, 0.20) 40%, transparent 70%)',
+          filter: 'blur(48px)',
         }}
       />
+      {/* Aurora blob — cyan/blue bottom left for cool contrast */}
       <div
         aria-hidden
-        className="absolute -bottom-24 -left-12 w-72 h-72 rounded-full pointer-events-none"
+        className="absolute -bottom-24 -left-16 w-80 h-80 rounded-full pointer-events-none"
         style={{
           background:
-            'radial-gradient(circle, rgba(10, 108, 241, 0.30) 0%, transparent 65%)',
-          filter: 'blur(40px)',
+            'radial-gradient(circle, rgba(56, 189, 248, 0.32) 0%, rgba(99, 102, 241, 0.18) 40%, transparent 70%)',
+          filter: 'blur(48px)',
+        }}
+      />
+      {/* Aurora blob — center violet glow for depth */}
+      <div
+        aria-hidden
+        className="absolute top-1/3 left-1/3 w-56 h-56 rounded-full pointer-events-none"
+        style={{
+          background:
+            'radial-gradient(circle, rgba(196, 181, 253, 0.18) 0%, transparent 60%)',
+          filter: 'blur(36px)',
         }}
       />
 
       {/* Subtle grid pattern */}
       <div
         aria-hidden
-        className="absolute inset-0 opacity-[0.05] pointer-events-none"
+        className="absolute inset-0 opacity-[0.06] pointer-events-none"
         style={{
           backgroundImage:
-            'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)',
-          backgroundSize: '32px 32px',
+            'linear-gradient(rgba(255,255,255,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.4) 1px, transparent 1px)',
+          backgroundSize: '28px 28px',
           maskImage:
             'radial-gradient(ellipse 80% 70% at center, black 30%, transparent 75%)',
           WebkitMaskImage:
@@ -102,13 +115,23 @@ export default function ModuleHeader({
         }}
       />
 
-      {/* Top hairline */}
+      {/* Top hairline — brighter for premium feel */}
       <div
         aria-hidden
         className="absolute inset-x-12 top-0 h-px pointer-events-none"
         style={{
           background:
-            'linear-gradient(90deg, transparent, rgba(167, 139, 250, 0.55), transparent)',
+            'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent)',
+        }}
+      />
+
+      {/* Bottom hairline */}
+      <div
+        aria-hidden
+        className="absolute inset-x-16 bottom-0 h-px pointer-events-none opacity-60"
+        style={{
+          background:
+            'linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.35), transparent)',
         }}
       />
 

@@ -39,17 +39,18 @@ export default function AppTitleBar() {
     <div
       className="relative flex items-center justify-between h-11 select-none"
       style={{
+        /* Matches Sidebar palette — deep indigo with subtle violet undertone. */
         background:
-          'linear-gradient(90deg, #050a1c 0%, #0a1437 50%, #0d1137 100%)',
+          'linear-gradient(90deg, #0a0a23 0%, #0e0d2e 50%, #11102d 100%)',
         WebkitAppRegion: 'drag',
       } as React.CSSProperties}
     >
-      {/* Bottom hairline w/ gradient */}
+      {/* Bottom hairline w/ gradient — vivid indigo→violet accent */}
       <div
         className="absolute inset-x-0 bottom-0 h-px pointer-events-none"
         style={{
           background:
-            'linear-gradient(90deg, transparent 0%, rgba(10,108,241,0.45) 30%, rgba(139,44,245,0.45) 70%, transparent 100%)',
+            'linear-gradient(90deg, transparent 0%, rgba(99, 102, 241, 0.55) 30%, rgba(168, 85, 247, 0.55) 70%, transparent 100%)',
         }}
       />
 
