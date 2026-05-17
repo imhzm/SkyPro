@@ -15,6 +15,10 @@ interface Offer {
   badge?: string | null
   isActive: boolean
   sortOrder: number
+  startsAt?: string | null
+  endsAt?: string | null
+  impressionCount?: number
+  clickCount?: number
   createdAt?: string
   updatedAt?: string
 }
@@ -27,6 +31,35 @@ const EMPTY_FORM: Offer = {
   badge: '',
   isActive: true,
   sortOrder: 0,
+  startsAt: null,
+  endsAt: null,
+}
+
+/** datetime-local input expects "YYYY-MM-DDTHH:mm". */
+function toLocalInput(iso?: string | null): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+/** Convert the local datetime string back to ISO; empty means null. */
+function fromLocalInput(value: string): string | null {
+  if (!value) return null
+  const d = new Date(value)
+  return Number.isNaN(d.getTime()) ? null : d.toISOString()
+}
+
+/** Compute live schedule status: 'scheduled' | 'live' | 'expired' | 'always-on'. */
+function offerStatus(offer: Offer, now = new Date()): 'scheduled' | 'live' | 'expired' | 'always-on' {
+  if (!offer.isActive) return 'expired'
+  const starts = offer.startsAt ? new Date(offer.startsAt) : null
+  const ends = offer.endsAt ? new Date(offer.endsAt) : null
+  if (!starts && !ends) return 'always-on'
+  if (starts && starts > now) return 'scheduled'
+  if (ends && ends < now) return 'expired'
+  return 'live'
 }
 
 export default function AdminOffersPage() {
@@ -78,9 +111,12 @@ export default function AdminOffersPage() {
     }
     setSaving(true)
     try {
+      // Convert datetime-local strings to ISO before sending.
       const payload = {
         ...form,
         id: editingId ?? undefined,
+        startsAt: form.startsAt || null,
+        endsAt: form.endsAt || null,
       }
       const res = await fetch('/api/admin/offers', {
         method: 'POST',
@@ -113,6 +149,8 @@ export default function AdminOffersPage() {
       badge: offer.badge || '',
       isActive: offer.isActive,
       sortOrder: offer.sortOrder,
+      startsAt: toLocalInput(offer.startsAt),
+      endsAt: toLocalInput(offer.endsAt),
     })
     setEditingId(offer.id ?? null)
     setShowForm(true)
@@ -219,6 +257,39 @@ export default function AdminOffersPage() {
         </div>
       )}
 
+      {/* Aggregate stats */}
+      {offers.length > 0 && (() => {
+        const live = offers.filter((o) => offerStatus(o) === 'live').length
+        const scheduled = offers.filter((o) => offerStatus(o) === 'scheduled').length
+        const totalImpressions = offers.reduce((s, o) => s + (o.impressionCount ?? 0), 0)
+        const totalClicks = offers.reduce((s, o) => s + (o.clickCount ?? 0), 0)
+        const ctr = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0
+        return (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+            <div className="admin-card !p-3.5">
+              <div className="text-[10.5px] uppercase tracking-wider text-slate-500 font-semibold">إجمالي العروض</div>
+              <div className="mt-1 text-2xl font-bold text-white">{offers.length}</div>
+              <div className="text-[11px] text-slate-500 mt-0.5">{live} مباشر · {scheduled} مجدول</div>
+            </div>
+            <div className="admin-card !p-3.5">
+              <div className="text-[10.5px] uppercase tracking-wider text-slate-500 font-semibold">المشاهدات</div>
+              <div className="mt-1 text-2xl font-bold text-sky-300">{totalImpressions.toLocaleString('ar-EG')}</div>
+              <div className="text-[11px] text-slate-500 mt-0.5">من العملاء</div>
+            </div>
+            <div className="admin-card !p-3.5">
+              <div className="text-[10.5px] uppercase tracking-wider text-slate-500 font-semibold">النقرات</div>
+              <div className="mt-1 text-2xl font-bold text-emerald-300">{totalClicks.toLocaleString('ar-EG')}</div>
+              <div className="text-[11px] text-slate-500 mt-0.5">على العروض</div>
+            </div>
+            <div className="admin-card !p-3.5">
+              <div className="text-[10.5px] uppercase tracking-wider text-slate-500 font-semibold">معدل التفاعل (CTR)</div>
+              <div className="mt-1 text-2xl font-bold text-violet-300">{ctr.toFixed(2)}%</div>
+              <div className="text-[11px] text-slate-500 mt-0.5">{totalClicks}/{totalImpressions}</div>
+            </div>
+          </div>
+        )
+      })()}
+
       {/* Form */}
       {showForm && (
         <div className="admin-card mb-6">
@@ -324,6 +395,42 @@ export default function AdminOffersPage() {
               </label>
             </div>
           </div>
+
+          {/* Scheduling */}
+          <div className="mt-4 pt-4 border-t border-white/5">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-sm font-bold text-slate-300">جدولة العرض (اختياري)</span>
+              <span className="text-[11px] text-slate-500">— اتركها فارغة ليظهر دائماً</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="offer-starts" className="admin-label">يبدأ من</label>
+                <input
+                  id="offer-starts"
+                  type="datetime-local"
+                  className="admin-input"
+                  value={form.startsAt || ''}
+                  onChange={(e) => setForm({ ...form, startsAt: e.target.value || null })}
+                />
+              </div>
+              <div>
+                <label htmlFor="offer-ends" className="admin-label">ينتهي في</label>
+                <input
+                  id="offer-ends"
+                  type="datetime-local"
+                  className="admin-input"
+                  value={form.endsAt || ''}
+                  onChange={(e) => setForm({ ...form, endsAt: e.target.value || null })}
+                />
+              </div>
+            </div>
+            {form.startsAt && form.endsAt && new Date(form.endsAt) < new Date(form.startsAt) && (
+              <p className="mt-2 text-xs text-amber-400">
+                ⚠️ تاريخ الانتهاء قبل تاريخ البدء — العرض لن يظهر للعملاء
+              </p>
+            )}
+          </div>
+
           <div className="flex items-center gap-3 mt-5 pt-4 border-t border-white/5">
             <button
               onClick={handleSubmit}
@@ -400,6 +507,26 @@ export default function AdminOffersPage() {
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
+                    {(() => {
+                      const status = offerStatus(offer)
+                      const styles: Record<typeof status, string> = {
+                        live:        'bg-emerald-500/15 text-emerald-400 border-emerald-500/25',
+                        scheduled:   'bg-amber-500/15 text-amber-400 border-amber-500/25',
+                        expired:     'bg-red-500/15 text-red-400 border-red-500/25',
+                        'always-on': 'bg-sky-500/15 text-sky-400 border-sky-500/25',
+                      }
+                      const labels: Record<typeof status, string> = {
+                        live: 'مباشر',
+                        scheduled: 'مجدول',
+                        expired: 'منتهي',
+                        'always-on': 'دائم',
+                      }
+                      return (
+                        <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold border ${styles[status]}`}>
+                          {labels[status]}
+                        </span>
+                      )
+                    })()}
                     {offer.badge && (
                       <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-pink-500/15 text-pink-400 border border-pink-500/25">
                         {offer.badge}
@@ -422,6 +549,19 @@ export default function AdminOffersPage() {
                     <ExternalLink size={10} />
                     <span className="truncate">{offer.externalUrl}</span>
                   </a>
+                  {/* Engagement + schedule */}
+                  <div className="flex items-center gap-3 mt-1.5 text-[10.5px] text-slate-500">
+                    <span title="مشاهدات">👁 {(offer.impressionCount ?? 0).toLocaleString('ar-EG')}</span>
+                    <span title="نقرات">🖱 {(offer.clickCount ?? 0).toLocaleString('ar-EG')}</span>
+                    {(offer.startsAt || offer.endsAt) && (
+                      <span>
+                        ⏰{' '}
+                        {offer.startsAt ? new Date(offer.startsAt).toLocaleDateString('ar-EG') : '...'}
+                        {' → '}
+                        {offer.endsAt ? new Date(offer.endsAt).toLocaleDateString('ar-EG') : '∞'}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Order controls */}

@@ -207,18 +207,26 @@ model SystemSetting {
 }
 
 model Offer {
-  id           Int      @id @default(autoincrement())
+  id           Int       @id @default(autoincrement())
   title        String?
-  description  String?  @db.Text
-  imageUrl     String?  @map("image_url") @db.Text
-  externalUrl  String   @map("external_url") @db.Text
+  description  String?   @db.Text
+  imageUrl     String?   @map("image_url") @db.Text
+  externalUrl  String    @map("external_url") @db.Text
   badge        String?
-  isActive     Boolean  @default(true) @map("is_active")
-  sortOrder    Int      @default(0) @map("sort_order")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  isActive     Boolean   @default(true) @map("is_active")
+  sortOrder    Int       @default(0) @map("sort_order")
+  // Scheduling — null = always-on; otherwise the offer only shows
+  // between startsAt and endsAt (inclusive).
+  startsAt     DateTime? @map("starts_at")
+  endsAt       DateTime? @map("ends_at")
+  // Lightweight engagement counters (incremented by /api/offers/[id]/track).
+  impressionCount Int    @default(0) @map("impression_count")
+  clickCount      Int    @default(0) @map("click_count")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
 
   @@index([isActive, sortOrder])
+  @@index([startsAt, endsAt])
   @@map("offers")
 }
 

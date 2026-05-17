@@ -96,7 +96,14 @@ export default function OffersSection({ hideWhenEmpty = false }: OffersSectionPr
 
   const handleOpen = () => {
     if (!current.externalUrl) return
+    // Open the URL immediately so the user gets instant feedback…
     window.open(current.externalUrl, '_blank', 'noopener,noreferrer')
+    // …then fire the click tracker in the background (best-effort, never
+    // blocks the navigation, never blows up on the UI).
+    const id = current.id
+    if (typeof id === 'number') {
+      fetch(`${WEB_API_URL}/offers/${id}/click`, { method: 'POST' }).catch(() => {})
+    }
   }
 
   return (
