@@ -8,6 +8,7 @@ import { Logo } from '@/components/marketing/Logo'
 import { NavbarAuthMenu } from '@/components/marketing/NavbarAuthMenu'
 
 const navLinks = [
+  { label: 'الرئيسية', href: '/' },
   { label: 'المميزات', href: '/#features' },
   { label: 'المنصات', href: '/platforms' },
   { label: 'كيف يعمل', href: '/#how-it-works' },
