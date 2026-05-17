@@ -16,6 +16,10 @@ const offerSchema = z.object({
   badge: z.string().trim().max(40).optional().nullable(),
   isActive: z.boolean().default(true),
   sortOrder: z.number().int().min(0).max(9999).default(0),
+  // ISO-string dates (or null = always-on). Validated as strings so
+  // <input type="datetime-local"> values pass through directly.
+  startsAt: z.string().datetime().nullable().optional().or(z.literal('')),
+  endsAt: z.string().datetime().nullable().optional().or(z.literal('')),
 })
 
 const offerListSchema = z.object({
@@ -27,6 +31,11 @@ const deleteSchema = z.object({
 })
 
 function normalize(input: z.infer<typeof offerSchema>) {
+  const parseDate = (value: string | null | undefined) => {
+    if (!value) return null
+    const d = new Date(value)
+    return Number.isNaN(d.getTime()) ? null : d
+  }
   return {
     title: input.title || null,
     description: input.description || null,
@@ -35,6 +44,8 @@ function normalize(input: z.infer<typeof offerSchema>) {
     badge: input.badge || null,
     isActive: input.isActive,
     sortOrder: input.sortOrder,
+    startsAt: parseDate(input.startsAt ?? null),
+    endsAt: parseDate(input.endsAt ?? null),
   }
 }
 

@@ -12,12 +12,6 @@ interface RecentLead {
   created_at?: string
 }
 
-interface ActivationResult {
-  serial: string
-  key: string
-  expiryDate: string
-  emailSent?: boolean
-}
 import {
   Activity,
   Globe,
@@ -27,13 +21,7 @@ import {
   Sparkles,
   LayoutDashboard,
   BarChart3,
-  Mail,
-  Send,
-  AlertCircle,
-  CheckCircle,
-  X,
 } from 'lucide-react'
-import { activationApi } from '../../services/api/activation'
 import ModuleHeader, { HeaderChip } from '../../components/common/ModuleHeader'
 import OffersSection from '../../components/common/OffersSection'
 
@@ -44,39 +32,6 @@ export default function DashboardModule() {
   const [recentLeads, setRecentLeads] = useState<any[]>([])
 
   const socialPlatforms = platforms.slice(1)
-
-  const [showActivateModal, setShowActivateModal] = useState(false)
-  const [clientEmail, setClientEmail] = useState('')
-  const [months, setMonths] = useState(12)
-  const [actLoading, setActLoading] = useState(false)
-  const [actError, setActError] = useState('')
-  const [actSuccess, setActSuccess] = useState('')
-  const [activationResult, setActivationResult] = useState<ActivationResult | null>(null)
-
-  const handleRequestActivation = async () => {
-    if (!clientEmail.trim()) {
-      setActError('يرجى إدخال بريد العميل')
-      return
-    }
-    setActLoading(true)
-    setActError('')
-    setActSuccess('')
-    setActivationResult(null)
-    try {
-      const result = await activationApi.requestActivation(clientEmail.trim(), months)
-      if (result.success && result.data) {
-        setActSuccess('تم إنشاء بيانات التفعيل بنجاح')
-        setActivationResult(result.data)
-        setClientEmail('')
-      } else {
-        setActError(result.message || 'فشل إنشاء بيانات التفعيل')
-      }
-    } catch {
-      setActError('فشل الاتصال بخادم التفعيل')
-    } finally {
-      setActLoading(false)
-    }
-  }
 
   const loadData = useCallback(async () => {
     try {
@@ -140,20 +95,6 @@ export default function DashboardModule() {
             <HeaderChip>أتمتة كاملة</HeaderChip>
             <HeaderChip>استخراج بيانات</HeaderChip>
           </>
-        }
-        action={
-          <button
-            onClick={() => { setShowActivateModal(true); setActError(''); setActSuccess(''); setActivationResult(null) }}
-            className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all flex items-center gap-1.5"
-            style={{
-              background: 'linear-gradient(135deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0.08) 100%)',
-              border: '1px solid rgba(255,255,255,0.25)',
-              backdropFilter: 'blur(8px)',
-            }}
-          >
-            <Send size={14} />
-            إنشاء تفعيل
-          </button>
         }
       />
 
@@ -276,110 +217,6 @@ export default function DashboardModule() {
       </div>
 
       {/* Activation Section */}
-      <div className="rounded-xl p-4" style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}>
-              <Mail size={20} className="text-white" />
-            </div>
-            <div>
-              <h3 className="font-bold text-secondary-900 text-sm">إنشاء تفعيل للعميل</h3>
-              <p className="text-sm text-secondary-500">أدخل بريد العميل وسيتم إرسال بيانات التفعيل إليه</p>
-            </div>
-          </div>
-          <button
-            onClick={() => { setShowActivateModal(true); setActError(''); setActSuccess(''); setActivationResult(null) }}
-            className="btn-primary"
-            style={{ background: 'linear-gradient(135deg, #10b981, #059669)', boxShadow: '0 4px 20px rgba(16, 185, 129, 0.3)' }}
-          >
-            <Send size={16} className="inline ml-2" />
-            إرسال التفعيل
-          </button>
-        </div>
-        {actError && (
-          <div className="flex items-center gap-2 p-3 rounded-xl text-sm" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}>
-            <AlertCircle size={18} /> {actError}
-          </div>
-        )}
-        {actSuccess && (
-          <div className="flex items-center gap-2 p-3 rounded-xl text-sm" style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)', color: '#4ade80' }}>
-            <CheckCircle size={18} /> {actSuccess}
-          </div>
-        )}
-        {activationResult && (
-          <div className="mt-3 p-4 rounded-xl" style={{ background: 'rgba(255,255,255,0.5)' }}>
-            <h4 className="font-bold text-secondary-900 mb-2">بيانات التفعيل:</h4>
-            <div className="space-y-1 text-sm">
-              <p><span className="font-medium">السيريال:</span> <span className="font-mono">{activationResult.serial}</span></p>
-              <p><span className="font-medium">مفتاح التفعيل:</span> <span className="font-mono">{activationResult.key}</span></p>
-              <p><span className="font-medium">تاريخ الانتهاء:</span> {activationResult.expiryDate}</p>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Activation Modal */}
-      {showActivateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.5)' }}>
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-secondary-900">إنشاء تفعيل جديد</h3>
-              <button onClick={() => setShowActivateModal(false)} className="text-secondary-400 hover:text-secondary-600">
-                <X size={20} />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-secondary-700 mb-1">البريد الإلكتروني</label>
-                <div className="relative">
-                  <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400" />
-                  <input
-                    type="email"
-                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-secondary-200 text-right"
-                    placeholder="client@example.com"
-                    value={clientEmail}
-                    onChange={(e) => { setClientEmail(e.target.value); setActError('') }}
-                    onKeyDown={(e) => e.key === 'Enter' && handleRequestActivation()}
-                    dir="ltr"
-                    autoFocus
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-secondary-700 mb-1">مدة الاشتراك (بالشهور)</label>
-                <input
-                  type="number"
-                  className="w-full px-4 py-3 rounded-xl border border-secondary-200 text-right"
-                  value={months}
-                  onChange={(e) => setMonths(parseInt(e.target.value) || 12)}
-                  min="1"
-                  max="36"
-                />
-              </div>
-              {actError && (
-                <div className="flex items-center gap-2 p-3 rounded-xl text-sm" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}>
-                  <AlertCircle size={16} /> {actError}
-                </div>
-              )}
-              <div className="flex gap-3">
-                <button
-                  onClick={handleRequestActivation}
-                  disabled={actLoading || !clientEmail.trim()}
-                  className="btn-primary flex-1"
-                >
-                  {actLoading ? <Loader2 size={18} className="animate-spin mx-auto" /> : 'إرسال'}
-                </button>
-                <button
-                  onClick={() => setShowActivateModal(false)}
-                  className="px-4 py-3 rounded-xl border border-secondary-200 text-secondary-600 hover:bg-secondary-50"
-                >
-                  إلغاء
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

@@ -326,71 +326,156 @@ ipcm('get-browser-status', async (e, sessionId) => {
   }
 })
 
+// Selectors per platform — multiple fallbacks because social-media sites
+// frequently rename their internal classes/data-testids. If ANY selector
+// matches we consider the user logged in.
+const LOGGED_IN_SELECTORS = {
+  facebook: [
+    '[data-pagelet="LeftRail"]',
+    '[aria-label="Home"]',
+    '[role="navigation"][aria-label]',
+    '[data-testid="blue_bar"]',
+    'div[role="main"]',
+    '[aria-label="Account"]',
+    '[aria-label="Your profile"]',
+  ],
+  instagram: [
+    'svg[aria-label="Home"]',
+    'a[href="/direct/inbox/"]',
+    'a[href*="/accounts/edit/"]',
+    '[role="menuitem"]',
+    'nav[role="navigation"]',
+    'main[role="main"]',
+  ],
+  twitter: [
+    'a[href="/home"]',
+    '[data-testid="SideNav_AccountSwitcher_Button"]',
+    '[data-testid="AppTabBar_Home_Link"]',
+    '[aria-label="Account menu"]',
+    'a[aria-label="Profile"]',
+    '[data-testid="primaryColumn"]',
+  ],
+  x: [
+    'a[href="/home"]',
+    '[data-testid="SideNav_AccountSwitcher_Button"]',
+    '[data-testid="AppTabBar_Home_Link"]',
+    '[aria-label="Account menu"]',
+  ],
+  linkedin: [
+    '.global-nav',
+    '[data-test-global-nav]',
+    '.feed-identity-module',
+    'div.feed-shared-news-module',
+    'a[data-control-name="identity_profile_photo"]',
+  ],
+  pinterest: [
+    '[data-test-id="home-tab"]',
+    'div[data-test-id="header-profile"]',
+    'a[data-test-id="header-avatar"]',
+    'div[data-test-id="pin-grid"]',
+  ],
+  threads: [
+    'nav[role="tablist"]',
+    'a[href="/direct"]',
+    'a[aria-label="Profile"]',
+    'div[role="main"]',
+  ],
+  reddit: [
+    'shreddit-app[user-logged-in="true"]',
+    '[aria-label="User Menu"]',
+    'button[aria-label="Open user account menu"]',
+    'a[data-testid="user-drawer-button"]',
+    '[data-testid="post-feed"]',
+  ],
+  snapchat: [
+    '[data-testid="primary-nav"]',
+    'nav[role="navigation"]',
+    'div[data-testid="chat-list"]',
+  ],
+  tiktok: [
+    '[data-e2e="profile-icon"]',
+    '[data-e2e="recommend-list"]',
+    '[data-e2e="nav-foryou"]',
+  ],
+  telegram: [
+    '.im_page_wrap',
+    '.chat-list',
+    '#column-left',
+  ],
+}
+
+const LOGGED_OUT_SELECTORS = {
+  facebook: ['[data-testid="royal_login_form"]', 'form#login_form', 'input[name="login"]'],
+  instagram: ['input[name="username"]', 'form[id="loginForm"]', 'a[href="/accounts/login/"]'],
+  twitter: ['a[href="/login"]', 'a[href="/i/flow/login"]', '[data-testid="loginButton"]'],
+  x: ['a[href="/login"]', 'a[href="/i/flow/login"]', '[data-testid="loginButton"]'],
+  linkedin: ['form.login__form', 'input[name="session_key"]', 'a[href*="/login"]'],
+}
+
+const PLATFORM_URLS = {
+  facebook: 'https://www.facebook.com',
+  instagram: 'https://www.instagram.com',
+  twitter: 'https://x.com',
+  x: 'https://x.com',
+  linkedin: 'https://www.linkedin.com',
+  pinterest: 'https://www.pinterest.com',
+  threads: 'https://www.threads.net',
+  reddit: 'https://www.reddit.com',
+  snapchat: 'https://web.snapchat.com',
+  tiktok: 'https://www.tiktok.com',
+  telegram: 'https://web.telegram.org',
+}
+
+/**
+ * Faster, more reliable login detection — polls every 350ms instead of one
+ * fixed 5s wait, returns as soon as we see a logged-in selector. Total
+ * budget: 8 seconds (was 5s fixed + 0 polling = always 5s minimum).
+ */
+async function detectLoginState(page, platform) {
+  const loggedInSel = LOGGED_IN_SELECTORS[platform] || []
+  const loggedOutSel = LOGGED_OUT_SELECTORS[platform] || []
+  const deadline = Date.now() + 8000
+
+  while (Date.now() < deadline) {
+    // Check logged-out indicators first (cheap, definitive negative).
+    if (loggedOutSel.length > 0) {
+      const isOut = await page.evaluate((sel) => sel.some((s) => !!document.querySelector(s)), loggedOutSel).catch(() => false)
+      if (isOut) return false
+    }
+    // Then check logged-in indicators.
+    if (loggedInSel.length > 0) {
+      const isIn = await page.evaluate((sel) => sel.some((s) => !!document.querySelector(s)), loggedInSel).catch(() => false)
+      if (isIn) return true
+    }
+    await page.waitForTimeout(350)
+  }
+  return false
+}
+
 ipcm('check-platform-session', async (e, { platform, headless = false }) => {
   try {
     const res = await globals.bm.launch({ headless, platform })
     if (!res.success) return { success: false, error: res.error }
     const sessionId = res.sessionId
     const page = globals.bm.getPage(sessionId)
-    await page.waitForTimeout(2000)
-    const url = page.url()
 
-    // If fresh browser (about:blank), navigate to the platform first then check
+    // Wait briefly for page to settle, then check URL.
+    await page.waitForTimeout(500)
+    let url = page.url()
+
+    // If fresh browser (about:blank), navigate to the platform first.
     if (!url || url === 'about:blank') {
-      const platformUrls = {
-        facebook: 'https://www.facebook.com',
-        instagram: 'https://www.instagram.com',
-        twitter: 'https://x.com',
-        x: 'https://x.com',
-        linkedin: 'https://www.linkedin.com',
-        pinterest: 'https://www.pinterest.com',
-        threads: 'https://www.threads.net',
-        reddit: 'https://www.reddit.com',
-        snapchat: 'https://web.snapchat.com'
-      }
-      const targetUrl = platformUrls[platform] || 'https://www.google.com'
+      const targetUrl = PLATFORM_URLS[platform] || 'https://www.google.com'
       await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
-      await page.waitForTimeout(3000)
+      // Wait for the DOM idle event — much smarter than a fixed timeout.
+      await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {})
+      url = page.url()
     }
 
-    // Platform-specific login detection
-    let loggedIn = false
-    const currentUrl = page.url()
-    if (platform === 'facebook') {
-      loggedIn = await page.evaluate(() => {
-        return !!(document.querySelector('[data-testid="blue_bar"]') || document.querySelector('[role="navigation"]') || document.querySelector('div[role="main"]') || document.querySelector('[aria-label="Facebook"]') || document.querySelector('a[aria-label="Home"]') || document.querySelector('[data-pagelet="LeftRail"]'))
-      }).catch(() => false)
-    } else if (platform === 'instagram') {
-      loggedIn = await page.evaluate(() => {
-        return !!(document.querySelector('svg[aria-label="Home"]') || document.querySelector('a[href="/"]') || document.querySelector('[role="main"]') || document.querySelector('nav'))
-      }).catch(() => false)
-    } else if (platform === 'twitter' || platform === 'x') {
-      loggedIn = await page.evaluate(() => {
-        return !!(document.querySelector('a[href="/home"]') || document.querySelector('[data-testid="SideNav_AccountSwitcher_Button"]') || document.querySelector('[data-testid="AppTabBar_Home_Link"]') || document.querySelector('nav[role="navigation"]'))
-      }).catch(() => false)
-    } else if (platform === 'linkedin') {
-      loggedIn = await page.evaluate(() => {
-        return !!(document.querySelector('.global-nav') || document.querySelector('nav.global-nav') || document.querySelector('[data-test-global-nav]') || document.querySelector('.feed-identity-module'))
-      }).catch(() => false)
-    } else if (platform === 'pinterest') {
-      loggedIn = await page.evaluate(() => {
-        return !!(document.querySelector('[data-test-id="home-tab"]') || document.querySelector('header'))
-      }).catch(() => false)
-    } else if (platform === 'threads') {
-      loggedIn = await page.evaluate(() => {
-        return !!(document.querySelector('nav') || document.querySelector('a[href="/"]'))
-      }).catch(() => false)
-    } else if (platform === 'reddit') {
-      loggedIn = await page.evaluate(() => {
-        return !!(document.querySelector('header') || document.querySelector('[aria-label="Home"]') || document.querySelector('shreddit-app'))
-      }).catch(() => false)
-    } else if (platform === 'snapchat') {
-      loggedIn = await page.evaluate(() => {
-        return !!(document.querySelector('nav') || document.querySelector('[data-testid="primary-nav"]'))
-      }).catch(() => false)
-    }
+    // Polling-based detection (≤ 8s, returns as soon as match found).
+    const loggedIn = await detectLoginState(page, platform)
 
-    return { success: true, alreadyLoggedIn: loggedIn, sessionId, url: currentUrl }
+    return { success: true, alreadyLoggedIn: loggedIn, sessionId, url }
   } catch (err) {
     return { success: false, error: err.message }
   }

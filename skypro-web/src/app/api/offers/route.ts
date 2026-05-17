@@ -9,11 +9,30 @@ export const revalidate = 60
 
 export async function GET() {
   try {
+    const now = new Date()
+    // Filter:
+    //  1. isActive must be true
+    //  2. startsAt is null OR startsAt <= now (scheduled to start)
+    //  3. endsAt   is null OR endsAt   >= now (not yet expired)
     const offers = await prisma.offer.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        AND: [
+          { OR: [{ startsAt: null }, { startsAt: { lte: now } }] },
+          { OR: [{ endsAt: null }, { endsAt: { gte: now } }] },
+        ],
+      },
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
       take: 20,
     })
+
+    // Increment impression counters in the background (don't block response).
+    if (offers.length > 0) {
+      const ids = offers.map((o) => o.id)
+      prisma.offer
+        .updateMany({ where: { id: { in: ids } }, data: { impressionCount: { increment: 1 } } })
+        .catch((e) => console.error('impression count update failed:', e))
+    }
 
     // Strip internal fields and map to the shape the desktop expects.
     const payload = offers.map((o) => ({

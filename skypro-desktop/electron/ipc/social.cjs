@@ -8,6 +8,66 @@ module.exports = function(ipcm, helpers) {
   const { safeGoto, humanMouseMove, smartType, smartClick, smartActionClick, randomDelay, saveAccount, encryptSecret, decryptSecret, unprotectRow, getSender, sendProgress, saveLeads } = helpers;
   let jobIdCounter = 0
 
+  /**
+   * Pre-extraction guard. Confirms the page actually rendered logged-in
+   * content before scrapers try to read selectors. Without this check, an
+   * expired session would just return [] silently — looking like the
+   * extraction failed when really the user got bounced to login.
+   *
+   * Returns `{ ok: true }` if logged in, or `{ ok: false, error }` with a
+   * clear Arabic message so the renderer can show it to the user.
+   */
+  async function verifyExtractionPage(page, opts = {}) {
+    const { platform = 'facebook', timeoutMs = 6000 } = opts
+    try {
+      // Wait for DOM to settle.
+      await page.waitForLoadState('domcontentloaded', { timeout: 4000 }).catch(() => {})
+
+      // Detect being bounced to a login screen.
+      const url = page.url() || ''
+      if (/\/login|\/checkpoint|\/signin|\/accounts\/login/i.test(url)) {
+        return { ok: false, error: 'انتهت الجلسة — سجل الدخول مرة أخرى ثم أعد المحاولة' }
+      }
+
+      // Poll briefly for either logged-in OR logged-out selectors.
+      const LOGGED_OUT = {
+        facebook: ['form[action*="/login"]', '#login_form', 'input[name="login"]'],
+        instagram: ['input[name="username"]', 'form#loginForm'],
+        twitter: ['a[href="/i/flow/login"]', '[data-testid="loginButton"]'],
+        x: ['a[href="/i/flow/login"]', '[data-testid="loginButton"]'],
+        linkedin: ['form.login__form', 'input[name="session_key"]'],
+      }[platform] || []
+
+      const deadline = Date.now() + timeoutMs
+      while (Date.now() < deadline) {
+        if (LOGGED_OUT.length > 0) {
+          const out = await page.evaluate(
+            (sel) => sel.some((s) => !!document.querySelector(s)),
+            LOGGED_OUT,
+          ).catch(() => false)
+          if (out) return { ok: false, error: 'صفحة تسجيل دخول — الجلسة منتهية' }
+        }
+        // Some content rendered means we can start extracting.
+        const ready = await page.evaluate(
+          () => document.body && document.body.innerText.length > 200,
+        ).catch(() => false)
+        if (ready) return { ok: true }
+        await page.waitForTimeout(300)
+      }
+
+      // Final body check after timeout.
+      const bodyLen = await page.evaluate(() => document.body?.innerText?.length || 0).catch(() => 0)
+      if (bodyLen < 50) {
+        return { ok: false, error: 'الصفحة لم تحمّل أو فارغة — تأكد من الاتصال ثم أعد المحاولة' }
+      }
+      return { ok: true }
+    } catch (err) {
+      console.error('verifyExtractionPage error:', err.message)
+      // Don't block extraction on a verification crash.
+      return { ok: true }
+    }
+  }
+
 // ==================== IPC: FACEBOOK ====================
 ipcm('facebook-login', async (e, { username, password, headless = false, proxy }) => {
   let sessionId = null
@@ -109,6 +169,8 @@ ipcm('facebook-extract-likers', async (e, { sessionId, postUrl, limit = 50, jobI
   try {
     await page.goto(postUrl, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
     await page.waitForTimeout(randomDelay(3000, 5000))
+    const guard = await verifyExtractionPage(page, { platform: 'facebook' })
+    if (!guard.ok) return { success: false, error: guard.error, jobId }
     const reactionsBtn = await page.$('div[role="button"][aria-label*="eactions"], div[role="button"][aria-label*="إعجاب"], span[data-testid*="UFI2ReactionsCount"], a[role="button"][href*="reactions"]')
     if (reactionsBtn) {
       await reactionsBtn.click({ force: true }).catch(() => {})
@@ -167,6 +229,8 @@ ipcm('facebook-extract-comments', async (e, { sessionId, postUrl, limit = 50, jo
   try {
     await page.goto(postUrl, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
     await page.waitForTimeout(randomDelay(3000, 5000))
+    const guard = await verifyExtractionPage(page, { platform: 'facebook' })
+    if (!guard.ok) return { success: false, error: guard.error, jobId }
     const maxScrolls = Math.max(Math.ceil(limit / 8), 8)
     for (let i = 0; i < maxScrolls; i++) {
       if (globals.cancelFlags.get(jobId)) break
@@ -226,6 +290,8 @@ ipcm('facebook-extract-group-members', async (e, { sessionId, groupUrl, limit = 
   try {
     await page.goto(`${groupUrl.replace(/\/$/, '')}/members`, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
     await page.waitForTimeout(randomDelay(3000, 5000))
+    const guard = await verifyExtractionPage(page, { platform: 'facebook' })
+    if (!guard.ok) return { success: false, error: guard.error, jobId }
     const maxScrolls = Math.max(Math.ceil(limit / 10), 8)
     for (let i = 0; i < maxScrolls; i++) {
       if (globals.cancelFlags.get(jobId)) break

@@ -16,11 +16,25 @@ export interface Account {
   created_at: string
 }
 
-function sanitizeAccount(raw: any): Account {
-  const { password, ...rest } = raw
+/**
+ * Returns the account row as-is (with the decrypted password) but ALSO
+ * surfaces a `has_password` boolean so consumers that only need to check
+ * presence don't have to look at the actual secret. Keeping the password
+ * in the renderer store fixes the bug where editing a saved account
+ * showed the password field empty (data appeared lost to the user).
+ */
+function normalizeAccount(raw: Record<string, unknown>): Account {
+  const password = typeof raw.password === 'string' ? raw.password : ''
   return {
-    ...rest,
-    has_password: !!password,
+    id: Number(raw.id),
+    platform: String(raw.platform ?? ''),
+    username: String(raw.username ?? ''),
+    password: password || undefined,
+    has_password: password.length > 0,
+    proxy: typeof raw.proxy === 'string' ? raw.proxy : undefined,
+    notes: typeof raw.notes === 'string' ? raw.notes : undefined,
+    status: String(raw.status ?? 'active'),
+    created_at: String(raw.created_at ?? new Date().toISOString()),
   }
 }
 
@@ -39,15 +53,48 @@ export const useAccountsStore = create<AccountsStore>((set, get) => ({
   loading: false,
 
   loadAccounts: async () => {
+    set({ loading: true })
     try {
       const res = await window.electronAPI.dbQuery({ table: 'accounts', limit: 1000 })
-      if (res.success && res.data) set({ accounts: (res.data || []).map(sanitizeAccount) })
-    } catch (err: unknown) { console.error('Failed to load accounts:', errorMessage(err)) }
+      if (res?.success && Array.isArray(res.data)) {
+        set({ accounts: res.data.map(normalizeAccount) })
+      } else {
+        console.error('loadAccounts: query failed', res)
+      }
+    } catch (err: unknown) {
+      console.error('Failed to load accounts:', errorMessage(err))
+    } finally {
+      set({ loading: false })
+    }
   },
 
   addAccount: async (account) => {
+    // Strip undefined/empty optional fields before sending to IPC so the
+    // DB doesn't store literal "undefined" strings.
+    const payload: Record<string, unknown> = {
+      platform: String(account.platform || '').trim(),
+      username: String(account.username || '').trim(),
+      status: String(account.status || 'active'),
+    }
+    if (account.password && account.password.trim().length > 0) {
+      payload.password = account.password.trim()
+    }
+    if (account.proxy && account.proxy.trim().length > 0) {
+      payload.proxy = account.proxy.trim()
+    }
+    if (account.notes && account.notes.trim().length > 0) {
+      payload.notes = account.notes.trim()
+    }
+
+    if (!payload.platform || !payload.username) {
+      throw new Error('المنصة واسم المستخدم مطلوبان')
+    }
+
     try {
-      await window.electronAPI.dbInsert({ table: 'accounts', data: account })
+      const res = await window.electronAPI.dbInsert({ table: 'accounts', data: payload })
+      if (!res?.success) {
+        throw new Error(res?.error || 'فشل حفظ الحساب')
+      }
       await get().loadAccounts()
     } catch (err: unknown) {
       console.error('dbInsert error:', err)
@@ -56,8 +103,31 @@ export const useAccountsStore = create<AccountsStore>((set, get) => ({
   },
 
   updateAccount: async (id, data) => {
+    // Only send fields that actually changed (password stays unchanged if
+    // omitted) and trim strings to avoid whitespace surprises.
+    const payload: Record<string, unknown> = {}
+    if (data.platform !== undefined) payload.platform = String(data.platform).trim()
+    if (data.username !== undefined) payload.username = String(data.username).trim()
+    if (data.status !== undefined) payload.status = String(data.status)
+    if (data.password !== undefined && data.password.trim().length > 0) {
+      payload.password = data.password.trim()
+    }
+    if (data.proxy !== undefined) {
+      payload.proxy = data.proxy.trim().length > 0 ? data.proxy.trim() : ''
+    }
+    if (data.notes !== undefined) {
+      payload.notes = data.notes.trim().length > 0 ? data.notes.trim() : ''
+    }
+
+    if (Object.keys(payload).length === 0) {
+      throw new Error('لا توجد تعديلات للحفظ')
+    }
+
     try {
-      await window.electronAPI.dbUpdate({ table: 'accounts', id, data })
+      const res = await window.electronAPI.dbUpdate({ table: 'accounts', id, data: payload })
+      if (!res?.success) {
+        throw new Error(res?.error || 'فشل تحديث الحساب')
+      }
       await get().loadAccounts()
     } catch (err: unknown) {
       console.error('dbUpdate error:', err)
@@ -69,10 +139,12 @@ export const useAccountsStore = create<AccountsStore>((set, get) => ({
     try {
       await window.electronAPI.dbDelete({ table: 'accounts', id })
       await get().loadAccounts()
-    } catch (err: unknown) { console.error('Failed to delete account:', errorMessage(err)) }
+    } catch (err: unknown) {
+      console.error('Failed to delete account:', errorMessage(err))
+    }
   },
 
   getAccountsByPlatform: (platform) => {
-    return get().accounts.filter(a => a.platform === platform)
+    return get().accounts.filter((a) => a.platform === platform)
   },
 }))
