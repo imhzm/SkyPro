@@ -7,7 +7,6 @@ import Image from 'next/image'
 import { ArrowDown, Shield, Zap, Users, Globe } from 'lucide-react'
 import { motion, useInView } from 'framer-motion'
 import { PlatformIcon } from '@/components/marketing/PlatformIcon'
-import { StatusWidget } from '@/components/marketing/StatusWidget'
 
 const stats = [
   { value: 18, suffix: '+', label: 'منصة مدعومة', icon: Globe },
@@ -101,7 +100,6 @@ export function HeroSection() {
               </span>
               مُدعوم بالذكاء الاصطناعي · ثقة +10,000 شركة · من Sky Wave
             </span>
-            <StatusWidget />
           </motion.div>
 
           {/* Heading */}
@@ -221,11 +219,11 @@ export function HeroSection() {
             {/* Main showcase */}
             <div className="showcase-card">
               <Image
-                src="/images/hero-dashboard.png"
-                alt="لوحة تحكم SkyPro — إدارة الحملات وتتبع الأداء لحظياً"
+                src="/images/skypro-unified-marketing-control.png"
+                alt="SkyPro — كل حملاتك التسويقية تحت سيطرة لوحة تحكم واحدة بالذكاء الاصطناعي"
                 width={1400}
                 height={512}
-                className="h-64 w-full object-cover opacity-80"
+                className="h-64 w-full object-cover opacity-90"
                 priority
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#060d1b] via-[#060d1bcc] to-transparent" />
@@ -233,8 +231,8 @@ export function HeroSection() {
                 <div className="inline-flex rounded-full border border-emerald-400/30 bg-emerald-500/15 px-3 py-1 text-[11px] font-semibold text-emerald-300">
                   تحديث لحظي
                 </div>
-                <h3 className="mt-2 text-lg font-bold text-white">راقب النتائج لحظيًا أثناء الإرسال</h3>
-                <p className="mt-1 text-sm text-slate-300">معدلات فتح واستجابة وتقارير أداء داخل لوحة موحّدة.</p>
+                <h3 className="mt-2 text-lg font-bold text-white">كل حملاتك تحت سيطرة واحدة</h3>
+                <p className="mt-1 text-sm text-slate-300">يجمع منصاتك، يفعّل الإرسال الذكي، ويحوّل المتابعة لنتائج أسرع.</p>
               </div>
             </div>
 
@@ -242,20 +240,20 @@ export function HeroSection() {
             <div className="grid grid-cols-2 gap-4">
               <div className="showcase-card">
                 <Image
-                  src="/images/data-extraction.png"
-                  alt="استخراج بيانات العملاء من منصات التواصل بفلترة ذكية"
+                  src="/images/skypro-marketing-analytics-results.png"
+                  alt="تحليلات تسويق احترافية — معدل نمو 145% ومعدل تحويل 230% مع SkyPro"
                   width={700}
                   height={256}
-                  className="h-32 w-full object-cover opacity-75"
+                  className="h-32 w-full object-cover opacity-85"
                 />
               </div>
               <div className="showcase-card">
                 <Image
-                  src="/images/bulk-messaging.png"
-                  alt="إرسال رسائل جماعية محمية بنظام مضاد للحظر"
+                  src="/images/skypro-smart-marketing-dashboard.png"
+                  alt="لوحة تحكم SkyPro الذكية — أكتر من 287 ألف عميل ومتابع تم الوصول إليه"
                   width={700}
                   height={256}
-                  className="h-32 w-full object-cover opacity-75"
+                  className="h-32 w-full object-cover opacity-85"
                 />
               </div>
               <div className="col-span-2 rounded-3xl border border-sky-500/20 bg-gradient-to-r from-sky-500/10 to-violet-500/10 p-4 text-right">

@@ -159,44 +159,44 @@ export function HowItWorksSection() {
         >
           <div className="showcase-card">
             <Image
-              src="/images/hero-dashboard.png"
-              alt="خطوة 1 — تسجيل حساب جديد والوصول للوحة التحكم فوراً"
+              src="/images/skypro-smart-marketing-dashboard.png"
+              alt="خطوة 1 — لوحة تحكم SkyPro الذكية بكل المؤشرات اللحظية"
               width={900}
               height={288}
-              className="h-36 w-full object-cover opacity-75"
+              className="h-36 w-full object-cover opacity-85"
               loading="lazy"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[#060d1b] via-transparent to-transparent" />
             <div className="absolute bottom-2 right-3 left-3">
-              <span className="text-[11px] text-slate-300 font-medium">لوحة التحكم</span>
+              <span className="text-[11px] text-slate-300 font-medium">لوحة التحكم الذكية</span>
             </div>
           </div>
           <div className="showcase-card">
             <Image
-              src="/images/campaign-analytics.png"
-              alt="خطوة 2 — تحميل التطبيق وتفعيل الاشتراك في دقيقتين"
+              src="/images/skypro-egypt-marketing-automation.png"
+              alt="خطوة 2 — تسويق ذكي مصمم خصيصاً للسوق المصري"
               width={900}
               height={288}
-              className="h-36 w-full object-cover opacity-75"
+              className="h-36 w-full object-cover opacity-85"
               loading="lazy"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[#060d1b] via-transparent to-transparent" />
             <div className="absolute bottom-2 right-3 left-3">
-              <span className="text-[11px] text-slate-300 font-medium">تحليلات الحملات</span>
+              <span className="text-[11px] text-slate-300 font-medium">مناسب للسوق المصري</span>
             </div>
           </div>
           <div className="showcase-card">
             <Image
-              src="/images/bulk-messaging.png"
-              alt="خطوة 3 — إطلاق أول حملة تسويقية ومتابعة النتائج"
+              src="/images/skypro-growth-engine-banner.png"
+              alt="خطوة 3 — إطلاق محرك النمو الذكي وتحقيق نتائج مضمونة"
               width={900}
               height={288}
-              className="h-36 w-full object-cover opacity-75"
+              className="h-36 w-full object-cover opacity-85"
               loading="lazy"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[#060d1b] via-transparent to-transparent" />
             <div className="absolute bottom-2 right-3 left-3">
-              <span className="text-[11px] text-slate-300 font-medium">الإرسال الجماعي</span>
+              <span className="text-[11px] text-slate-300 font-medium">محرك النمو الذكي</span>
             </div>
           </div>
         </motion.div>

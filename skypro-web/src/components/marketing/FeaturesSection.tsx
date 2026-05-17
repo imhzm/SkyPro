@@ -243,31 +243,31 @@ export function FeaturesSection() {
         >
           <div className="md:col-span-2 showcase-card">
             <Image
-              src="/images/platforms-network.png"
-              alt="شبكة المنصات المتصلة — أتمتة التسويق عبر 18+ منصة من مكان واحد"
+              src="/images/skypro-all-platforms-overview.png"
+              alt="SkyPro — 18+ منصة تواصل اجتماعي وتسويق ذكي تحت سيطرتك من لوحة واحدة"
               width={1400}
               height={480}
-              className="h-60 w-full object-cover opacity-70"
+              className="h-60 w-full object-cover opacity-80"
               loading="lazy"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[#060d1b] via-[#060d1ba8] to-transparent" />
             <div className="absolute bottom-0 right-0 left-0 p-5">
-              <h3 className="text-lg font-bold text-white">شبكة منصات متكاملة</h3>
-              <p className="mt-1 text-sm text-slate-300">تابع الأداء، قارن النتائج، وخصص الاستهداف من لوحة واحدة.</p>
+              <h3 className="text-lg font-bold text-white">كل المنصات تحت سيطرتك</h3>
+              <p className="mt-1 text-sm text-slate-300">18+ منصة في تطبيق واحد · إرسال ذكي · إدارة حسابات · تقارير لحظية.</p>
             </div>
           </div>
           <div className="showcase-card">
             <Image
-              src="/images/data-extraction.png"
-              alt="استخراج ذكي لبيانات العملاء المستهدفين"
+              src="/images/skypro-marketing-analytics-results.png"
+              alt="تحليلات تسويق متقدمة في SkyPro — معدل نمو 145% ومعدل تحويل 230%"
               width={900}
               height={480}
-              className="h-60 w-full object-cover opacity-75"
+              className="h-60 w-full object-cover opacity-85"
               loading="lazy"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[#060d1b] via-transparent to-transparent" />
             <div className="absolute bottom-0 right-0 left-0 p-4">
-              <h3 className="text-sm font-bold text-white">استخراج ذكي للبيانات</h3>
+              <h3 className="text-sm font-bold text-white">نتائج تسويقية مضمونة</h3>
             </div>
           </div>
         </motion.div>
