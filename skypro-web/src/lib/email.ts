@@ -120,6 +120,49 @@ function getTransporter() {
 /*  HTML Shell                                                        */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Wraps any html fragment with a proper <!DOCTYPE html><html>...</html>
+ * envelope. If the caller already passed a complete document, returns it
+ * unchanged. Used by sendEmail() defensively so SpamAssassin doesn't
+ * trigger HTML_MIME_NO_HTML_TAG (-0.6 score).
+ */
+function ensureFullHtmlDocument(html: string): string {
+  const trimmed = html.trim()
+  // Already a complete document — leave it alone.
+  if (/^<(!doctype|html)\b/i.test(trimmed)) return html
+  // Fragment — wrap it.
+  return htmlShell(html)
+}
+
+/**
+ * Builds a plain-text version of the email from html by stripping tags.
+ * Fallback for callers that forget to provide a text alternative —
+ * prevents MIME_HTML_ONLY (-0.1 score) and improves accessibility.
+ */
+function htmlToPlainText(html: string): string {
+  return html
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<head[\s\S]*?<\/head>/gi, '')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n\n')
+    .replace(/<\/h[1-6]>/gi, '\n\n')
+    .replace(/<\/li>/gi, '\n')
+    .replace(/<\/tr>/gi, '\n')
+    .replace(/<\/td>/gi, ' ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/^[ \t]+/gm, '')
+    .trim()
+}
+
 function htmlShell(content: string) {
   return `<!DOCTYPE html>
 <html dir="rtl" lang="ar">
@@ -186,14 +229,26 @@ export async function sendEmail({ to, subject, text, html }: EmailOptions): Prom
     const unsubMailto = `mailto:${fromEmail}?subject=unsubscribe`
     const unsubUrl = `${APP_WEBSITE_URL}/unsubscribe`
 
+    // Defensive normalization to keep SpamAssassin score high:
+    // 1) Ensure the HTML version is a full document (<!DOCTYPE><html>...).
+    // 2) Always include a non-empty text/plain alternative — Nodemailer
+    //    needs both to build multipart/alternative; without it we get
+    //    MIME_HTML_ONLY (-0.1).
+    const fullHtml = html ? ensureFullHtmlDocument(html) : undefined
+    const finalText = text && text.trim().length > 0
+      ? text
+      : fullHtml
+        ? htmlToPlainText(fullHtml)
+        : '(empty message body)'
+
     const info = await transporter.sendMail({
       from: `"${fromName}" <${fromEmail}>`,
       sender: fromEmail,
       replyTo: fromEmail,
       to,
       subject,
-      text,
-      html: html || text,
+      text: finalText,
+      html: fullHtml,
       messageId,
       date: new Date(),
       // Deliverability headers — these signals tell receiving servers (Gmail,
