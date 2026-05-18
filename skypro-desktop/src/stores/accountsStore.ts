@@ -136,11 +136,18 @@ export const useAccountsStore = create<AccountsStore>((set, get) => ({
   },
 
   deleteAccount: async (id) => {
+    // Previously this swallowed IPC errors so callers couldn't show the
+    // user *why* delete failed (e.g. row already gone, DB locked). Now we
+    // surface the failure so the UI toast can report it.
     try {
-      await window.electronAPI.dbDelete({ table: 'accounts', id })
+      const res = await window.electronAPI.dbDelete({ table: 'accounts', id })
+      if (!res?.success) {
+        throw new Error(res?.error || 'فشل حذف الحساب')
+      }
       await get().loadAccounts()
     } catch (err: unknown) {
       console.error('Failed to delete account:', errorMessage(err))
+      throw err
     }
   },
 
