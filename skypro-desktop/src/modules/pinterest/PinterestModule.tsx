@@ -15,8 +15,8 @@ import {
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
-type ActiveTool = 'search' | 'extract' | 'broadcast' | 'more' | null
-type ResultsOwner = 'search' | 'extract' | 'broadcast' | null
+type ActiveTool = 'search' | 'extract' | 'broadcast' | 'more' | 'follow-users' | 'extract-hashtag' | null
+type ResultsOwner = 'search' | 'extract' | 'broadcast' | 'follow-users' | 'extract-hashtag' | null
 
 const ACCENT = '#E60023'
 const ACCENT_GRADIENT = 'linear-gradient(135deg, #E60023, #BD081C)'
@@ -42,6 +42,13 @@ export default function PinterestModule() {
   const [pinBoards, setPinBoards] = useState('')
 
   const [toolResults, setToolResults] = useState<any[]>([])
+
+  // --- Follow users ---
+  const [followList, setFollowList] = useState('')
+  const [followDelay, setFollowDelay] = useState(4)
+  // --- Extract hashtag ---
+  const [hashtagKeyword, setHashtagKeyword] = useState('')
+  const [hashtagLimit, setHashtagLimit] = useState(100)
 
   const pinterestAccounts = allAccounts.filter(a => a.platform === 'pinterest')
   const ensureSession = () => {
@@ -106,6 +113,45 @@ export default function PinterestModule() {
     clearResults()
   }
 
+  const handleFollowUsers = async () => {
+    if (!ensureSession()) return
+    const usernames = followList.split('\n').map(s => s.trim()).filter(Boolean)
+    if (usernames.length === 0) { showMsg('أدخل قائمة المستخدمين', true); return }
+    setLoading(true)
+    setResultsOwner('follow-users')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.pinterestFollowUsers({ sessionId, usernames, delayMs: Math.max(1, followDelay) * 1000 })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        const ok = items.filter((r: any) => r.status === 'followed').length
+        showMsg(`تمت متابعة ${ok} من ${usernames.length}`)
+      } else {
+        showMsg(res.error || 'فشلت العملية', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  const handleExtractHashtag = async () => {
+    if (!ensureSession()) return
+    if (!hashtagKeyword.trim()) { showMsg('أدخل الكلمة المفتاحية', true); return }
+    setLoading(true)
+    setResultsOwner('extract-hashtag')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.pinterestExtractHashtag({ sessionId, keyword: hashtagKeyword.trim(), limit: hashtagLimit })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        showMsg(`تم استخراج ${res.count || items.length} Pin`)
+      } else showMsg(res.error || 'فشل الاستخراج', true)
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
   const stubExtractTools = [
     { id: 'extract-followers', name: 'استخراج المتابعين', desc: 'قائمة المتابعين', icon: Users, soon: true },
     { id: 'extract-analytics', name: 'تحليل اللوحات', desc: 'إحصائيات اللوحات', icon: BarChart3, soon: true },
@@ -130,7 +176,9 @@ export default function PinterestModule() {
     requiresSession: boolean
   }> = [
     { id: 'search', name: 'البحث في Pinterest', description: 'بحث عن Pins بالكلمات المفتاحية', icon: Search, accent: '#E60023', accentGradient: 'linear-gradient(135deg, #E60023, #BD081C)', requiresSession: true },
-    { id: 'extract', name: 'استخراج من اللوحات', description: 'استخراج Pins من لوحة أو بحث', icon: Download, accent: '#ec4899', accentGradient: 'linear-gradient(135deg, #ec4899, #be185d)', requiresSession: true },
+    { id: 'extract', name: 'استخراج من اللوحات', description: 'استخراج Pins من لوحة', icon: Download, accent: '#ec4899', accentGradient: 'linear-gradient(135deg, #ec4899, #be185d)', requiresSession: true },
+    { id: 'extract-hashtag', name: 'استخراج بكلمة مفتاحية', description: 'Pins من البحث / الهاشتاج', icon: Heart, accent: '#a855f7', accentGradient: 'linear-gradient(135deg, #a855f7, #7e22ce)', requiresSession: true },
+    { id: 'follow-users', name: 'متابعة المستخدمين', description: 'متابعة قائمة من المستخدمين', icon: UserPlus, accent: '#0ea5e9', accentGradient: 'linear-gradient(135deg, #0ea5e9, #0369a1)', requiresSession: true },
     { id: 'broadcast', name: 'مشاركة Pins', description: 'مشاركة Pin على لوحات (قريباً)', icon: Send, accent: '#10b981', accentGradient: 'linear-gradient(135deg, #10b981, #047857)', requiresSession: true },
     { id: 'more', name: 'أدوات إضافية', description: 'أدوات قيد التطوير', icon: Settings, accent: '#64748b', accentGradient: 'linear-gradient(135deg, #64748b, #334155)', requiresSession: false },
   ]
@@ -353,6 +401,26 @@ export default function PinterestModule() {
                     </tr>
                   )
                 }
+                if (owner === 'follow-users') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium">{r.username || '-'}</td>
+                      <td><span className={`badge ${r.status === 'followed' ? 'badge-success' : r.status === 'skipped' ? 'badge-warning' : 'badge-danger'}`}>{r.status}</span></td>
+                      <td className="text-xs text-secondary-500">{r.error || '-'}</td>
+                    </tr>
+                  )
+                }
+                if (owner === 'extract-hashtag') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium text-xs max-w-[280px] truncate">{r.title || '-'}</td>
+                      <td className="text-xs">{r.url ? <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Pin</a> : '-'}</td>
+                      <td className="text-xs text-secondary-500">{r.image ? <a href={r.image} target="_blank" rel="noopener noreferrer" className="text-secondary-600 hover:underline">صورة</a> : '-'}</td>
+                    </tr>
+                  )
+                }
                 return (
                   <tr key={i}>
                     <td className="text-secondary-500">{i + 1}</td>
@@ -482,9 +550,49 @@ export default function PinterestModule() {
     </div>
   )
 
+  const renderFollowUsersBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">قائمة المستخدمين (سطر لكل اسم)</label>
+        <textarea className="textarea-field" rows={7} value={followList} onChange={e => setFollowList(e.target.value)} placeholder="username1&#10;username2" />
+      </div>
+      <div>
+        <label className="label-field">الفاصل (ثانية)</label>
+        <input type="number" min={1} max={60} className="input-field w-32" value={followDelay} onChange={e => setFollowDelay(Number(e.target.value) || 4)} />
+      </div>
+      {renderResultsTable('follow-users', ['#', 'المستخدم', 'الحالة', 'خطأ'], 'pinterest-follow')}
+    </div>
+  )
+  const followUsersFooter = (
+    <button onClick={handleFollowUsers} disabled={loading || !followList.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #0ea5e9, #0369a1)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><UserPlus size={18} /> متابعة</>}
+    </button>
+  )
+
+  const renderExtractHashtagBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">الكلمة المفتاحية أو الهاشتاج</label>
+        <input type="text" className="input-field" value={hashtagKeyword} onChange={e => setHashtagKeyword(e.target.value)} placeholder="design ideas, marketing" />
+      </div>
+      <div>
+        <label className="label-field">الحد الأقصى: {hashtagLimit}</label>
+        <input type="range" min={20} max={1000} step={10} className="w-full" style={{ accentColor: '#a855f7' }} value={hashtagLimit} onChange={e => setHashtagLimit(parseInt(e.target.value))} />
+      </div>
+      {renderResultsTable('extract-hashtag', ['#', 'العنوان', 'رابط Pin', 'الصورة'], 'pinterest-hashtag')}
+    </div>
+  )
+  const extractHashtagFooter = (
+    <button onClick={handleExtractHashtag} disabled={loading || !hashtagKeyword.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #a855f7, #7e22ce)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Heart size={18} /> استخراج</>}
+    </button>
+  )
+
   const panelMap: Record<Exclude<ActiveTool, null>, { body: React.ReactNode; footer: React.ReactNode }> = {
     search: { body: renderSearchBody(), footer: searchFooter },
     extract: { body: renderExtractBody(), footer: extractFooter },
+    'extract-hashtag': { body: renderExtractHashtagBody(), footer: extractHashtagFooter },
+    'follow-users': { body: renderFollowUsersBody(), footer: followUsersFooter },
     broadcast: { body: renderBroadcastBody(), footer: broadcastFooter },
     more: { body: renderMoreBody(), footer: null },
   }

@@ -9,13 +9,19 @@ import ToolCard from '../../components/tools/ToolCard'
 import ToolPanel from '../../components/tools/ToolPanel'
 import type { LucideIcon } from 'lucide-react'
 import {
-  LogIn, Search, Download, Megaphone, Send, Play, Eye, EyeOff,
+  LogIn, Search, Download, Send, Play, Eye, EyeOff,
   Users, Globe, CheckCircle, AlertCircle, Loader2, Trash2, FileSpreadsheet,
-  UserPlus, Heart, Calendar, LogOut, Wrench, Linkedin as LinkedinIcon,
+  UserPlus, LogOut, Wrench, Linkedin as LinkedinIcon, FileText,
 } from 'lucide-react'
 
-type ActiveTool = 'search' | 'extract' | 'marketing' | 'broadcast' | null
-type ResultsOwner = 'search' | 'extract' | 'broadcast' | null
+type ActiveTool =
+  | 'search' | 'extract' | 'broadcast'
+  | 'extract-people' | 'connect-requests' | 'follow-companies' | 'post-feed' | 'join-groups'
+  | null
+type ResultsOwner =
+  | 'search' | 'extract' | 'broadcast'
+  | 'extract-people' | 'connect-requests' | 'follow-companies' | 'join-groups'
+  | null
 
 const ACCENT = '#0A66C2'
 const ACCENT_GRADIENT = 'linear-gradient(135deg, #0A66C2, #084d92)'
@@ -43,6 +49,22 @@ export default function LinkedinModule() {
   const [resultsOwner, setResultsOwner] = useState<ResultsOwner>(null)
   const [broadcastRecipients, setBroadcastRecipients] = useState('')
   const [broadcastMessage, setBroadcastMessage] = useState('')
+
+  // --- Extract people ---
+  const [peopleQuery, setPeopleQuery] = useState('')
+  const [peopleLimit, setPeopleLimit] = useState(100)
+  // --- Connect requests ---
+  const [connectProfiles, setConnectProfiles] = useState('')
+  const [connectNote, setConnectNote] = useState('')
+  const [connectDelay, setConnectDelay] = useState(6)
+  // --- Follow companies ---
+  const [followCompanies, setFollowCompanies] = useState('')
+  const [followDelay, setFollowDelay] = useState(4)
+  // --- Post feed ---
+  const [postContent, setPostContent] = useState('')
+  // --- Join groups ---
+  const [joinGroupUrls, setJoinGroupUrls] = useState('')
+  const [joinDelay, setJoinDelay] = useState(5)
 
   const linkedinAccounts = allAccounts.filter(a => a.platform === 'linkedin')
   const ensureSession = () => {
@@ -132,13 +154,111 @@ export default function LinkedinModule() {
     clearResults()
   }
 
-  const marketingTools = [
-    { id: 'join-groups', name: 'الانضمام للمجموعات', desc: 'انضمام تلقائي', icon: Users },
-    { id: 'send-connect', name: 'إرسال طلب تواصل', desc: 'طلب تواصل تلقائي', icon: UserPlus },
-    { id: 'follow-companies', name: 'متابعة الشركات', desc: 'متابعة تلقائية', icon: Globe },
-    { id: 'interaction-farm', name: 'مزرعة التفاعل', desc: 'تفاعل تلقائي', icon: Heart },
-    { id: 'schedule-posts', name: 'نشر أو جدولة المنشورات', desc: 'جدولة النشر', icon: Calendar },
-  ]
+  // ---- Extract people ----
+  const handleExtractPeople = async () => {
+    if (!ensureSession()) return
+    if (!peopleQuery.trim()) { showMsg('أدخل الكلمة المفتاحية', true); return }
+    setLoading(true)
+    setResultsOwner('extract-people')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.linkedinExtractPeople({ sessionId, query: peopleQuery.trim(), limit: peopleLimit })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        showMsg(`تم استخراج ${res.count || items.length} شخص`)
+        await loadResults()
+      } else {
+        showMsg(res.error || 'فشل الاستخراج', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  // ---- Connect requests ----
+  const handleConnectRequests = async () => {
+    if (!ensureSession()) return
+    const profiles = connectProfiles.split('\n').map(s => s.trim()).filter(Boolean)
+    if (profiles.length === 0) { showMsg('أدخل قائمة الملفات الشخصية', true); return }
+    setLoading(true)
+    setResultsOwner('connect-requests')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.linkedinConnectRequests({ sessionId, profiles, note: connectNote.trim() || undefined, delayMs: Math.max(2, connectDelay) * 1000 })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        const ok = items.filter((r: any) => r.status === 'requested').length
+        showMsg(`تم إرسال ${ok} من ${profiles.length} طلب تواصل`)
+      } else {
+        showMsg(res.error || 'فشلت العملية', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  // ---- Follow companies ----
+  const handleFollowCompanies = async () => {
+    if (!ensureSession()) return
+    const companies = followCompanies.split('\n').map(s => s.trim()).filter(Boolean)
+    if (companies.length === 0) { showMsg('أدخل قائمة الشركات', true); return }
+    setLoading(true)
+    setResultsOwner('follow-companies')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.linkedinFollowCompanies({ sessionId, companies, delayMs: Math.max(2, followDelay) * 1000 })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        const ok = items.filter((r: any) => r.status === 'followed').length
+        showMsg(`تمت متابعة ${ok} من ${companies.length} شركة`)
+      } else {
+        showMsg(res.error || 'فشلت العملية', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  // ---- Post to feed ----
+  const handlePostFeed = async () => {
+    if (!ensureSession()) return
+    if (!postContent.trim()) { showMsg('أدخل نص المنشور', true); return }
+    setLoading(true)
+    try {
+      const res = await window.electronAPI.linkedinPostFeed({ sessionId, content: postContent })
+      if (res.success) {
+        showMsg('تم نشر المنشور بنجاح')
+        setPostContent('')
+      } else showMsg(res.error || 'فشل النشر', true)
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  // ---- Join groups ----
+  const handleJoinGroups = async () => {
+    if (!ensureSession()) return
+    const urls = joinGroupUrls.split('\n').map(s => s.trim()).filter(Boolean)
+    if (urls.length === 0) { showMsg('أدخل روابط المجموعات', true); return }
+    setLoading(true)
+    setResultsOwner('join-groups')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.linkedinJoinGroups({ sessionId, groupUrls: urls, delayMs: Math.max(2, joinDelay) * 1000 })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        const ok = items.filter((r: any) => r.status === 'requested').length
+        showMsg(`تم إرسال ${ok} طلب انضمام من ${urls.length}`)
+      } else {
+        showMsg(res.error || 'فشلت العملية', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
 
   const tools: Array<{
     id: Exclude<ActiveTool, null>
@@ -150,9 +270,13 @@ export default function LinkedinModule() {
     requiresSession: boolean
   }> = [
     { id: 'search', name: 'البحث المتقدم', description: 'البحث عن أشخاص أو شركات', icon: Search, accent: '#0A66C2', accentGradient: 'linear-gradient(135deg, #0A66C2, #084d92)', requiresSession: true },
+    { id: 'extract-people', name: 'استخراج الأشخاص', description: 'استخراج تفاصيل من نتائج البحث', icon: Users, accent: '#06b6d4', accentGradient: 'linear-gradient(135deg, #06b6d4, #0891b2)', requiresSession: true },
     { id: 'extract', name: 'استخراج الشركات', description: 'استخراج بيانات الشركات', icon: Download, accent: '#0ea5e9', accentGradient: 'linear-gradient(135deg, #0ea5e9, #0369a1)', requiresSession: true },
-    { id: 'marketing', name: 'أدوات التسويق', description: 'انضمام، تواصل، تفاعل (قريباً)', icon: Megaphone, accent: '#8b5cf6', accentGradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', requiresSession: false },
+    { id: 'connect-requests', name: 'إرسال طلبات تواصل', description: 'دعوات تواصل مع رسالة شخصية', icon: UserPlus, accent: '#8b5cf6', accentGradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', requiresSession: true },
+    { id: 'follow-companies', name: 'متابعة الشركات', description: 'متابعة قائمة شركات', icon: Globe, accent: '#a855f7', accentGradient: 'linear-gradient(135deg, #a855f7, #7e22ce)', requiresSession: true },
+    { id: 'join-groups', name: 'الانضمام للمجموعات', description: 'طلبات انضمام لمجموعات', icon: Users, accent: '#84cc16', accentGradient: 'linear-gradient(135deg, #84cc16, #4d7c0f)', requiresSession: true },
     { id: 'broadcast', name: 'رسائل InMail', description: 'إرسال رسائل لقائمة مستلمين', icon: Send, accent: '#10b981', accentGradient: 'linear-gradient(135deg, #10b981, #047857)', requiresSession: true },
+    { id: 'post-feed', name: 'نشر منشور', description: 'نشر محتوى على فيدك', icon: FileText, accent: '#f59e0b', accentGradient: 'linear-gradient(135deg, #f59e0b, #d97706)', requiresSession: true },
   ]
 
   const currentTool = tools.find(t => t.id === activeTool) ?? null
@@ -397,6 +521,47 @@ export default function LinkedinModule() {
                     </tr>
                   )
                 }
+                if (owner === 'extract-people') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium">{r.name || '-'}</td>
+                      <td className="text-xs max-w-[260px] truncate text-secondary-700">{r.title || '-'}</td>
+                      <td className="text-xs text-secondary-500">{r.location || '-'}</td>
+                      <td className="text-xs">{r.profile ? <a href={r.profile} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">رابط</a> : '-'}</td>
+                    </tr>
+                  )
+                }
+                if (owner === 'connect-requests') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium" dir="ltr">{r.profile || '-'}</td>
+                      <td><span className={`badge ${r.status === 'requested' ? 'badge-success' : r.status === 'skipped' ? 'badge-warning' : 'badge-danger'}`}>{r.status}</span></td>
+                      <td className="text-xs text-secondary-500">{r.error || '-'}</td>
+                    </tr>
+                  )
+                }
+                if (owner === 'follow-companies') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium" dir="ltr">{r.company || '-'}</td>
+                      <td><span className={`badge ${r.status === 'followed' ? 'badge-success' : r.status === 'skipped' ? 'badge-warning' : 'badge-danger'}`}>{r.status}</span></td>
+                      <td className="text-xs text-secondary-500">{r.error || '-'}</td>
+                    </tr>
+                  )
+                }
+                if (owner === 'join-groups') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="text-xs max-w-[300px] truncate" dir="ltr">{r.url || '-'}</td>
+                      <td><span className={`badge ${r.status === 'requested' ? 'badge-success' : r.status === 'skipped' ? 'badge-warning' : 'badge-danger'}`}>{r.status}</span></td>
+                      <td className="text-xs text-secondary-500">{r.error || '-'}</td>
+                    </tr>
+                  )
+                }
                 // broadcast
                 return (
                   <tr key={i}>
@@ -490,25 +655,110 @@ export default function LinkedinModule() {
     </button>
   )
 
-  const renderMarketingBody = () => (
+  // ---- Extract people panel ----
+  const renderExtractPeopleBody = () => (
     <div className="space-y-5">
-      <p className="text-sm text-secondary-500">أدوات تسويق متقدمة قيد التطوير — ستكون متاحة قريباً.</p>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {marketingTools.map(tool => (
-          <div key={tool.id} className="rounded-xl border border-secondary-200 bg-white/60 p-4 text-center opacity-70 relative">
-            <span className="absolute top-1 left-1 text-[9px] bg-secondary-200 text-secondary-600 px-1.5 py-0.5 rounded font-medium">قريباً</span>
-            <div className="w-10 h-10 rounded-xl mx-auto flex items-center justify-center" style={{ background: 'rgba(10,102,194,0.08)' }}>
-              <tool.icon size={20} style={{ color: '#0A66C2' }} />
-            </div>
-            <h4 className="font-bold text-secondary-900 text-xs mt-2">{tool.name}</h4>
-            <p className="text-[10px] text-secondary-500 mt-1">{tool.desc}</p>
-          </div>
-        ))}
+      <div>
+        <label className="label-field">الكلمة المفتاحية</label>
+        <input type="text" className="input-field" value={peopleQuery} onChange={e => setPeopleQuery(e.target.value)} placeholder="مدير تسويق، CEO، Software Engineer" />
       </div>
+      <div>
+        <label className="label-field">الحد الأقصى: {peopleLimit}</label>
+        <input type="range" min={20} max={1000} step={10} className="w-full accent-cyan-500" value={peopleLimit} onChange={e => setPeopleLimit(parseInt(e.target.value))} />
+      </div>
+      {renderResultsTable('extract-people', ['#', 'الاسم', 'المسمى', 'الموقع', 'الرابط'], 'linkedin-people')}
     </div>
   )
+  const extractPeopleFooter = (
+    <button onClick={handleExtractPeople} disabled={loading || !peopleQuery.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #06b6d4, #0891b2)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Users size={18} /> استخراج الأشخاص</>}
+    </button>
+  )
 
-  const marketingFooter = null
+  // ---- Connect requests panel ----
+  const renderConnectRequestsBody = () => (
+    <div className="space-y-5">
+      <div className="p-3 rounded-lg text-xs text-amber-700" style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.3)' }}>
+        <AlertCircle size={14} className="inline ml-1" />
+        LinkedIn يحدد عدد طلبات التواصل اليومية (~100 طلب). استخدم فاصل ≥ 5 ثوانٍ.
+      </div>
+      <div>
+        <label className="label-field">قائمة الملفات الشخصية (URL أو username سطر لكل عنصر)</label>
+        <textarea className="textarea-field" rows={5} value={connectProfiles} onChange={e => setConnectProfiles(e.target.value)} placeholder="https://linkedin.com/in/username&#10;username2" />
+      </div>
+      <div>
+        <label className="label-field">رسالة شخصية (اختياري - 300 حرف كحد أقصى)</label>
+        <textarea className="textarea-field" rows={3} maxLength={300} value={connectNote} onChange={e => setConnectNote(e.target.value)} placeholder="مرحبًا! أود التواصل معك لأنني مهتم بـ..." />
+        <p className="text-[10px] text-secondary-500 mt-1">{connectNote.length}/300</p>
+      </div>
+      <div>
+        <label className="label-field">الفاصل (ثانية)</label>
+        <input type="number" min={2} max={120} className="input-field w-32" value={connectDelay} onChange={e => setConnectDelay(Number(e.target.value) || 6)} />
+      </div>
+      {renderResultsTable('connect-requests', ['#', 'الملف الشخصي', 'الحالة', 'خطأ'], 'linkedin-connects')}
+    </div>
+  )
+  const connectRequestsFooter = (
+    <button onClick={handleConnectRequests} disabled={loading || !connectProfiles.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><UserPlus size={18} /> إرسال طلبات التواصل</>}
+    </button>
+  )
+
+  // ---- Follow companies panel ----
+  const renderFollowCompaniesBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">قائمة الشركات (URL أو slug سطر لكل شركة)</label>
+        <textarea className="textarea-field" rows={7} value={followCompanies} onChange={e => setFollowCompanies(e.target.value)} placeholder="https://linkedin.com/company/microsoft&#10;google" />
+      </div>
+      <div>
+        <label className="label-field">الفاصل (ثانية)</label>
+        <input type="number" min={2} max={60} className="input-field w-32" value={followDelay} onChange={e => setFollowDelay(Number(e.target.value) || 4)} />
+      </div>
+      {renderResultsTable('follow-companies', ['#', 'الشركة', 'الحالة', 'خطأ'], 'linkedin-follow-co')}
+    </div>
+  )
+  const followCompaniesFooter = (
+    <button onClick={handleFollowCompanies} disabled={loading || !followCompanies.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #a855f7, #7e22ce)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Globe size={18} /> متابعة الشركات</>}
+    </button>
+  )
+
+  // ---- Post feed panel ----
+  const renderPostFeedBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">نص المنشور</label>
+        <textarea className="textarea-field" rows={8} value={postContent} onChange={e => setPostContent(e.target.value)} placeholder="اكتب منشورك على LinkedIn..." />
+      </div>
+      <p className="text-[11px] text-secondary-500">سيتم النشر على الفور باستخدام الجلسة النشطة. إذا أردت إضافة صورة، أكمل ذلك يدويًا في النافذة المفتوحة قبل النشر.</p>
+    </div>
+  )
+  const postFeedFooter = (
+    <button onClick={handlePostFeed} disabled={loading || !postContent.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><FileText size={18} /> نشر</>}
+    </button>
+  )
+
+  // ---- Join groups panel ----
+  const renderJoinGroupsBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">روابط المجموعات (سطر لكل رابط)</label>
+        <textarea className="textarea-field" rows={7} value={joinGroupUrls} onChange={e => setJoinGroupUrls(e.target.value)} placeholder="https://linkedin.com/groups/12345" />
+      </div>
+      <div>
+        <label className="label-field">الفاصل (ثانية)</label>
+        <input type="number" min={2} max={60} className="input-field w-32" value={joinDelay} onChange={e => setJoinDelay(Number(e.target.value) || 5)} />
+      </div>
+      {renderResultsTable('join-groups', ['#', 'المجموعة', 'الحالة', 'خطأ'], 'linkedin-join-groups')}
+    </div>
+  )
+  const joinGroupsFooter = (
+    <button onClick={handleJoinGroups} disabled={loading || !joinGroupUrls.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #84cc16, #4d7c0f)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Users size={18} /> الانضمام</>}
+    </button>
+  )
 
   const renderBroadcastBody = () => (
     <div className="space-y-5">
@@ -537,9 +787,13 @@ export default function LinkedinModule() {
 
   const panelMap: Record<Exclude<ActiveTool, null>, { body: React.ReactNode; footer: React.ReactNode }> = {
     search: { body: renderSearchBody(), footer: searchFooter },
+    'extract-people': { body: renderExtractPeopleBody(), footer: extractPeopleFooter },
     extract: { body: renderExtractBody(), footer: extractFooter },
-    marketing: { body: renderMarketingBody(), footer: marketingFooter },
+    'connect-requests': { body: renderConnectRequestsBody(), footer: connectRequestsFooter },
+    'follow-companies': { body: renderFollowCompaniesBody(), footer: followCompaniesFooter },
+    'join-groups': { body: renderJoinGroupsBody(), footer: joinGroupsFooter },
     broadcast: { body: renderBroadcastBody(), footer: broadcastFooter },
+    'post-feed': { body: renderPostFeedBody(), footer: postFeedFooter },
   }
 
   return (

@@ -11,10 +11,17 @@ import {
   LogIn, Download, UserPlus, AtSign, Send, Play, Eye, EyeOff,
   Users, MessageSquare, Hash, Copy, AlertCircle, CheckCircle, Loader2,
   Trash2, FileSpreadsheet, Square, LogOut, Wrench, Instagram as InstagramIcon,
+  UserMinus, Heart, Share2, MessageCircle, UsersRound,
 } from 'lucide-react'
 
-type ActiveTool = 'extract' | 'follow' | 'mention' | 'broadcast' | null
-type ResultsOwner = 'extract' | 'follow' | 'mention' | 'broadcast' | null
+type ActiveTool =
+  | 'extract' | 'follow' | 'mention' | 'broadcast'
+  | 'unfollow' | 'post-interact' | 'share-dm' | 'extract-likers' | 'extract-following' | 'follow-message'
+  | null
+type ResultsOwner =
+  | 'extract' | 'follow' | 'mention' | 'broadcast'
+  | 'unfollow' | 'post-interact' | 'share-dm' | 'extract-likers' | 'extract-following' | 'follow-message'
+  | null
 
 const ACCENT = '#ec4899'
 const ACCENT_GRADIENT = 'linear-gradient(135deg, #ec4899, #be185d)'
@@ -50,6 +57,30 @@ export default function InstagramModule() {
   const [mentionMessage, setMentionMessage] = useState('')
   const [broadcastRecipients, setBroadcastRecipients] = useState('')
   const [broadcastMessage, setBroadcastMessage] = useState('')
+
+  // --- Unfollow ---
+  const [unfollowList, setUnfollowList] = useState('')
+  const [unfollowDelay, setUnfollowDelay] = useState(5)
+  // --- Post interact (like + comment) ---
+  const [interactUrls, setInteractUrls] = useState('')
+  const [interactLike, setInteractLike] = useState(true)
+  const [interactComment, setInteractComment] = useState('')
+  const [interactDelay, setInteractDelay] = useState(4)
+  // --- Share post in DM ---
+  const [sharePostUrl, setSharePostUrl] = useState('')
+  const [shareRecipients, setShareRecipients] = useState('')
+  const [shareMessage, setShareMessage] = useState('')
+  // --- Extract likers ---
+  const [likersPostUrl, setLikersPostUrl] = useState('')
+  const [likersLimit, setLikersLimit] = useState(300)
+  // --- Extract following ---
+  const [followingTarget, setFollowingTarget] = useState('')
+  const [followingLimit, setFollowingLimit] = useState(300)
+  // --- Follow + message combo ---
+  const [combinedList, setCombinedList] = useState('')
+  const [combinedMessage, setCombinedMessage] = useState('')
+  const [combinedFollowFirst, setCombinedFollowFirst] = useState(true)
+  const [combinedDelay, setCombinedDelay] = useState(5)
 
   useEffect(() => {
     const cleanup = window.electronAPI.onExtractionProgress((data: any) => {
@@ -201,6 +232,167 @@ export default function InstagramModule() {
     clearResults()
   }
 
+  // ---- Unfollow ----
+  const handleUnfollow = async () => {
+    if (!ensureSession()) return
+    const usernames = unfollowList.split('\n').map(s => s.trim()).filter(Boolean)
+    if (usernames.length === 0) { showMsg('أدخل قائمة الحسابات', true); return }
+    setLoading(true)
+    setResultsOwner('unfollow')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.instagramUnfollow({ sessionId, usernames, delayMs: Math.max(1, unfollowDelay) * 1000 })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        const ok = items.filter((r: any) => r.status === 'unfollowed').length
+        showMsg(`تم إلغاء متابعة ${ok} من ${usernames.length}`)
+      } else {
+        showMsg(res.error || 'فشلت العملية', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  // ---- Post interact (like + comment) ----
+  const handlePostInteract = async () => {
+    if (!ensureSession()) return
+    const urls = interactUrls.split('\n').map(s => s.trim()).filter(Boolean)
+    if (urls.length === 0) { showMsg('أدخل روابط المنشورات', true); return }
+    if (!interactLike && !interactComment.trim()) { showMsg('اختر إعجاب أو اكتب تعليق', true); return }
+    setLoading(true)
+    setResultsOwner('post-interact')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.instagramPostInteract({
+        sessionId,
+        postUrls: urls,
+        actions: { like: interactLike, comment: interactComment.trim() || undefined },
+        delayMs: Math.max(1, interactDelay) * 1000,
+      })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        const ok = items.filter((r: any) => r.status === 'done').length
+        showMsg(`تم التفاعل مع ${ok} من ${urls.length}`)
+      } else {
+        showMsg(res.error || 'فشلت العملية', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  // ---- Share post in DM ----
+  const handleShareDM = async () => {
+    if (!ensureSession()) return
+    if (!sharePostUrl.trim()) { showMsg('أدخل رابط المنشور', true); return }
+    const recipients = shareRecipients.split('\n').map(s => s.trim()).filter(Boolean)
+    if (recipients.length === 0) { showMsg('أدخل قائمة المستلمين', true); return }
+    setLoading(true)
+    setResultsOwner('share-dm')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.instagramSharePostDM({ sessionId, postUrl: sharePostUrl.trim(), recipients, message: shareMessage.trim() || undefined })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        const ok = items.filter((r: any) => r.status === 'queued').length
+        showMsg(`تمت مشاركة المنشور مع ${ok} مستلم`)
+      } else {
+        showMsg(res.error || 'فشلت العملية', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  // ---- Extract likers ----
+  const handleExtractLikers = async () => {
+    if (!ensureSession()) return
+    if (!likersPostUrl.trim()) { showMsg('أدخل رابط المنشور', true); return }
+    streamResultsRef.current = []
+    setStreamResults([])
+    setExtracting(true)
+    setResultsOwner('extract-likers')
+    setToolResults([])
+    const jobId = `ig-likers-${Date.now()}`
+    setCurrentJobId(jobId)
+    try {
+      const res = await window.electronAPI.instagramExtractLikers({ sessionId, postUrl: likersPostUrl.trim(), limit: likersLimit, jobId })
+      if (res.success) {
+        const data = (res.data as any[]) || []
+        const finalData = streamResultsRef.current.length > 0 ? streamResultsRef.current : data
+        setToolResults(finalData)
+        showMsg(res.cancelled ? `تم الإيقاف — ${finalData.length} نتيجة محفوظة` : `تم استخراج ${res.count || finalData.length} معجب`)
+        await loadResults()
+      } else {
+        const partial = (res.partialData as any[]) || streamResultsRef.current
+        if (partial.length > 0) { setToolResults(partial); showMsg(`${partial.length} نتيجة قبل الخطأ: ${res.error || ''}`, true) }
+        else showMsg(res.error || 'فشل الاستخراج', true)
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setExtracting(false)
+    setCurrentJobId(null)
+  }
+
+  // ---- Extract following list of a target ----
+  const handleExtractFollowing = async () => {
+    if (!ensureSession()) return
+    if (!followingTarget.trim()) { showMsg('أدخل اسم المستخدم المستهدف', true); return }
+    streamResultsRef.current = []
+    setStreamResults([])
+    setExtracting(true)
+    setResultsOwner('extract-following')
+    setToolResults([])
+    const jobId = `ig-following-${Date.now()}`
+    setCurrentJobId(jobId)
+    try {
+      const res = await window.electronAPI.instagramExtractFollowing({ sessionId, targetUser: followingTarget.trim(), limit: followingLimit, jobId })
+      if (res.success) {
+        const data = (res.data as any[]) || []
+        const finalData = streamResultsRef.current.length > 0 ? streamResultsRef.current : data
+        setToolResults(finalData)
+        showMsg(res.cancelled ? `تم الإيقاف — ${finalData.length} نتيجة محفوظة` : `تم استخراج ${res.count || finalData.length} حساب`)
+        await loadResults()
+      } else {
+        const partial = (res.partialData as any[]) || streamResultsRef.current
+        if (partial.length > 0) { setToolResults(partial); showMsg(`${partial.length} نتيجة قبل الخطأ: ${res.error || ''}`, true) }
+        else showMsg(res.error || 'فشل الاستخراج', true)
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setExtracting(false)
+    setCurrentJobId(null)
+  }
+
+  // ---- Follow + message combo ----
+  const handleFollowMessage = async () => {
+    if (!ensureSession()) return
+    const usernames = combinedList.split('\n').map(s => s.trim()).filter(Boolean)
+    if (usernames.length === 0) { showMsg('أدخل قائمة الحسابات', true); return }
+    if (!combinedMessage.trim()) { showMsg('أدخل نص الرسالة', true); return }
+    setLoading(true)
+    setResultsOwner('follow-message')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.instagramFollowMessage({
+        sessionId, usernames, message: combinedMessage, followFirst: combinedFollowFirst,
+        delayMs: Math.max(1, combinedDelay) * 1000,
+      })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        const ok = items.filter((r: any) => r.status === 'sent').length
+        showMsg(`تم إرسال ${ok} رسالة من ${usernames.length} حساب`)
+      } else {
+        showMsg(res.error || 'فشلت العملية', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
   const extractTools = [
     { id: 'followers', name: 'المتابعين الجدد', desc: 'استخراج قائمة المتابعين', icon: Users },
     { id: 'comments', name: 'الإعجابات والتعليقات', desc: 'استخراج الإعجابات والتعليقات من المنشور', icon: MessageSquare },
@@ -218,10 +410,16 @@ export default function InstagramModule() {
     accentGradient: string
     requiresSession: boolean
   }> = [
-    { id: 'extract', name: 'استخراج البيانات', description: 'متابعين، تعليقات، هاشتاجات، مراسلين', icon: Download, accent: '#ec4899', accentGradient: 'linear-gradient(135deg, #ec4899, #be185d)', requiresSession: true },
+    { id: 'extract', name: 'استخراج البيانات', description: 'متابعين، تعليقات، هاشتاجات', icon: Download, accent: '#ec4899', accentGradient: 'linear-gradient(135deg, #ec4899, #be185d)', requiresSession: true },
+    { id: 'extract-likers', name: 'استخراج المعجبين', description: 'استخراج معجبين منشور معيّن', icon: Heart, accent: '#f43f5e', accentGradient: 'linear-gradient(135deg, #f43f5e, #be123c)', requiresSession: true },
+    { id: 'extract-following', name: 'استخراج المتابَعين', description: 'استخراج من يتابعهم حساب معين', icon: UsersRound, accent: '#a855f7', accentGradient: 'linear-gradient(135deg, #a855f7, #7e22ce)', requiresSession: true },
     { id: 'follow', name: 'متابعة تلقائية', description: 'متابعة قائمة حسابات بشكل آمن', icon: UserPlus, accent: '#8b5cf6', accentGradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', requiresSession: true },
-    { id: 'mention', name: 'منشن جماعي', description: 'منشن مستخدمين في منشور معين', icon: AtSign, accent: '#0ea5e9', accentGradient: 'linear-gradient(135deg, #0ea5e9, #0369a1)', requiresSession: true },
-    { id: 'broadcast', name: 'إرسال رسائل', description: 'بث رسائل مباشرة لقائمة حسابات', icon: Send, accent: '#10b981', accentGradient: 'linear-gradient(135deg, #10b981, #047857)', requiresSession: true },
+    { id: 'unfollow', name: 'إلغاء متابعة', description: 'إلغاء متابعة قائمة حسابات', icon: UserMinus, accent: '#ef4444', accentGradient: 'linear-gradient(135deg, #ef4444, #b91c1c)', requiresSession: true },
+    { id: 'post-interact', name: 'تفاعل (إعجاب + تعليق)', description: 'إعجاب وتعليق على عدة منشورات', icon: Heart, accent: '#22c55e', accentGradient: 'linear-gradient(135deg, #22c55e, #15803d)', requiresSession: true },
+    { id: 'mention', name: 'منشن جماعي', description: 'منشن مستخدمين في منشور', icon: AtSign, accent: '#0ea5e9', accentGradient: 'linear-gradient(135deg, #0ea5e9, #0369a1)', requiresSession: true },
+    { id: 'broadcast', name: 'إرسال رسائل', description: 'بث رسائل مباشرة لقائمة', icon: Send, accent: '#10b981', accentGradient: 'linear-gradient(135deg, #10b981, #047857)', requiresSession: true },
+    { id: 'share-dm', name: 'مشاركة منشور بالخاص', description: 'إرسال منشور لقائمة مستلمين', icon: Share2, accent: '#06b6d4', accentGradient: 'linear-gradient(135deg, #06b6d4, #0891b2)', requiresSession: true },
+    { id: 'follow-message', name: 'متابعة + رسالة', description: 'متابعة الحساب ثم إرسال رسالة', icon: MessageCircle, accent: '#f59e0b', accentGradient: 'linear-gradient(135deg, #f59e0b, #d97706)', requiresSession: true },
   ]
 
   const currentTool = tools.find(t => t.id === activeTool) ?? null
@@ -481,6 +679,58 @@ export default function InstagramModule() {
                     </tr>
                   )
                 }
+                if (owner === 'unfollow') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium">{r.username || '-'}</td>
+                      <td><span className={`badge ${r.status === 'unfollowed' ? 'badge-success' : r.status === 'skipped' ? 'badge-warning' : 'badge-danger'}`}>{r.status}</span></td>
+                      <td className="text-xs text-secondary-500">{r.error || '-'}</td>
+                    </tr>
+                  )
+                }
+                if (owner === 'post-interact') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="text-xs max-w-[260px] truncate"><a href={r.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{r.url}</a></td>
+                      <td>{r.liked ? <CheckCircle size={14} className="text-emerald-500" /> : <span className="text-secondary-300">-</span>}</td>
+                      <td>{r.commented ? <CheckCircle size={14} className="text-emerald-500" /> : <span className="text-secondary-300">-</span>}</td>
+                      <td><span className={`badge ${r.status === 'done' ? 'badge-success' : r.status === 'skipped' ? 'badge-warning' : 'badge-danger'}`}>{r.status}</span></td>
+                    </tr>
+                  )
+                }
+                if (owner === 'share-dm') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium">{r.recipient || '-'}</td>
+                      <td><span className={`badge ${r.status === 'queued' ? 'badge-success' : 'badge-danger'}`}>{r.status}</span></td>
+                      <td className="text-xs text-secondary-500">{r.error || '-'}</td>
+                    </tr>
+                  )
+                }
+                if (owner === 'extract-likers' || owner === 'extract-following') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium">{r.username || '-'}</td>
+                      <td className="text-xs">{r.name || '-'}</td>
+                      <td className="text-xs">{r.profile ? <a href={r.profile} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline" dir="ltr">{r.profile.replace('https://instagram.com/', '@')}</a> : '-'}</td>
+                    </tr>
+                  )
+                }
+                if (owner === 'follow-message') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium">{r.username || '-'}</td>
+                      <td>{r.followed ? <CheckCircle size={14} className="text-emerald-500" /> : <span className="text-secondary-300">-</span>}</td>
+                      <td>{r.messaged ? <CheckCircle size={14} className="text-emerald-500" /> : <span className="text-secondary-300">-</span>}</td>
+                      <td><span className={`badge ${r.status === 'sent' ? 'badge-success' : r.status === 'followed-only' ? 'badge-warning' : 'badge-danger'}`}>{r.status}</span></td>
+                    </tr>
+                  )
+                }
                 // broadcast
                 return (
                   <tr key={i}>
@@ -664,11 +914,187 @@ export default function InstagramModule() {
     </button>
   )
 
+  // ----- Unfollow panel -----
+  const renderUnfollowBody = () => (
+    <div className="space-y-5">
+      <div className="p-3 rounded-lg text-xs text-amber-700" style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.3)' }}>
+        <AlertCircle size={14} className="inline ml-1" />
+        إنستجرام يقيّد عمليات إلغاء المتابعة السريعة. ابق الفاصل أكبر من 4 ثوانٍ.
+      </div>
+      <div>
+        <label className="label-field">قائمة الحسابات (سطر لكل حساب)</label>
+        <textarea className="textarea-field" rows={7} value={unfollowList} onChange={e => setUnfollowList(e.target.value)} placeholder="user1&#10;user2" />
+      </div>
+      <div>
+        <label className="label-field">الفاصل الزمني (ثانية)</label>
+        <input type="number" min={1} max={120} className="input-field w-32" value={unfollowDelay} onChange={e => setUnfollowDelay(Number(e.target.value) || 5)} />
+      </div>
+      {renderResultsTable('unfollow', ['#', 'الحساب', 'الحالة', 'خطأ'], 'instagram-unfollow')}
+    </div>
+  )
+  const unfollowFooter = (
+    <button onClick={handleUnfollow} disabled={loading || !unfollowList.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #ef4444, #b91c1c)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><UserMinus size={18} /> إلغاء المتابعة</>}
+    </button>
+  )
+
+  // ----- Post-interact panel -----
+  const renderPostInteractBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">روابط المنشورات (سطر لكل منشور)</label>
+        <textarea className="textarea-field" rows={6} value={interactUrls} onChange={e => setInteractUrls(e.target.value)} placeholder="https://instagram.com/p/..." />
+      </div>
+      <div className="flex items-center gap-6 flex-wrap">
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <input type="checkbox" checked={interactLike} onChange={e => setInteractLike(e.target.checked)} className="rounded" />
+          إعجاب
+        </label>
+        <div className="flex-1">
+          <label className="label-field">تعليق (اختياري - {'{{n}}'} = رقم المنشور)</label>
+          <input type="text" className="input-field" value={interactComment} onChange={e => setInteractComment(e.target.value)} placeholder="رائع! 🎉" />
+        </div>
+      </div>
+      <div>
+        <label className="label-field">الفاصل الزمني (ثانية)</label>
+        <input type="number" min={1} max={60} className="input-field w-32" value={interactDelay} onChange={e => setInteractDelay(Number(e.target.value) || 4)} />
+      </div>
+      {renderResultsTable('post-interact', ['#', 'المنشور', 'إعجاب', 'تعليق', 'الحالة'], 'instagram-interact')}
+    </div>
+  )
+  const postInteractFooter = (
+    <button onClick={handlePostInteract} disabled={loading || !interactUrls.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #22c55e, #15803d)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Heart size={18} /> تنفيذ التفاعل</>}
+    </button>
+  )
+
+  // ----- Share post in DM panel -----
+  const renderShareDMBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">رابط المنشور</label>
+        <input type="url" className="input-field" value={sharePostUrl} onChange={e => setSharePostUrl(e.target.value)} placeholder="https://instagram.com/p/..." />
+      </div>
+      <div>
+        <label className="label-field">قائمة المستلمين (اسم مستخدم لكل سطر)</label>
+        <textarea className="textarea-field" rows={6} value={shareRecipients} onChange={e => setShareRecipients(e.target.value)} placeholder="user1&#10;user2" />
+      </div>
+      <div>
+        <label className="label-field">نص مرفق (اختياري)</label>
+        <textarea className="textarea-field" rows={3} value={shareMessage} onChange={e => setShareMessage(e.target.value)} placeholder="رسالة قصيرة مع المنشور..." />
+      </div>
+      {renderResultsTable('share-dm', ['#', 'المستلم', 'الحالة', 'خطأ'], 'instagram-share-dm')}
+    </div>
+  )
+  const shareDMFooter = (
+    <button onClick={handleShareDM} disabled={loading || !sharePostUrl.trim() || !shareRecipients.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #06b6d4, #0891b2)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Share2 size={18} /> مشاركة المنشور</>}
+    </button>
+  )
+
+  // ----- Extract likers panel -----
+  const renderExtractLikersBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">رابط المنشور</label>
+        <input type="url" className="input-field" value={likersPostUrl} onChange={e => setLikersPostUrl(e.target.value)} placeholder="https://instagram.com/p/..." />
+      </div>
+      <div>
+        <label className="label-field">الحد الأقصى للنتائج: {likersLimit}</label>
+        <input type="range" min={20} max={2000} step={20} className="w-full accent-rose-500" value={likersLimit} onChange={e => setLikersLimit(parseInt(e.target.value))} />
+      </div>
+      {extracting && (
+        <div className="flex items-center gap-2 p-3 bg-rose-50 rounded-lg border border-rose-200">
+          <Loader2 size={16} className="animate-spin text-rose-600" />
+          <span className="text-rose-700 text-sm font-medium">جاري الاستخراج... {streamResults.length} نتيجة حتى الآن</span>
+        </div>
+      )}
+      {renderResultsTable('extract-likers', ['#', 'الحساب', 'الاسم', 'الرابط'], 'instagram-likers')}
+    </div>
+  )
+  const extractLikersFooter = (
+    <div className="flex gap-2">
+      <button onClick={handleExtractLikers} disabled={extracting || !likersPostUrl.trim()} className="btn-primary flex-1" style={{ background: 'linear-gradient(135deg, #f43f5e, #be123c)' }}>
+        {extracting ? <Loader2 size={18} className="animate-spin" /> : <><Heart size={18} /> بدء الاستخراج</>}
+      </button>
+      {extracting && <button onClick={stopExtraction} className="btn-danger"><Square size={18} /> إيقاف</button>}
+    </div>
+  )
+
+  // ----- Extract following panel -----
+  const renderExtractFollowingBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">اسم المستخدم المستهدف</label>
+        <input type="text" className="input-field" value={followingTarget} onChange={e => setFollowingTarget(e.target.value)} placeholder="@username" />
+      </div>
+      <div>
+        <label className="label-field">الحد الأقصى: {followingLimit}</label>
+        <input type="range" min={20} max={2000} step={20} className="w-full accent-purple-500" value={followingLimit} onChange={e => setFollowingLimit(parseInt(e.target.value))} />
+      </div>
+      {extracting && (
+        <div className="flex items-center gap-2 p-3 bg-purple-50 rounded-lg border border-purple-200">
+          <Loader2 size={16} className="animate-spin text-purple-600" />
+          <span className="text-purple-700 text-sm font-medium">جاري الاستخراج... {streamResults.length} نتيجة حتى الآن</span>
+        </div>
+      )}
+      {renderResultsTable('extract-following', ['#', 'الحساب', 'الاسم', 'الرابط'], 'instagram-following')}
+    </div>
+  )
+  const extractFollowingFooter = (
+    <div className="flex gap-2">
+      <button onClick={handleExtractFollowing} disabled={extracting || !followingTarget.trim()} className="btn-primary flex-1" style={{ background: 'linear-gradient(135deg, #a855f7, #7e22ce)' }}>
+        {extracting ? <Loader2 size={18} className="animate-spin" /> : <><UsersRound size={18} /> بدء الاستخراج</>}
+      </button>
+      {extracting && <button onClick={stopExtraction} className="btn-danger"><Square size={18} /> إيقاف</button>}
+    </div>
+  )
+
+  // ----- Follow + message combo panel -----
+  const renderFollowMessageBody = () => (
+    <div className="space-y-5">
+      <div className="p-3 rounded-lg text-xs text-amber-700" style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.3)' }}>
+        <AlertCircle size={14} className="inline ml-1" />
+        ابق الفاصل أكبر من 4 ثوانٍ لتقليل احتمال الحظر التلقائي.
+      </div>
+      <div>
+        <label className="label-field">قائمة الحسابات (سطر لكل حساب)</label>
+        <textarea className="textarea-field" rows={6} value={combinedList} onChange={e => setCombinedList(e.target.value)} placeholder="user1&#10;user2" />
+      </div>
+      <div>
+        <label className="label-field">نص الرسالة</label>
+        <textarea className="textarea-field" rows={4} value={combinedMessage} onChange={e => setCombinedMessage(e.target.value)} placeholder="مرحبًا! ..." />
+      </div>
+      <div className="flex items-center gap-6 flex-wrap">
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <input type="checkbox" checked={combinedFollowFirst} onChange={e => setCombinedFollowFirst(e.target.checked)} className="rounded" />
+          متابعة الحساب أولاً
+        </label>
+        <div>
+          <label className="label-field">الفاصل (ثانية)</label>
+          <input type="number" min={1} max={120} className="input-field w-32" value={combinedDelay} onChange={e => setCombinedDelay(Number(e.target.value) || 5)} />
+        </div>
+      </div>
+      {renderResultsTable('follow-message', ['#', 'الحساب', 'متابعة', 'رسالة', 'الحالة'], 'instagram-follow-msg')}
+    </div>
+  )
+  const followMessageFooter = (
+    <button onClick={handleFollowMessage} disabled={loading || !combinedList.trim() || !combinedMessage.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><MessageCircle size={18} /> متابعة + إرسال</>}
+    </button>
+  )
+
   const panelMap: Record<Exclude<ActiveTool, null>, { body: React.ReactNode; footer: React.ReactNode }> = {
     extract: { body: renderExtractBody(), footer: extractFooter },
+    'extract-likers': { body: renderExtractLikersBody(), footer: extractLikersFooter },
+    'extract-following': { body: renderExtractFollowingBody(), footer: extractFollowingFooter },
     follow: { body: renderFollowBody(), footer: followFooter },
+    unfollow: { body: renderUnfollowBody(), footer: unfollowFooter },
+    'post-interact': { body: renderPostInteractBody(), footer: postInteractFooter },
     mention: { body: renderMentionBody(), footer: mentionFooter },
     broadcast: { body: renderBroadcastBody(), footer: broadcastFooter },
+    'share-dm': { body: renderShareDMBody(), footer: shareDMFooter },
+    'follow-message': { body: renderFollowMessageBody(), footer: followMessageFooter },
   }
 
   return (

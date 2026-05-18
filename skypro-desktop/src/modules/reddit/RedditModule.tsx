@@ -10,13 +10,13 @@ import ToolPanel from '../../components/tools/ToolPanel'
 import {
   LogIn, Search, PenTool,
   AlertCircle, CheckCircle, Loader2, Trash2, FileSpreadsheet, Eye, EyeOff,
-  Users, TrendingUp, Settings, Megaphone, ArrowBigUp, ArrowBigDown,
+  Users, TrendingUp, Settings, Megaphone, ArrowBigUp,
   LogOut, Wrench,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
-type ActiveTool = 'search' | 'publish' | 'vote' | 'more' | null
-type ResultsOwner = 'search' | 'publish' | null
+type ActiveTool = 'search' | 'publish' | 'vote' | 'more' | 'search-communities' | 'join-communities' | null
+type ResultsOwner = 'search' | 'publish' | 'vote' | 'search-communities' | 'join-communities' | null
 
 const ACCENT = '#FF4500'
 const ACCENT_GRADIENT = 'linear-gradient(135deg, #FF4500, #CC3700)'
@@ -39,9 +39,16 @@ export default function RedditModule() {
   const [subreddit, setSubreddit] = useState('')
   const [postTitle, setPostTitle] = useState('')
   const [postContent, setPostContent] = useState('')
-  const [voteType, setVoteType] = useState('up')
   const [voteUrls, setVoteUrls] = useState('')
+  const [voteDelay, setVoteDelay] = useState(3)
   const [toolResults, setToolResults] = useState<any[]>([])
+
+  // --- Search communities ---
+  const [commQuery, setCommQuery] = useState('')
+  const [commLimit, setCommLimit] = useState(30)
+  // --- Join communities ---
+  const [joinList, setJoinList] = useState('')
+  const [joinDelay, setJoinDelay] = useState(3)
 
   const redditAccounts = allAccounts.filter(a => a.platform === 'reddit')
   const ensureSession = () => {
@@ -107,9 +114,69 @@ export default function RedditModule() {
     clearResults()
   }
 
+  const handleUpvote = async () => {
+    if (!ensureSession()) return
+    const urls = voteUrls.split('\n').map(s => s.trim()).filter(Boolean)
+    if (urls.length === 0) { showMsg('أدخل روابط المنشورات', true); return }
+    setLoading(true)
+    setResultsOwner('vote')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.redditUpvote({ sessionId, postUrls: urls, delayMs: Math.max(1, voteDelay) * 1000 })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        const ok = items.filter((r: any) => r.status === 'upvoted').length
+        showMsg(`تم التصويت على ${ok} من ${urls.length} منشور`)
+      } else {
+        showMsg(res.error || 'فشلت العملية', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  const handleSearchCommunities = async () => {
+    if (!ensureSession()) return
+    if (!commQuery.trim()) { showMsg('أدخل الكلمة المفتاحية', true); return }
+    setLoading(true)
+    setResultsOwner('search-communities')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.redditSearchCommunities({ sessionId, query: commQuery.trim(), limit: commLimit })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        showMsg(`تم العثور على ${res.count || items.length} مجتمع`)
+      } else showMsg(res.error || 'فشل البحث', true)
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  const handleJoinCommunities = async () => {
+    if (!ensureSession()) return
+    const subreddits = joinList.split('\n').map(s => s.trim()).filter(Boolean)
+    if (subreddits.length === 0) { showMsg('أدخل قائمة الـ subreddits', true); return }
+    setLoading(true)
+    setResultsOwner('join-communities')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.redditJoinCommunities({ sessionId, subreddits, delayMs: Math.max(1, joinDelay) * 1000 })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        const ok = items.filter((r: any) => r.status === 'joined').length
+        showMsg(`تم الانضمام إلى ${ok} من ${subreddits.length}`)
+      } else {
+        showMsg(res.error || 'فشلت العملية', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
   const stubTools = [
     { id: 'top-growing', name: 'الأكثر نمواً', desc: 'استخراج المواضيع الرائجة', icon: TrendingUp },
-    { id: 'extract-communities', name: 'استخراج المجتمعات', desc: 'قائمة الـ Subreddits', icon: Users },
     { id: 'schedule-posts', name: 'جدولة المنشورات', desc: 'نشر مجدول', icon: PenTool },
     { id: 'auto-comment', name: 'التعليق التلقائي', desc: 'تعليقات تلقائية', icon: Megaphone },
   ]
@@ -124,8 +191,10 @@ export default function RedditModule() {
     requiresSession: boolean
   }> = [
     { id: 'search', name: 'البحث في Reddit', description: 'بحث عن مواضيع ومنشورات', icon: Search, accent: '#FF4500', accentGradient: ACCENT_GRADIENT, requiresSession: true },
+    { id: 'search-communities', name: 'بحث المجتمعات', description: 'استخراج Subreddits بكلمة', icon: Users, accent: '#0ea5e9', accentGradient: 'linear-gradient(135deg, #0ea5e9, #0369a1)', requiresSession: true },
+    { id: 'join-communities', name: 'الانضمام للمجتمعات', description: 'الانضمام لقائمة Subreddits', icon: Users, accent: '#84cc16', accentGradient: 'linear-gradient(135deg, #84cc16, #4d7c0f)', requiresSession: true },
     { id: 'publish', name: 'نشر منشور', description: 'نشر منشور في Subreddit', icon: PenTool, accent: '#8b5cf6', accentGradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', requiresSession: true },
-    { id: 'vote', name: 'تصويت تلقائي', description: 'تصويت على منشورات (قريباً)', icon: ArrowBigUp, accent: '#10b981', accentGradient: 'linear-gradient(135deg, #10b981, #047857)', requiresSession: true },
+    { id: 'vote', name: 'تصويت Upvote', description: 'تصويت Up على عدة منشورات', icon: ArrowBigUp, accent: '#10b981', accentGradient: 'linear-gradient(135deg, #10b981, #047857)', requiresSession: true },
     { id: 'more', name: 'أدوات إضافية', description: 'أدوات قيد التطوير', icon: Settings, accent: '#64748b', accentGradient: 'linear-gradient(135deg, #64748b, #334155)', requiresSession: false },
   ]
 
@@ -321,6 +390,37 @@ export default function RedditModule() {
             <thead><tr>{columns.map((c, i) => <th key={i}>{c}</th>)}</tr></thead>
             <tbody>
               {displayResults.map((r: any, i: number) => {
+                if (owner === 'vote') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="text-xs max-w-[300px] truncate">{r.url ? <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{r.url}</a> : '-'}</td>
+                      <td><span className={`badge ${r.status === 'upvoted' ? 'badge-success' : r.status === 'skipped' ? 'badge-warning' : 'badge-danger'}`}>{r.status}</span></td>
+                      <td className="text-xs text-secondary-500">{r.error || '-'}</td>
+                    </tr>
+                  )
+                }
+                if (owner === 'search-communities') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium" dir="ltr">{r.name || '-'}</td>
+                      <td className="text-xs text-secondary-600">{r.members || '-'}</td>
+                      <td className="text-xs max-w-[260px] truncate">{r.description || '-'}</td>
+                      <td className="text-xs">{r.url ? <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">رابط</a> : '-'}</td>
+                    </tr>
+                  )
+                }
+                if (owner === 'join-communities') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium" dir="ltr">{r.subreddit || '-'}</td>
+                      <td><span className={`badge ${r.status === 'joined' ? 'badge-success' : r.status === 'skipped' ? 'badge-warning' : 'badge-danger'}`}>{r.status}</span></td>
+                      <td className="text-xs text-secondary-500">{r.error || '-'}</td>
+                    </tr>
+                  )
+                }
                 const extra = (() => { try { return JSON.parse(r.extra_data || '{}') } catch { return {} as any } })()
                 const name = r.title || r.name || extra.title || '-'
                 const link = r.link || r.url || extra.link || '-'
@@ -400,34 +500,61 @@ export default function RedditModule() {
 
   const renderVoteBody = () => (
     <div className="space-y-5">
-      <div className="p-3 rounded-lg text-sm" style={{ background: 'rgba(255,69,0,0.06)', border: '1px solid rgba(255,69,0,0.2)', color: '#CC3700' }}>
-        <AlertCircle size={16} className="inline ml-1" /> هذه الخاصية قيد التطوير - ستتوفر قريباً
+      <div>
+        <label className="label-field">روابط المنشورات (سطر لكل رابط)</label>
+        <textarea className="textarea-field" rows={7} placeholder="https://reddit.com/r/..." value={voteUrls} onChange={e => setVoteUrls(e.target.value)} />
       </div>
-      <div className="space-y-4 opacity-60">
-        <div>
-          <label className="label-field">روابط المنشورات (سطر لكل رابط)</label>
-          <textarea className="textarea-field" rows={5} placeholder="https://reddit.com/r/..." value={voteUrls} onChange={e => setVoteUrls(e.target.value)} />
-        </div>
-        <div>
-          <label className="label-field">نوع التصويت</label>
-          <div className="flex gap-4">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="radio" name="voteType" value="up" checked={voteType === 'up'} onChange={e => setVoteType(e.target.value)} className="w-4 h-4" style={{ accentColor: ACCENT }} />
-              <ArrowBigUp size={18} style={{ color: '#FF4500' }} /> Up Vote
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="radio" name="voteType" value="down" checked={voteType === 'down'} onChange={e => setVoteType(e.target.value)} className="w-4 h-4" style={{ accentColor: ACCENT }} />
-              <ArrowBigDown size={18} style={{ color: '#718096' }} /> Down Vote
-            </label>
-          </div>
-        </div>
+      <div>
+        <label className="label-field">الفاصل (ثانية)</label>
+        <input type="number" min={1} max={60} className="input-field w-32" value={voteDelay} onChange={e => setVoteDelay(Number(e.target.value) || 3)} />
       </div>
+      {renderResultsTable('vote', ['#', 'الرابط', 'الحالة', 'خطأ'], 'reddit-upvote')}
     </div>
   )
 
   const voteFooter = (
-    <button disabled className="btn-primary w-full opacity-50 cursor-not-allowed" style={{ background: 'linear-gradient(135deg, #10b981, #047857)' }}>
-      <ArrowBigUp size={18} /> بدء التصويت (قريباً)
+    <button onClick={handleUpvote} disabled={loading || !sessionId || !voteUrls.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #10b981, #047857)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><ArrowBigUp size={18} /> Upvote</>}
+    </button>
+  )
+
+  // ---- Search communities panel ----
+  const renderSearchCommunitiesBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">الكلمة المفتاحية</label>
+        <input type="text" className="input-field" value={commQuery} onChange={e => setCommQuery(e.target.value)} placeholder="marketing, crypto, ecommerce" />
+      </div>
+      <div>
+        <label className="label-field">الحد الأقصى: {commLimit}</label>
+        <input type="range" min={10} max={200} step={5} className="w-full" style={{ accentColor: '#0ea5e9' }} value={commLimit} onChange={e => setCommLimit(parseInt(e.target.value))} />
+      </div>
+      {renderResultsTable('search-communities', ['#', 'الاسم', 'الأعضاء', 'الوصف', 'الرابط'], 'reddit-communities')}
+    </div>
+  )
+  const searchCommunitiesFooter = (
+    <button onClick={handleSearchCommunities} disabled={loading || !sessionId || !commQuery.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #0ea5e9, #0369a1)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Users size={18} /> بحث</>}
+    </button>
+  )
+
+  // ---- Join communities panel ----
+  const renderJoinCommunitiesBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">قائمة الـ Subreddits (سطر لكل اسم)</label>
+        <textarea className="textarea-field" rows={7} value={joinList} onChange={e => setJoinList(e.target.value)} placeholder="r/marketing&#10;r/ecommerce" />
+      </div>
+      <div>
+        <label className="label-field">الفاصل (ثانية)</label>
+        <input type="number" min={1} max={60} className="input-field w-32" value={joinDelay} onChange={e => setJoinDelay(Number(e.target.value) || 3)} />
+      </div>
+      {renderResultsTable('join-communities', ['#', 'Subreddit', 'الحالة', 'خطأ'], 'reddit-joins')}
+    </div>
+  )
+  const joinCommunitiesFooter = (
+    <button onClick={handleJoinCommunities} disabled={loading || !sessionId || !joinList.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #84cc16, #4d7c0f)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Users size={18} /> الانضمام</>}
     </button>
   )
 
@@ -451,6 +578,8 @@ export default function RedditModule() {
 
   const panelMap: Record<Exclude<ActiveTool, null>, { body: React.ReactNode; footer: React.ReactNode }> = {
     search: { body: renderSearchBody(), footer: searchFooter },
+    'search-communities': { body: renderSearchCommunitiesBody(), footer: searchCommunitiesFooter },
+    'join-communities': { body: renderJoinCommunitiesBody(), footer: joinCommunitiesFooter },
     publish: { body: renderPublishBody(), footer: publishFooter },
     vote: { body: renderVoteBody(), footer: voteFooter },
     more: { body: renderMoreBody(), footer: null },

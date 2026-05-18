@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { usePlatform } from '../../hooks/usePlatform'
 import { useAccountsStore } from '../../stores/accountsStore'
 import AccountSelector from '../../components/common/AccountSelector'
@@ -10,11 +10,19 @@ import type { LucideIcon } from 'lucide-react'
 import {
   Filter, Download, Users, Send, Play, AlertCircle, CheckCircle, Loader2,
   Trash2, BarChart3, MessageSquare, FileSpreadsheet, LogIn, LogOut, Wrench,
-  MessageCircle,
+  MessageCircle, Image as ImageIcon, Zap, UserPlus, Contact, FileText, X,
 } from 'lucide-react'
 
-type ActiveTool = 'broadcast' | 'filter' | 'extract' | 'groups' | null
-type ResultsOwner = 'broadcast' | 'filter' | 'extract' | 'groups' | null
+type ActiveTool =
+  | 'broadcast' | 'filter' | 'extract' | 'groups'
+  | 'fast-send' | 'send-media' | 'extract-chats' | 'extract-contacts'
+  | 'extract-group-members' | 'add-to-group' | 'numbers-to-vcf'
+  | null
+type ResultsOwner =
+  | 'broadcast' | 'filter' | 'extract' | 'groups'
+  | 'fast-send' | 'send-media' | 'extract-chats' | 'extract-contacts'
+  | 'extract-group-members' | 'add-to-group'
+  | null
 
 const ACCENT = '#25D366'
 const ACCENT_GRADIENT = 'linear-gradient(135deg, #25D366, #128C7E)'
@@ -39,6 +47,30 @@ export default function WhatsappModule() {
   const [toolResults, setToolResults] = useState<any[]>([])
   const [resultsOwner, setResultsOwner] = useState<ResultsOwner>(null)
   const [proxy, setProxy] = useState('')
+
+  // --- Fast send (uses wa.me deep links) ---
+  const [fastRecipients, setFastRecipients] = useState('')
+  const [fastMessage, setFastMessage] = useState('')
+  const [fastDelay, setFastDelay] = useState(4)
+  // --- Send media (images/videos) ---
+  const [mediaRecipients, setMediaRecipients] = useState('')
+  const [mediaCaption, setMediaCaption] = useState('')
+  const [mediaPaths, setMediaPaths] = useState<string[]>([])
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+  // --- Extract chats / contacts / members ---
+  const [chatsLimit, setChatsLimit] = useState(200)
+  const [chatsIncludeGroups, setChatsIncludeGroups] = useState(true)
+  const [chatsIncludeContacts, setChatsIncludeContacts] = useState(true)
+  const [contactsLimit, setContactsLimit] = useState(500)
+  const [groupMembersName, setGroupMembersName] = useState('')
+  const [groupMembersLimit, setGroupMembersLimit] = useState(500)
+  // --- Add to group ---
+  const [addGroupName, setAddGroupName] = useState('')
+  const [addGroupPhones, setAddGroupPhones] = useState('')
+  const [addGroupDelay, setAddGroupDelay] = useState(3)
+  // --- Numbers to vCard ---
+  const [vcfNumbers, setVcfNumbers] = useState('')
+  const [vcfPrefix, setVcfPrefix] = useState('SkyPro Lead')
 
   const handleLaunch = async () => {
     setLoading(true)
@@ -92,15 +124,22 @@ export default function WhatsappModule() {
     if (!sessionId) { showMsg('افتح WhatsApp أولاً', true); return }
     setLoading(true)
     setResultsOwner('extract')
+    setToolResults([])
     try {
       let res
-      if (extractType === 'groups' || extractType === 'groups-from-search') {
-        res = await window.electronAPI.whatsappExtractGroups({ sessionId })
+      if (extractType === 'chats') {
+        res = await window.electronAPI.whatsappExtractChats({ sessionId, limit: 200, includeGroups: true, includeContacts: true })
+      } else if (extractType === 'analyze-groups') {
+        // Same data source as chats, but only groups — useful for content analysis.
+        res = await window.electronAPI.whatsappExtractChats({ sessionId, limit: 200, includeGroups: true, includeContacts: false })
       } else {
-        res = await window.electronAPI.runTool({ platform: 'whatsapp', toolId: extractType, toolName: 'استخراج واتساب', params: { sessionId } })
+        res = await window.electronAPI.whatsappExtractGroups({ sessionId })
       }
-      if (res.success) { setToolResults((res.data as any[]) || []); showMsg(`تم استخراج ${res.count || ((res.data as any[]) || []).length} نتيجة`); await loadResults() }
-      else showMsg(res.error || 'فشلت العملية', true)
+      if (res.success) {
+        setToolResults((res.data as any[]) || [])
+        showMsg(`تم استخراج ${res.count || ((res.data as any[]) || []).length} نتيجة`)
+        await loadResults()
+      } else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
   }
@@ -126,12 +165,159 @@ export default function WhatsappModule() {
     clearResults()
   }
 
-  const extractTools = [
-    { id: 'groups', name: 'استخراج المجموعات', desc: 'استخراج قائمة المجموعات', icon: Users },
-    { id: 'members-from-links', name: 'استخراج الأعضاء من الروابط', desc: 'قريباً', icon: Download, soon: true },
-    { id: 'members-without-links', name: 'استخراج الأعضاء بدون روابط', desc: 'قريباً', icon: Users, soon: true },
-    { id: 'messengers', name: 'استخراج المراسلين', desc: 'قريباً', icon: MessageSquare, soon: true },
-    { id: 'analyze-groups', name: 'تحليل المجموعات', desc: 'قريباً', icon: BarChart3, soon: true },
+  // ---- Fast send (wa.me deep links) ----
+  const handleFastSend = async () => {
+    if (!sessionId) { showMsg('افتح WhatsApp أولاً', true); return }
+    if (!fastMessage.trim()) { showMsg('أدخل نص الرسالة', true); return }
+    const list = fastRecipients.split('\n').map(s => s.trim()).filter(Boolean)
+    if (list.length === 0) { showMsg('أدخل الأرقام', true); return }
+    setLoading(true)
+    setResultsOwner('fast-send')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.whatsappFastSend({ sessionId, recipients: list, message: fastMessage, delayMs: Math.max(1, fastDelay) * 1000 })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        const sent = items.filter((r: any) => r.status === 'sent').length
+        showMsg(`تم إرسال ${sent} من ${list.length} رسالة`)
+      } else {
+        showMsg(res.error || 'فشل الإرسال', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  // ---- Send media (images / videos) ----
+  const handlePickMedia = () => fileInputRef.current?.click()
+  const handleMediaSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+    // electronAPI exposes a `path` on File via Electron — use that for native send.
+    const paths = Array.from(files).map(f => (f as any).path).filter(Boolean)
+    setMediaPaths(paths)
+    // Reset the input so the same file can be picked again later.
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+  const handleRemoveMedia = (idx: number) => setMediaPaths(prev => prev.filter((_, i) => i !== idx))
+  const handleSendMedia = async () => {
+    if (!sessionId) { showMsg('افتح WhatsApp أولاً', true); return }
+    if (mediaPaths.length === 0) { showMsg('اختر ملف صورة أو فيديو واحدًا على الأقل', true); return }
+    const list = mediaRecipients.split('\n').map(s => s.trim()).filter(Boolean)
+    if (list.length === 0) { showMsg('أدخل الأرقام', true); return }
+    setLoading(true)
+    setResultsOwner('send-media')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.whatsappSendMedia({ sessionId, recipients: list, mediaPaths, caption: mediaCaption })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        const sent = items.filter((r: any) => r.status === 'sent').length
+        showMsg(`تم إرسال الوسائط إلى ${sent} من ${list.length}`)
+      } else {
+        showMsg(res.error || 'فشل الإرسال', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  // ---- Extract chats ----
+  const handleExtractChats = async () => {
+    if (!sessionId) { showMsg('افتح WhatsApp أولاً', true); return }
+    setLoading(true)
+    setResultsOwner('extract-chats')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.whatsappExtractChats({ sessionId, limit: chatsLimit, includeGroups: chatsIncludeGroups, includeContacts: chatsIncludeContacts })
+      if (res.success) {
+        setToolResults((res.data as any[]) || [])
+        showMsg(`تم استخراج ${res.count || 0} محادثة`)
+        await loadResults()
+      } else showMsg(res.error || 'فشل الاستخراج', true)
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  // ---- Extract contacts ----
+  const handleExtractContacts = async () => {
+    if (!sessionId) { showMsg('افتح WhatsApp أولاً', true); return }
+    setLoading(true)
+    setResultsOwner('extract-contacts')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.whatsappExtractContacts({ sessionId, limit: contactsLimit })
+      if (res.success) {
+        setToolResults((res.data as any[]) || [])
+        showMsg(`تم استخراج ${res.count || 0} جهة اتصال`)
+        await loadResults()
+      } else showMsg(res.error || 'فشل الاستخراج', true)
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  // ---- Extract group members ----
+  const handleExtractGroupMembers = async () => {
+    if (!sessionId) { showMsg('افتح WhatsApp أولاً', true); return }
+    if (!groupMembersName.trim()) { showMsg('أدخل اسم المجموعة المراد استخراج أعضائها', true); return }
+    setLoading(true)
+    setResultsOwner('extract-group-members')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.whatsappExtractGroupMembers({ sessionId, groupName: groupMembersName.trim(), limit: groupMembersLimit })
+      if (res.success) {
+        setToolResults((res.data as any[]) || [])
+        showMsg(`تم استخراج ${res.count || 0} عضو`)
+        await loadResults()
+      } else showMsg(res.error || 'فشل الاستخراج', true)
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  // ---- Add numbers to group ----
+  const handleAddToGroup = async () => {
+    if (!sessionId) { showMsg('افتح WhatsApp أولاً', true); return }
+    if (!addGroupName.trim()) { showMsg('أدخل اسم المجموعة', true); return }
+    const phones = addGroupPhones.split('\n').map(s => s.trim()).filter(Boolean)
+    if (phones.length === 0) { showMsg('أدخل الأرقام', true); return }
+    setLoading(true)
+    setResultsOwner('add-to-group')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.whatsappAddToGroup({ sessionId, groupName: addGroupName.trim(), phones, delayMs: Math.max(1, addGroupDelay) * 1000 })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        const added = items.filter((r: any) => r.status === 'added').length
+        showMsg(`تم إضافة ${added} من ${phones.length} رقم`)
+      } else {
+        showMsg(res.error || 'فشلت العملية', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  // ---- Numbers -> vCard ----
+  const handleNumbersToVcf = async () => {
+    const numbers = vcfNumbers.split('\n').map(s => s.trim()).filter(Boolean)
+    if (numbers.length === 0) { showMsg('أدخل الأرقام', true); return }
+    setLoading(true)
+    try {
+      const res = await window.electronAPI.whatsappNumbersToVcf({ numbers, namePrefix: vcfPrefix || 'Lead' })
+      if (res.success) {
+        showMsg(`تم حفظ ${res.data?.count ?? numbers.length} جهة اتصال في: ${res.data?.path ?? ''}`)
+      } else showMsg(res.error || 'فشلت العملية', true)
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  const extractTools: Array<{ id: string; name: string; desc: string; icon: LucideIcon; soon?: boolean }> = [
+    { id: 'groups', name: 'استخراج المجموعات', desc: 'قائمة المجموعات الظاهرة', icon: Users },
+    { id: 'chats', name: 'محادثاتي الحالية', desc: 'المحادثات في القائمة الجانبية', icon: MessageSquare },
+    { id: 'analyze-groups', name: 'تحليل آخر الرسائل', desc: 'عدد + آخر رسالة لكل دردشة', icon: BarChart3 },
   ]
 
   const tools: Array<{
@@ -144,9 +330,16 @@ export default function WhatsappModule() {
     requiresSession: boolean
   }> = [
     { id: 'broadcast', name: 'إرسال رسائل', description: 'بث رسائل لقائمة أرقام', icon: Send, accent: '#25D366', accentGradient: 'linear-gradient(135deg, #25D366, #128C7E)', requiresSession: true },
+    { id: 'fast-send', name: 'إرسال سريع', description: 'بث أسرع عبر روابط wa.me (35/ساعة)', icon: Zap, accent: '#eab308', accentGradient: 'linear-gradient(135deg, #eab308, #ca8a04)', requiresSession: true },
+    { id: 'send-media', name: 'إرسال صور / فيديو', description: 'بث وسائط متعددة مع تعليق', icon: ImageIcon, accent: '#ec4899', accentGradient: 'linear-gradient(135deg, #ec4899, #be185d)', requiresSession: true },
     { id: 'filter', name: 'فلترة الأرقام', description: 'فحص الأرقام الفعالة على واتساب', icon: Filter, accent: '#0ea5e9', accentGradient: 'linear-gradient(135deg, #0ea5e9, #0369a1)', requiresSession: false },
     { id: 'extract', name: 'استخراج البيانات', description: 'استخراج المجموعات والمراسلين', icon: Download, accent: '#8b5cf6', accentGradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', requiresSession: true },
+    { id: 'extract-chats', name: 'استخراج محادثاتي', description: 'استخراج قائمة المحادثات الحالية', icon: MessageSquare, accent: '#06b6d4', accentGradient: 'linear-gradient(135deg, #06b6d4, #0891b2)', requiresSession: true },
+    { id: 'extract-contacts', name: 'استخراج جهات الاتصال', description: 'استخراج كل جهات اتصالك', icon: Contact, accent: '#14b8a6', accentGradient: 'linear-gradient(135deg, #14b8a6, #0d9488)', requiresSession: true },
+    { id: 'extract-group-members', name: 'استخراج أعضاء مجموعة', description: 'استخراج أعضاء مجموعة معينة', icon: Users, accent: '#10b981', accentGradient: 'linear-gradient(135deg, #10b981, #047857)', requiresSession: true },
     { id: 'groups', name: 'النشر في المجموعات', description: 'بث رسالة لقائمة مجموعات', icon: Users, accent: '#f59e0b', accentGradient: 'linear-gradient(135deg, #f59e0b, #d97706)', requiresSession: true },
+    { id: 'add-to-group', name: 'إضافة أرقام لمجموعة', description: 'إضافة قائمة أرقام لمجموعة قائمة', icon: UserPlus, accent: '#84cc16', accentGradient: 'linear-gradient(135deg, #84cc16, #4d7c0f)', requiresSession: true },
+    { id: 'numbers-to-vcf', name: 'تحويل لأرقام لـ vCard', description: 'إنشاء ملف جهات اتصال للهاتف', icon: FileText, accent: '#a855f7', accentGradient: 'linear-gradient(135deg, #a855f7, #7e22ce)', requiresSession: false },
   ]
 
   const currentTool = tools.find(t => t.id === activeTool) ?? null
@@ -289,7 +482,7 @@ export default function WhatsappModule() {
             <thead><tr>{columns.map((c, i) => <th key={i}>{c}</th>)}</tr></thead>
             <tbody>
               {list.map((r: any, i: number) => {
-                if (owner === 'broadcast') {
+                if (owner === 'broadcast' || owner === 'fast-send') {
                   return (
                     <tr key={i}>
                       <td className="text-secondary-500">{i + 1}</td>
@@ -299,11 +492,21 @@ export default function WhatsappModule() {
                     </tr>
                   )
                 }
+                if (owner === 'send-media') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium">{r.recipient || '-'}</td>
+                      <td><span className={`badge ${r.status === 'sent' ? 'badge-success' : 'badge-danger'}`}>{r.status}</span></td>
+                      <td className="text-xs text-secondary-500">{r.mediaCount || r.error || '-'}</td>
+                    </tr>
+                  )
+                }
                 if (owner === 'filter') {
                   return (
                     <tr key={r.id || i}>
                       <td className="text-secondary-500">{i + 1}</td>
-                      <td className="font-medium">{r.name || r.phone || '-'}</td>
+                      <td className="font-medium">{r.name || r.phone || r.number || '-'}</td>
                       <td><span className={`badge ${(r.status || r.extra || '') === 'valid' || (r.status || r.extra || '').includes('نشط') ? 'badge-success' : 'badge-danger'}`}>{r.status || r.extra || 'غير معروف'}</span></td>
                       {showActions && (
                         <td><button onClick={() => r.id && deleteResult(r.id)} className="p-1 text-danger-500 hover:bg-danger-50 rounded"><Trash2 size={14} /></button></td>
@@ -321,7 +524,47 @@ export default function WhatsappModule() {
                     </tr>
                   )
                 }
-                // groups
+                if (owner === 'extract-chats') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium">{r.name || '-'}</td>
+                      <td className="text-xs max-w-[260px] truncate text-secondary-600">{r.lastMessage || '-'}</td>
+                      <td><span className={`badge ${r.type === 'group' ? 'badge-warning' : 'badge-success'}`}>{r.type === 'group' ? 'مجموعة' : 'محادثة'}</span></td>
+                      <td className="text-xs text-secondary-500">{r.time || '-'}</td>
+                    </tr>
+                  )
+                }
+                if (owner === 'extract-contacts') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium">{r.name || '-'}</td>
+                      <td className="text-xs max-w-[300px] truncate text-secondary-600">{r.status || '-'}</td>
+                    </tr>
+                  )
+                }
+                if (owner === 'extract-group-members') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium">{r.name || '-'}</td>
+                      <td dir="ltr" className="text-xs font-mono">{r.phone || '-'}</td>
+                      <td className="text-xs text-secondary-500">{r.status || '-'}</td>
+                    </tr>
+                  )
+                }
+                if (owner === 'add-to-group') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td dir="ltr" className="font-mono text-sm">{r.phone || '-'}</td>
+                      <td><span className={`badge ${r.status === 'added' ? 'badge-success' : 'badge-danger'}`}>{r.status || '-'}</span></td>
+                      <td className="text-xs text-secondary-500">{r.error || '-'}</td>
+                    </tr>
+                  )
+                }
+                // groups (default)
                 return (
                   <tr key={i}>
                     <td className="text-secondary-500">{i + 1}</td>
@@ -401,7 +644,7 @@ export default function WhatsappModule() {
           {extractTools.map(t => <option key={t.id} value={t.id} disabled={t.soon}>{t.name}{t.soon ? ' (قريباً)' : ''}</option>)}
         </select>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {extractTools.map(tool => {
           const isSel = extractType === tool.id
           return (
@@ -458,11 +701,201 @@ export default function WhatsappModule() {
     </button>
   )
 
+  // -------- Fast send panel --------
+  const renderFastSendBody = () => (
+    <div className="space-y-5">
+      <div className="p-3 rounded-lg text-xs text-amber-700" style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.3)' }}>
+        <AlertCircle size={14} className="inline ml-1" />
+        أسرع 2-3 مرات من الإرسال العادي. استخدم دفعات صغيرة (أقل من 50 رقم) لتجنب التقييد.
+      </div>
+      <div>
+        <label className="label-field">الأرقام (سطر لكل رقم)</label>
+        <textarea className="textarea-field" rows={6} value={fastRecipients} onChange={e => setFastRecipients(e.target.value)} placeholder="+2010xxxxxxxx&#10;+9665xxxxxxxx" />
+      </div>
+      <div>
+        <label className="label-field">نص الرسالة</label>
+        <textarea className="textarea-field" rows={3} value={fastMessage} onChange={e => setFastMessage(e.target.value)} placeholder="اكتب رسالتك..." />
+      </div>
+      <div>
+        <label className="label-field">الفاصل الزمني بين الرسائل (ثانية)</label>
+        <input type="number" min={1} max={60} className="input-field w-32" value={fastDelay} onChange={e => setFastDelay(Number(e.target.value) || 4)} />
+      </div>
+      {renderResultsTable('fast-send', ['#', 'المستلم', 'الحالة', 'خطأ'], 'whatsapp-fast')}
+    </div>
+  )
+  const fastSendFooter = (
+    <button onClick={handleFastSend} disabled={loading || !fastMessage.trim()} className="btn-success w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #eab308, #ca8a04)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Zap size={18} /> إرسال سريع</>}
+    </button>
+  )
+
+  // -------- Send media panel --------
+  const renderSendMediaBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">الأرقام (سطر لكل رقم)</label>
+        <textarea className="textarea-field" rows={5} value={mediaRecipients} onChange={e => setMediaRecipients(e.target.value)} placeholder="+2010xxxxxxxx" />
+      </div>
+      <div>
+        <label className="label-field">الوسائط (صور / فيديو)</label>
+        <input ref={fileInputRef} type="file" multiple accept="image/*,video/*" onChange={handleMediaSelected} className="hidden" />
+        <div className="flex flex-wrap gap-2 items-center">
+          <button onClick={handlePickMedia} type="button" className="btn-secondary text-sm">
+            <ImageIcon size={16} /> اختر ملفات
+          </button>
+          {mediaPaths.length === 0 && <span className="text-xs text-secondary-400">لم يتم اختيار أي ملف</span>}
+        </div>
+        {mediaPaths.length > 0 && (
+          <ul className="mt-3 space-y-1.5 text-xs">
+            {mediaPaths.map((p, i) => (
+              <li key={i} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-white/70 border border-secondary-100">
+                <span className="truncate" dir="ltr">{p}</span>
+                <button onClick={() => handleRemoveMedia(i)} className="text-danger-500 p-1 hover:bg-danger-50 rounded" type="button"><X size={14} /></button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      <div>
+        <label className="label-field">تعليق (اختياري)</label>
+        <textarea className="textarea-field" rows={2} value={mediaCaption} onChange={e => setMediaCaption(e.target.value)} placeholder="تعليق يظهر تحت الوسائط..." />
+      </div>
+      {renderResultsTable('send-media', ['#', 'المستلم', 'الحالة', 'تفاصيل'], 'whatsapp-media')}
+    </div>
+  )
+  const sendMediaFooter = (
+    <button onClick={handleSendMedia} disabled={loading || mediaPaths.length === 0} className="btn-success w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #ec4899, #be185d)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Send size={18} /> إرسال الوسائط</>}
+    </button>
+  )
+
+  // -------- Extract chats panel --------
+  const renderExtractChatsBody = () => (
+    <div className="space-y-5">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div>
+          <label className="label-field">الحد الأقصى للنتائج</label>
+          <input type="number" min={20} max={2000} className="input-field" value={chatsLimit} onChange={e => setChatsLimit(Number(e.target.value) || 200)} />
+        </div>
+        <label className="flex items-center gap-2 mt-7 text-sm cursor-pointer">
+          <input type="checkbox" checked={chatsIncludeGroups} onChange={e => setChatsIncludeGroups(e.target.checked)} className="rounded" />
+          تضمين المجموعات
+        </label>
+        <label className="flex items-center gap-2 mt-7 text-sm cursor-pointer">
+          <input type="checkbox" checked={chatsIncludeContacts} onChange={e => setChatsIncludeContacts(e.target.checked)} className="rounded" />
+          تضمين المحادثات الفردية
+        </label>
+      </div>
+      {renderResultsTable('extract-chats', ['#', 'الاسم', 'آخر رسالة', 'النوع', 'الوقت'], 'whatsapp-chats')}
+    </div>
+  )
+  const extractChatsFooter = (
+    <button onClick={handleExtractChats} disabled={loading} className="btn-success w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #06b6d4, #0891b2)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><MessageSquare size={18} /> استخراج المحادثات</>}
+    </button>
+  )
+
+  // -------- Extract contacts panel --------
+  const renderExtractContactsBody = () => (
+    <div className="space-y-5">
+      <div className="p-3 rounded-lg text-xs text-secondary-600" style={{ background: 'rgba(20,184,166,0.05)', border: '1px solid rgba(20,184,166,0.2)' }}>
+        سيتم فتح قائمة "محادثة جديدة" داخل WhatsApp Web واستخراج كل جهات الاتصال المعروضة.
+      </div>
+      <div>
+        <label className="label-field">الحد الأقصى للنتائج</label>
+        <input type="number" min={50} max={5000} className="input-field" value={contactsLimit} onChange={e => setContactsLimit(Number(e.target.value) || 500)} />
+      </div>
+      {renderResultsTable('extract-contacts', ['#', 'الاسم', 'الحالة / آخر ظهور'], 'whatsapp-contacts')}
+    </div>
+  )
+  const extractContactsFooter = (
+    <button onClick={handleExtractContacts} disabled={loading} className="btn-success w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #14b8a6, #0d9488)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Contact size={18} /> استخراج جهات الاتصال</>}
+    </button>
+  )
+
+  // -------- Extract group members panel --------
+  const renderExtractGroupMembersBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">اسم المجموعة</label>
+        <input type="text" className="input-field" value={groupMembersName} onChange={e => setGroupMembersName(e.target.value)} placeholder="اكتب اسم المجموعة كما يظهر في WhatsApp" />
+      </div>
+      <div>
+        <label className="label-field">الحد الأقصى للأعضاء</label>
+        <input type="number" min={50} max={1500} className="input-field" value={groupMembersLimit} onChange={e => setGroupMembersLimit(Number(e.target.value) || 500)} />
+      </div>
+      {renderResultsTable('extract-group-members', ['#', 'الاسم', 'الهاتف', 'الحالة'], 'whatsapp-members')}
+    </div>
+  )
+  const extractGroupMembersFooter = (
+    <button onClick={handleExtractGroupMembers} disabled={loading || !groupMembersName.trim()} className="btn-success w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #10b981, #047857)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Users size={18} /> استخراج الأعضاء</>}
+    </button>
+  )
+
+  // -------- Add to group panel --------
+  const renderAddToGroupBody = () => (
+    <div className="space-y-5">
+      <div className="p-3 rounded-lg text-xs text-amber-700" style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.3)' }}>
+        <AlertCircle size={14} className="inline ml-1" />
+        يتطلب أن تكون مشرف في المجموعة. ستتم إضافة 1 رقم في كل مرة لتجنب التقييد.
+      </div>
+      <div>
+        <label className="label-field">اسم المجموعة</label>
+        <input type="text" className="input-field" value={addGroupName} onChange={e => setAddGroupName(e.target.value)} placeholder="اسم المجموعة في WhatsApp" />
+      </div>
+      <div>
+        <label className="label-field">الأرقام (سطر لكل رقم)</label>
+        <textarea className="textarea-field" rows={6} value={addGroupPhones} onChange={e => setAddGroupPhones(e.target.value)} placeholder="+2010xxxxxxxx" />
+      </div>
+      <div>
+        <label className="label-field">الفاصل الزمني (ثانية)</label>
+        <input type="number" min={1} max={60} className="input-field w-32" value={addGroupDelay} onChange={e => setAddGroupDelay(Number(e.target.value) || 3)} />
+      </div>
+      {renderResultsTable('add-to-group', ['#', 'الرقم', 'الحالة', 'خطأ'], 'whatsapp-add-group')}
+    </div>
+  )
+  const addToGroupFooter = (
+    <button onClick={handleAddToGroup} disabled={loading || !addGroupName.trim()} className="btn-success w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #84cc16, #4d7c0f)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><UserPlus size={18} /> إضافة للمجموعة</>}
+    </button>
+  )
+
+  // -------- Numbers to vCard panel --------
+  const renderNumbersToVcfBody = () => (
+    <div className="space-y-5">
+      <div className="p-3 rounded-lg text-xs text-secondary-600" style={{ background: 'rgba(168,85,247,0.05)', border: '1px solid rgba(168,85,247,0.2)' }}>
+        أنشئ ملف <code>.vcf</code> من أرقامك، استورده على الهاتف وستظهر الأرقام مباشرة كجهات اتصال في WhatsApp.
+      </div>
+      <div>
+        <label className="label-field">الأرقام (سطر لكل رقم)</label>
+        <textarea className="textarea-field" rows={8} value={vcfNumbers} onChange={e => setVcfNumbers(e.target.value)} placeholder="+2010xxxxxxxx" />
+      </div>
+      <div>
+        <label className="label-field">بادئة الاسم</label>
+        <input type="text" className="input-field" value={vcfPrefix} onChange={e => setVcfPrefix(e.target.value)} placeholder="SkyPro Lead" />
+      </div>
+    </div>
+  )
+  const numbersToVcfFooter = (
+    <button onClick={handleNumbersToVcf} disabled={loading || !vcfNumbers.trim()} className="btn-success w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #a855f7, #7e22ce)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><FileText size={18} /> إنشاء ملف vCard</>}
+    </button>
+  )
+
   const panelMap: Record<Exclude<ActiveTool, null>, { body: React.ReactNode; footer: React.ReactNode }> = {
     broadcast: { body: renderBroadcastBody(), footer: broadcastFooter },
+    'fast-send': { body: renderFastSendBody(), footer: fastSendFooter },
+    'send-media': { body: renderSendMediaBody(), footer: sendMediaFooter },
     filter: { body: renderFilterBody(), footer: filterFooter },
     extract: { body: renderExtractBody(), footer: extractFooter },
+    'extract-chats': { body: renderExtractChatsBody(), footer: extractChatsFooter },
+    'extract-contacts': { body: renderExtractContactsBody(), footer: extractContactsFooter },
+    'extract-group-members': { body: renderExtractGroupMembersBody(), footer: extractGroupMembersFooter },
     groups: { body: renderGroupsBody(), footer: groupsFooter },
+    'add-to-group': { body: renderAddToGroupBody(), footer: addToGroupFooter },
+    'numbers-to-vcf': { body: renderNumbersToVcfBody(), footer: numbersToVcfFooter },
   }
 
   return (

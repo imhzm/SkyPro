@@ -66,6 +66,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   whatsappSendMessages: (data) => ipcRenderer.invoke('whatsapp-send-messages', data),
   whatsappExtractGroups: (data) => ipcRenderer.invoke('whatsapp-extract-groups', data),
   whatsappFilterNumbers: (data) => ipcRenderer.invoke('whatsapp-filter-numbers', data),
+  whatsappSendMedia: (data) => ipcRenderer.invoke('whatsapp-send-media', data),
+  whatsappExtractChats: (data) => ipcRenderer.invoke('whatsapp-extract-chats', data),
+  whatsappExtractContacts: (data) => ipcRenderer.invoke('whatsapp-extract-contacts', data),
+  whatsappExtractGroupMembers: (data) => ipcRenderer.invoke('whatsapp-extract-group-members', data),
+  whatsappAddToGroup: (data) => ipcRenderer.invoke('whatsapp-add-to-group', data),
+  whatsappNumbersToVcf: (data) => ipcRenderer.invoke('whatsapp-numbers-to-vcf', data),
+  whatsappFastSend: (data) => ipcRenderer.invoke('whatsapp-fast-send', data),
 
   // Instagram
   instagramLogin: (data) => ipcRenderer.invoke('instagram-login', data),
@@ -74,6 +81,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   instagramExtractComments: (data) => ipcRenderer.invoke('instagram-extract-comments', data),
   instagramSendMessages: (data) => ipcRenderer.invoke('instagram-send-messages', data),
   instagramExtractHashtag: (data) => ipcRenderer.invoke('instagram-extract-hashtag', data),
+  instagramUnfollow: (data) => ipcRenderer.invoke('instagram-unfollow', data),
+  instagramPostInteract: (data) => ipcRenderer.invoke('instagram-post-interact', data),
+  instagramSharePostDM: (data) => ipcRenderer.invoke('instagram-share-post-dm', data),
+  instagramExtractLikers: (data) => ipcRenderer.invoke('instagram-extract-likers', data),
+  instagramExtractFollowing: (data) => ipcRenderer.invoke('instagram-extract-following', data),
+  instagramFollowMessage: (data) => ipcRenderer.invoke('instagram-follow-message', data),
 
   // Twitter
   twitterLogin: (data) => ipcRenderer.invoke('twitter-login', data),
@@ -82,12 +95,22 @@ contextBridge.exposeInMainWorld('electronAPI', {
   twitterScheduleTweet: (data) => ipcRenderer.invoke('twitter-schedule-tweet', data),
   twitterFollow: (data) => ipcRenderer.invoke('twitter-follow', data),
   twitterRetweet: (data) => ipcRenderer.invoke('twitter-retweet', data),
+  twitterSearchTweets: (data) => ipcRenderer.invoke('twitter-search-tweets', data),
+  twitterExtractTweetLikers: (data) => ipcRenderer.invoke('twitter-extract-tweet-likers', data),
+  twitterExtractTrends: (data) => ipcRenderer.invoke('twitter-extract-trends', data),
+  twitterLikeTweets: (data) => ipcRenderer.invoke('twitter-like-tweets', data),
+  twitterReplyTweets: (data) => ipcRenderer.invoke('twitter-reply-tweets', data),
 
   // LinkedIn
   linkedinLogin: (data) => ipcRenderer.invoke('linkedin-login', data),
   linkedinSearch: (data) => ipcRenderer.invoke('linkedin-search', data),
   linkedinExtractCompanies: (data) => ipcRenderer.invoke('linkedin-extract-companies', data),
   linkedinSendMessages: (data) => ipcRenderer.invoke('linkedin-send-messages', data),
+  linkedinExtractPeople: (data) => ipcRenderer.invoke('linkedin-extract-people', data),
+  linkedinConnectRequests: (data) => ipcRenderer.invoke('linkedin-connect-requests', data),
+  linkedinFollowCompanies: (data) => ipcRenderer.invoke('linkedin-follow-companies', data),
+  linkedinPostFeed: (data) => ipcRenderer.invoke('linkedin-post-feed', data),
+  linkedinJoinGroups: (data) => ipcRenderer.invoke('linkedin-join-groups', data),
 
   // Telegram
   telegramLogin: (data) => ipcRenderer.invoke('telegram-login', data),
@@ -95,6 +118,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   telegramSendMessages: (data) => ipcRenderer.invoke('telegram-send-messages', data),
   telegramExtractMembers: (data) => ipcRenderer.invoke('telegram-extract-members', data),
   telegramAddUsers: (data) => ipcRenderer.invoke('telegram-add-users', data),
+  telegramExtractDialogs: (data) => ipcRenderer.invoke('telegram-extract-dialogs', data),
+  telegramExtractContacts: (data) => ipcRenderer.invoke('telegram-extract-contacts', data),
+  telegramSearchPublic: (data) => ipcRenderer.invoke('telegram-search-public', data),
+  telegramJoinGroups: (data) => ipcRenderer.invoke('telegram-join-groups', data),
+  telegramSendToGroups: (data) => ipcRenderer.invoke('telegram-send-to-groups', data),
 
   // TikTok
   tiktokExtractComments: (data) => ipcRenderer.invoke('tiktok-extract-comments', data),
@@ -104,6 +132,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   pinterestLogin: (data) => ipcRenderer.invoke('pinterest-login', data),
   pinterestSearch: (data) => ipcRenderer.invoke('pinterest-search', data),
   pinterestExtract: (data) => ipcRenderer.invoke('pinterest-extract', data),
+  pinterestFollowUsers: (data) => ipcRenderer.invoke('pinterest-follow-users', data),
+  pinterestExtractHashtag: (data) => ipcRenderer.invoke('pinterest-extract-hashtag', data),
 
   // Threads
   threadsLogin: (data) => ipcRenderer.invoke('threads-login', data),
@@ -114,6 +144,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   redditLogin: (data) => ipcRenderer.invoke('reddit-login', data),
   redditSearch: (data) => ipcRenderer.invoke('reddit-search', data),
   redditPublish: (data) => ipcRenderer.invoke('reddit-publish', data),
+  redditSearchCommunities: (data) => ipcRenderer.invoke('reddit-search-communities', data),
+  redditJoinCommunities: (data) => ipcRenderer.invoke('reddit-join-communities', data),
+  redditUpvote: (data) => ipcRenderer.invoke('reddit-upvote', data),
 
   // Snapchat
   snapchatLogin: (data) => ipcRenderer.invoke('snapchat-login', data),
