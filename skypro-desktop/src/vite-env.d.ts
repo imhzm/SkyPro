@@ -271,6 +271,13 @@ declare global {
       whatsappSendMessages: (data: MessageParams) => Promise<IpcResult>
       whatsappExtractGroups: (data: ExtractionParams) => Promise<ExtractionResult>
       whatsappFilterNumbers: (data: Record<string, unknown>) => Promise<IpcResult>
+      whatsappSendMedia: (data: { sessionId: string; recipients: string[]; mediaPaths: string[]; caption?: string; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>
+      whatsappExtractChats: (data: { sessionId: string; limit?: number; includeGroups?: boolean; includeContacts?: boolean }) => Promise<ExtractionResult>
+      whatsappExtractContacts: (data: { sessionId: string; limit?: number }) => Promise<ExtractionResult>
+      whatsappExtractGroupMembers: (data: { sessionId: string; groupName?: string; limit?: number }) => Promise<ExtractionResult>
+      whatsappAddToGroup: (data: { sessionId: string; groupName: string; phones: string[]; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>
+      whatsappNumbersToVcf: (data: { numbers: string[]; namePrefix?: string; savePath?: string }) => Promise<IpcResult<{ path: string; count: number }>>
+      whatsappFastSend: (data: { sessionId: string; recipients: string[]; message: string; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>
 
       // Instagram
       instagramLogin: (data: PlatformLoginParams) => Promise<LoginResult>
@@ -279,6 +286,12 @@ declare global {
       instagramExtractComments: (data: ExtractionParams) => Promise<ExtractionResult>
       instagramSendMessages: (data: MessageParams) => Promise<IpcResult>
       instagramExtractHashtag: (data: Record<string, unknown>) => Promise<ExtractionResult>
+      instagramUnfollow: (data: { sessionId: string; usernames: string[]; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>
+      instagramPostInteract: (data: { sessionId: string; postUrls: string[]; actions: { like?: boolean; comment?: string }; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>
+      instagramSharePostDM: (data: { sessionId: string; postUrl: string; recipients: string[]; message?: string; jobId?: string }) => Promise<ExtractionResult>
+      instagramExtractLikers: (data: { sessionId: string; postUrl: string; limit?: number; jobId?: string; delayMs?: number }) => Promise<ExtractionResult>
+      instagramExtractFollowing: (data: { sessionId: string; targetUser: string; limit?: number; jobId?: string; delayMs?: number }) => Promise<ExtractionResult>
+      instagramFollowMessage: (data: { sessionId: string; usernames: string[]; message: string; followFirst?: boolean; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>
 
       // Twitter
       twitterLogin: (data: PlatformLoginParams) => Promise<LoginResult>
@@ -287,12 +300,22 @@ declare global {
       twitterScheduleTweet: (data: Record<string, unknown>) => Promise<IpcResult>
       twitterFollow: (data: Record<string, unknown>) => Promise<IpcResult>
       twitterRetweet: (data: Record<string, unknown>) => Promise<IpcResult>
+      twitterSearchTweets: (data: { sessionId: string; query: string; tab?: 'top' | 'latest'; limit?: number; jobId?: string; delayMs?: number }) => Promise<ExtractionResult>
+      twitterExtractTweetLikers: (data: { sessionId: string; tweetUrl: string; limit?: number; jobId?: string; delayMs?: number }) => Promise<ExtractionResult>
+      twitterExtractTrends: (data: { sessionId: string; woeid?: number | string; limit?: number }) => Promise<ExtractionResult>
+      twitterLikeTweets: (data: { sessionId: string; tweetUrls: string[]; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>
+      twitterReplyTweets: (data: { sessionId: string; tweetUrls: string[]; message: string; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>
 
       // LinkedIn
       linkedinLogin: (data: PlatformLoginParams) => Promise<LoginResult>
       linkedinSearch: (data: PlatformSearchParams) => Promise<ExtractionResult>
       linkedinExtractCompanies: (data: ExtractionParams) => Promise<ExtractionResult>
       linkedinSendMessages: (data: MessageParams) => Promise<IpcResult>
+      linkedinExtractPeople: (data: { sessionId: string; query: string; limit?: number; jobId?: string; delayMs?: number }) => Promise<ExtractionResult>
+      linkedinConnectRequests: (data: { sessionId: string; profiles: string[]; note?: string; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>
+      linkedinFollowCompanies: (data: { sessionId: string; companies: string[]; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>
+      linkedinPostFeed: (data: { sessionId: string; content: string }) => Promise<IpcResult>
+      linkedinJoinGroups: (data: { sessionId: string; groupUrls: string[]; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>
 
       // Telegram
       telegramLogin: (data: PlatformLoginParams) => Promise<LoginResult>
@@ -300,6 +323,11 @@ declare global {
       telegramSendMessages: (data: MessageParams) => Promise<IpcResult>
       telegramExtractMembers: (data: ExtractionParams) => Promise<ExtractionResult>
       telegramAddUsers: (data: Record<string, unknown>) => Promise<IpcResult>
+      telegramExtractDialogs: (data: { sessionId: string; limit?: number; filter?: 'all' | 'chat' | 'group' | 'channel' | 'bot' }) => Promise<ExtractionResult>
+      telegramExtractContacts: (data: { sessionId: string; limit?: number }) => Promise<ExtractionResult>
+      telegramSearchPublic: (data: { sessionId: string; query: string; type?: 'all' | 'group' | 'channel' | 'bot'; limit?: number }) => Promise<ExtractionResult>
+      telegramJoinGroups: (data: { sessionId: string; groups: string[]; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>
+      telegramSendToGroups: (data: { sessionId: string; groups: string[]; message: string; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>
 
       // TikTok
       tiktokExtractComments: (data: ExtractionParams) => Promise<ExtractionResult>
@@ -309,6 +337,8 @@ declare global {
       pinterestLogin: (data: PlatformLoginParams) => Promise<LoginResult>
       pinterestSearch: (data: PlatformSearchParams) => Promise<ExtractionResult>
       pinterestExtract: (data: ExtractionParams) => Promise<ExtractionResult>
+      pinterestFollowUsers: (data: { sessionId: string; usernames: string[]; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>
+      pinterestExtractHashtag: (data: { sessionId: string; keyword: string; limit?: number }) => Promise<ExtractionResult>
 
       // Threads
       threadsLogin: (data: PlatformLoginParams) => Promise<LoginResult>
@@ -323,6 +353,9 @@ declare global {
       redditLogin: (data: PlatformLoginParams) => Promise<LoginResult>
       redditSearch: (data: PlatformSearchParams) => Promise<ExtractionResult>
       redditPublish: (data: Record<string, unknown>) => Promise<IpcResult>
+      redditSearchCommunities: (data: { sessionId: string; query: string; limit?: number }) => Promise<ExtractionResult>
+      redditJoinCommunities: (data: { sessionId: string; subreddits: string[]; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>
+      redditUpvote: (data: { sessionId: string; postUrls: string[]; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>
 
       // Google
       googleMapsExtract: (data: Record<string, unknown>) => Promise<ExtractionResult>

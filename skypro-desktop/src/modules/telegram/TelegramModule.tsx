@@ -9,12 +9,19 @@ import ToolPanel from '../../components/tools/ToolPanel'
 import type { LucideIcon } from 'lucide-react'
 import {
   LogIn, Download, Send, UserPlus, AlertCircle, CheckCircle, Loader2,
-  Trash2, FileSpreadsheet, Users, MessageSquare, BarChart3, Link2,
-  Shield, Settings, Megaphone, Globe, Phone, KeyRound, LogOut, Wrench,
+  Trash2, FileSpreadsheet, Users, MessageSquare,
+  Shield, Settings, Megaphone, Phone, KeyRound, LogOut, Wrench,
+  Contact, Search,
 } from 'lucide-react'
 
-type ActiveTool = 'extract' | 'broadcast' | 'add' | 'tools' | null
-type ResultsOwner = 'extract' | 'broadcast' | 'add' | null
+type ActiveTool =
+  | 'extract' | 'broadcast' | 'add' | 'tools'
+  | 'extract-dialogs' | 'extract-contacts' | 'search-public' | 'join-groups' | 'send-to-groups'
+  | null
+type ResultsOwner =
+  | 'extract' | 'broadcast' | 'add'
+  | 'extract-dialogs' | 'extract-contacts' | 'search-public' | 'join-groups' | 'send-to-groups'
+  | null
 
 const ACCENT = '#0088CC'
 const ACCENT_GRADIENT = 'linear-gradient(135deg, #0088CC, #006699)'
@@ -42,6 +49,22 @@ export default function TelegramModule() {
   const [addUsersText, setAddUsersText] = useState('')
   const [toolResults, setToolResults] = useState<any[]>([])
   const [resultsOwner, setResultsOwner] = useState<ResultsOwner>(null)
+
+  // --- Extract dialogs / contacts ---
+  const [dialogsLimit, setDialogsLimit] = useState(300)
+  const [dialogsFilter, setDialogsFilter] = useState<'all' | 'chat' | 'group' | 'channel' | 'bot'>('all')
+  const [contactsLimit, setContactsLimit] = useState(1000)
+  // --- Search public ---
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchType, setSearchType] = useState<'all' | 'group' | 'channel' | 'bot'>('all')
+  const [searchLimit, setSearchLimit] = useState(50)
+  // --- Join groups ---
+  const [joinList, setJoinList] = useState('')
+  const [joinDelay, setJoinDelay] = useState(4)
+  // --- Send to groups ---
+  const [sendToGroupsList, setSendToGroupsList] = useState('')
+  const [sendToGroupsMessage, setSendToGroupsMessage] = useState('')
+  const [sendToGroupsDelay, setSendToGroupsDelay] = useState(5)
 
   const telegramAccounts = accounts.filter((a: any) => a.platform === 'telegram')
   const ensureSession = () => {
@@ -123,19 +146,112 @@ export default function TelegramModule() {
     clearResults()
   }
 
+  // ---- Extract dialogs ----
+  const handleExtractDialogs = async () => {
+    if (!ensureSession()) return
+    setLoading(true)
+    setResultsOwner('extract-dialogs')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.telegramExtractDialogs({ sessionId, limit: dialogsLimit, filter: dialogsFilter })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        showMsg(`تم استخراج ${res.count || items.length} محادثة`)
+        await loadResults()
+      } else showMsg(res.error || 'فشل الاستخراج', true)
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  // ---- Extract contacts ----
+  const handleExtractContacts = async () => {
+    if (!ensureSession()) return
+    setLoading(true)
+    setResultsOwner('extract-contacts')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.telegramExtractContacts({ sessionId, limit: contactsLimit })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        showMsg(`تم استخراج ${res.count || items.length} جهة اتصال`)
+        await loadResults()
+      } else showMsg(res.error || 'فشل الاستخراج', true)
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  // ---- Search public groups/channels ----
+  const handleSearchPublic = async () => {
+    if (!ensureSession()) return
+    if (!searchQuery.trim()) { showMsg('أدخل الكلمة المفتاحية', true); return }
+    setLoading(true)
+    setResultsOwner('search-public')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.telegramSearchPublic({ sessionId, query: searchQuery.trim(), type: searchType, limit: searchLimit })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        showMsg(`تم العثور على ${res.count || items.length} نتيجة`)
+        await loadResults()
+      } else showMsg(res.error || 'فشل البحث', true)
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  // ---- Join groups ----
+  const handleJoinGroups = async () => {
+    if (!ensureSession()) return
+    const groups = joinList.split('\n').map(s => s.trim()).filter(Boolean)
+    if (groups.length === 0) { showMsg('أدخل قائمة المجموعات', true); return }
+    setLoading(true)
+    setResultsOwner('join-groups')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.telegramJoinGroups({ sessionId, groups, delayMs: Math.max(1, joinDelay) * 1000 })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        const ok = items.filter((r: any) => r.status === 'joined').length
+        showMsg(`تم الانضمام إلى ${ok} من ${groups.length} مجموعة`)
+      } else {
+        showMsg(res.error || 'فشلت العملية', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  // ---- Send to multiple groups ----
+  const handleSendToGroups = async () => {
+    if (!ensureSession()) return
+    const groups = sendToGroupsList.split('\n').map(s => s.trim()).filter(Boolean)
+    if (groups.length === 0) { showMsg('أدخل قائمة المجموعات', true); return }
+    if (!sendToGroupsMessage.trim()) { showMsg('أدخل نص الرسالة', true); return }
+    setLoading(true)
+    setResultsOwner('send-to-groups')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.telegramSendToGroups({ sessionId, groups, message: sendToGroupsMessage, delayMs: Math.max(1, sendToGroupsDelay) * 1000 })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        const ok = items.filter((r: any) => r.status === 'sent').length
+        showMsg(`تم إرسال الرسالة لـ ${ok} من ${groups.length} مجموعة`)
+      } else {
+        showMsg(res.error || 'فشلت العملية', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
   const toolStubTools = [
-    { id: 'join-groups', name: 'الانضمام للمجموعات', desc: 'انضمام تلقائي للمجموعات', icon: Users },
-    { id: 'post-to-groups', name: 'النشر في المجموعات', desc: 'نشر تلقائي', icon: Megaphone },
     { id: 'enable-2fa', name: 'تفعيل المصادقة الثنائية', desc: 'حماية الحساب', icon: Shield },
     { id: 'change-account-data', name: 'تغيير بيانات الحساب', desc: 'تعديل بيانات الحساب', icon: Settings },
     { id: 'schedule-messages', name: 'جدولة الرسائل', desc: 'إرسال مجدول', icon: Send },
-  ]
-
-  const extractStubTools = [
-    { id: 'extract-channels', name: 'استخراج القنوات', desc: 'استخراج قنوات تليجرام', icon: Globe },
-    { id: 'extract-links', name: 'استخراج الروابط', desc: 'روابط المجموعات والقنوات', icon: Link2 },
-    { id: 'extract-messengers', name: 'استخراج المراسلين', desc: 'جهات الاتصال', icon: MessageSquare },
-    { id: 'analyze-groups', name: 'تحليل المجموعات', desc: 'تحليل بيانات المجموعات', icon: BarChart3 },
   ]
 
   const tools: Array<{
@@ -147,10 +263,15 @@ export default function TelegramModule() {
     accentGradient: string
     requiresSession: boolean
   }> = [
-    { id: 'extract', name: 'استخراج الأعضاء', description: 'استخراج أعضاء المجموعات', icon: Download, accent: '#0088CC', accentGradient: 'linear-gradient(135deg, #0088CC, #006699)', requiresSession: true },
+    { id: 'extract', name: 'استخراج الأعضاء', description: 'أعضاء مجموعة معينة', icon: Download, accent: '#0088CC', accentGradient: 'linear-gradient(135deg, #0088CC, #006699)', requiresSession: true },
+    { id: 'extract-dialogs', name: 'استخراج محادثاتي', description: 'القنوات والمجموعات في حسابك', icon: MessageSquare, accent: '#06b6d4', accentGradient: 'linear-gradient(135deg, #06b6d4, #0891b2)', requiresSession: true },
+    { id: 'extract-contacts', name: 'استخراج جهات الاتصال', description: 'استخراج كل جهات اتصالك', icon: Contact, accent: '#14b8a6', accentGradient: 'linear-gradient(135deg, #14b8a6, #0d9488)', requiresSession: true },
+    { id: 'search-public', name: 'بحث المجموعات والقنوات', description: 'بحث عام بكلمة مفتاحية', icon: Search, accent: '#a855f7', accentGradient: 'linear-gradient(135deg, #a855f7, #7e22ce)', requiresSession: true },
+    { id: 'join-groups', name: 'الانضمام للمجموعات', description: 'انضمام جماعي لقائمة', icon: Users, accent: '#84cc16', accentGradient: 'linear-gradient(135deg, #84cc16, #4d7c0f)', requiresSession: true },
     { id: 'broadcast', name: 'إرسال رسائل', description: 'بث رسائل لقائمة مستخدمين', icon: Send, accent: '#10b981', accentGradient: 'linear-gradient(135deg, #10b981, #047857)', requiresSession: true },
+    { id: 'send-to-groups', name: 'إرسال للمجموعات', description: 'إرسال رسالة لعدة مجموعات', icon: Megaphone, accent: '#f59e0b', accentGradient: 'linear-gradient(135deg, #f59e0b, #d97706)', requiresSession: true },
     { id: 'add', name: 'إضافة أعضاء', description: 'إضافة مستخدمين لمجموعة', icon: UserPlus, accent: '#8b5cf6', accentGradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', requiresSession: true },
-    { id: 'tools', name: 'أدوات إضافية', description: 'مجموعات، 2FA، جدولة (قريباً)', icon: Settings, accent: '#f59e0b', accentGradient: 'linear-gradient(135deg, #f59e0b, #d97706)', requiresSession: false },
+    { id: 'tools', name: 'إعدادات الحساب', description: '2FA، تغيير البيانات، جدولة', icon: Settings, accent: '#ef4444', accentGradient: 'linear-gradient(135deg, #ef4444, #b91c1c)', requiresSession: false },
   ]
 
   const currentTool = tools.find(t => t.id === activeTool) ?? null
@@ -353,6 +474,58 @@ export default function TelegramModule() {
                     </tr>
                   )
                 }
+                if (owner === 'extract-dialogs') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium">{r.name || '-'}</td>
+                      <td><span className={`badge ${r.type === 'channel' ? 'badge-warning' : r.type === 'group' ? 'badge-success' : r.type === 'bot' ? 'badge-danger' : 'badge-info'}`}>{r.type}</span></td>
+                      <td className="text-xs max-w-[260px] truncate text-secondary-600">{r.lastMessage || '-'}</td>
+                      <td className="text-xs text-secondary-500">{r.time || '-'}</td>
+                    </tr>
+                  )
+                }
+                if (owner === 'extract-contacts') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium">{r.name || '-'}</td>
+                      <td dir="ltr" className="text-xs font-mono">{r.phone || '-'}</td>
+                      <td className="text-xs text-secondary-500">{r.status || '-'}</td>
+                    </tr>
+                  )
+                }
+                if (owner === 'search-public') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium">{r.name || '-'}</td>
+                      <td><span className={`badge ${r.type === 'channel' ? 'badge-warning' : r.type === 'group' ? 'badge-success' : 'badge-info'}`}>{r.type}</span></td>
+                      <td className="text-xs max-w-[280px] truncate text-secondary-600">{r.subtitle || '-'}</td>
+                      <td className="text-xs">{r.url ? <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">رابط</a> : '-'}</td>
+                    </tr>
+                  )
+                }
+                if (owner === 'join-groups') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium" dir="ltr">{r.group || '-'}</td>
+                      <td><span className={`badge ${r.status === 'joined' ? 'badge-success' : r.status === 'skipped' ? 'badge-warning' : 'badge-danger'}`}>{r.status}</span></td>
+                      <td className="text-xs text-secondary-500">{r.error || '-'}</td>
+                    </tr>
+                  )
+                }
+                if (owner === 'send-to-groups') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium" dir="ltr">{r.group || '-'}</td>
+                      <td><span className={`badge ${r.status === 'sent' ? 'badge-success' : 'badge-danger'}`}>{r.status}</span></td>
+                      <td className="text-xs text-secondary-500">{r.error || '-'}</td>
+                    </tr>
+                  )
+                }
                 // add
                 return (
                   <tr key={i}>
@@ -389,21 +562,6 @@ export default function TelegramModule() {
       <div>
         <label className="label-field">الحد الأقصى: {extractLimit}</label>
         <input type="range" min="10" max="500" value={extractLimit} onChange={e => setExtractLimit(parseInt(e.target.value))} className="w-full" style={{ accentColor: '#0088cc' }} />
-      </div>
-
-      <div>
-        <p className="text-xs text-secondary-500 mb-2">أدوات استخراج إضافية (قريباً):</p>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          {extractStubTools.map(t => (
-            <div key={t.id} className="rounded-xl border border-secondary-200 bg-white/60 p-3 text-center opacity-60 relative">
-              <span className="absolute top-1 left-1 text-[9px] bg-secondary-200 text-secondary-600 px-1.5 py-0.5 rounded font-medium">قريباً</span>
-              <div className="w-9 h-9 rounded-xl mx-auto flex items-center justify-center" style={{ background: 'rgba(0,136,204,0.08)' }}>
-                <t.icon size={18} style={{ color: '#0088cc' }} />
-              </div>
-              <p className="text-[10px] font-bold text-secondary-700 mt-2">{t.name}</p>
-            </div>
-          ))}
-        </div>
       </div>
 
       {renderResultsTable('extract', ['#', 'الاسم', 'المعرف', 'الرابط', 'المصدر', 'التاريخ', ''], 'telegram-members', true)}
@@ -491,9 +649,136 @@ export default function TelegramModule() {
 
   const toolsFooter = null
 
+  // ---- Extract dialogs (my chats) panel ----
+  const renderExtractDialogsBody = () => (
+    <div className="space-y-5">
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="label-field">الحد الأقصى: {dialogsLimit}</label>
+          <input type="range" min={20} max={2000} step={10} className="w-full" style={{ accentColor: '#06b6d4' }} value={dialogsLimit} onChange={e => setDialogsLimit(parseInt(e.target.value))} />
+        </div>
+        <div>
+          <label className="label-field">الفلتر</label>
+          <select className="select-field" value={dialogsFilter} onChange={e => setDialogsFilter(e.target.value as any)}>
+            <option value="all">كل المحادثات</option>
+            <option value="chat">دردشات فردية</option>
+            <option value="group">مجموعات</option>
+            <option value="channel">قنوات</option>
+            <option value="bot">بوتات</option>
+          </select>
+        </div>
+      </div>
+      {renderResultsTable('extract-dialogs', ['#', 'الاسم', 'النوع', 'آخر رسالة', 'الوقت'], 'telegram-dialogs')}
+    </div>
+  )
+  const extractDialogsFooter = (
+    <button onClick={handleExtractDialogs} disabled={loading} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #06b6d4, #0891b2)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><MessageSquare size={18} /> استخراج المحادثات</>}
+    </button>
+  )
+
+  // ---- Extract contacts panel ----
+  const renderExtractContactsBody = () => (
+    <div className="space-y-5">
+      <div className="p-3 rounded-lg text-xs text-secondary-600" style={{ background: 'rgba(20,184,166,0.05)', border: '1px solid rgba(20,184,166,0.2)' }}>
+        سيتم فتح قائمة جهات الاتصال من القائمة الجانبية واستخراج كل الأرقام المحفوظة.
+      </div>
+      <div>
+        <label className="label-field">الحد الأقصى: {contactsLimit}</label>
+        <input type="range" min={50} max={5000} step={50} className="w-full" style={{ accentColor: '#14b8a6' }} value={contactsLimit} onChange={e => setContactsLimit(parseInt(e.target.value))} />
+      </div>
+      {renderResultsTable('extract-contacts', ['#', 'الاسم', 'الهاتف', 'الحالة'], 'telegram-contacts')}
+    </div>
+  )
+  const extractContactsFooter = (
+    <button onClick={handleExtractContacts} disabled={loading} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #14b8a6, #0d9488)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Contact size={18} /> استخراج جهات الاتصال</>}
+    </button>
+  )
+
+  // ---- Search public groups/channels panel ----
+  const renderSearchPublicBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">الكلمة المفتاحية</label>
+        <input type="text" className="input-field" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="مثال: تسويق، crypto، @username" />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="label-field">النوع</label>
+          <select className="select-field" value={searchType} onChange={e => setSearchType(e.target.value as any)}>
+            <option value="all">الكل</option>
+            <option value="group">مجموعات فقط</option>
+            <option value="channel">قنوات فقط</option>
+            <option value="bot">بوتات فقط</option>
+          </select>
+        </div>
+        <div>
+          <label className="label-field">الحد الأقصى: {searchLimit}</label>
+          <input type="range" min={10} max={300} step={10} className="w-full" style={{ accentColor: '#a855f7' }} value={searchLimit} onChange={e => setSearchLimit(parseInt(e.target.value))} />
+        </div>
+      </div>
+      {renderResultsTable('search-public', ['#', 'الاسم', 'النوع', 'التفاصيل', 'الرابط'], 'telegram-search')}
+    </div>
+  )
+  const searchPublicFooter = (
+    <button onClick={handleSearchPublic} disabled={loading || !searchQuery.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #a855f7, #7e22ce)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Search size={18} /> بحث</>}
+    </button>
+  )
+
+  // ---- Join groups panel ----
+  const renderJoinGroupsBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">قائمة المجموعات / القنوات (سطر لكل عنصر)</label>
+        <textarea className="textarea-field" rows={7} value={joinList} onChange={e => setJoinList(e.target.value)} placeholder="@channel_name&#10;https://t.me/groupname&#10;@bot_name" />
+      </div>
+      <div>
+        <label className="label-field">الفاصل (ثانية)</label>
+        <input type="number" min={2} max={60} className="input-field w-32" value={joinDelay} onChange={e => setJoinDelay(Number(e.target.value) || 4)} />
+      </div>
+      {renderResultsTable('join-groups', ['#', 'المجموعة', 'الحالة', 'خطأ'], 'telegram-join')}
+    </div>
+  )
+  const joinGroupsFooter = (
+    <button onClick={handleJoinGroups} disabled={loading || !joinList.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #84cc16, #4d7c0f)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Users size={18} /> الانضمام</>}
+    </button>
+  )
+
+  // ---- Send to groups panel ----
+  const renderSendToGroupsBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">قائمة المجموعات / القنوات (سطر لكل عنصر)</label>
+        <textarea className="textarea-field" rows={5} value={sendToGroupsList} onChange={e => setSendToGroupsList(e.target.value)} placeholder="@channel_name&#10;https://t.me/groupname" />
+      </div>
+      <div>
+        <label className="label-field">نص الرسالة ({'{{n}}'} = رقم المجموعة)</label>
+        <textarea className="textarea-field" rows={4} value={sendToGroupsMessage} onChange={e => setSendToGroupsMessage(e.target.value)} placeholder="اكتب رسالتك هنا..." />
+      </div>
+      <div>
+        <label className="label-field">الفاصل (ثانية)</label>
+        <input type="number" min={2} max={120} className="input-field w-32" value={sendToGroupsDelay} onChange={e => setSendToGroupsDelay(Number(e.target.value) || 5)} />
+      </div>
+      {renderResultsTable('send-to-groups', ['#', 'المجموعة', 'الحالة', 'خطأ'], 'telegram-group-send')}
+    </div>
+  )
+  const sendToGroupsFooter = (
+    <button onClick={handleSendToGroups} disabled={loading || !sendToGroupsList.trim() || !sendToGroupsMessage.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Megaphone size={18} /> إرسال</>}
+    </button>
+  )
+
   const panelMap: Record<Exclude<ActiveTool, null>, { body: React.ReactNode; footer: React.ReactNode }> = {
     extract: { body: renderExtractBody(), footer: extractFooter },
+    'extract-dialogs': { body: renderExtractDialogsBody(), footer: extractDialogsFooter },
+    'extract-contacts': { body: renderExtractContactsBody(), footer: extractContactsFooter },
+    'search-public': { body: renderSearchPublicBody(), footer: searchPublicFooter },
+    'join-groups': { body: renderJoinGroupsBody(), footer: joinGroupsFooter },
     broadcast: { body: renderBroadcastBody(), footer: broadcastFooter },
+    'send-to-groups': { body: renderSendToGroupsBody(), footer: sendToGroupsFooter },
     add: { body: renderAddBody(), footer: addFooter },
     tools: { body: renderToolsBody(), footer: toolsFooter },
   }

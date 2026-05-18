@@ -12,10 +12,17 @@ import {
   LogIn, Download, Calendar, AtSign, Send, UserPlus, Megaphone, Repeat,
   Play, AlertCircle, CheckCircle, Loader2, Trash2, FileSpreadsheet,
   Eye, EyeOff, LogOut, Wrench, Twitter as TwitterIcon,
+  Search, Heart, TrendingUp, MessageCircle,
 } from 'lucide-react'
 
-type ActiveTool = 'extract' | 'follow' | 'retweet' | 'mention' | 'broadcast' | 'schedule' | null
-type ResultsOwner = 'extract' | 'follow' | 'retweet' | 'mention' | 'broadcast' | null
+type ActiveTool =
+  | 'extract' | 'follow' | 'retweet' | 'mention' | 'broadcast' | 'schedule'
+  | 'search-tweets' | 'extract-likers' | 'trends' | 'like-tweets' | 'reply-tweets'
+  | null
+type ResultsOwner =
+  | 'extract' | 'follow' | 'retweet' | 'mention' | 'broadcast'
+  | 'search-tweets' | 'extract-likers' | 'trends' | 'like-tweets' | 'reply-tweets'
+  | null
 
 const ACCENT = '#1DA1F2'
 const ACCENT_GRADIENT = 'linear-gradient(135deg, #1DA1F2, #1A91DA)'
@@ -47,6 +54,24 @@ export default function TwitterModule() {
   const [broadcastText, setBroadcastText] = useState('')
   const [followList, setFollowList] = useState('')
   const [retweetUrls, setRetweetUrls] = useState('')
+
+  // --- Search tweets ---
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchTab, setSearchTab] = useState<'top' | 'latest'>('latest')
+  const [searchLimit, setSearchLimit] = useState(100)
+  // --- Extract tweet likers ---
+  const [likersTweetUrl, setLikersTweetUrl] = useState('')
+  const [likersLimit, setLikersLimit] = useState(200)
+  // --- Trends ---
+  const [trendsWoeid, setTrendsWoeid] = useState('') // empty = home trends
+  const [trendsLimit, setTrendsLimit] = useState(50)
+  // --- Like tweets ---
+  const [likeUrls, setLikeUrls] = useState('')
+  const [likeDelay, setLikeDelay] = useState(3)
+  // --- Reply to tweets ---
+  const [replyUrls, setReplyUrls] = useState('')
+  const [replyMessage, setReplyMessage] = useState('')
+  const [replyDelay, setReplyDelay] = useState(4)
 
   const twitterAccounts = allAccounts.filter(a => a.platform === 'twitter')
   const ensureSession = () => {
@@ -177,6 +202,114 @@ export default function TwitterModule() {
     clearResults()
   }
 
+  // ---- Search tweets ----
+  const handleSearchTweets = async () => {
+    if (!ensureSession()) return
+    if (!searchQuery.trim()) { showMsg('أدخل الكلمة المفتاحية أو الهاشتاج', true); return }
+    setLoading(true)
+    setResultsOwner('search-tweets')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.twitterSearchTweets({ sessionId, query: searchQuery.trim(), tab: searchTab, limit: searchLimit })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        showMsg(`تم العثور على ${res.count || items.length} تغريدة`)
+        await loadResults()
+      } else {
+        showMsg(res.error || 'فشل البحث', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  // ---- Extract tweet likers ----
+  const handleExtractLikers = async () => {
+    if (!ensureSession()) return
+    if (!likersTweetUrl.trim()) { showMsg('أدخل رابط التغريدة', true); return }
+    setLoading(true)
+    setResultsOwner('extract-likers')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.twitterExtractTweetLikers({ sessionId, tweetUrl: likersTweetUrl.trim(), limit: likersLimit })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        showMsg(`تم استخراج ${res.count || items.length} معجب`)
+        await loadResults()
+      } else {
+        showMsg(res.error || 'فشل الاستخراج', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  // ---- Extract trends ----
+  const handleExtractTrends = async () => {
+    if (!ensureSession()) return
+    setLoading(true)
+    setResultsOwner('trends')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.twitterExtractTrends({ sessionId, woeid: trendsWoeid || undefined, limit: trendsLimit })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        showMsg(`تم استخراج ${res.count || items.length} ترند`)
+      } else showMsg(res.error || 'فشل الاستخراج', true)
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  // ---- Like tweets ----
+  const handleLikeTweets = async () => {
+    if (!ensureSession()) return
+    const urls = likeUrls.split('\n').map(s => s.trim()).filter(Boolean)
+    if (urls.length === 0) { showMsg('أدخل روابط التغريدات', true); return }
+    setLoading(true)
+    setResultsOwner('like-tweets')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.twitterLikeTweets({ sessionId, tweetUrls: urls, delayMs: Math.max(1, likeDelay) * 1000 })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        const ok = items.filter((r: any) => r.status === 'liked').length
+        showMsg(`تم الإعجاب بـ ${ok} من ${urls.length}`)
+      } else {
+        showMsg(res.error || 'فشلت العملية', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  // ---- Reply to tweets ----
+  const handleReplyTweets = async () => {
+    if (!ensureSession()) return
+    const urls = replyUrls.split('\n').map(s => s.trim()).filter(Boolean)
+    if (urls.length === 0) { showMsg('أدخل روابط التغريدات', true); return }
+    if (!replyMessage.trim()) { showMsg('أدخل نص الرد', true); return }
+    setLoading(true)
+    setResultsOwner('reply-tweets')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.twitterReplyTweets({ sessionId, tweetUrls: urls, message: replyMessage, delayMs: Math.max(1, replyDelay) * 1000 })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        const ok = items.filter((r: any) => r.status === 'replied').length
+        showMsg(`تم الرد على ${ok} من ${urls.length}`)
+      } else {
+        showMsg(res.error || 'فشلت العملية', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
   const tools: Array<{
     id: Exclude<ActiveTool, null>
     name: string
@@ -186,10 +319,15 @@ export default function TwitterModule() {
     accentGradient: string
     requiresSession: boolean
   }> = [
-    { id: 'extract', name: 'استخراج المتابعين', description: 'استخراج قائمة المتابعين والمعلومات', icon: Download, accent: '#1DA1F2', accentGradient: 'linear-gradient(135deg, #1DA1F2, #1A91DA)', requiresSession: true },
-    { id: 'follow', name: 'متابعة تلقائية', description: 'متابعة قائمة حسابات بشكل آمن', icon: UserPlus, accent: '#8b5cf6', accentGradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', requiresSession: true },
+    { id: 'extract', name: 'استخراج المتابعين', description: 'استخراج قائمة المتابعين', icon: Download, accent: '#1DA1F2', accentGradient: 'linear-gradient(135deg, #1DA1F2, #1A91DA)', requiresSession: true },
+    { id: 'search-tweets', name: 'البحث عن تغريدات', description: 'بحث بالكلمات أو الهاشتاجات', icon: Search, accent: '#06b6d4', accentGradient: 'linear-gradient(135deg, #06b6d4, #0891b2)', requiresSession: true },
+    { id: 'extract-likers', name: 'استخراج المعجبين', description: 'استخراج معجبين تغريدة معينة', icon: Heart, accent: '#f43f5e', accentGradient: 'linear-gradient(135deg, #f43f5e, #be123c)', requiresSession: true },
+    { id: 'trends', name: 'الترندات', description: 'الترندات الحالية حسب الموقع', icon: TrendingUp, accent: '#a855f7', accentGradient: 'linear-gradient(135deg, #a855f7, #7e22ce)', requiresSession: true },
+    { id: 'follow', name: 'متابعة تلقائية', description: 'متابعة قائمة حسابات', icon: UserPlus, accent: '#8b5cf6', accentGradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', requiresSession: true },
+    { id: 'like-tweets', name: 'إعجاب بالتغريدات', description: 'إعجاب بقائمة تغريدات', icon: Heart, accent: '#22c55e', accentGradient: 'linear-gradient(135deg, #22c55e, #15803d)', requiresSession: true },
     { id: 'retweet', name: 'إعادة تغريد', description: 'ريتويت قائمة تغريدات', icon: Repeat, accent: '#10b981', accentGradient: 'linear-gradient(135deg, #10b981, #047857)', requiresSession: true },
-    { id: 'mention', name: 'منشن جماعي', description: 'منشن مستخدمين في تغريدة معينة', icon: AtSign, accent: '#0ea5e9', accentGradient: 'linear-gradient(135deg, #0ea5e9, #0369a1)', requiresSession: true },
+    { id: 'reply-tweets', name: 'الرد على تغريدات', description: 'الرد بتعليق موحد على عدة تغريدات', icon: MessageCircle, accent: '#84cc16', accentGradient: 'linear-gradient(135deg, #84cc16, #4d7c0f)', requiresSession: true },
+    { id: 'mention', name: 'منشن جماعي', description: 'منشن مستخدمين في تغريدة', icon: AtSign, accent: '#0ea5e9', accentGradient: 'linear-gradient(135deg, #0ea5e9, #0369a1)', requiresSession: true },
     { id: 'broadcast', name: 'نشر تغريدة', description: 'نشر تغريدة جديدة الآن', icon: Megaphone, accent: '#f59e0b', accentGradient: 'linear-gradient(135deg, #f59e0b, #d97706)', requiresSession: true },
     { id: 'schedule', name: 'جدولة تغريدة', description: 'جدولة تغريدة لموعد لاحق', icon: Calendar, accent: '#ef4444', accentGradient: 'linear-gradient(135deg, #ef4444, #b91c1c)', requiresSession: true },
   ]
@@ -457,6 +595,56 @@ export default function TwitterModule() {
                     </tr>
                   )
                 }
+                if (owner === 'search-tweets') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium">{r.username || '-'}</td>
+                      <td className="text-xs max-w-[300px] truncate text-secondary-700">{r.text || '-'}</td>
+                      <td className="text-xs">{r.url ? <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">رابط</a> : '-'}</td>
+                      <td className="text-xs text-secondary-500">{r.time || '-'}</td>
+                    </tr>
+                  )
+                }
+                if (owner === 'extract-likers') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium">{r.username || '-'}</td>
+                      <td className="text-xs">{r.name || '-'}</td>
+                      <td className="text-xs">{r.profile ? <a href={r.profile} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline" dir="ltr">{r.profile.replace('https://x.com/', '@')}</a> : '-'}</td>
+                    </tr>
+                  )
+                }
+                if (owner === 'trends') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium">{r.title || '-'}</td>
+                      <td className="text-xs text-secondary-600">{r.category || '-'}</td>
+                      <td className="text-xs">{r.count || '-'}</td>
+                    </tr>
+                  )
+                }
+                if (owner === 'like-tweets') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="text-xs max-w-[300px] truncate"><a href={r.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{r.url}</a></td>
+                      <td><span className={`badge ${r.status === 'liked' ? 'badge-success' : r.status === 'skipped' ? 'badge-warning' : 'badge-danger'}`}>{r.status}</span></td>
+                    </tr>
+                  )
+                }
+                if (owner === 'reply-tweets') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="text-xs max-w-[260px] truncate"><a href={r.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{r.url}</a></td>
+                      <td><span className={`badge ${r.status === 'replied' ? 'badge-success' : 'badge-danger'}`}>{r.status}</span></td>
+                      <td className="text-xs text-secondary-500">{r.error || '-'}</td>
+                    </tr>
+                  )
+                }
                 // broadcast
                 return (
                   <tr key={i}>
@@ -625,10 +813,126 @@ export default function TwitterModule() {
     </button>
   )
 
+  // ---- Search tweets panel ----
+  const renderSearchTweetsBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">الكلمة المفتاحية أو الهاشتاج</label>
+        <input type="text" className="input-field" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder='مثال: "تسويق إلكتروني" أو #ecommerce' />
+      </div>
+      <div className="flex gap-3 flex-wrap">
+        <button type="button" onClick={() => setSearchTab('latest')} className="px-4 py-2 rounded-lg text-sm font-medium" style={searchTab === 'latest' ? { background: 'rgba(6,182,212,0.12)', color: '#06b6d4', border: '1px solid #06b6d4' } : { background: 'white', color: '#475569', border: '1px solid #e2e8f0' }}>الأحدث</button>
+        <button type="button" onClick={() => setSearchTab('top')} className="px-4 py-2 rounded-lg text-sm font-medium" style={searchTab === 'top' ? { background: 'rgba(6,182,212,0.12)', color: '#06b6d4', border: '1px solid #06b6d4' } : { background: 'white', color: '#475569', border: '1px solid #e2e8f0' }}>الأشهر</button>
+      </div>
+      <div>
+        <label className="label-field">الحد الأقصى: {searchLimit}</label>
+        <input type="range" min={20} max={1000} step={10} className="w-full accent-cyan-500" value={searchLimit} onChange={e => setSearchLimit(parseInt(e.target.value))} />
+      </div>
+      {renderResultsTable('search-tweets', ['#', 'المستخدم', 'النص', 'الرابط', 'الوقت'], 'twitter-search')}
+    </div>
+  )
+  const searchTweetsFooter = (
+    <button onClick={handleSearchTweets} disabled={loading || !searchQuery.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #06b6d4, #0891b2)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Search size={18} /> بدء البحث</>}
+    </button>
+  )
+
+  // ---- Extract tweet likers panel ----
+  const renderExtractLikersBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">رابط التغريدة</label>
+        <input type="url" className="input-field" value={likersTweetUrl} onChange={e => setLikersTweetUrl(e.target.value)} placeholder="https://x.com/user/status/..." />
+      </div>
+      <div>
+        <label className="label-field">الحد الأقصى: {likersLimit}</label>
+        <input type="range" min={20} max={2000} step={20} className="w-full accent-rose-500" value={likersLimit} onChange={e => setLikersLimit(parseInt(e.target.value))} />
+      </div>
+      {renderResultsTable('extract-likers', ['#', 'الحساب', 'الاسم', 'الرابط'], 'twitter-likers')}
+    </div>
+  )
+  const extractLikersFooter = (
+    <button onClick={handleExtractLikers} disabled={loading || !likersTweetUrl.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #f43f5e, #be123c)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Heart size={18} /> استخراج المعجبين</>}
+    </button>
+  )
+
+  // ---- Trends panel ----
+  const renderTrendsBody = () => (
+    <div className="space-y-5">
+      <div className="p-3 rounded-lg text-xs text-secondary-600" style={{ background: 'rgba(168,85,247,0.05)', border: '1px solid rgba(168,85,247,0.2)' }}>
+        اترك الحقل فارغاً للحصول على ترندات حسابك أو أدخل WOEID لدولة معينة (مثال: 23424938 للسعودية، 23424802 لمصر، 1 العالم).
+      </div>
+      <div>
+        <label className="label-field">WOEID (اختياري)</label>
+        <input type="text" dir="ltr" className="input-field font-mono" value={trendsWoeid} onChange={e => setTrendsWoeid(e.target.value)} placeholder="23424938" />
+      </div>
+      <div>
+        <label className="label-field">الحد الأقصى: {trendsLimit}</label>
+        <input type="range" min={10} max={100} step={5} className="w-full accent-purple-500" value={trendsLimit} onChange={e => setTrendsLimit(parseInt(e.target.value))} />
+      </div>
+      {renderResultsTable('trends', ['#', 'الترند', 'الفئة', 'العدد'], 'twitter-trends')}
+    </div>
+  )
+  const trendsFooter = (
+    <button onClick={handleExtractTrends} disabled={loading} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #a855f7, #7e22ce)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><TrendingUp size={18} /> استخراج الترندات</>}
+    </button>
+  )
+
+  // ---- Like tweets panel ----
+  const renderLikeTweetsBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">روابط التغريدات (سطر لكل رابط)</label>
+        <textarea className="textarea-field" rows={7} value={likeUrls} onChange={e => setLikeUrls(e.target.value)} placeholder="https://x.com/user/status/..." />
+      </div>
+      <div>
+        <label className="label-field">الفاصل (ثانية)</label>
+        <input type="number" min={1} max={60} className="input-field w-32" value={likeDelay} onChange={e => setLikeDelay(Number(e.target.value) || 3)} />
+      </div>
+      {renderResultsTable('like-tweets', ['#', 'الرابط', 'الحالة'], 'twitter-like')}
+    </div>
+  )
+  const likeTweetsFooter = (
+    <button onClick={handleLikeTweets} disabled={loading || !likeUrls.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #22c55e, #15803d)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Heart size={18} /> إعجاب</>}
+    </button>
+  )
+
+  // ---- Reply tweets panel ----
+  const renderReplyTweetsBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">روابط التغريدات (سطر لكل رابط)</label>
+        <textarea className="textarea-field" rows={5} value={replyUrls} onChange={e => setReplyUrls(e.target.value)} placeholder="https://x.com/user/status/..." />
+      </div>
+      <div>
+        <label className="label-field">نص الرد ({'{{n}}'} = رقم التغريدة)</label>
+        <textarea className="textarea-field" rows={4} value={replyMessage} onChange={e => setReplyMessage(e.target.value)} placeholder="رد رائع! 👏" />
+      </div>
+      <div>
+        <label className="label-field">الفاصل (ثانية)</label>
+        <input type="number" min={1} max={60} className="input-field w-32" value={replyDelay} onChange={e => setReplyDelay(Number(e.target.value) || 4)} />
+      </div>
+      {renderResultsTable('reply-tweets', ['#', 'الرابط', 'الحالة', 'خطأ'], 'twitter-reply')}
+    </div>
+  )
+  const replyTweetsFooter = (
+    <button onClick={handleReplyTweets} disabled={loading || !replyUrls.trim() || !replyMessage.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #84cc16, #4d7c0f)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><MessageCircle size={18} /> إرسال الردود</>}
+    </button>
+  )
+
   const panelMap: Record<Exclude<ActiveTool, null>, { body: React.ReactNode; footer: React.ReactNode }> = {
     extract: { body: renderExtractBody(), footer: extractFooter },
+    'search-tweets': { body: renderSearchTweetsBody(), footer: searchTweetsFooter },
+    'extract-likers': { body: renderExtractLikersBody(), footer: extractLikersFooter },
+    trends: { body: renderTrendsBody(), footer: trendsFooter },
     follow: { body: renderFollowBody(), footer: followFooter },
+    'like-tweets': { body: renderLikeTweetsBody(), footer: likeTweetsFooter },
     retweet: { body: renderRetweetBody(), footer: retweetFooter },
+    'reply-tweets': { body: renderReplyTweetsBody(), footer: replyTweetsFooter },
     mention: { body: renderMentionBody(), footer: mentionFooter },
     broadcast: { body: renderBroadcastBody(), footer: broadcastFooter },
     schedule: { body: renderScheduleBody(), footer: scheduleFooter },
