@@ -1,7 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAccountsStore } from '../../stores/accountsStore'
 import { getPlatformGradient } from '../../data/platformGradients'
-import { Users, Plus, Trash2, Edit3, Save, X, Search, Facebook, MessageCircle, Instagram, Twitter, Linkedin, Send, Globe, AtSign, Bookmark, Eye, EyeOff, CheckCircle, AlertCircle, Shield } from 'lucide-react'
+import {
+  Users, Plus, Trash2, Edit3, Save, X, Search,
+  Facebook, MessageCircle, Instagram, Twitter, Linkedin, Send,
+  Globe, AtSign, Bookmark, Eye, EyeOff, CheckCircle, AlertCircle, Shield,
+} from 'lucide-react'
 import ModuleHeader from '../../components/common/ModuleHeader'
 
 const PLATFORMS = [
@@ -18,91 +22,159 @@ const PLATFORMS = [
   { id: 'reddit', label: 'Reddit', icon: Globe },
 ]
 
+interface FormState {
+  platform: string
+  username: string
+  password: string
+  proxy: string
+  notes: string
+  status: 'active' | 'inactive'
+}
+
+const EMPTY_FORM: FormState = {
+  platform: 'facebook',
+  username: '',
+  password: '',
+  proxy: '',
+  notes: '',
+  status: 'active',
+}
+
 export default function AccountsModule() {
   const { accounts, loadAccounts, addAccount, updateAccount, deleteAccount } = useAccountsStore()
   const [filterPlatform, setFilterPlatform] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
-
-  const [form, setForm] = useState({
-    platform: 'facebook',
-    username: '',
-    password: '',
-    proxy: '',
-    notes: '',
-    status: 'active',
-  })
-
+  const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [showPassword, setShowPassword] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null)
 
-  const showMsg = (msg: string, isError = false) => {
-    if (isError) { setError(msg); setMessage('') } else { setMessage(msg); setError('') }
-    setTimeout(() => { setMessage(''); setError('') }, 5000)
-  }
+  const showMsg = useCallback((msg: string, isError = false) => {
+    if (isError) { setError(msg); setMessage('') }
+    else { setMessage(msg); setError('') }
+    window.setTimeout(() => { setMessage(''); setError('') }, 5000)
+  }, [])
 
   useEffect(() => { loadAccounts() }, [loadAccounts])
 
-  const filtered = accounts.filter(a => {
-    const matchPlatform = !filterPlatform || a.platform === filterPlatform
-    const matchSearch = !searchQuery || a.username.toLowerCase().includes(searchQuery.toLowerCase()) || (a.notes || '').toLowerCase().includes(searchQuery.toLowerCase())
-    return matchPlatform && matchSearch
-  })
+  // Reset delete-confirm after 4s of inactivity so it doesn't stick forever.
+  useEffect(() => {
+    if (deleteConfirmId === null) return
+    const id = window.setTimeout(() => setDeleteConfirmId(null), 4000)
+    return () => window.clearTimeout(id)
+  }, [deleteConfirmId])
 
-  const handleSave = async () => {
-    if (!form.username) {
+  const filtered = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase()
+    return accounts.filter((a) => {
+      if (filterPlatform && a.platform !== filterPlatform) return false
+      if (!q) return true
+      return (
+        a.username.toLowerCase().includes(q) ||
+        (a.notes || '').toLowerCase().includes(q)
+      )
+    })
+  }, [accounts, filterPlatform, searchQuery])
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault()
+    const username = form.username.trim()
+    if (!username) {
       showMsg('يرجى إدخال اسم المستخدم', true)
       return
     }
-    const payload = { ...form }
-    if (editingId && !payload.password) {
-      delete (payload as Record<string, unknown>).password
-    }
+    setSaving(true)
     try {
+      const payload = {
+        platform: form.platform,
+        username,
+        password: form.password,
+        proxy: form.proxy,
+        notes: form.notes,
+        status: form.status,
+      }
       if (editingId) {
         await updateAccount(editingId, payload)
+        showMsg('تم تحديث الحساب بنجاح ✓')
       } else {
         await addAccount(payload)
+        showMsg(`تم حفظ الحساب "${username}" بنجاح ✓`)
       }
-      showMsg('تم الحفظ بنجاح!')
-    } catch (err: any) {
-      showMsg(err.message || 'خطأ غير معروف', true)
+      setForm(EMPTY_FORM)
+      setEditingId(null)
+      setShowForm(false)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'خطأ غير معروف أثناء الحفظ'
+      // Show the actual error so the user knows WHY it failed (was hidden before).
+      showMsg(`فشل الحفظ: ${msg}`, true)
+      console.error('Save account failed:', err)
+    } finally {
+      setSaving(false)
     }
-    setForm({ platform: 'facebook', username: '', password: '', proxy: '', notes: '', status: 'active' })
-    setEditingId(null)
-    setShowForm(false)
   }
 
   const handleEdit = (acc: { id: number; platform: string; username: string; password?: string; proxy?: string; notes?: string; status: string }) => {
     setForm({
-      platform: acc.platform,
-      username: acc.username,
+      platform: acc.platform || 'facebook',
+      username: acc.username || '',
+      // Pre-fill password from store (kept by normalizeAccount); if it's
+      // unset, the placeholder tells the user it stays unchanged.
       password: acc.password || '',
       proxy: acc.proxy || '',
       notes: acc.notes || '',
-      status: acc.status,
+      status: (acc.status === 'inactive' ? 'inactive' : 'active'),
     })
     setEditingId(acc.id)
     setShowForm(true)
+    setError('')
+    setMessage('')
+    // Bring the form into view since it's at the top of the page.
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null)
-
-  const handleDelete = async (id: number) => {
-    if (deleteConfirmId !== id) { setDeleteConfirmId(id); return }
-    await deleteAccount(id)
+  const handleDelete = async (acc: { id: number; username: string }) => {
+    // First click: ask for confirmation.
+    if (deleteConfirmId !== acc.id) {
+      setDeleteConfirmId(acc.id)
+      showMsg(`اضغط مرة أخرى لتأكيد حذف "${acc.username}"`, false)
+      return
+    }
+    // Second click within 4s: actually delete.
     setDeleteConfirmId(null)
-    showMsg('تم حذف الحساب')
+    try {
+      await deleteAccount(acc.id)
+      showMsg(`تم حذف "${acc.username}" ✓`)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'خطأ غير معروف'
+      showMsg(`فشل الحذف: ${msg}`, true)
+    }
   }
 
-  const platformInfo = (pid: string) => PLATFORMS.find(p => p.id === pid) || { id: pid, label: pid, icon: Globe }
+  const platformInfo = (pid: string) => PLATFORMS.find((p) => p.id === pid) || { id: pid, label: pid, icon: Globe }
+
+  const startAdd = () => {
+    setForm(EMPTY_FORM)
+    setEditingId(null)
+    setShowForm(true)
+    setError('')
+    setMessage('')
+  }
 
   return (
     <div className="space-y-6">
       {(message || error) && (
-        <div className="flex items-center gap-3 p-4 rounded-xl text-sm font-medium" style={message ? { background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', color: '#16a34a' } : { background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#dc2626' }}>
+        <div
+          className="flex items-center gap-3 p-4 rounded-xl text-sm font-medium sw-fade-in-up"
+          style={
+            message
+              ? { background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', color: '#16a34a' }
+              : { background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#dc2626' }
+          }
+        >
           {message ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
           {message || error}
         </div>
@@ -115,11 +187,7 @@ export default function AccountsModule() {
         badge={{ label: `${accounts.length} حساب`, tone: 'neutral' }}
         action={
           <button
-            onClick={() => {
-              setShowForm(!showForm)
-              setEditingId(null)
-              setForm({ platform: 'facebook', username: '', password: '', proxy: '', notes: '', status: 'active' })
-            }}
+            onClick={() => (showForm ? setShowForm(false) : startAdd())}
             className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all flex items-center gap-1.5"
             style={{
               background:
@@ -133,10 +201,10 @@ export default function AccountsModule() {
         }
       />
 
-      {/* Platform Stats Grid */}
+      {/* Platform Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-6 gap-2.5">
-        {PLATFORMS.slice(0, 6).map(p => {
-          const count = accounts.filter(a => a.platform === p.id).length
+        {PLATFORMS.slice(0, 6).map((p) => {
+          const count = accounts.filter((a) => a.platform === p.id).length
           const gradient = getPlatformGradient(p.id)
           const isActive = filterPlatform === p.id
           return (
@@ -144,7 +212,12 @@ export default function AccountsModule() {
               key={p.id}
               onClick={() => setFilterPlatform(filterPlatform === p.id ? '' : p.id)}
               className="group flex items-center gap-2.5 p-3 rounded-xl transition-all duration-200 hover:-translate-y-0.5"
-              style={{ background: isActive ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.7)', backdropFilter: 'blur(8px)', border: `1px solid ${isActive ? p.id === 'facebook' ? '#1877f2' : '#e2e8f0' : 'rgba(226,232,240,0.5)'}`, boxShadow: isActive ? '0 4px 16px rgba(0,0,0,0.08)' : 'none' }}
+              style={{
+                background: isActive ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.7)',
+                backdropFilter: 'blur(8px)',
+                border: `1px solid ${isActive ? '#6366f1' : 'rgba(226,232,240,0.5)'}`,
+                boxShadow: isActive ? '0 4px 16px rgba(99,102,241,0.15)' : 'none',
+              }}
             >
               <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white flex-shrink-0 transition-shadow group-hover:shadow-md" style={{ background: gradient }}>
                 <p.icon size={16} />
@@ -158,9 +231,10 @@ export default function AccountsModule() {
         })}
       </div>
 
-      {/* Add/Edit Form */}
+      {/* Add/Edit Form — using a real <form> with onSubmit so Enter key works
+          AND so the browser surfaces native required-field validation. */}
       {showForm && (
-        <div className="card-gradient-border sw-fade-in-up">
+        <form onSubmit={handleSubmit} className="card-gradient-border sw-fade-in-up" noValidate>
           <div className="flex items-center gap-3 mb-5">
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center text-white flex-shrink-0"
@@ -190,9 +264,10 @@ export default function AccountsModule() {
               <label htmlFor="acc-platform" className="label-field">المنصة</label>
               <select
                 id="acc-platform"
+                name="platform"
                 className="select-field"
                 value={form.platform}
-                onChange={(e) => setForm({ ...form, platform: e.target.value })}
+                onChange={(e) => setForm((f) => ({ ...f, platform: e.target.value }))}
               >
                 {PLATFORMS.map((p) => (
                   <option key={p.id} value={p.id}>{p.label}</option>
@@ -200,15 +275,20 @@ export default function AccountsModule() {
               </select>
             </div>
             <div>
-              <label htmlFor="acc-username" className="label-field">اسم المستخدم / البريد</label>
+              <label htmlFor="acc-username" className="label-field">
+                اسم المستخدم / البريد <span className="text-red-500">*</span>
+              </label>
               <input
                 id="acc-username"
+                name="username"
                 type="text"
                 className="input-field"
                 dir="ltr"
                 value={form.username}
-                onChange={(e) => setForm({ ...form, username: e.target.value })}
+                onChange={(e) => setForm((f) => ({ ...f, username: e.target.value }))}
                 placeholder="username أو email"
+                autoComplete="off"
+                required
               />
             </div>
             <div>
@@ -216,18 +296,21 @@ export default function AccountsModule() {
               <div className="relative">
                 <input
                   id="acc-password"
+                  name="password"
                   type={showPassword ? 'text' : 'password'}
                   className="input-field pl-10"
                   dir="ltr"
                   value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
                   placeholder={editingId ? '••• (اتركه فارغاً للإبقاء)' : '••••••••'}
+                  autoComplete="new-password"
                 />
                 <button
                   type="button"
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400 hover:text-brand-700 transition-colors"
                   onClick={() => setShowPassword(!showPassword)}
                   title={showPassword ? 'إخفاء' : 'إظهار'}
+                  tabIndex={-1}
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -237,22 +320,25 @@ export default function AccountsModule() {
               <label htmlFor="acc-proxy" className="label-field">بروكسي (اختياري)</label>
               <input
                 id="acc-proxy"
+                name="proxy"
                 type="text"
                 className="input-field font-mono text-sm"
                 dir="ltr"
                 value={form.proxy}
-                onChange={(e) => setForm({ ...form, proxy: e.target.value })}
+                onChange={(e) => setForm((f) => ({ ...f, proxy: e.target.value }))}
                 placeholder="user:pass@host:port"
+                autoComplete="off"
               />
             </div>
             <div className="sm:col-span-2">
               <label htmlFor="acc-notes" className="label-field">ملاحظات</label>
               <input
                 id="acc-notes"
+                name="notes"
                 type="text"
                 className="input-field"
                 value={form.notes}
-                onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
                 placeholder="مثال: حساب صفحات المتاجر / حساب رئيسي / ..."
               />
             </div>
@@ -265,33 +351,48 @@ export default function AccountsModule() {
             </p>
             <div className="flex gap-2">
               <button
-                onClick={() => { setShowForm(false); setEditingId(null) }}
+                type="button"
+                onClick={() => { setShowForm(false); setEditingId(null); setForm(EMPTY_FORM) }}
                 className="btn-secondary"
+                disabled={saving}
               >
                 <X size={16} /> إلغاء
               </button>
               <button
-                onClick={handleSave}
-                disabled={!form.username}
+                type="submit"
+                disabled={saving || !form.username.trim()}
                 className="btn-primary"
               >
-                <Save size={16} /> {editingId ? 'حفظ التعديلات' : 'إضافة الحساب'}
+                <Save size={16} />
+                {saving ? 'جاري الحفظ...' : (editingId ? 'حفظ التعديلات' : 'إضافة الحساب')}
               </button>
             </div>
           </div>
-        </div>
+        </form>
       )}
 
       {/* Search + Filter */}
       <div className="flex gap-4">
         <div className="flex-1 relative">
           <Search size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary-400" />
-          <input type="text" className="input-field pr-10" placeholder="بحث في الحسابات..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+          <input
+            type="text"
+            className="input-field pr-10"
+            placeholder="بحث في الحسابات..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
-        <div className="w-48"><select className="select-field" value={filterPlatform} onChange={e => setFilterPlatform(e.target.value)}>
-          <option value="">كل المنصات</option>
-          {PLATFORMS.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
-        </select></div>
+        <div className="w-48">
+          <select
+            className="select-field"
+            value={filterPlatform}
+            onChange={(e) => setFilterPlatform(e.target.value)}
+          >
+            <option value="">كل المنصات</option>
+            {PLATFORMS.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
+          </select>
+        </div>
       </div>
 
       {/* Accounts Table */}
@@ -327,7 +428,7 @@ export default function AccountsModule() {
             </p>
             {!(searchQuery || filterPlatform) && (
               <button
-                onClick={() => { setShowForm(true); setEditingId(null) }}
+                onClick={startAdd}
                 className="btn-primary mt-5 mx-auto"
               >
                 <Plus size={16} /> أضف حسابك الأول
@@ -359,10 +460,7 @@ export default function AccountsModule() {
                         <div className="flex items-center gap-2.5">
                           <div
                             className="w-9 h-9 rounded-lg flex items-center justify-center text-white flex-shrink-0"
-                            style={{
-                              background: gradient,
-                              boxShadow: `0 4px 12px ${gradient.includes('#') ? 'rgba(0,0,0,0.10)' : 'transparent'}`,
-                            }}
+                            style={{ background: gradient }}
                           >
                             <p.icon size={15} />
                           </div>
@@ -370,7 +468,7 @@ export default function AccountsModule() {
                         </div>
                       </td>
                       <td>
-                        <span className="font-medium text-secondary-800" dir="ltr">{acc.username}</span>
+                        <span className="font-medium text-secondary-800" dir="ltr">{acc.username || '—'}</span>
                       </td>
                       <td>
                         {acc.proxy ? (
@@ -397,11 +495,12 @@ export default function AccountsModule() {
                         </span>
                       </td>
                       <td className="text-xs text-secondary-500">
-                        {new Date(acc.created_at).toLocaleDateString('ar-EG')}
+                        {acc.created_at ? new Date(acc.created_at).toLocaleDateString('ar-EG') : '—'}
                       </td>
                       <td>
                         <div className="flex gap-1">
                           <button
+                            type="button"
                             onClick={() => handleEdit(acc)}
                             className="p-1.5 rounded-lg transition-colors"
                             style={{
@@ -414,14 +513,15 @@ export default function AccountsModule() {
                             <Edit3 size={13} />
                           </button>
                           <button
-                            onClick={() => handleDelete(acc.id)}
+                            type="button"
+                            onClick={() => handleDelete(acc)}
                             className={`p-1.5 rounded-lg transition-colors ${isConfirming ? 'animate-pulse' : ''}`}
                             style={{
                               color: isConfirming ? '#dc2626' : '#ef4444',
                               background: isConfirming
-                                ? 'rgba(239, 68, 68, 0.18)'
+                                ? 'rgba(239, 68, 68, 0.20)'
                                 : 'rgba(239, 68, 68, 0.08)',
-                              border: `1px solid rgba(239, 68, 68, ${isConfirming ? 0.35 : 0.15})`,
+                              border: `1.5px solid rgba(239, 68, 68, ${isConfirming ? 0.45 : 0.15})`,
                             }}
                             title={isConfirming ? 'اضغط مرة أخرى للتأكيد' : 'حذف'}
                           >

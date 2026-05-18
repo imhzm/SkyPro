@@ -454,12 +454,16 @@ export default function LoginPage() {
         />
       </div>
 
-      {/* ===== Main content ===== */}
-      <div className="flex flex-1 items-center justify-center overflow-y-auto px-4 py-8">
-        <div className="w-full max-w-md sw-fade-in-up">
+      {/* ===== Main content =====
+        flex-1 + min-h-0 lets the inner column shrink to fit the viewport
+        when the update banner appears, instead of pushing the page into
+        scroll territory. The card itself never overflows because every
+        section uses compact spacing. */}
+      <div className="flex flex-1 min-h-0 items-center justify-center overflow-hidden px-4 py-4">
+        <div className="w-full max-w-md sw-fade-in-up flex flex-col justify-center max-h-full">
           {/* Logo + brand */}
-          <div className="text-center mb-7">
-            <div className="inline-flex relative mb-4">
+          <div className="text-center mb-4">
+            <div className="inline-flex relative mb-2">
               <div
                 className="absolute inset-0 -m-3 rounded-full"
                 style={{
@@ -471,15 +475,15 @@ export default function LoginPage() {
               <img
                 src={logoSrc}
                 alt="SkyPro"
-                className="relative w-20 h-20 object-contain"
+                className="relative w-14 h-14 object-contain"
                 style={{ filter: 'drop-shadow(0 8px 32px rgba(10, 108, 241, 0.4))' }}
               />
             </div>
-            <h1 className="text-3xl font-bold tracking-tight">
+            <h1 className="text-2xl font-bold tracking-tight leading-none">
               <span className="text-white">Sky</span>
               <span className="text-gradient">Pro</span>
             </h1>
-            <p className="mt-1.5 text-xs uppercase tracking-[0.32em] font-medium"
+            <p className="mt-1 text-[10px] uppercase tracking-[0.28em] font-medium"
                style={{ color: 'rgba(167, 139, 250, 0.7)' }}>
               Marketing Automation Suite
             </p>
@@ -487,7 +491,7 @@ export default function LoginPage() {
 
           {/* Card */}
           <div
-            className="relative rounded-2xl p-7"
+            className="relative rounded-2xl p-5"
             style={{
               background:
                 'linear-gradient(160deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 100%)',
@@ -508,9 +512,9 @@ export default function LoginPage() {
               }}
             />
 
-            <div className="mb-5">
-              <h2 className="text-xl font-bold text-white">تسجيل الدخول</h2>
-              <p className="text-xs mt-1" style={{ color: 'rgba(234, 243, 255, 0.5)' }}>
+            <div className="mb-3">
+              <h2 className="text-lg font-bold text-white">تسجيل الدخول</h2>
+              <p className="text-[11px] mt-0.5" style={{ color: 'rgba(234, 243, 255, 0.5)' }}>
                 ادخل بياناتك للوصول إلى لوحة التحكم
               </p>
             </div>
@@ -572,7 +576,7 @@ export default function LoginPage() {
               </div>
             )}
 
-            <div className="space-y-3.5">
+            <div className="space-y-2.5">
               {/* Email */}
               <div>
                 <label className="block text-[11px] font-semibold mb-1.5 tracking-wide"

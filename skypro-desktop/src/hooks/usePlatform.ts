@@ -33,6 +33,14 @@ export function usePlatform(platformId: string) {
   const { accounts: allAccounts, loadAccounts: loadAllAccounts } = useAccountsStore()
   const accounts = useMemo(() => allAccounts.filter((a: any) => a.platform === platformId), [allAccounts, platformId])
 
+  // Load accounts the first time any platform module mounts — this is what
+  // makes AccountCycleBanner actually show the saved accounts the user has
+  // for the current platform. Previously the store would be empty unless
+  // the user visited /accounts first.
+  useEffect(() => {
+    void loadAllAccounts()
+  }, [loadAllAccounts])
+
   const showMsg = useCallback((msg: string, isError = false) => {
     if (msgTimerRef.current) clearTimeout(msgTimerRef.current)
     if (isError) { setError(msg); setMessage('') }
@@ -55,19 +63,47 @@ export function usePlatform(platformId: string) {
     } catch (err: any) { console.error('Failed to load results:', err.message) }
   }, [platformId])
 
-  const checkSession = useCallback(async () => {
+  const checkSession = useCallback(async (opts: { silent?: boolean } = {}) => {
     try {
       const res = await window.electronAPI.checkPlatformSession({ platform: platformId, headless: false })
       if (res.success && res.alreadyLoggedIn) {
-        setSessionId(res.sessionId || '')
+        setSessionId((current) => current || res.sessionId || '')
         return { alreadyLoggedIn: true, sessionId: res.sessionId }
       }
       return { alreadyLoggedIn: false, sessionId: '' }
     } catch (err: any) {
-      console.error('checkSession error:', err.message)
+      if (!opts.silent) console.error('checkSession error:', err.message)
       return { alreadyLoggedIn: false, sessionId: '' }
     }
   }, [platformId])
+
+  // Live login detection — when the user is on a platform page without an
+  // active session, poll every 4s in the background so we catch them the
+  // instant they finish logging in (manually, via 2FA, or via persistent
+  // cookies). Stops automatically as soon as a session is detected, and
+  // pauses when the tab is hidden so we don't waste cycles.
+  useEffect(() => {
+    if (sessionId) return // Already logged in — no need to poll.
+
+    let cancelled = false
+    const POLL_MS = 4000
+    const tick = async () => {
+      if (cancelled || document.hidden || sessionId) return
+      const res = await checkSession({ silent: true })
+      if (res.alreadyLoggedIn && !cancelled) {
+        setSessionId(res.sessionId || '')
+      }
+    }
+    const handle = window.setInterval(tick, POLL_MS)
+    // Also check immediately when the window regains focus.
+    const onVisible = () => { if (!document.hidden && !sessionId) void tick() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      cancelled = true
+      window.clearInterval(handle)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
+  }, [sessionId, checkSession])
 
   const clearSession = useCallback(async () => {
     if (!sessionId) return

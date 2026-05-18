@@ -792,17 +792,21 @@ ipcm('db-insert', async (e, { table, data }) => {
   try {
     if (!globals.db) return { success: false, error: 'قاعدة البيانات غير جاهزة' }
     validateTable(table)
-    if (!data || typeof data !== 'object' || Array.isArray(data)) return { success: false, error: 'Invalid data' }
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return { success: false, error: 'بيانات غير صالحة (المتوقع كائن)' }
     const safeData = protectRow(table, data)
-    const keys = Object.keys(safeData)
-    if (keys.length === 0) return { success: false, error: 'No data to insert' }
+    const keys = Object.keys(safeData).filter((k) => safeData[k] !== undefined)
+    if (keys.length === 0) return { success: false, error: 'لا توجد بيانات للإدخال' }
     for (const key of keys) validateColumn(table, key, { write: true })
     const placeholders = keys.map(() => '?').join(', ')
     const stmt = globals.db.prepare(`INSERT INTO ${table} (${keys.join(', ')}) VALUES (${placeholders})`)
     const result = stmt.run(...keys.map(k => safeData[k]))
     return { success: true, id: result.lastInsertRowid }
   } catch (err) {
-    return { success: false, error: 'فشل إدخال البيانات' }
+    // Surface the actual error so the renderer can show WHY the save failed
+    // (previously this was masked behind a generic "فشل" message and the
+    // user had no way to debug, e.g. when safeStorage is unavailable).
+    console.error('db-insert error:', err)
+    return { success: false, error: err?.message || 'فشل إدخال البيانات' }
   }
 })
 
@@ -810,11 +814,18 @@ ipcm('db-delete', async (e, { table, id }) => {
   try {
     if (!globals.db) return { success: false, error: 'قاعدة البيانات غير جاهزة' }
     validateTable(table)
-    if (!Number.isInteger(id) || id < 1) return { success: false, error: 'Invalid id' }
-    globals.db.prepare(`DELETE FROM ${table} WHERE id = ?`).run(id)
-    return { success: true }
+    const numericId = Number(id)
+    if (!Number.isInteger(numericId) || numericId < 1) {
+      return { success: false, error: 'معرّف غير صالح' }
+    }
+    const result = globals.db.prepare(`DELETE FROM ${table} WHERE id = ?`).run(numericId)
+    if (result.changes === 0) {
+      return { success: false, error: 'السطر غير موجود (قد يكون محذوفاً بالفعل)' }
+    }
+    return { success: true, changes: result.changes }
   } catch (err) {
-    return { success: false, error: 'فشل حذف البيانات' }
+    console.error('db-delete error:', err)
+    return { success: false, error: err?.message || 'فشل حذف البيانات' }
   }
 })
 
@@ -822,11 +833,11 @@ ipcm('db-update', async (e, { table, id, data }) => {
   try {
     if (!globals.db) return { success: false, error: 'قاعدة البيانات غير جاهزة' }
     validateTable(table)
-    if (!Number.isInteger(id) || id < 1) return { success: false, error: 'Invalid id' }
-    if (!data || typeof data !== 'object' || Array.isArray(data)) return { success: false, error: 'Invalid data' }
+    if (!Number.isInteger(id) || id < 1) return { success: false, error: 'معرّف غير صالح' }
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return { success: false, error: 'بيانات غير صالحة' }
     const safeData = protectRow(table, data)
-    const keys = Object.keys(safeData)
-    if (keys.length === 0) return { success: false, error: 'No data to update' }
+    const keys = Object.keys(safeData).filter((k) => safeData[k] !== undefined)
+    if (keys.length === 0) return { success: false, error: 'لا توجد بيانات للتحديث' }
     for (const key of keys) validateColumn(table, key, { write: true })
     const setClause = keys.map(k => `${k} = ?`).join(', ')
     const sql = `UPDATE ${table} SET ${setClause} WHERE id = ?`
@@ -838,7 +849,8 @@ ipcm('db-update', async (e, { table, id, data }) => {
     }
     return { success: true, changes: result.changes }
   } catch (err) {
-    return { success: false, error: 'فشل تحديث البيانات' }
+    console.error('db-update error:', err)
+    return { success: false, error: err?.message || 'فشل تحديث البيانات' }
   }
 })
 
