@@ -12,7 +12,7 @@ import {
   LogIn, Search, Download, Send, Play, Eye, EyeOff,
   Users, Globe, CheckCircle, AlertCircle, Loader2, Trash2, FileSpreadsheet,
   UserPlus, LogOut, Wrench, Linkedin as LinkedinIcon, FileText,
-  GraduationCap, Database, Heart, MessageSquare, Mail, ListChecks,
+  GraduationCap, Database, Heart, MessageSquare, Mail, ListChecks, Building2,
 } from 'lucide-react'
 
 type ActiveTool =
@@ -20,12 +20,14 @@ type ActiveTool =
   | 'extract-people' | 'connect-requests' | 'follow-companies' | 'post-feed' | 'join-groups'
   | 'extract-deep-data' | 'extract-schools' | 'extract-org-members'
   | 'extract-post-engagement' | 'list-my-groups' | 'post-to-groups' | 'emails-by-interest'
+  | 'extract-company-full'
   | null
 type ResultsOwner =
   | 'search' | 'extract' | 'broadcast'
   | 'extract-people' | 'connect-requests' | 'follow-companies' | 'join-groups'
   | 'extract-deep-data' | 'extract-schools' | 'extract-org-members'
   | 'extract-post-engagement' | 'list-my-groups' | 'post-to-groups' | 'emails-by-interest'
+  | 'extract-company-full'
   | null
 
 const ACCENT = '#0A66C2'
@@ -94,6 +96,9 @@ export default function LinkedinModule() {
   const [emailsInterest, setEmailsInterest] = useState('')
   const [emailsCountry, setEmailsCountry] = useState('')
   const [emailsLimit, setEmailsLimit] = useState(30)
+  // --- Extract company full data ---
+  const [companyFullUrls, setCompanyFullUrls] = useState('')
+  const [companyFullDelay, setCompanyFullDelay] = useState(3)
 
   const linkedinAccounts = allAccounts.filter(a => a.platform === 'linkedin')
   const ensureSession = () => {
@@ -383,6 +388,27 @@ export default function LinkedinModule() {
     setLoading(false)
   }
 
+  // ---- Extract company full ----
+  const handleExtractCompanyFull = async () => {
+    if (!ensureSession()) return
+    const urls = companyFullUrls.split('\n').map(s => s.trim()).filter(Boolean)
+    if (urls.length === 0) { showMsg('أدخل روابط الشركات', true); return }
+    setLoading(true)
+    setResultsOwner('extract-company-full')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.linkedinExtractCompanyFull({ sessionId, companyUrls: urls, delayMs: Math.max(1, companyFullDelay) * 1000 })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        const ok = items.filter((r: any) => r.status === 'extracted').length
+        showMsg(`تم استخراج ${ok} شركة من ${urls.length}`)
+        await loadResults()
+      } else { showMsg(res.error || 'فشل الاستخراج', true); if (res.partialData) setToolResults(res.partialData as any[]) }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
   // ---- Emails by interest ----
   const handleEmailsByInterest = async () => {
     if (!ensureSession()) return
@@ -449,6 +475,7 @@ export default function LinkedinModule() {
     { id: 'list-my-groups', name: 'مجموعاتي', description: 'استخراج المجموعات المنضم لها', icon: ListChecks, accent: '#14b8a6', accentGradient: 'linear-gradient(135deg, #14b8a6, #0f766e)', requiresSession: true },
     { id: 'post-to-groups', name: 'نشر في المجموعات', description: 'نشر في عدة مجموعات', icon: MessageSquare, accent: '#d946ef', accentGradient: 'linear-gradient(135deg, #d946ef, #a21caf)', requiresSession: true },
     { id: 'emails-by-interest', name: 'إيميلات بالاهتمام', description: 'إيميلات من Google + بفلتر دولة', icon: Mail, accent: '#ea580c', accentGradient: 'linear-gradient(135deg, #ea580c, #c2410c)', requiresSession: true },
+    { id: 'extract-company-full', name: 'بيانات الشركة الكاملة', description: 'مقر/حجم/تأسيس/تخصص/إيميل', icon: Building2, accent: '#0284c7', accentGradient: 'linear-gradient(135deg, #0284c7, #075985)', requiresSession: true },
   ]
 
   const currentTool = tools.find(t => t.id === activeTool) ?? null
@@ -799,6 +826,20 @@ export default function LinkedinModule() {
                     <tr key={i}>
                       <td className="text-secondary-500">{i + 1}</td>
                       <td dir="ltr" className="font-mono text-sm">{r.email || '-'}</td>
+                    </tr>
+                  )
+                }
+                if (owner === 'extract-company-full') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium">{r.name || '-'}</td>
+                      <td className="text-xs">{r.industry || '-'}</td>
+                      <td className="text-xs">{r.companySize || '-'}</td>
+                      <td className="text-xs">{r.headquarters || '-'}</td>
+                      <td className="text-xs">{r.founded || '-'}</td>
+                      <td className="text-xs">{r.website || '-'}</td>
+                      <td className="text-xs">{r.email || '-'}</td>
                     </tr>
                   )
                 }
@@ -1163,6 +1204,25 @@ export default function LinkedinModule() {
   )
   const emailsByInterestFooter = (<button onClick={handleEmailsByInterest} disabled={loading || !emailsInterest.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #ea580c, #c2410c)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><Mail size={18} /> بحث</>}</button>)
 
+  // ---- Extract company full panel ----
+  const renderExtractCompanyFullBody = () => (
+    <div className="space-y-5">
+      <div className="p-3 rounded-lg text-xs text-secondary-600" style={{ background: 'rgba(2,132,199,0.05)', border: '1px solid rgba(2,132,199,0.2)' }}>
+        يستخرج كل حقول About للشركة: المقر، الحجم، التأسيس، التخصصات، الصناعة، الموقع، الإيميل، الهاتف.
+      </div>
+      <div>
+        <label className="label-field">روابط الشركات (سطر لكل شركة)</label>
+        <textarea className="textarea-field" rows={6} value={companyFullUrls} onChange={e => setCompanyFullUrls(e.target.value)} placeholder="https://linkedin.com/company/microsoft" />
+      </div>
+      <div>
+        <label className="label-field">الفاصل (ثانية)</label>
+        <input type="number" min={1} max={30} className="input-field w-32" value={companyFullDelay} onChange={e => setCompanyFullDelay(Number(e.target.value) || 3)} />
+      </div>
+      {renderResultsTable('extract-company-full', ['#', 'الاسم', 'الصناعة', 'الحجم', 'المقر', 'التأسيس', 'الموقع', 'الإيميل'], 'linkedin-co-full')}
+    </div>
+  )
+  const extractCompanyFullFooter = (<button onClick={handleExtractCompanyFull} disabled={loading || !companyFullUrls.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #0284c7, #075985)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><Building2 size={18} /> استخراج</>}</button>)
+
   const panelMap: Record<Exclude<ActiveTool, null>, { body: React.ReactNode; footer: React.ReactNode }> = {
     search: { body: renderSearchBody(), footer: searchFooter },
     'extract-people': { body: renderExtractPeopleBody(), footer: extractPeopleFooter },
@@ -1179,6 +1239,7 @@ export default function LinkedinModule() {
     'post-feed': { body: renderPostFeedBody(), footer: postFeedFooter },
     'post-to-groups': { body: renderPostToGroupsBody(), footer: postToGroupsFooter },
     'emails-by-interest': { body: renderEmailsByInterestBody(), footer: emailsByInterestFooter },
+    'extract-company-full': { body: renderExtractCompanyFullBody(), footer: extractCompanyFullFooter },
   }
 
   return (

@@ -85,6 +85,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   whatsappTempGroupBroadcast: (data) => ipcRenderer.invoke('whatsapp-temp-group-broadcast', data),
   whatsappExtractArchived: (data) => ipcRenderer.invoke('whatsapp-extract-archived', data),
   whatsappMultiNumberRotation: (data) => ipcRenderer.invoke('whatsapp-multi-number-rotation', data),
+  whatsappExtractGroupsFromPlatforms: (data) => ipcRenderer.invoke('whatsapp-extract-groups-from-platforms', data),
 
   // Instagram
   instagramLogin: (data) => ipcRenderer.invoke('instagram-login', data),
@@ -138,6 +139,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   linkedinListMyGroups: (data) => ipcRenderer.invoke('linkedin-list-my-groups', data),
   linkedinPostToGroups: (data) => ipcRenderer.invoke('linkedin-post-to-groups', data),
   linkedinEmailsByInterest: (data) => ipcRenderer.invoke('linkedin-emails-by-interest', data),
+  linkedinExtractCompanyFull: (data) => ipcRenderer.invoke('linkedin-extract-company-full', data),
 
   // Telegram
   telegramLogin: (data) => ipcRenderer.invoke('telegram-login', data),

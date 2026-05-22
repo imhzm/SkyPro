@@ -290,6 +290,7 @@ declare global {
       whatsappTempGroupBroadcast: (data: { sessionId: string; groupName?: string; members: string[]; message: string; leaveAfter?: boolean; jobId?: string }) => Promise<IpcResult>
       whatsappExtractArchived: (data: { sessionId: string; limit?: number }) => Promise<ExtractionResult>
       whatsappMultiNumberRotation: (data: { sessionIds: string[]; recipients: string[]; message: string; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>
+      whatsappExtractGroupsFromPlatforms: (data: { sessionId: string; keyword: string; sources?: ('google' | 'facebook' | 'telegram' | 'twitter')[]; limit?: number; jobId?: string }) => Promise<ExtractionResult>
 
       // Instagram
       instagramLogin: (data: PlatformLoginParams) => Promise<LoginResult>
@@ -343,6 +344,7 @@ declare global {
       linkedinListMyGroups: (data: { sessionId: string; limit?: number; jobId?: string; delayMs?: number }) => Promise<ExtractionResult>
       linkedinPostToGroups: (data: { sessionId: string; groupUrls: string[]; content: string; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>
       linkedinEmailsByInterest: (data: { sessionId: string; interest: string; country?: string; limit?: number }) => Promise<ExtractionResult>
+      linkedinExtractCompanyFull: (data: { sessionId: string; companyUrls: string[]; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>
 
       // Telegram
       telegramLogin: (data: PlatformLoginParams) => Promise<LoginResult>
