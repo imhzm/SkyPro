@@ -11,16 +11,18 @@ import {
   LogIn, Download, UserPlus, AtSign, Send, Play, Eye, EyeOff,
   Users, MessageSquare, Hash, Copy, AlertCircle, CheckCircle, Loader2,
   Trash2, FileSpreadsheet, Square, LogOut, Wrench, Instagram as InstagramIcon,
-  UserMinus, Heart, Share2, MessageCircle, UsersRound,
+  UserMinus, Heart, Share2, MessageCircle, UsersRound, BarChart3, Sparkles, Crown,
 } from 'lucide-react'
 
 type ActiveTool =
   | 'extract' | 'follow' | 'mention' | 'broadcast'
   | 'unfollow' | 'post-interact' | 'share-dm' | 'extract-likers' | 'extract-following' | 'follow-message'
+  | 'extract-suggested' | 'top-influencers' | 'analyze-profile'
   | null
 type ResultsOwner =
   | 'extract' | 'follow' | 'mention' | 'broadcast'
   | 'unfollow' | 'post-interact' | 'share-dm' | 'extract-likers' | 'extract-following' | 'follow-message'
+  | 'extract-suggested' | 'top-influencers' | 'analyze-profile'
   | null
 
 const ACCENT = '#ec4899'
@@ -81,6 +83,16 @@ export default function InstagramModule() {
   const [combinedMessage, setCombinedMessage] = useState('')
   const [combinedFollowFirst, setCombinedFollowFirst] = useState(true)
   const [combinedDelay, setCombinedDelay] = useState(5)
+  // --- Suggested ---
+  const [suggestedBaseUser, setSuggestedBaseUser] = useState('')
+  const [suggestedLimit, setSuggestedLimit] = useState(50)
+  // --- Top influencers ---
+  const [influencerHashtag, setInfluencerHashtag] = useState('')
+  const [influencerCountry, setInfluencerCountry] = useState('')
+  const [influencerLimit, setInfluencerLimit] = useState(50)
+  // --- Analyze profile ---
+  const [analyzeUsername, setAnalyzeUsername] = useState('')
+  const [analyzeResult, setAnalyzeResult] = useState<any>(null)
 
   useEffect(() => {
     const cleanup = window.electronAPI.onExtractionProgress((data: any) => {
@@ -366,6 +378,68 @@ export default function InstagramModule() {
     setCurrentJobId(null)
   }
 
+  // ---- Extract suggested users ----
+  const handleExtractSuggested = async () => {
+    if (!ensureSession()) return
+    if (!suggestedBaseUser.trim()) { showMsg('أدخل اسم المستخدم المرجعي', true); return }
+    setLoading(true)
+    setResultsOwner('extract-suggested')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.instagramExtractSuggested({ sessionId, baseUser: suggestedBaseUser.trim(), limit: suggestedLimit })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        showMsg(`تم استخراج ${res.count || items.length} حساب مقترح`)
+        await loadResults()
+      } else {
+        showMsg(res.error || 'فشل الاستخراج', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  // ---- Top influencers ----
+  const handleTopInfluencers = async () => {
+    if (!ensureSession()) return
+    if (!influencerHashtag.trim()) { showMsg('أدخل الهاشتاج', true); return }
+    setLoading(true)
+    setResultsOwner('top-influencers')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.instagramTopInfluencers({ sessionId, hashtag: influencerHashtag.trim(), country: influencerCountry.trim() || undefined, limit: influencerLimit })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        showMsg(`تم العثور على ${res.count || items.length} مؤثر`)
+        await loadResults()
+      } else {
+        showMsg(res.error || 'فشل الاستخراج', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  // ---- Analyze profile ----
+  const handleAnalyzeProfile = async () => {
+    if (!ensureSession()) return
+    if (!analyzeUsername.trim()) { showMsg('أدخل اسم المستخدم', true); return }
+    setLoading(true)
+    setResultsOwner('analyze-profile')
+    setToolResults([])
+    setAnalyzeResult(null)
+    try {
+      const res = await window.electronAPI.instagramAnalyzeProfile({ sessionId, username: analyzeUsername.trim() })
+      if (res.success && res.data) {
+        setAnalyzeResult(res.data)
+        showMsg(`تم تحليل @${(res.data as any).username || analyzeUsername}`)
+      } else showMsg(String((res as any).error || 'فشل التحليل'), true)
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
   // ---- Follow + message combo ----
   const handleFollowMessage = async () => {
     if (!ensureSession()) return
@@ -420,6 +494,9 @@ export default function InstagramModule() {
     { id: 'broadcast', name: 'إرسال رسائل', description: 'بث رسائل مباشرة لقائمة', icon: Send, accent: '#10b981', accentGradient: 'linear-gradient(135deg, #10b981, #047857)', requiresSession: true },
     { id: 'share-dm', name: 'مشاركة منشور بالخاص', description: 'إرسال منشور لقائمة مستلمين', icon: Share2, accent: '#06b6d4', accentGradient: 'linear-gradient(135deg, #06b6d4, #0891b2)', requiresSession: true },
     { id: 'follow-message', name: 'متابعة + رسالة', description: 'متابعة الحساب ثم إرسال رسالة', icon: MessageCircle, accent: '#f59e0b', accentGradient: 'linear-gradient(135deg, #f59e0b, #d97706)', requiresSession: true },
+    { id: 'extract-suggested', name: 'المقترحين لحساب', description: 'الحسابات المقترحة لمشابهة حساب', icon: Sparkles, accent: '#d946ef', accentGradient: 'linear-gradient(135deg, #d946ef, #a21caf)', requiresSession: true },
+    { id: 'top-influencers', name: 'أهم المؤثرين', description: 'مؤثرون من هاشتاج/دولة', icon: Crown, accent: '#f59e0b', accentGradient: 'linear-gradient(135deg, #f59e0b, #b45309)', requiresSession: true },
+    { id: 'analyze-profile', name: 'تحليل الحساب', description: 'متابعين/متابعون/منشورات/سيرة', icon: BarChart3, accent: '#0ea5e9', accentGradient: 'linear-gradient(135deg, #0ea5e9, #0369a1)', requiresSession: true },
   ]
 
   const currentTool = tools.find(t => t.id === activeTool) ?? null
@@ -728,6 +805,27 @@ export default function InstagramModule() {
                       <td>{r.followed ? <CheckCircle size={14} className="text-emerald-500" /> : <span className="text-secondary-300">-</span>}</td>
                       <td>{r.messaged ? <CheckCircle size={14} className="text-emerald-500" /> : <span className="text-secondary-300">-</span>}</td>
                       <td><span className={`badge ${r.status === 'sent' ? 'badge-success' : r.status === 'followed-only' ? 'badge-warning' : 'badge-danger'}`}>{r.status}</span></td>
+                    </tr>
+                  )
+                }
+                if (owner === 'extract-suggested') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium">{r.username || '-'}</td>
+                      <td className="text-xs">{r.name || '-'}</td>
+                      <td className="text-xs">{r.profile ? <a href={r.profile} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline" dir="ltr">@{r.username}</a> : '-'}</td>
+                    </tr>
+                  )
+                }
+                if (owner === 'top-influencers') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium">{r.username || '-'}</td>
+                      <td className="text-xs">{r.name || '-'}</td>
+                      <td className="text-xs font-mono text-amber-700">{r.followers || '-'}</td>
+                      <td className="text-xs">{r.profile ? <a href={r.profile} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline" dir="ltr">@{r.username}</a> : '-'}</td>
                     </tr>
                   )
                 }
@@ -1084,10 +1182,84 @@ export default function InstagramModule() {
     </button>
   )
 
+  // ---- Suggested users panel ----
+  const renderExtractSuggestedBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">المستخدم المرجعي (سيتم استخراج المقترحين له)</label>
+        <input type="text" className="input-field" value={suggestedBaseUser} onChange={e => setSuggestedBaseUser(e.target.value)} placeholder="@username" />
+      </div>
+      <div>
+        <label className="label-field">الحد الأقصى: {suggestedLimit}</label>
+        <input type="range" min={10} max={300} step={5} className="w-full accent-fuchsia-500" value={suggestedLimit} onChange={e => setSuggestedLimit(parseInt(e.target.value))} />
+      </div>
+      {renderResultsTable('extract-suggested', ['#', 'الحساب', 'الاسم', 'الرابط'], 'instagram-suggested')}
+    </div>
+  )
+  const extractSuggestedFooter = (<button onClick={handleExtractSuggested} disabled={loading || !suggestedBaseUser.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #d946ef, #a21caf)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><Sparkles size={18} /> استخراج المقترحين</>}</button>)
+
+  // ---- Top influencers panel ----
+  const renderTopInfluencersBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">الهاشتاج</label>
+        <input type="text" className="input-field" value={influencerHashtag} onChange={e => setInfluencerHashtag(e.target.value)} placeholder="travel, fashion, food" />
+      </div>
+      <div>
+        <label className="label-field">الدولة (اختياري - يفلتر حسب البايو)</label>
+        <input type="text" className="input-field" value={influencerCountry} onChange={e => setInfluencerCountry(e.target.value)} placeholder="Egypt، السعودية، KSA" />
+      </div>
+      <div>
+        <label className="label-field">الحد الأقصى: {influencerLimit}</label>
+        <input type="range" min={10} max={200} step={5} className="w-full accent-amber-500" value={influencerLimit} onChange={e => setInfluencerLimit(parseInt(e.target.value))} />
+      </div>
+      {renderResultsTable('top-influencers', ['#', 'الحساب', 'الاسم', 'المتابعين', 'الرابط'], 'instagram-influencers')}
+    </div>
+  )
+  const topInfluencersFooter = (<button onClick={handleTopInfluencers} disabled={loading || !influencerHashtag.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #f59e0b, #b45309)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><Crown size={18} /> استخراج المؤثرين</>}</button>)
+
+  // ---- Analyze profile panel ----
+  const renderAnalyzeProfileBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">اسم المستخدم</label>
+        <input type="text" className="input-field" value={analyzeUsername} onChange={e => setAnalyzeUsername(e.target.value)} placeholder="@username" />
+      </div>
+      {analyzeResult && (
+        <div className="space-y-3">
+          <div className="grid grid-cols-3 gap-3">
+            <div className="p-3 rounded-xl border bg-white/60">
+              <p className="text-xs text-secondary-500">منشورات</p>
+              <p className="text-2xl font-bold text-secondary-800">{analyzeResult.posts || '-'}</p>
+            </div>
+            <div className="p-3 rounded-xl border bg-white/60">
+              <p className="text-xs text-secondary-500">متابعين</p>
+              <p className="text-2xl font-bold text-pink-700">{analyzeResult.followers || '-'}</p>
+            </div>
+            <div className="p-3 rounded-xl border bg-white/60">
+              <p className="text-xs text-secondary-500">متابعون</p>
+              <p className="text-2xl font-bold text-purple-700">{analyzeResult.following || '-'}</p>
+            </div>
+          </div>
+          {analyzeResult.bio && (
+            <div className="p-3 rounded-xl border bg-white/60">
+              <p className="text-xs text-secondary-500 mb-1">السيرة الذاتية</p>
+              <p className="text-sm text-secondary-700 whitespace-pre-wrap">{analyzeResult.bio}</p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+  const analyzeProfileFooter = (<button onClick={handleAnalyzeProfile} disabled={loading || !analyzeUsername.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #0ea5e9, #0369a1)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><BarChart3 size={18} /> تحليل</>}</button>)
+
   const panelMap: Record<Exclude<ActiveTool, null>, { body: React.ReactNode; footer: React.ReactNode }> = {
     extract: { body: renderExtractBody(), footer: extractFooter },
     'extract-likers': { body: renderExtractLikersBody(), footer: extractLikersFooter },
     'extract-following': { body: renderExtractFollowingBody(), footer: extractFollowingFooter },
+    'extract-suggested': { body: renderExtractSuggestedBody(), footer: extractSuggestedFooter },
+    'top-influencers': { body: renderTopInfluencersBody(), footer: topInfluencersFooter },
+    'analyze-profile': { body: renderAnalyzeProfileBody(), footer: analyzeProfileFooter },
     follow: { body: renderFollowBody(), footer: followFooter },
     unfollow: { body: renderUnfollowBody(), footer: unfollowFooter },
     'post-interact': { body: renderPostInteractBody(), footer: postInteractFooter },

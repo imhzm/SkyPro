@@ -12,15 +12,20 @@ import {
   LogIn, Search, Download, Send, Play, Eye, EyeOff,
   Users, Globe, CheckCircle, AlertCircle, Loader2, Trash2, FileSpreadsheet,
   UserPlus, LogOut, Wrench, Linkedin as LinkedinIcon, FileText,
+  GraduationCap, Database, Heart, MessageSquare, Mail, ListChecks,
 } from 'lucide-react'
 
 type ActiveTool =
   | 'search' | 'extract' | 'broadcast'
   | 'extract-people' | 'connect-requests' | 'follow-companies' | 'post-feed' | 'join-groups'
+  | 'extract-deep-data' | 'extract-schools' | 'extract-org-members'
+  | 'extract-post-engagement' | 'list-my-groups' | 'post-to-groups' | 'emails-by-interest'
   | null
 type ResultsOwner =
   | 'search' | 'extract' | 'broadcast'
   | 'extract-people' | 'connect-requests' | 'follow-companies' | 'join-groups'
+  | 'extract-deep-data' | 'extract-schools' | 'extract-org-members'
+  | 'extract-post-engagement' | 'list-my-groups' | 'post-to-groups' | 'emails-by-interest'
   | null
 
 const ACCENT = '#0A66C2'
@@ -65,6 +70,30 @@ export default function LinkedinModule() {
   // --- Join groups ---
   const [joinGroupUrls, setJoinGroupUrls] = useState('')
   const [joinDelay, setJoinDelay] = useState(5)
+  // --- Extract deep data ---
+  const [deepProfiles, setDeepProfiles] = useState('')
+  const [deepDelay, setDeepDelay] = useState(3)
+  // --- Extract schools ---
+  const [schoolsQuery, setSchoolsQuery] = useState('')
+  const [schoolsLimit, setSchoolsLimit] = useState(50)
+  // --- Extract org members ---
+  const [orgUrl, setOrgUrl] = useState('')
+  const [orgKind, setOrgKind] = useState<'company' | 'school'>('company')
+  const [orgLimit, setOrgLimit] = useState(200)
+  // --- Post engagement ---
+  const [engagementPostUrl, setEngagementPostUrl] = useState('')
+  const [engagementMode, setEngagementMode] = useState<'reactions' | 'comments'>('reactions')
+  const [engagementLimit, setEngagementLimit] = useState(200)
+  // --- My groups ---
+  const [myGroupsLimit, setMyGroupsLimit] = useState(100)
+  // --- Post to groups ---
+  const [groupPostUrls, setGroupPostUrls] = useState('')
+  const [groupPostContent, setGroupPostContent] = useState('')
+  const [groupPostDelay, setGroupPostDelay] = useState(7)
+  // --- Emails by interest ---
+  const [emailsInterest, setEmailsInterest] = useState('')
+  const [emailsCountry, setEmailsCountry] = useState('')
+  const [emailsLimit, setEmailsLimit] = useState(30)
 
   const linkedinAccounts = allAccounts.filter(a => a.platform === 'linkedin')
   const ensureSession = () => {
@@ -237,6 +266,142 @@ export default function LinkedinModule() {
     setLoading(false)
   }
 
+  // ---- Extract deep data ----
+  const handleExtractDeepData = async () => {
+    if (!ensureSession()) return
+    const urls = deepProfiles.split('\n').map(s => s.trim()).filter(Boolean)
+    if (urls.length === 0) { showMsg('أدخل الملفات الشخصية', true); return }
+    setLoading(true)
+    setResultsOwner('extract-deep-data')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.linkedinExtractDeepData({ sessionId, profileUrls: urls, delayMs: Math.max(1, deepDelay) * 1000 })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        const ok = items.filter((r: any) => r.status === 'extracted').length
+        showMsg(`تم استخراج بيانات ${ok} حساب`)
+      } else { showMsg(res.error || 'فشل الاستخراج', true); if (res.partialData) setToolResults(res.partialData as any[]) }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  // ---- Extract schools ----
+  const handleExtractSchools = async () => {
+    if (!ensureSession()) return
+    if (!schoolsQuery.trim()) { showMsg('أدخل الكلمة المفتاحية', true); return }
+    setLoading(true)
+    setResultsOwner('extract-schools')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.linkedinExtractSchools({ sessionId, query: schoolsQuery.trim(), limit: schoolsLimit })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        showMsg(`تم العثور على ${res.count || items.length} جامعة/مدرسة`)
+        await loadResults()
+      } else { showMsg(res.error || 'فشل الاستخراج', true); if (res.partialData) setToolResults(res.partialData as any[]) }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  // ---- Extract organization members ----
+  const handleExtractOrgMembers = async () => {
+    if (!ensureSession()) return
+    if (!orgUrl.trim()) { showMsg('أدخل رابط المنظمة', true); return }
+    setLoading(true)
+    setResultsOwner('extract-org-members')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.linkedinExtractOrgMembers({ sessionId, orgUrl: orgUrl.trim(), kind: orgKind, limit: orgLimit })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        showMsg(`تم استخراج ${res.count || items.length} عضو`)
+        await loadResults()
+      } else { showMsg(res.error || 'فشل الاستخراج', true); if (res.partialData) setToolResults(res.partialData as any[]) }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  // ---- Post engagement ----
+  const handleExtractPostEngagement = async () => {
+    if (!ensureSession()) return
+    if (!engagementPostUrl.trim()) { showMsg('أدخل رابط المنشور', true); return }
+    setLoading(true)
+    setResultsOwner('extract-post-engagement')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.linkedinExtractPostEngagement({ sessionId, postUrl: engagementPostUrl.trim(), mode: engagementMode, limit: engagementLimit })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        showMsg(`تم استخراج ${res.count || items.length} ${engagementMode === 'reactions' ? 'معجب' : 'معلق'}`)
+        await loadResults()
+      } else { showMsg(res.error || 'فشل الاستخراج', true); if (res.partialData) setToolResults(res.partialData as any[]) }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  // ---- List my groups ----
+  const handleListMyGroups = async () => {
+    if (!ensureSession()) return
+    setLoading(true)
+    setResultsOwner('list-my-groups')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.linkedinListMyGroups({ sessionId, limit: myGroupsLimit })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        showMsg(`أنت منضم لـ ${res.count || items.length} مجموعة`)
+        // Auto-fill the post-to-groups field with these URLs for convenience.
+        setGroupPostUrls(items.map((g: any) => g.url).join('\n'))
+      } else showMsg(res.error || 'فشلت العملية', true)
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  // ---- Post to groups ----
+  const handlePostToGroups = async () => {
+    if (!ensureSession()) return
+    const urls = groupPostUrls.split('\n').map(s => s.trim()).filter(Boolean)
+    if (urls.length === 0) { showMsg('أدخل روابط المجموعات', true); return }
+    if (!groupPostContent.trim()) { showMsg('أدخل نص المنشور', true); return }
+    setLoading(true)
+    setResultsOwner('post-to-groups')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.linkedinPostToGroups({ sessionId, groupUrls: urls, content: groupPostContent, delayMs: Math.max(3, groupPostDelay) * 1000 })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        const ok = items.filter((r: any) => r.status === 'posted').length
+        showMsg(`تم النشر في ${ok} من ${urls.length}`)
+      } else { showMsg(res.error || 'فشلت العملية', true); if (res.partialData) setToolResults(res.partialData as any[]) }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  // ---- Emails by interest ----
+  const handleEmailsByInterest = async () => {
+    if (!ensureSession()) return
+    if (!emailsInterest.trim()) { showMsg('أدخل الاهتمام', true); return }
+    setLoading(true)
+    setResultsOwner('emails-by-interest')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.linkedinEmailsByInterest({ sessionId, interest: emailsInterest.trim(), country: emailsCountry.trim() || undefined, limit: emailsLimit })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        showMsg(`تم العثور على ${res.count || items.length} إيميل`)
+        await loadResults()
+      } else showMsg(res.error || 'فشل الاستخراج', true)
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
   // ---- Join groups ----
   const handleJoinGroups = async () => {
     if (!ensureSession()) return
@@ -277,6 +442,13 @@ export default function LinkedinModule() {
     { id: 'join-groups', name: 'الانضمام للمجموعات', description: 'طلبات انضمام لمجموعات', icon: Users, accent: '#84cc16', accentGradient: 'linear-gradient(135deg, #84cc16, #4d7c0f)', requiresSession: true },
     { id: 'broadcast', name: 'رسائل InMail', description: 'إرسال رسائل لقائمة مستلمين', icon: Send, accent: '#10b981', accentGradient: 'linear-gradient(135deg, #10b981, #047857)', requiresSession: true },
     { id: 'post-feed', name: 'نشر منشور', description: 'نشر محتوى على فيدك', icon: FileText, accent: '#f59e0b', accentGradient: 'linear-gradient(135deg, #f59e0b, #d97706)', requiresSession: true },
+    { id: 'extract-deep-data', name: 'بيانات الحساب الكاملة', description: 'هاتف، إيميل، عنوان، وظيفة', icon: Database, accent: '#dc2626', accentGradient: 'linear-gradient(135deg, #dc2626, #991b1b)', requiresSession: true },
+    { id: 'extract-schools', name: 'استخراج الجامعات', description: 'بحث الجامعات بكلمة مفتاحية', icon: GraduationCap, accent: '#7c3aed', accentGradient: 'linear-gradient(135deg, #7c3aed, #5b21b6)', requiresSession: true },
+    { id: 'extract-org-members', name: 'أعضاء الشركة/الجامعة', description: 'موظفين/خريجين منظمة', icon: Users, accent: '#0891b2', accentGradient: 'linear-gradient(135deg, #0891b2, #155e75)', requiresSession: true },
+    { id: 'extract-post-engagement', name: 'تفاعل المنشور', description: 'معجبين ومعلقين على بوست', icon: Heart, accent: '#f43f5e', accentGradient: 'linear-gradient(135deg, #f43f5e, #be123c)', requiresSession: true },
+    { id: 'list-my-groups', name: 'مجموعاتي', description: 'استخراج المجموعات المنضم لها', icon: ListChecks, accent: '#14b8a6', accentGradient: 'linear-gradient(135deg, #14b8a6, #0f766e)', requiresSession: true },
+    { id: 'post-to-groups', name: 'نشر في المجموعات', description: 'نشر في عدة مجموعات', icon: MessageSquare, accent: '#d946ef', accentGradient: 'linear-gradient(135deg, #d946ef, #a21caf)', requiresSession: true },
+    { id: 'emails-by-interest', name: 'إيميلات بالاهتمام', description: 'إيميلات من Google + بفلتر دولة', icon: Mail, accent: '#ea580c', accentGradient: 'linear-gradient(135deg, #ea580c, #c2410c)', requiresSession: true },
   ]
 
   const currentTool = tools.find(t => t.id === activeTool) ?? null
@@ -562,6 +734,74 @@ export default function LinkedinModule() {
                     </tr>
                   )
                 }
+                if (owner === 'extract-deep-data') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium">{r.name || '-'}</td>
+                      <td className="text-xs">{r.email || '-'}</td>
+                      <td className="text-xs">{r.phone || '-'}</td>
+                      <td className="text-xs">{r.location || '-'}</td>
+                      <td className="text-xs">{r.headline || '-'}</td>
+                    </tr>
+                  )
+                }
+                if (owner === 'extract-schools') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium">{r.name || '-'}</td>
+                      <td className="text-xs text-secondary-600">{r.subtitle || '-'}</td>
+                      <td className="text-xs">{r.profile ? <a href={r.profile} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">رابط</a> : '-'}</td>
+                    </tr>
+                  )
+                }
+                if (owner === 'extract-org-members') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium">{r.name || '-'}</td>
+                      <td className="text-xs">{r.title || '-'}</td>
+                      <td className="text-xs">{r.profile ? <a href={r.profile} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">رابط</a> : '-'}</td>
+                    </tr>
+                  )
+                }
+                if (owner === 'extract-post-engagement') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium">{r.name || '-'}</td>
+                      <td className="text-xs">{r.profile ? <a href={r.profile} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">رابط</a> : '-'}</td>
+                    </tr>
+                  )
+                }
+                if (owner === 'list-my-groups') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium">{r.name || '-'}</td>
+                      <td className="text-xs">{r.url ? <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">رابط</a> : '-'}</td>
+                    </tr>
+                  )
+                }
+                if (owner === 'post-to-groups') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="text-xs max-w-[300px] truncate" dir="ltr">{r.url || '-'}</td>
+                      <td><span className={`badge ${r.status === 'posted' ? 'badge-success' : 'badge-danger'}`}>{r.status}</span></td>
+                      <td className="text-xs text-secondary-500">{r.error || '-'}</td>
+                    </tr>
+                  )
+                }
+                if (owner === 'emails-by-interest') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td dir="ltr" className="font-mono text-sm">{r.email || '-'}</td>
+                    </tr>
+                  )
+                }
                 // broadcast
                 return (
                   <tr key={i}>
@@ -785,15 +1025,160 @@ export default function LinkedinModule() {
     </button>
   )
 
+  // ---- Extract deep data panel ----
+  const renderExtractDeepDataBody = () => (
+    <div className="space-y-5">
+      <div className="p-3 rounded-lg text-xs text-secondary-600" style={{ background: 'rgba(220,38,38,0.05)', border: '1px solid rgba(220,38,38,0.2)' }}>
+        تستخرج بيانات الاتصال الكاملة (هاتف، إيميل، عنوان، موقع) من الملفات الشخصية. اللي شارك بياناته هيظهر تلقائياً.
+      </div>
+      <div>
+        <label className="label-field">الملفات الشخصية (سطر لكل ملف)</label>
+        <textarea className="textarea-field" rows={6} value={deepProfiles} onChange={e => setDeepProfiles(e.target.value)} placeholder="https://linkedin.com/in/username&#10;username2" />
+      </div>
+      <div>
+        <label className="label-field">الفاصل (ثانية)</label>
+        <input type="number" min={1} max={30} className="input-field w-32" value={deepDelay} onChange={e => setDeepDelay(Number(e.target.value) || 3)} />
+      </div>
+      {renderResultsTable('extract-deep-data', ['#', 'الاسم', 'إيميل', 'هاتف', 'الموقع', 'الوظيفة'], 'linkedin-deep')}
+    </div>
+  )
+  const extractDeepDataFooter = (<button onClick={handleExtractDeepData} disabled={loading || !deepProfiles.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #dc2626, #991b1b)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><Database size={18} /> استخراج البيانات</>}</button>)
+
+  // ---- Extract schools panel ----
+  const renderExtractSchoolsBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">الكلمة المفتاحية</label>
+        <input type="text" className="input-field" value={schoolsQuery} onChange={e => setSchoolsQuery(e.target.value)} placeholder="Cairo University, MIT, Stanford" />
+      </div>
+      <div>
+        <label className="label-field">الحد الأقصى: {schoolsLimit}</label>
+        <input type="range" min={10} max={300} step={5} className="w-full accent-violet-500" value={schoolsLimit} onChange={e => setSchoolsLimit(parseInt(e.target.value))} />
+      </div>
+      {renderResultsTable('extract-schools', ['#', 'الاسم', 'التفاصيل', 'الرابط'], 'linkedin-schools')}
+    </div>
+  )
+  const extractSchoolsFooter = (<button onClick={handleExtractSchools} disabled={loading || !schoolsQuery.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #7c3aed, #5b21b6)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><GraduationCap size={18} /> بحث</>}</button>)
+
+  // ---- Extract org members panel ----
+  const renderExtractOrgMembersBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">رابط الشركة/الجامعة</label>
+        <input type="url" className="input-field" value={orgUrl} onChange={e => setOrgUrl(e.target.value)} placeholder="https://linkedin.com/company/microsoft" />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="label-field">النوع</label>
+          <select className="select-field" value={orgKind} onChange={e => setOrgKind(e.target.value as any)}>
+            <option value="company">شركة</option>
+            <option value="school">جامعة/مدرسة</option>
+          </select>
+        </div>
+        <div>
+          <label className="label-field">الحد الأقصى: {orgLimit}</label>
+          <input type="range" min={20} max={1000} step={10} className="w-full accent-cyan-500" value={orgLimit} onChange={e => setOrgLimit(parseInt(e.target.value))} />
+        </div>
+      </div>
+      {renderResultsTable('extract-org-members', ['#', 'الاسم', 'المنصب', 'الرابط'], 'linkedin-org-members')}
+    </div>
+  )
+  const extractOrgMembersFooter = (<button onClick={handleExtractOrgMembers} disabled={loading || !orgUrl.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #0891b2, #155e75)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><Users size={18} /> استخراج الأعضاء</>}</button>)
+
+  // ---- Post engagement panel ----
+  const renderExtractPostEngagementBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">رابط المنشور</label>
+        <input type="url" className="input-field" value={engagementPostUrl} onChange={e => setEngagementPostUrl(e.target.value)} placeholder="https://linkedin.com/posts/..." />
+      </div>
+      <div className="flex gap-3 flex-wrap">
+        <button type="button" onClick={() => setEngagementMode('reactions')} className="px-4 py-2 rounded-lg text-sm font-medium" style={engagementMode === 'reactions' ? { background: 'rgba(244,63,94,0.12)', color: '#f43f5e', border: '1px solid #f43f5e' } : { background: 'white', color: '#475569', border: '1px solid #e2e8f0' }}>المعجبين</button>
+        <button type="button" onClick={() => setEngagementMode('comments')} className="px-4 py-2 rounded-lg text-sm font-medium" style={engagementMode === 'comments' ? { background: 'rgba(244,63,94,0.12)', color: '#f43f5e', border: '1px solid #f43f5e' } : { background: 'white', color: '#475569', border: '1px solid #e2e8f0' }}>المعلقين</button>
+      </div>
+      <div>
+        <label className="label-field">الحد الأقصى: {engagementLimit}</label>
+        <input type="range" min={20} max={1000} step={10} className="w-full accent-rose-500" value={engagementLimit} onChange={e => setEngagementLimit(parseInt(e.target.value))} />
+      </div>
+      {renderResultsTable('extract-post-engagement', ['#', 'الاسم', 'الرابط'], 'linkedin-engagement')}
+    </div>
+  )
+  const extractPostEngagementFooter = (<button onClick={handleExtractPostEngagement} disabled={loading || !engagementPostUrl.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #f43f5e, #be123c)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><Heart size={18} /> استخراج</>}</button>)
+
+  // ---- List my groups panel ----
+  const renderListMyGroupsBody = () => (
+    <div className="space-y-5">
+      <div className="p-3 rounded-lg text-xs text-secondary-600" style={{ background: 'rgba(20,184,166,0.05)', border: '1px solid rgba(20,184,166,0.2)' }}>
+        يستخرج المجموعات المنضم لها لاستخدامها مباشرة في "نشر في المجموعات".
+      </div>
+      <div>
+        <label className="label-field">الحد الأقصى: {myGroupsLimit}</label>
+        <input type="range" min={10} max={500} step={5} className="w-full accent-teal-500" value={myGroupsLimit} onChange={e => setMyGroupsLimit(parseInt(e.target.value))} />
+      </div>
+      {renderResultsTable('list-my-groups', ['#', 'الاسم', 'الرابط'], 'linkedin-my-groups')}
+    </div>
+  )
+  const listMyGroupsFooter = (<button onClick={handleListMyGroups} disabled={loading} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #14b8a6, #0f766e)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><ListChecks size={18} /> استخراج مجموعاتي</>}</button>)
+
+  // ---- Post to groups panel ----
+  const renderPostToGroupsBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">روابط المجموعات (سطر لكل رابط)</label>
+        <textarea className="textarea-field" rows={6} value={groupPostUrls} onChange={e => setGroupPostUrls(e.target.value)} placeholder="https://linkedin.com/groups/12345" />
+      </div>
+      <div>
+        <label className="label-field">نص المنشور</label>
+        <textarea className="textarea-field" rows={5} value={groupPostContent} onChange={e => setGroupPostContent(e.target.value)} placeholder="اكتب منشورك..." />
+      </div>
+      <div>
+        <label className="label-field">الفاصل (ثانية)</label>
+        <input type="number" min={3} max={120} className="input-field w-32" value={groupPostDelay} onChange={e => setGroupPostDelay(Number(e.target.value) || 7)} />
+      </div>
+      {renderResultsTable('post-to-groups', ['#', 'المجموعة', 'الحالة', 'خطأ'], 'linkedin-group-post')}
+    </div>
+  )
+  const postToGroupsFooter = (<button onClick={handlePostToGroups} disabled={loading || !groupPostUrls.trim() || !groupPostContent.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #d946ef, #a21caf)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><MessageSquare size={18} /> نشر</>}</button>)
+
+  // ---- Emails by interest panel ----
+  const renderEmailsByInterestBody = () => (
+    <div className="space-y-5">
+      <div className="p-3 rounded-lg text-xs text-secondary-600" style={{ background: 'rgba(234,88,12,0.05)', border: '1px solid rgba(234,88,12,0.2)' }}>
+        يبحث في Google عن إيميلات في ملفات LinkedIn متطابقة مع الاهتمام + الدولة. لن يجلب جميع الإيميلات وإنما اللي ظاهر في الفهرس.
+      </div>
+      <div>
+        <label className="label-field">الاهتمام/المجال</label>
+        <input type="text" className="input-field" value={emailsInterest} onChange={e => setEmailsInterest(e.target.value)} placeholder="marketing manager, sales director" />
+      </div>
+      <div>
+        <label className="label-field">الدولة (اختياري)</label>
+        <input type="text" className="input-field" value={emailsCountry} onChange={e => setEmailsCountry(e.target.value)} placeholder="Egypt, Saudi Arabia" />
+      </div>
+      <div>
+        <label className="label-field">الحد الأقصى: {emailsLimit}</label>
+        <input type="range" min={10} max={100} step={5} className="w-full accent-orange-500" value={emailsLimit} onChange={e => setEmailsLimit(parseInt(e.target.value))} />
+      </div>
+      {renderResultsTable('emails-by-interest', ['#', 'الإيميل'], 'linkedin-emails')}
+    </div>
+  )
+  const emailsByInterestFooter = (<button onClick={handleEmailsByInterest} disabled={loading || !emailsInterest.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #ea580c, #c2410c)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><Mail size={18} /> بحث</>}</button>)
+
   const panelMap: Record<Exclude<ActiveTool, null>, { body: React.ReactNode; footer: React.ReactNode }> = {
     search: { body: renderSearchBody(), footer: searchFooter },
     'extract-people': { body: renderExtractPeopleBody(), footer: extractPeopleFooter },
+    'extract-deep-data': { body: renderExtractDeepDataBody(), footer: extractDeepDataFooter },
     extract: { body: renderExtractBody(), footer: extractFooter },
+    'extract-schools': { body: renderExtractSchoolsBody(), footer: extractSchoolsFooter },
+    'extract-org-members': { body: renderExtractOrgMembersBody(), footer: extractOrgMembersFooter },
+    'extract-post-engagement': { body: renderExtractPostEngagementBody(), footer: extractPostEngagementFooter },
     'connect-requests': { body: renderConnectRequestsBody(), footer: connectRequestsFooter },
     'follow-companies': { body: renderFollowCompaniesBody(), footer: followCompaniesFooter },
     'join-groups': { body: renderJoinGroupsBody(), footer: joinGroupsFooter },
+    'list-my-groups': { body: renderListMyGroupsBody(), footer: listMyGroupsFooter },
     broadcast: { body: renderBroadcastBody(), footer: broadcastFooter },
     'post-feed': { body: renderPostFeedBody(), footer: postFeedFooter },
+    'post-to-groups': { body: renderPostToGroupsBody(), footer: postToGroupsFooter },
+    'emails-by-interest': { body: renderEmailsByInterestBody(), footer: emailsByInterestFooter },
   }
 
   return (

@@ -11,16 +11,18 @@ import {
   LogIn, Download, Send, UserPlus, AlertCircle, CheckCircle, Loader2,
   Trash2, FileSpreadsheet, Users, MessageSquare,
   Shield, Settings, Megaphone, Phone, KeyRound, LogOut, Wrench,
-  Contact, Search,
+  Contact, Search, Hash, Database,
 } from 'lucide-react'
 
 type ActiveTool =
   | 'extract' | 'broadcast' | 'add' | 'tools'
   | 'extract-dialogs' | 'extract-contacts' | 'search-public' | 'join-groups' | 'send-to-groups'
+  | 'add-by-id' | 'bulk-groups-download'
   | null
 type ResultsOwner =
   | 'extract' | 'broadcast' | 'add'
   | 'extract-dialogs' | 'extract-contacts' | 'search-public' | 'join-groups' | 'send-to-groups'
+  | 'add-by-id' | 'bulk-groups-download'
   | null
 
 const ACCENT = '#0088CC'
@@ -65,6 +67,14 @@ export default function TelegramModule() {
   const [sendToGroupsList, setSendToGroupsList] = useState('')
   const [sendToGroupsMessage, setSendToGroupsMessage] = useState('')
   const [sendToGroupsDelay, setSendToGroupsDelay] = useState(5)
+  // --- Add by ID ---
+  const [addByIdGroup, setAddByIdGroup] = useState('')
+  const [addByIdList, setAddByIdList] = useState('')
+  const [addByIdDelay, setAddByIdDelay] = useState(4)
+  // --- Bulk groups download ---
+  const [bulkKeywords, setBulkKeywords] = useState('')
+  const [bulkType, setBulkType] = useState<'all' | 'group' | 'channel' | 'bot'>('group')
+  const [bulkPerKeyword, setBulkPerKeyword] = useState(50)
 
   const telegramAccounts = accounts.filter((a: any) => a.platform === 'telegram')
   const ensureSession = () => {
@@ -224,6 +234,50 @@ export default function TelegramModule() {
     setLoading(false)
   }
 
+  // ---- Add by ID ----
+  const handleAddById = async () => {
+    if (!ensureSession()) return
+    if (!addByIdGroup.trim()) { showMsg('أدخل اسم المجموعة', true); return }
+    const ids = addByIdList.split('\n').map(s => s.trim()).filter(Boolean)
+    if (ids.length === 0) { showMsg('أدخل قائمة الـ IDs', true); return }
+    setLoading(true)
+    setResultsOwner('add-by-id')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.telegramAddById({ sessionId, groupName: addByIdGroup.trim(), userIds: ids, delayMs: Math.max(1, addByIdDelay) * 1000 })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        const ok = items.filter((r: any) => r.status === 'added').length
+        showMsg(`تم إضافة ${ok} من ${ids.length}`)
+      } else {
+        showMsg(res.error || 'فشلت العملية', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  // ---- Bulk groups download ----
+  const handleBulkGroupsDownload = async () => {
+    if (!ensureSession()) return
+    const keywords = bulkKeywords.split('\n').map(s => s.trim()).filter(Boolean)
+    if (keywords.length === 0) { showMsg('أدخل الكلمات المفتاحية', true); return }
+    setLoading(true)
+    setResultsOwner('bulk-groups-download')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.telegramBulkGroupsDownload({ sessionId, keywords, type: bulkType, perKeyword: bulkPerKeyword })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        showMsg(`تم تجميع ${res.count || items.length} مجموعة/قناة`)
+        await loadResults()
+      } else showMsg(res.error || 'فشل الاستخراج', true)
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
   // ---- Send to multiple groups ----
   const handleSendToGroups = async () => {
     if (!ensureSession()) return
@@ -271,6 +325,8 @@ export default function TelegramModule() {
     { id: 'broadcast', name: 'إرسال رسائل', description: 'بث رسائل لقائمة مستخدمين', icon: Send, accent: '#10b981', accentGradient: 'linear-gradient(135deg, #10b981, #047857)', requiresSession: true },
     { id: 'send-to-groups', name: 'إرسال للمجموعات', description: 'إرسال رسالة لعدة مجموعات', icon: Megaphone, accent: '#f59e0b', accentGradient: 'linear-gradient(135deg, #f59e0b, #d97706)', requiresSession: true },
     { id: 'add', name: 'إضافة أعضاء', description: 'إضافة مستخدمين لمجموعة', icon: UserPlus, accent: '#8b5cf6', accentGradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', requiresSession: true },
+    { id: 'add-by-id', name: 'إضافة بالـ ID', description: 'إضافة أعضاء برقم Telegram ID', icon: Hash, accent: '#0d9488', accentGradient: 'linear-gradient(135deg, #0d9488, #115e59)', requiresSession: true },
+    { id: 'bulk-groups-download', name: 'استخراج بالكميات', description: 'مجموعات/قنوات بكلمات متعددة', icon: Database, accent: '#7c3aed', accentGradient: 'linear-gradient(135deg, #7c3aed, #5b21b6)', requiresSession: true },
     { id: 'tools', name: 'إعدادات الحساب', description: '2FA، تغيير البيانات، جدولة', icon: Settings, accent: '#ef4444', accentGradient: 'linear-gradient(135deg, #ef4444, #b91c1c)', requiresSession: false },
   ]
 
@@ -526,6 +582,27 @@ export default function TelegramModule() {
                     </tr>
                   )
                 }
+                if (owner === 'add-by-id') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td dir="ltr" className="font-mono text-sm">{r.userId || '-'}</td>
+                      <td><span className={`badge ${r.status === 'added' ? 'badge-success' : 'badge-danger'}`}>{r.status}</span></td>
+                      <td className="text-xs text-secondary-500">{r.error || '-'}</td>
+                    </tr>
+                  )
+                }
+                if (owner === 'bulk-groups-download') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium">{r.name || '-'}</td>
+                      <td><span className={`badge ${r.type === 'channel' ? 'badge-warning' : 'badge-success'}`}>{r.type}</span></td>
+                      <td className="text-xs text-secondary-600">{r.keyword || '-'}</td>
+                      <td className="text-xs">{r.url ? <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">رابط</a> : '-'}</td>
+                    </tr>
+                  )
+                }
                 // add
                 return (
                   <tr key={i}>
@@ -771,15 +848,67 @@ export default function TelegramModule() {
     </button>
   )
 
+  // ---- Add by ID panel ----
+  const renderAddByIdBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">اسم المجموعة المستهدفة</label>
+        <input type="text" className="input-field" value={addByIdGroup} onChange={e => setAddByIdGroup(e.target.value)} placeholder="اسم المجموعة كما يظهر في التليجرام" />
+      </div>
+      <div>
+        <label className="label-field">قائمة الـ IDs (سطر لكل ID)</label>
+        <textarea className="textarea-field font-mono" dir="ltr" rows={7} value={addByIdList} onChange={e => setAddByIdList(e.target.value)} placeholder="123456789&#10;987654321" />
+      </div>
+      <div>
+        <label className="label-field">الفاصل (ثانية)</label>
+        <input type="number" min={2} max={60} className="input-field w-32" value={addByIdDelay} onChange={e => setAddByIdDelay(Number(e.target.value) || 4)} />
+      </div>
+      {renderResultsTable('add-by-id', ['#', 'ID', 'الحالة', 'خطأ'], 'telegram-add-id')}
+    </div>
+  )
+  const addByIdFooter = (<button onClick={handleAddById} disabled={loading || !addByIdGroup.trim() || !addByIdList.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #0d9488, #115e59)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><Hash size={18} /> إضافة بالـ ID</>}</button>)
+
+  // ---- Bulk groups download panel ----
+  const renderBulkGroupsDownloadBody = () => (
+    <div className="space-y-5">
+      <div className="p-3 rounded-lg text-xs text-secondary-600" style={{ background: 'rgba(124,58,237,0.05)', border: '1px solid rgba(124,58,237,0.2)' }}>
+        أدخل كلمات/مجالات (سطر لكل كلمة) — سيبحث في تليجرام عن كل كلمة ويجمع المجموعات/القنوات حتى الحد المحدد.
+      </div>
+      <div>
+        <label className="label-field">الكلمات المفتاحية / المجالات</label>
+        <textarea className="textarea-field" rows={7} value={bulkKeywords} onChange={e => setBulkKeywords(e.target.value)} placeholder="تسويق&#10;ecommerce&#10;crypto" />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="label-field">النوع</label>
+          <select className="select-field" value={bulkType} onChange={e => setBulkType(e.target.value as any)}>
+            <option value="all">الكل</option>
+            <option value="group">مجموعات فقط</option>
+            <option value="channel">قنوات فقط</option>
+            <option value="bot">بوتات فقط</option>
+          </select>
+        </div>
+        <div>
+          <label className="label-field">لكل كلمة: {bulkPerKeyword}</label>
+          <input type="range" min={10} max={500} step={10} className="w-full" style={{ accentColor: '#7c3aed' }} value={bulkPerKeyword} onChange={e => setBulkPerKeyword(parseInt(e.target.value))} />
+        </div>
+      </div>
+      {renderResultsTable('bulk-groups-download', ['#', 'الاسم', 'النوع', 'الكلمة', 'الرابط'], 'telegram-bulk')}
+    </div>
+  )
+  const bulkGroupsDownloadFooter = (<button onClick={handleBulkGroupsDownload} disabled={loading || !bulkKeywords.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #7c3aed, #5b21b6)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><Database size={18} /> تجميع</>}</button>)
+
   const panelMap: Record<Exclude<ActiveTool, null>, { body: React.ReactNode; footer: React.ReactNode }> = {
     extract: { body: renderExtractBody(), footer: extractFooter },
     'extract-dialogs': { body: renderExtractDialogsBody(), footer: extractDialogsFooter },
     'extract-contacts': { body: renderExtractContactsBody(), footer: extractContactsFooter },
     'search-public': { body: renderSearchPublicBody(), footer: searchPublicFooter },
+    'bulk-groups-download': { body: renderBulkGroupsDownloadBody(), footer: bulkGroupsDownloadFooter },
     'join-groups': { body: renderJoinGroupsBody(), footer: joinGroupsFooter },
     broadcast: { body: renderBroadcastBody(), footer: broadcastFooter },
     'send-to-groups': { body: renderSendToGroupsBody(), footer: sendToGroupsFooter },
     add: { body: renderAddBody(), footer: addFooter },
+    'add-by-id': { body: renderAddByIdBody(), footer: addByIdFooter },
     tools: { body: renderToolsBody(), footer: toolsFooter },
   }
 

@@ -11,17 +11,20 @@ import {
   Filter, Download, Users, Send, Play, AlertCircle, CheckCircle, Loader2,
   Trash2, BarChart3, MessageSquare, FileSpreadsheet, LogIn, LogOut, Wrench,
   MessageCircle, Image as ImageIcon, Zap, UserPlus, Contact, FileText, X,
+  Megaphone, Archive, Network,
 } from 'lucide-react'
 
 type ActiveTool =
   | 'broadcast' | 'filter' | 'extract' | 'groups'
   | 'fast-send' | 'send-media' | 'extract-chats' | 'extract-contacts'
   | 'extract-group-members' | 'add-to-group' | 'numbers-to-vcf'
+  | 'temp-group-broadcast' | 'extract-archived' | 'multi-number-rotation'
   | null
 type ResultsOwner =
   | 'broadcast' | 'filter' | 'extract' | 'groups'
   | 'fast-send' | 'send-media' | 'extract-chats' | 'extract-contacts'
   | 'extract-group-members' | 'add-to-group'
+  | 'temp-group-broadcast' | 'extract-archived' | 'multi-number-rotation'
   | null
 
 const ACCENT = '#25D366'
@@ -71,6 +74,19 @@ export default function WhatsappModule() {
   // --- Numbers to vCard ---
   const [vcfNumbers, setVcfNumbers] = useState('')
   const [vcfPrefix, setVcfPrefix] = useState('SkyPro Lead')
+
+  // --- Temp-group broadcast ---
+  const [tempGroupName, setTempGroupName] = useState('SkyPro Broadcast')
+  const [tempGroupMembers, setTempGroupMembers] = useState('')
+  const [tempGroupMessage, setTempGroupMessage] = useState('')
+  const [tempGroupLeave, setTempGroupLeave] = useState(true)
+  // --- Archived ---
+  const [archivedLimit, setArchivedLimit] = useState(200)
+  // --- Multi-number rotation ---
+  const [rotationSessions, setRotationSessions] = useState('')
+  const [rotationRecipients, setRotationRecipients] = useState('')
+  const [rotationMessage, setRotationMessage] = useState('')
+  const [rotationDelay, setRotationDelay] = useState(6)
 
   const handleLaunch = async () => {
     setLoading(true)
@@ -300,6 +316,68 @@ export default function WhatsappModule() {
     setLoading(false)
   }
 
+  // ---- Temp-group broadcast ----
+  const handleTempGroupBroadcast = async () => {
+    if (!sessionId) { showMsg('افتح WhatsApp أولاً', true); return }
+    const members = tempGroupMembers.split('\n').map(s => s.trim()).filter(Boolean)
+    if (members.length === 0) { showMsg('أدخل الأرقام', true); return }
+    if (!tempGroupMessage.trim()) { showMsg('أدخل نص الرسالة', true); return }
+    setLoading(true)
+    setResultsOwner('temp-group-broadcast')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.whatsappTempGroupBroadcast({ sessionId, groupName: tempGroupName.trim() || 'SkyPro Broadcast', members, message: tempGroupMessage, leaveAfter: tempGroupLeave })
+      if (res.success) {
+        const d: any = res.data || {}
+        setToolResults(Array.isArray(d.members) ? d.members : [])
+        showMsg(`تم البث للمجموعة المؤقتة وخرجت منها: ${d.leftStatus === 'left' ? 'نعم' : 'لا'}`)
+      } else showMsg(res.error || 'فشلت العملية', true)
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  // ---- Extract archived ----
+  const handleExtractArchived = async () => {
+    if (!sessionId) { showMsg('افتح WhatsApp أولاً', true); return }
+    setLoading(true)
+    setResultsOwner('extract-archived')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.whatsappExtractArchived({ sessionId, limit: archivedLimit })
+      if (res.success) {
+        setToolResults((res.data as any[]) || [])
+        showMsg(`تم استخراج ${res.count || 0} محادثة مؤرشفة`)
+        await loadResults()
+      } else showMsg(res.error || 'فشل الاستخراج', true)
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  // ---- Multi-number rotation ----
+  const handleMultiNumberRotation = async () => {
+    const sessionList = rotationSessions.split('\n').map(s => s.trim()).filter(Boolean)
+    if (sessionList.length === 0) { showMsg('أدخل sessionIds من الجلسات النشطة', true); return }
+    const recipients = rotationRecipients.split('\n').map(s => s.trim()).filter(Boolean)
+    if (recipients.length === 0) { showMsg('أدخل المستلمين', true); return }
+    if (!rotationMessage.trim()) { showMsg('أدخل الرسالة', true); return }
+    setLoading(true)
+    setResultsOwner('multi-number-rotation')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.whatsappMultiNumberRotation({ sessionIds: sessionList, recipients, message: rotationMessage, delayMs: Math.max(2, rotationDelay) * 1000 })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        const sent = items.filter((r: any) => r.status === 'sent').length
+        showMsg(`تم إرسال ${sent} من ${recipients.length} عبر ${sessionList.length} رقم`)
+      } else {
+        showMsg(res.error || 'فشلت العملية', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
   // ---- Numbers -> vCard ----
   const handleNumbersToVcf = async () => {
     const numbers = vcfNumbers.split('\n').map(s => s.trim()).filter(Boolean)
@@ -340,6 +418,9 @@ export default function WhatsappModule() {
     { id: 'groups', name: 'النشر في المجموعات', description: 'بث رسالة لقائمة مجموعات', icon: Users, accent: '#f59e0b', accentGradient: 'linear-gradient(135deg, #f59e0b, #d97706)', requiresSession: true },
     { id: 'add-to-group', name: 'إضافة أرقام لمجموعة', description: 'إضافة قائمة أرقام لمجموعة قائمة', icon: UserPlus, accent: '#84cc16', accentGradient: 'linear-gradient(135deg, #84cc16, #4d7c0f)', requiresSession: true },
     { id: 'numbers-to-vcf', name: 'تحويل لأرقام لـ vCard', description: 'إنشاء ملف جهات اتصال للهاتف', icon: FileText, accent: '#a855f7', accentGradient: 'linear-gradient(135deg, #a855f7, #7e22ce)', requiresSession: false },
+    { id: 'temp-group-broadcast', name: 'بث عبر مجموعة مؤقتة', description: 'إنشاء مجموعة + بث + خروج تلقائي', icon: Megaphone, accent: '#06b6d4', accentGradient: 'linear-gradient(135deg, #06b6d4, #0891b2)', requiresSession: true },
+    { id: 'extract-archived', name: 'استخراج المؤرشفات', description: 'استخراج المحادثات المؤرشفة', icon: Archive, accent: '#64748b', accentGradient: 'linear-gradient(135deg, #64748b, #334155)', requiresSession: true },
+    { id: 'multi-number-rotation', name: 'بث بأرقام متعددة', description: 'تدوير الأرقام لتقليل الحظر', icon: Network, accent: '#22c55e', accentGradient: 'linear-gradient(135deg, #22c55e, #15803d)', requiresSession: false },
   ]
 
   const currentTool = tools.find(t => t.id === activeTool) ?? null
@@ -554,12 +635,33 @@ export default function WhatsappModule() {
                     </tr>
                   )
                 }
-                if (owner === 'add-to-group') {
+                if (owner === 'add-to-group' || owner === 'temp-group-broadcast') {
                   return (
                     <tr key={i}>
                       <td className="text-secondary-500">{i + 1}</td>
                       <td dir="ltr" className="font-mono text-sm">{r.phone || '-'}</td>
                       <td><span className={`badge ${r.status === 'added' ? 'badge-success' : 'badge-danger'}`}>{r.status || '-'}</span></td>
+                      <td className="text-xs text-secondary-500">{r.error || '-'}</td>
+                    </tr>
+                  )
+                }
+                if (owner === 'extract-archived') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium">{r.name || '-'}</td>
+                      <td className="text-xs max-w-[260px] truncate text-secondary-600">{r.lastMessage || '-'}</td>
+                      <td className="text-xs text-secondary-500">{r.time || '-'}</td>
+                    </tr>
+                  )
+                }
+                if (owner === 'multi-number-rotation') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td dir="ltr" className="font-mono text-sm">{r.recipient || '-'}</td>
+                      <td dir="ltr" className="text-xs text-secondary-500 max-w-[140px] truncate">{r.sessionId || '-'}</td>
+                      <td><span className={`badge ${r.status === 'sent' ? 'badge-success' : 'badge-danger'}`}>{r.status}</span></td>
                       <td className="text-xs text-secondary-500">{r.error || '-'}</td>
                     </tr>
                   )
@@ -884,6 +986,85 @@ export default function WhatsappModule() {
     </button>
   )
 
+  // -------- Temp-group broadcast panel --------
+  const renderTempGroupBroadcastBody = () => (
+    <div className="space-y-5">
+      <div className="p-3 rounded-lg text-xs text-amber-700" style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.3)' }}>
+        <AlertCircle size={14} className="inline ml-1" />
+        ينشئ مجموعة جديدة بالأرقام، يبث رسالة، ثم يخرج تلقائياً (إن فعّلت الخيار). هذه الطريقة أسرع من الإرسال الفردي.
+      </div>
+      <div>
+        <label className="label-field">اسم المجموعة المؤقتة</label>
+        <input type="text" className="input-field" value={tempGroupName} onChange={e => setTempGroupName(e.target.value)} placeholder="SkyPro Broadcast" />
+      </div>
+      <div>
+        <label className="label-field">الأرقام (سطر لكل رقم)</label>
+        <textarea className="textarea-field" rows={5} value={tempGroupMembers} onChange={e => setTempGroupMembers(e.target.value)} placeholder="+2010xxxxxxxx" />
+      </div>
+      <div>
+        <label className="label-field">نص الرسالة</label>
+        <textarea className="textarea-field" rows={4} value={tempGroupMessage} onChange={e => setTempGroupMessage(e.target.value)} placeholder="اكتب رسالتك..." />
+      </div>
+      <label className="flex items-center gap-2 text-sm cursor-pointer">
+        <input type="checkbox" checked={tempGroupLeave} onChange={e => setTempGroupLeave(e.target.checked)} className="rounded" />
+        الخروج من المجموعة بعد البث
+      </label>
+      {renderResultsTable('temp-group-broadcast', ['#', 'الرقم', 'الحالة', 'خطأ'], 'whatsapp-temp-group')}
+    </div>
+  )
+  const tempGroupBroadcastFooter = (
+    <button onClick={handleTempGroupBroadcast} disabled={loading || !tempGroupMembers.trim() || !tempGroupMessage.trim()} className="btn-success w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #06b6d4, #0891b2)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Megaphone size={18} /> بدء البث</>}
+    </button>
+  )
+
+  // -------- Extract archived panel --------
+  const renderExtractArchivedBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">الحد الأقصى للنتائج</label>
+        <input type="number" min={20} max={2000} className="input-field" value={archivedLimit} onChange={e => setArchivedLimit(Number(e.target.value) || 200)} />
+      </div>
+      {renderResultsTable('extract-archived', ['#', 'الاسم', 'آخر رسالة', 'الوقت'], 'whatsapp-archived')}
+    </div>
+  )
+  const extractArchivedFooter = (
+    <button onClick={handleExtractArchived} disabled={loading} className="btn-success w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #64748b, #334155)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Archive size={18} /> استخراج</>}
+    </button>
+  )
+
+  // -------- Multi-number rotation panel --------
+  const renderMultiNumberRotationBody = () => (
+    <div className="space-y-5">
+      <div className="p-3 rounded-lg text-xs text-secondary-600" style={{ background: 'rgba(34,197,94,0.05)', border: '1px solid rgba(34,197,94,0.2)' }}>
+        تحتاج أن تكون قد فتحت ≥ 2 جلسة WhatsApp Web (بأرقام مختلفة). انسخ sessionId كل جلسة هنا. الحمولة توزع على الأرقام round-robin.
+      </div>
+      <div>
+        <label className="label-field">Session IDs (سطر لكل جلسة)</label>
+        <textarea className="textarea-field font-mono text-xs" rows={3} value={rotationSessions} onChange={e => setRotationSessions(e.target.value)} dir="ltr" placeholder="wa-session-1&#10;wa-session-2" />
+      </div>
+      <div>
+        <label className="label-field">المستلمين (سطر لكل رقم)</label>
+        <textarea className="textarea-field" rows={5} value={rotationRecipients} onChange={e => setRotationRecipients(e.target.value)} placeholder="+2010xxxxxxxx" />
+      </div>
+      <div>
+        <label className="label-field">نص الرسالة</label>
+        <textarea className="textarea-field" rows={3} value={rotationMessage} onChange={e => setRotationMessage(e.target.value)} placeholder="رسالة موحدة لجميع الأرقام..." />
+      </div>
+      <div>
+        <label className="label-field">الفاصل (ثانية)</label>
+        <input type="number" min={2} max={120} className="input-field w-32" value={rotationDelay} onChange={e => setRotationDelay(Number(e.target.value) || 6)} />
+      </div>
+      {renderResultsTable('multi-number-rotation', ['#', 'المستلم', 'الجلسة', 'الحالة', 'خطأ'], 'whatsapp-rotation')}
+    </div>
+  )
+  const multiNumberRotationFooter = (
+    <button onClick={handleMultiNumberRotation} disabled={loading || !rotationSessions.trim() || !rotationRecipients.trim() || !rotationMessage.trim()} className="btn-success w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #22c55e, #15803d)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Network size={18} /> بدء البث</>}
+    </button>
+  )
+
   const panelMap: Record<Exclude<ActiveTool, null>, { body: React.ReactNode; footer: React.ReactNode }> = {
     broadcast: { body: renderBroadcastBody(), footer: broadcastFooter },
     'fast-send': { body: renderFastSendBody(), footer: fastSendFooter },
@@ -891,10 +1072,13 @@ export default function WhatsappModule() {
     filter: { body: renderFilterBody(), footer: filterFooter },
     extract: { body: renderExtractBody(), footer: extractFooter },
     'extract-chats': { body: renderExtractChatsBody(), footer: extractChatsFooter },
+    'extract-archived': { body: renderExtractArchivedBody(), footer: extractArchivedFooter },
     'extract-contacts': { body: renderExtractContactsBody(), footer: extractContactsFooter },
     'extract-group-members': { body: renderExtractGroupMembersBody(), footer: extractGroupMembersFooter },
     groups: { body: renderGroupsBody(), footer: groupsFooter },
     'add-to-group': { body: renderAddToGroupBody(), footer: addToGroupFooter },
+    'temp-group-broadcast': { body: renderTempGroupBroadcastBody(), footer: tempGroupBroadcastFooter },
+    'multi-number-rotation': { body: renderMultiNumberRotationBody(), footer: multiNumberRotationFooter },
     'numbers-to-vcf': { body: renderNumbersToVcfBody(), footer: numbersToVcfFooter },
   }
 

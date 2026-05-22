@@ -57,6 +57,12 @@ export const platforms: Platform[] = [
     { id: 'broadcast', title: 'إرسال', description: 'إرسال الرسائل', icon: 'Send' },
     { id: 'other-tools', title: 'أدوات إضافية', description: 'أدوات مساعدة', icon: 'Wrench' },
   ]},
+  { id: 'telegram-premium', name: 'Telegram Premium', icon: 'Sparkles', color: '#0088cc', segment: 'تسويق تيليجرام Premium', description: 'أدوات Premium لمجموعات الأعضاء المخفيين والتفاعل', features: [
+    { id: 'extract-hidden', title: 'مخفيين', description: 'استخراج الأعضاء المخفيين', icon: 'Download' },
+    { id: 'add-username', title: 'username', description: 'إضافة بالـ Username', icon: 'AtSign' },
+    { id: 'add-phone', title: 'phone', description: 'إضافة برقم الهاتف', icon: 'Contact' },
+    { id: 'react', title: 'تفاعل', description: 'تفاعل بالـ Emojis', icon: 'Sparkles' },
+  ]},
   { id: 'snapchat', name: 'SnapChat', icon: 'Ghost', color: '#fffc00', segment: 'تسويق سناب شات', description: 'استخراج أصدقاء والتسويق على سناب شات', features: [
     { id: 'broadcast', title: 'إرسال', description: 'إرسال الرسائل', icon: 'Send' },
   ]},
