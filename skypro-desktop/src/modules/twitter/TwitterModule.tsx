@@ -12,16 +12,18 @@ import {
   LogIn, Download, Calendar, AtSign, Send, UserPlus, Megaphone, Repeat,
   Play, AlertCircle, CheckCircle, Loader2, Trash2, FileSpreadsheet,
   Eye, EyeOff, LogOut, Wrench, Twitter as TwitterIcon,
-  Search, Heart, TrendingUp, MessageCircle,
+  Search, Heart, TrendingUp, MessageCircle, ShieldCheck, Sparkles, Quote, Rocket,
 } from 'lucide-react'
 
 type ActiveTool =
   | 'extract' | 'follow' | 'retweet' | 'mention' | 'broadcast' | 'schedule'
   | 'search-tweets' | 'extract-likers' | 'trends' | 'like-tweets' | 'reply-tweets'
+  | 'validate-accounts' | 'boost-tweets' | 'quote-retweet' | 'follow-interactors' | 'mass-publish'
   | null
 type ResultsOwner =
   | 'extract' | 'follow' | 'retweet' | 'mention' | 'broadcast'
   | 'search-tweets' | 'extract-likers' | 'trends' | 'like-tweets' | 'reply-tweets'
+  | 'validate-accounts' | 'boost-tweets' | 'quote-retweet' | 'follow-interactors' | 'mass-publish'
   | null
 
 const ACCENT = '#1DA1F2'
@@ -72,6 +74,26 @@ export default function TwitterModule() {
   const [replyUrls, setReplyUrls] = useState('')
   const [replyMessage, setReplyMessage] = useState('')
   const [replyDelay, setReplyDelay] = useState(4)
+  // --- Validate accounts ---
+  const [validateAccountsList, setValidateAccountsList] = useState('')
+  const [validateAccountsDelay, setValidateAccountsDelay] = useState(2)
+  // --- Boost tweets ---
+  const [boostUrls, setBoostUrls] = useState('')
+  const [boostDoLike, setBoostDoLike] = useState(true)
+  const [boostDoSave, setBoostDoSave] = useState(true)
+  const [boostDoRetweet, setBoostDoRetweet] = useState(true)
+  const [boostDelay, setBoostDelay] = useState(4)
+  // --- Quote retweet ---
+  const [quoteUrls, setQuoteUrls] = useState('')
+  const [quoteComment, setQuoteComment] = useState('')
+  const [quoteDelay, setQuoteDelay] = useState(5)
+  // --- Follow interactors ---
+  const [interactorsTweetUrl, setInteractorsTweetUrl] = useState('')
+  const [interactorsMode, setInteractorsMode] = useState<'likers' | 'retweeters'>('likers')
+  const [interactorsLimit, setInteractorsLimit] = useState(100)
+  // --- Mass publish ---
+  const [massTweets, setMassTweets] = useState('')
+  const [massDelay, setMassDelay] = useState(8)
 
   const twitterAccounts = allAccounts.filter(a => a.platform === 'twitter')
   const ensureSession = () => {
@@ -286,6 +308,122 @@ export default function TwitterModule() {
     setLoading(false)
   }
 
+  // ---- Validate accounts ----
+  const handleValidateAccounts = async () => {
+    if (!ensureSession()) return
+    const list = validateAccountsList.split('\n').map(s => s.trim()).filter(Boolean)
+    if (list.length === 0) { showMsg('أدخل قائمة الحسابات', true); return }
+    setLoading(true)
+    setResultsOwner('validate-accounts')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.twitterValidateAccounts({ sessionId, usernames: list, delayMs: Math.max(1, validateAccountsDelay) * 1000 })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        const valid = items.filter((r: any) => r.status === 'valid').length
+        showMsg(`${valid} حساب صالح من أصل ${list.length}`)
+      } else {
+        showMsg(res.error || 'فشلت العملية', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  // ---- Boost tweets ----
+  const handleBoostTweets = async () => {
+    if (!ensureSession()) return
+    const urls = boostUrls.split('\n').map(s => s.trim()).filter(Boolean)
+    if (urls.length === 0) { showMsg('أدخل روابط التغريدات', true); return }
+    if (!boostDoLike && !boostDoSave && !boostDoRetweet) { showMsg('اختر إجراء واحد على الأقل', true); return }
+    setLoading(true)
+    setResultsOwner('boost-tweets')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.twitterBoostTweets({ sessionId, tweetUrls: urls, doLike: boostDoLike, doSave: boostDoSave, doRetweet: boostDoRetweet, delayMs: Math.max(1, boostDelay) * 1000 })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        const ok = items.filter((r: any) => r.status === 'done').length
+        showMsg(`تم التعزيز لـ ${ok} من ${urls.length}`)
+      } else {
+        showMsg(res.error || 'فشلت العملية', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  // ---- Quote retweet ----
+  const handleQuoteRetweet = async () => {
+    if (!ensureSession()) return
+    const urls = quoteUrls.split('\n').map(s => s.trim()).filter(Boolean)
+    if (urls.length === 0) { showMsg('أدخل روابط التغريدات', true); return }
+    if (!quoteComment.trim()) { showMsg('أدخل نص الاقتباس', true); return }
+    setLoading(true)
+    setResultsOwner('quote-retweet')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.twitterQuoteRetweet({ sessionId, tweetUrls: urls, comment: quoteComment, delayMs: Math.max(1, quoteDelay) * 1000 })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        const ok = items.filter((r: any) => r.status === 'quoted').length
+        showMsg(`تم الاقتباس لـ ${ok} من ${urls.length}`)
+      } else {
+        showMsg(res.error || 'فشلت العملية', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  // ---- Follow interactors ----
+  const handleFollowInteractors = async () => {
+    if (!ensureSession()) return
+    if (!interactorsTweetUrl.trim()) { showMsg('أدخل رابط التغريدة', true); return }
+    setLoading(true)
+    setResultsOwner('follow-interactors')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.twitterFollowInteractors({ sessionId, tweetUrl: interactorsTweetUrl.trim(), mode: interactorsMode, limit: interactorsLimit })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        const ok = items.filter((r: any) => r.status === 'followed').length
+        showMsg(`تمت متابعة ${ok} متفاعل`)
+      } else {
+        showMsg(res.error || 'فشلت العملية', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  // ---- Mass publish ----
+  const handleMassPublish = async () => {
+    if (!ensureSession()) return
+    const tweets = massTweets.split('\n').map(s => s.trim()).filter(Boolean)
+    if (tweets.length === 0) { showMsg('أدخل التغريدات', true); return }
+    setLoading(true)
+    setResultsOwner('mass-publish')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.twitterMassPublish({ sessionId, tweets, delayMs: Math.max(3, massDelay) * 1000 })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        const ok = items.filter((r: any) => r.status === 'posted').length
+        showMsg(`تم نشر ${ok} من ${tweets.length} تغريدة`)
+      } else {
+        showMsg(res.error || 'فشلت العملية', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
   // ---- Reply to tweets ----
   const handleReplyTweets = async () => {
     if (!ensureSession()) return
@@ -327,9 +465,14 @@ export default function TwitterModule() {
     { id: 'like-tweets', name: 'إعجاب بالتغريدات', description: 'إعجاب بقائمة تغريدات', icon: Heart, accent: '#22c55e', accentGradient: 'linear-gradient(135deg, #22c55e, #15803d)', requiresSession: true },
     { id: 'retweet', name: 'إعادة تغريد', description: 'ريتويت قائمة تغريدات', icon: Repeat, accent: '#10b981', accentGradient: 'linear-gradient(135deg, #10b981, #047857)', requiresSession: true },
     { id: 'reply-tweets', name: 'الرد على تغريدات', description: 'الرد بتعليق موحد على عدة تغريدات', icon: MessageCircle, accent: '#84cc16', accentGradient: 'linear-gradient(135deg, #84cc16, #4d7c0f)', requiresSession: true },
+    { id: 'quote-retweet', name: 'اقتباس تغريدة', description: 'ريتويت مع تعليق (Quote)', icon: Quote, accent: '#0d9488', accentGradient: 'linear-gradient(135deg, #0d9488, #115e59)', requiresSession: true },
+    { id: 'boost-tweets', name: 'تعزيز التغريدات', description: 'إعجاب + حفظ + ريتويت', icon: Rocket, accent: '#7c3aed', accentGradient: 'linear-gradient(135deg, #7c3aed, #5b21b6)', requiresSession: true },
     { id: 'mention', name: 'منشن جماعي', description: 'منشن مستخدمين في تغريدة', icon: AtSign, accent: '#0ea5e9', accentGradient: 'linear-gradient(135deg, #0ea5e9, #0369a1)', requiresSession: true },
     { id: 'broadcast', name: 'نشر تغريدة', description: 'نشر تغريدة جديدة الآن', icon: Megaphone, accent: '#f59e0b', accentGradient: 'linear-gradient(135deg, #f59e0b, #d97706)', requiresSession: true },
+    { id: 'mass-publish', name: 'نشر مئات التغريدات', description: 'نشر دفعة كبيرة بفواصل آمنة', icon: Sparkles, accent: '#d946ef', accentGradient: 'linear-gradient(135deg, #d946ef, #a21caf)', requiresSession: true },
     { id: 'schedule', name: 'جدولة تغريدة', description: 'جدولة تغريدة لموعد لاحق', icon: Calendar, accent: '#ef4444', accentGradient: 'linear-gradient(135deg, #ef4444, #b91c1c)', requiresSession: true },
+    { id: 'follow-interactors', name: 'متابعة المتفاعلين', description: 'متابعة معجبي / مُعيدي تغريدة', icon: UserPlus, accent: '#10b981', accentGradient: 'linear-gradient(135deg, #10b981, #047857)', requiresSession: true },
+    { id: 'validate-accounts', name: 'فحص الحسابات', description: 'فحص الحسابات الصالحة وإمكانية DM', icon: ShieldCheck, accent: '#dc2626', accentGradient: 'linear-gradient(135deg, #dc2626, #991b1b)', requiresSession: true },
   ]
 
   const currentTool = tools.find(t => t.id === activeTool) ?? null
@@ -645,6 +788,60 @@ export default function TwitterModule() {
                     </tr>
                   )
                 }
+                if (owner === 'validate-accounts') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium">@{r.username}</td>
+                      <td><span className={`badge ${r.status === 'valid' ? 'badge-success' : r.status === 'protected' ? 'badge-warning' : 'badge-danger'}`}>{r.status}</span></td>
+                      <td>{r.dmOpen ? <CheckCircle size={14} className="text-emerald-500" /> : <span className="text-secondary-300">-</span>}</td>
+                      <td className="text-xs">{r.followers || '-'}</td>
+                      <td className="text-xs text-secondary-500">{r.reason || r.error || '-'}</td>
+                    </tr>
+                  )
+                }
+                if (owner === 'boost-tweets') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="text-xs max-w-[260px] truncate"><a href={r.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{r.url}</a></td>
+                      <td>{r.liked ? <CheckCircle size={14} className="text-emerald-500" /> : <span className="text-secondary-300">-</span>}</td>
+                      <td>{r.retweeted ? <CheckCircle size={14} className="text-emerald-500" /> : <span className="text-secondary-300">-</span>}</td>
+                      <td>{r.saved ? <CheckCircle size={14} className="text-emerald-500" /> : <span className="text-secondary-300">-</span>}</td>
+                      <td><span className={`badge ${r.status === 'done' ? 'badge-success' : r.status === 'skipped' ? 'badge-warning' : 'badge-danger'}`}>{r.status}</span></td>
+                    </tr>
+                  )
+                }
+                if (owner === 'quote-retweet') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="text-xs max-w-[300px] truncate"><a href={r.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{r.url}</a></td>
+                      <td><span className={`badge ${r.status === 'quoted' ? 'badge-success' : 'badge-danger'}`}>{r.status}</span></td>
+                      <td className="text-xs text-secondary-500">{r.error || '-'}</td>
+                    </tr>
+                  )
+                }
+                if (owner === 'follow-interactors') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium">{r.username || '-'}</td>
+                      <td><span className={`badge ${r.status === 'followed' ? 'badge-success' : r.status === 'skipped' ? 'badge-warning' : 'badge-danger'}`}>{r.status}</span></td>
+                      <td className="text-xs text-secondary-500">{r.error || '-'}</td>
+                    </tr>
+                  )
+                }
+                if (owner === 'mass-publish') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="text-xs max-w-[300px] truncate">{r.text || '-'}</td>
+                      <td><span className={`badge ${r.status === 'posted' ? 'badge-success' : 'badge-danger'}`}>{r.status}</span></td>
+                      <td className="text-xs text-secondary-500">{r.error || '-'}</td>
+                    </tr>
+                  )
+                }
                 // broadcast
                 return (
                   <tr key={i}>
@@ -924,18 +1121,126 @@ export default function TwitterModule() {
     </button>
   )
 
+  // ---- Validate accounts panel ----
+  const renderValidateAccountsBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">قائمة الحسابات (سطر لكل اسم)</label>
+        <textarea className="textarea-field" rows={6} value={validateAccountsList} onChange={e => setValidateAccountsList(e.target.value)} placeholder="@user1&#10;@user2" />
+      </div>
+      <div>
+        <label className="label-field">الفاصل (ثانية)</label>
+        <input type="number" min={1} max={30} className="input-field w-32" value={validateAccountsDelay} onChange={e => setValidateAccountsDelay(Number(e.target.value) || 2)} />
+      </div>
+      {renderResultsTable('validate-accounts', ['#', 'الحساب', 'الحالة', 'DM متاح', 'المتابعين', 'ملاحظات'], 'twitter-validate')}
+    </div>
+  )
+  const validateAccountsFooter = (<button onClick={handleValidateAccounts} disabled={loading || !validateAccountsList.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #dc2626, #991b1b)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><ShieldCheck size={18} /> فحص</>}</button>)
+
+  // ---- Boost tweets panel ----
+  const renderBoostTweetsBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">روابط التغريدات (سطر لكل رابط)</label>
+        <textarea className="textarea-field" rows={6} value={boostUrls} onChange={e => setBoostUrls(e.target.value)} placeholder="https://x.com/user/status/..." />
+      </div>
+      <div className="flex items-center gap-6 flex-wrap">
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <input type="checkbox" checked={boostDoLike} onChange={e => setBoostDoLike(e.target.checked)} className="rounded" /> إعجاب
+        </label>
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <input type="checkbox" checked={boostDoRetweet} onChange={e => setBoostDoRetweet(e.target.checked)} className="rounded" /> ريتويت
+        </label>
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <input type="checkbox" checked={boostDoSave} onChange={e => setBoostDoSave(e.target.checked)} className="rounded" /> حفظ
+        </label>
+      </div>
+      <div>
+        <label className="label-field">الفاصل (ثانية)</label>
+        <input type="number" min={1} max={60} className="input-field w-32" value={boostDelay} onChange={e => setBoostDelay(Number(e.target.value) || 4)} />
+      </div>
+      {renderResultsTable('boost-tweets', ['#', 'الرابط', 'إعجاب', 'ريتويت', 'حفظ', 'الحالة'], 'twitter-boost')}
+    </div>
+  )
+  const boostTweetsFooter = (<button onClick={handleBoostTweets} disabled={loading || !boostUrls.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #7c3aed, #5b21b6)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><Rocket size={18} /> تعزيز</>}</button>)
+
+  // ---- Quote retweet panel ----
+  const renderQuoteRetweetBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">روابط التغريدات (سطر لكل رابط)</label>
+        <textarea className="textarea-field" rows={5} value={quoteUrls} onChange={e => setQuoteUrls(e.target.value)} placeholder="https://x.com/user/status/..." />
+      </div>
+      <div>
+        <label className="label-field">نص الاقتباس ({'{{n}}'} = رقم التغريدة)</label>
+        <textarea className="textarea-field" rows={4} value={quoteComment} onChange={e => setQuoteComment(e.target.value)} placeholder="رأيي 👇" />
+      </div>
+      <div>
+        <label className="label-field">الفاصل (ثانية)</label>
+        <input type="number" min={1} max={60} className="input-field w-32" value={quoteDelay} onChange={e => setQuoteDelay(Number(e.target.value) || 5)} />
+      </div>
+      {renderResultsTable('quote-retweet', ['#', 'الرابط', 'الحالة', 'خطأ'], 'twitter-quote')}
+    </div>
+  )
+  const quoteRetweetFooter = (<button onClick={handleQuoteRetweet} disabled={loading || !quoteUrls.trim() || !quoteComment.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #0d9488, #115e59)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><Quote size={18} /> اقتباس</>}</button>)
+
+  // ---- Follow interactors panel ----
+  const renderFollowInteractorsBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">رابط التغريدة</label>
+        <input type="url" className="input-field" value={interactorsTweetUrl} onChange={e => setInteractorsTweetUrl(e.target.value)} placeholder="https://x.com/user/status/..." />
+      </div>
+      <div className="flex gap-3 flex-wrap">
+        <button type="button" onClick={() => setInteractorsMode('likers')} className="px-4 py-2 rounded-lg text-sm font-medium" style={interactorsMode === 'likers' ? { background: 'rgba(16,185,129,0.12)', color: '#10b981', border: '1px solid #10b981' } : { background: 'white', color: '#475569', border: '1px solid #e2e8f0' }}>المعجبين</button>
+        <button type="button" onClick={() => setInteractorsMode('retweeters')} className="px-4 py-2 rounded-lg text-sm font-medium" style={interactorsMode === 'retweeters' ? { background: 'rgba(16,185,129,0.12)', color: '#10b981', border: '1px solid #10b981' } : { background: 'white', color: '#475569', border: '1px solid #e2e8f0' }}>المُعيدين</button>
+      </div>
+      <div>
+        <label className="label-field">الحد الأقصى: {interactorsLimit}</label>
+        <input type="range" min={10} max={500} step={10} className="w-full accent-emerald-500" value={interactorsLimit} onChange={e => setInteractorsLimit(parseInt(e.target.value))} />
+      </div>
+      {renderResultsTable('follow-interactors', ['#', 'الحساب', 'الحالة', 'خطأ'], 'twitter-follow-int')}
+    </div>
+  )
+  const followInteractorsFooter = (<button onClick={handleFollowInteractors} disabled={loading || !interactorsTweetUrl.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #10b981, #047857)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><UserPlus size={18} /> متابعة المتفاعلين</>}</button>)
+
+  // ---- Mass publish panel ----
+  const renderMassPublishBody = () => (
+    <div className="space-y-5">
+      <div className="p-3 rounded-lg text-xs text-amber-700" style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.3)' }}>
+        <AlertCircle size={14} className="inline ml-1" />
+        تويتر يحدد ~50 تغريدة/ساعة. ابق الفاصل ≥ 8 ثوانٍ للأمان.
+      </div>
+      <div>
+        <label className="label-field">التغريدات (تغريدة لكل سطر)</label>
+        <textarea className="textarea-field" rows={10} value={massTweets} onChange={e => setMassTweets(e.target.value)} placeholder="تغريدة 1&#10;تغريدة 2&#10;تغريدة 3" />
+      </div>
+      <div>
+        <label className="label-field">الفاصل (ثانية)</label>
+        <input type="number" min={5} max={300} className="input-field w-32" value={massDelay} onChange={e => setMassDelay(Number(e.target.value) || 8)} />
+      </div>
+      {renderResultsTable('mass-publish', ['#', 'النص', 'الحالة', 'خطأ'], 'twitter-mass')}
+    </div>
+  )
+  const massPublishFooter = (<button onClick={handleMassPublish} disabled={loading || !massTweets.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #d946ef, #a21caf)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><Sparkles size={18} /> نشر دفعة</>}</button>)
+
   const panelMap: Record<Exclude<ActiveTool, null>, { body: React.ReactNode; footer: React.ReactNode }> = {
     extract: { body: renderExtractBody(), footer: extractFooter },
     'search-tweets': { body: renderSearchTweetsBody(), footer: searchTweetsFooter },
     'extract-likers': { body: renderExtractLikersBody(), footer: extractLikersFooter },
     trends: { body: renderTrendsBody(), footer: trendsFooter },
     follow: { body: renderFollowBody(), footer: followFooter },
+    'follow-interactors': { body: renderFollowInteractorsBody(), footer: followInteractorsFooter },
     'like-tweets': { body: renderLikeTweetsBody(), footer: likeTweetsFooter },
     retweet: { body: renderRetweetBody(), footer: retweetFooter },
+    'quote-retweet': { body: renderQuoteRetweetBody(), footer: quoteRetweetFooter },
+    'boost-tweets': { body: renderBoostTweetsBody(), footer: boostTweetsFooter },
     'reply-tweets': { body: renderReplyTweetsBody(), footer: replyTweetsFooter },
     mention: { body: renderMentionBody(), footer: mentionFooter },
     broadcast: { body: renderBroadcastBody(), footer: broadcastFooter },
+    'mass-publish': { body: renderMassPublishBody(), footer: massPublishFooter },
     schedule: { body: renderScheduleBody(), footer: scheduleFooter },
+    'validate-accounts': { body: renderValidateAccountsBody(), footer: validateAccountsFooter },
   }
 
   return (

@@ -8,6 +8,7 @@ export type PlatformId =
   | 'twitter'
   | 'linkedin'
   | 'telegram'
+  | 'telegram-premium'
   | 'snapchat'
   | 'pinterest'
   | 'reddit'

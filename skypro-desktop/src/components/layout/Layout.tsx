@@ -12,6 +12,7 @@ const InstagramModule = lazy(() => import('../../modules/instagram/InstagramModu
 const TwitterModule = lazy(() => import('../../modules/twitter/TwitterModule'))
 const LinkedinModule = lazy(() => import('../../modules/linkedin/LinkedinModule'))
 const TelegramModule = lazy(() => import('../../modules/telegram/TelegramModule'))
+const TelegramPremiumModule = lazy(() => import('../../modules/telegram-premium/TelegramPremiumModule'))
 const TiktokModule = lazy(() => import('../../modules/tiktok/TiktokModule'))
 const PinterestModule = lazy(() => import('../../modules/pinterest/PinterestModule'))
 const SnapchatModule = lazy(() => import('../../modules/snapchat/SnapchatModule'))
@@ -34,6 +35,7 @@ const platformModules: Record<string, React.ComponentType> = {
   twitter: TwitterModule,
   linkedin: LinkedinModule,
   telegram: TelegramModule,
+  'telegram-premium': TelegramPremiumModule,
   tiktok: TiktokModule,
   pinterest: PinterestModule,
   snapchat: SnapchatModule,

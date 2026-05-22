@@ -10,13 +10,13 @@ import ToolPanel from '../../components/tools/ToolPanel'
 import {
   LogIn, Send, UserPlus, Users, MessageSquare,
   AlertCircle, CheckCircle, Loader2, Trash2, Eye, EyeOff,
-  ExternalLink, Settings, Download,
+  ExternalLink, Settings, Download, Image as ImageIcon, X, FileSpreadsheet,
   LogOut, Wrench, Ghost,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
-type ActiveTool = 'broadcast' | 'more' | null
-type ResultsOwner = 'broadcast' | null
+type ActiveTool = 'broadcast' | 'extract-friends' | 'more' | null
+type ResultsOwner = 'broadcast' | 'extract-friends' | null
 
 const ACCENT_GRADIENT = 'linear-gradient(135deg, #FFD400, #f5c800)'
 const ACCENT_DARK = '#a17800'
@@ -36,6 +36,10 @@ export default function SnapchatModule() {
 
   const [broadcastRecipients, setBroadcastRecipients] = useState('')
   const [broadcastMessage, setBroadcastMessage] = useState('')
+  const [broadcastImagePath, setBroadcastImagePath] = useState<string>('')
+  const broadcastImgInputRef = useRef<HTMLInputElement | null>(null)
+  const [broadcastDelay, setBroadcastDelay] = useState(5)
+  const [extractFriendsLimit, setExtractFriendsLimit] = useState(200)
   const [toolResults, setToolResults] = useState<any[]>([])
 
   const snapchatAccounts = allAccounts.filter(a => a.platform === 'snapchat')
@@ -80,17 +84,54 @@ export default function SnapchatModule() {
     setLoading(false)
   }
 
+  const handlePickBroadcastImage = () => broadcastImgInputRef.current?.click()
+  const handleBroadcastImageSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+    const p = (files[0] as any).path
+    if (p) setBroadcastImagePath(p)
+    if (broadcastImgInputRef.current) broadcastImgInputRef.current.value = ''
+  }
+
   const handleBroadcast = async () => {
     if (!ensureSession()) return
     const recipients = broadcastRecipients.split('\n').map(s => s.trim()).filter(Boolean)
-    if (!broadcastMessage || recipients.length === 0) { showMsg('أدخل المستلمين والرسالة', true); return }
+    if (recipients.length === 0) { showMsg('أدخل المستلمين', true); return }
+    if (!broadcastMessage && !broadcastImagePath) { showMsg('أدخل رسالة أو صورة', true); return }
     setLoading(true)
     setResultsOwner('broadcast')
+    setToolResults([])
     try {
-      const res = await window.electronAPI.snapchatBroadcast({ sessionId, usernames: recipients, message: broadcastMessage })
-      if (res.success) { setToolResults((res as any).data || [{ status: 'opened', message: (res as any).message }]); showMsg((res as any).message || 'تم فتح Snapchat Web') }
-      else showMsg(res.error || 'فشل العملية', true)
+      const res = await window.electronAPI.snapchatBroadcast({ sessionId, usernames: recipients, message: broadcastMessage, imagePath: broadcastImagePath || undefined, delayMs: Math.max(3, broadcastDelay) * 1000 })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        const sent = items.filter((r: any) => r.status === 'sent').length
+        showMsg(`تم إرسال ${sent} من ${recipients.length}`)
+      } else {
+        showMsg(res.error || 'فشل العملية', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
+    setLoading(false)
+  }
+
+  const handleExtractFriends = async () => {
+    if (!ensureSession()) return
+    setLoading(true)
+    setResultsOwner('extract-friends')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.snapchatExtractFriends({ sessionId, limit: extractFriendsLimit })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        showMsg(`تم استخراج ${res.count || items.length} صديق`)
+      } else {
+        showMsg(res.error || 'فشل الاستخراج', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
     setLoading(false)
   }
 
@@ -101,7 +142,6 @@ export default function SnapchatModule() {
   }
 
   const stubTools = [
-    { id: 'extract-friends', name: 'استخراج الأصدقاء', desc: 'قائمة الأصدقاء', icon: Users },
     { id: 'extract-stories', name: 'استخراج القصص', desc: 'القصص العامة', icon: Download },
     { id: 'add-friends', name: 'إضافة أصدقاء', desc: 'إضافة تلقائية', icon: UserPlus },
     { id: 'groups', name: 'إرسال للمجموعات', desc: 'رسائل جماعية', icon: MessageSquare },
@@ -116,7 +156,8 @@ export default function SnapchatModule() {
     accentGradient: string
     requiresSession: boolean
   }> = [
-    { id: 'broadcast', name: 'إرسال رسائل', description: 'فتح Snapchat Web وإرسال يدوي', icon: Send, accent: '#FFD400', accentGradient: 'linear-gradient(135deg, #FFD400, #f5c800)', requiresSession: true },
+    { id: 'broadcast', name: 'إرسال رسائل', description: 'إرسال للأصدقاء (نص + صورة)', icon: Send, accent: '#FFD400', accentGradient: 'linear-gradient(135deg, #FFD400, #f5c800)', requiresSession: true },
+    { id: 'extract-friends', name: 'استخراج الأصدقاء', description: 'قائمة الأصدقاء', icon: Users, accent: '#ec4899', accentGradient: 'linear-gradient(135deg, #ec4899, #be185d)', requiresSession: true },
     { id: 'more', name: 'أدوات إضافية', description: 'أدوات قيد التطوير', icon: Settings, accent: '#64748b', accentGradient: 'linear-gradient(135deg, #64748b, #334155)', requiresSession: false },
   ]
 
@@ -302,7 +343,7 @@ export default function SnapchatModule() {
           <h4 className="font-bold text-secondary-900 text-sm">النتائج ({toolResults.length})</h4>
           <div className="flex gap-2">
             <button onClick={() => handleExport(columns, exportKey, toolResults)} className="btn-success text-xs">
-              <Download size={14} /> تصدير
+              <FileSpreadsheet size={14} /> تصدير
             </button>
             <button onClick={handleClearResults} className="btn-danger text-xs">
               <Trash2 size={14} /> مسح
@@ -313,13 +354,25 @@ export default function SnapchatModule() {
           <table className="data-table">
             <thead><tr>{columns.map((c, i) => <th key={i}>{c}</th>)}</tr></thead>
             <tbody>
-              {toolResults.map((r: any, i: number) => (
-                <tr key={i}>
-                  <td className="text-secondary-500">{i + 1}</td>
-                  <td><span className={`badge ${r.status === 'opened' || r.status === 'sent' ? 'badge-success' : 'badge-warning'}`}>{r.status || 'opened'}</span></td>
-                  <td className="text-sm">{r.message || r.recipient || '-'}</td>
-                </tr>
-              ))}
+              {toolResults.map((r: any, i: number) => {
+                if (owner === 'extract-friends') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium">{r.name || '-'}</td>
+                      <td dir="ltr" className="text-xs font-mono">{r.username || '-'}</td>
+                    </tr>
+                  )
+                }
+                return (
+                  <tr key={i}>
+                    <td className="text-secondary-500">{i + 1}</td>
+                    <td className="font-medium">{r.username || r.recipient || '-'}</td>
+                    <td><span className={`badge ${r.status === 'sent' ? 'badge-success' : 'badge-danger'}`}>{r.status || '-'}</span></td>
+                    <td className="text-xs text-secondary-500">{r.error || '-'}</td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
@@ -340,24 +393,53 @@ export default function SnapchatModule() {
         extractTask={{ type: 'extract', params: { extractType: 'snapchat-broadcast', usernames: broadcastRecipients.split('\n').filter(Boolean), message: broadcastMessage } }}
         sendTask={{ type: 'send', params: { usernames: broadcastRecipients.split('\n').filter(Boolean), message: broadcastMessage } }}
       />
-      <div className="p-3 rounded-lg text-sm" style={{ background: 'rgba(255,212,0,0.10)', border: '1px solid rgba(255,212,0,0.3)', color: ACCENT_DARK }}>
-        <AlertCircle size={16} className="inline ml-1" /> الإرسال التلقائي غير متاح حالياً - سيتم فتح Snapchat Web ويمكنك إرسال الرسائل يدوياً
-      </div>
       <div>
         <label className="label-field">المستلمين (username - سطر لكل مستخدم)</label>
         <textarea className="textarea-field" rows={5} value={broadcastRecipients} onChange={e => setBroadcastRecipients(e.target.value)} placeholder="user1&#10;user2" />
       </div>
       <div>
-        <label className="label-field">نص الرسالة (للنسخ)</label>
-        <textarea className="textarea-field" rows={4} value={broadcastMessage} onChange={e => setBroadcastMessage(e.target.value)} placeholder="اكتب رسالتك هنا - سيتم فتح Snapchat Web لنسخها..." />
+        <label className="label-field">نص الرسالة</label>
+        <textarea className="textarea-field" rows={4} value={broadcastMessage} onChange={e => setBroadcastMessage(e.target.value)} placeholder="اكتب رسالتك..." />
       </div>
-      {renderResultsTable('broadcast', ['#', 'الحالة', 'التفاصيل'], 'snapchat-broadcast')}
+      <div>
+        <label className="label-field">صورة (اختياري)</label>
+        <input ref={broadcastImgInputRef} type="file" accept="image/*" onChange={handleBroadcastImageSelected} className="hidden" />
+        <div className="flex items-center gap-2 flex-wrap">
+          <button type="button" onClick={handlePickBroadcastImage} className="btn-secondary text-sm"><ImageIcon size={16} /> اختر صورة</button>
+          {broadcastImagePath && (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/70 border border-secondary-100">
+              <span className="text-xs truncate max-w-[280px]" dir="ltr">{broadcastImagePath}</span>
+              <button type="button" onClick={() => setBroadcastImagePath('')} className="text-danger-500 p-1 hover:bg-danger-50 rounded"><X size={14} /></button>
+            </div>
+          )}
+        </div>
+      </div>
+      <div>
+        <label className="label-field">الفاصل (ثانية)</label>
+        <input type="number" min={3} max={60} className="input-field w-32" value={broadcastDelay} onChange={e => setBroadcastDelay(Number(e.target.value) || 5)} />
+      </div>
+      {renderResultsTable('broadcast', ['#', 'المستلم', 'الحالة', 'خطأ'], 'snapchat-broadcast')}
     </div>
   )
 
   const broadcastFooter = (
-    <button onClick={handleBroadcast} disabled={loading || !sessionId} className="btn-primary w-full disabled:opacity-50" style={{ background: ACCENT_GRADIENT, color: '#1a1a1a' }}>
-      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Send size={18} /> فتح Snapchat Web</>}
+    <button onClick={handleBroadcast} disabled={loading || !sessionId || !broadcastRecipients.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: ACCENT_GRADIENT, color: '#1a1a1a' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Send size={18} /> إرسال</>}
+    </button>
+  )
+
+  const renderExtractFriendsBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">الحد الأقصى: {extractFriendsLimit}</label>
+        <input type="range" min={20} max={2000} step={20} className="w-full accent-pink-500" value={extractFriendsLimit} onChange={e => setExtractFriendsLimit(parseInt(e.target.value))} />
+      </div>
+      {renderResultsTable('extract-friends', ['#', 'الاسم', 'Username'], 'snapchat-friends')}
+    </div>
+  )
+  const extractFriendsFooter = (
+    <button onClick={handleExtractFriends} disabled={loading || !sessionId} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #ec4899, #be185d)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Users size={18} /> استخراج الأصدقاء</>}
     </button>
   )
 
@@ -379,6 +461,7 @@ export default function SnapchatModule() {
 
   const panelMap: Record<Exclude<ActiveTool, null>, { body: React.ReactNode; footer: React.ReactNode }> = {
     broadcast: { body: renderBroadcastBody(), footer: broadcastFooter },
+    'extract-friends': { body: renderExtractFriendsBody(), footer: extractFriendsFooter },
     more: { body: renderMoreBody(), footer: null },
   }
 

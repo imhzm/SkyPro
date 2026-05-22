@@ -8,15 +8,21 @@ import ToolGrid from '../../components/tools/ToolGrid'
 import ToolCard from '../../components/tools/ToolCard'
 import ToolPanel from '../../components/tools/ToolPanel'
 import {
-  LogIn, Search, Download, Send, Megaphone, UserPlus,
+  LogIn, Search, Download, Send, UserPlus,
   AlertCircle, CheckCircle, Loader2, Trash2, FileSpreadsheet, Eye, EyeOff,
-  Users, Heart, Globe, Settings, BarChart3, Link2,
-  LogOut, Wrench, Pin,
+  Heart, Globe, Settings, BarChart3, Link2,
+  LogOut, Wrench, Pin, MessageSquare, LayoutGrid, Upload, X, Image as ImageIcon, Plus,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
-type ActiveTool = 'search' | 'extract' | 'broadcast' | 'more' | 'follow-users' | 'extract-hashtag' | null
-type ResultsOwner = 'search' | 'extract' | 'broadcast' | 'follow-users' | 'extract-hashtag' | null
+type ActiveTool =
+  | 'search' | 'extract' | 'broadcast' | 'more' | 'follow-users' | 'extract-hashtag'
+  | 'send-message' | 'analyze-profile' | 'extract-boards' | 'auto-publish'
+  | null
+type ResultsOwner =
+  | 'search' | 'extract' | 'broadcast' | 'follow-users' | 'extract-hashtag'
+  | 'send-message' | 'extract-boards' | 'auto-publish'
+  | null
 
 const ACCENT = '#E60023'
 const ACCENT_GRADIENT = 'linear-gradient(135deg, #E60023, #BD081C)'
@@ -49,6 +55,20 @@ export default function PinterestModule() {
   // --- Extract hashtag ---
   const [hashtagKeyword, setHashtagKeyword] = useState('')
   const [hashtagLimit, setHashtagLimit] = useState(100)
+  // --- Send message ---
+  const [msgUsernames, setMsgUsernames] = useState('')
+  const [msgContent, setMsgContent] = useState('')
+  const [msgDelay, setMsgDelay] = useState(5)
+  // --- Analyze profile ---
+  const [analyzeUsername, setAnalyzeUsername] = useState('')
+  const [analyzeResult, setAnalyzeResult] = useState<any>(null)
+  // --- Extract boards ---
+  const [boardsKeyword, setBoardsKeyword] = useState('')
+  const [boardsLimit, setBoardsLimit] = useState(50)
+  // --- Auto publish ---
+  const [autoPublishPins, setAutoPublishPins] = useState<Array<{ imagePath: string; title: string; description: string; link: string }>>([])
+  const autoPublishFileRef = useRef<HTMLInputElement | null>(null)
+  const [autoPublishDelay, setAutoPublishDelay] = useState(8)
 
   const pinterestAccounts = allAccounts.filter(a => a.platform === 'pinterest')
   const ensureSession = () => {
@@ -152,18 +172,95 @@ export default function PinterestModule() {
     setLoading(false)
   }
 
-  const stubExtractTools = [
-    { id: 'extract-followers', name: 'استخراج المتابعين', desc: 'قائمة المتابعين', icon: Users, soon: true },
-    { id: 'extract-analytics', name: 'تحليل اللوحات', desc: 'إحصائيات اللوحات', icon: BarChart3, soon: true },
-  ]
+  const handleSendMessage = async () => {
+    if (!ensureSession()) return
+    const list = msgUsernames.split('\n').map(s => s.trim()).filter(Boolean)
+    if (list.length === 0) { showMsg('أدخل المستخدمين', true); return }
+    if (!msgContent.trim()) { showMsg('أدخل نص الرسالة', true); return }
+    setLoading(true)
+    setResultsOwner('send-message')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.pinterestSendMessage({ sessionId, usernames: list, message: msgContent, delayMs: Math.max(2, msgDelay) * 1000 })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        const ok = items.filter((r: any) => r.status === 'sent').length
+        showMsg(`تم إرسال ${ok} من ${list.length}`)
+      } else { showMsg(res.error || 'فشلت العملية', true); if (res.partialData) setToolResults(res.partialData as any[]) }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
 
-  const stubTools = [
-    { id: 'follow-unfollow', name: 'متابعة / إلغاء متابعة', desc: 'متابعة تلقائية', icon: UserPlus, soon: true },
-    { id: 'auto-post', name: 'النشر التلقائي', desc: 'نشر Pins تلقائي', icon: Megaphone, soon: true },
+  const handleAnalyzeProfile = async () => {
+    if (!ensureSession()) return
+    if (!analyzeUsername.trim()) { showMsg('أدخل اسم المستخدم', true); return }
+    setLoading(true)
+    setResultsOwner(null)
+    setAnalyzeResult(null)
+    try {
+      const res = await window.electronAPI.pinterestAnalyzeProfile({ sessionId, username: analyzeUsername.trim() })
+      if (res.success && res.data) {
+        setAnalyzeResult(res.data)
+        showMsg(`تم تحليل @${(res.data as any).username || analyzeUsername}`)
+      } else showMsg(String((res as any).error || 'فشل التحليل'), true)
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  const handleExtractBoards = async () => {
+    if (!ensureSession()) return
+    if (!boardsKeyword.trim()) { showMsg('أدخل الكلمة المفتاحية', true); return }
+    setLoading(true)
+    setResultsOwner('extract-boards')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.pinterestExtractBoards({ sessionId, keyword: boardsKeyword.trim(), limit: boardsLimit })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        showMsg(`تم العثور على ${res.count || items.length} لوحة`)
+      } else { showMsg(res.error || 'فشل الاستخراج', true); if (res.partialData) setToolResults(res.partialData as any[]) }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  const handlePickAutoPublishImages = () => autoPublishFileRef.current?.click()
+  const handleAutoPublishImagesSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+    const paths = Array.from(files).map(f => (f as any).path).filter(Boolean)
+    setAutoPublishPins(prev => [...prev, ...paths.map(p => ({ imagePath: p, title: '', description: '', link: '' }))])
+    if (autoPublishFileRef.current) autoPublishFileRef.current.value = ''
+  }
+  const handleRemoveAutoPublishPin = (idx: number) => setAutoPublishPins(prev => prev.filter((_, i) => i !== idx))
+  const handleUpdateAutoPublishPin = (idx: number, field: 'title' | 'description' | 'link', value: string) => {
+    setAutoPublishPins(prev => prev.map((p, i) => i === idx ? { ...p, [field]: value } : p))
+  }
+  const handleAutoPublish = async () => {
+    if (!ensureSession()) return
+    if (autoPublishPins.length === 0) { showMsg('أضف صور للنشر', true); return }
+    setLoading(true)
+    setResultsOwner('auto-publish')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.pinterestAutoPublish({ sessionId, pins: autoPublishPins, delayMs: Math.max(3, autoPublishDelay) * 1000 })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        const ok = items.filter((r: any) => r.status === 'published').length
+        showMsg(`تم نشر ${ok} من ${autoPublishPins.length} Pin`)
+      } else { showMsg(res.error || 'فشلت العملية', true); if (res.partialData) setToolResults(res.partialData as any[]) }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  const stubExtractTools: Array<{ id: string; name: string; desc: string; icon: LucideIcon; soon?: boolean }> = []
+
+  const stubTools: Array<{ id: string; name: string; desc: string; icon: LucideIcon; soon?: boolean }> = [
     { id: 'download-search', name: 'التحميل من البحث', desc: 'تحميل صور', icon: Download, soon: true },
     { id: 'download-url', name: 'التحميل من الرابط', desc: 'تحميل من رابط', icon: Link2, soon: true },
     { id: 'create-account', name: 'إنشاء حسابات', desc: 'إنشاء حسابات Pinterest', icon: Globe, soon: true },
-    { id: 'scrape-pins', name: 'استخراج Pins من الهاشتاج', desc: 'من الهاشتاجات', icon: Heart, soon: true },
   ]
 
   const tools: Array<{
@@ -179,7 +276,11 @@ export default function PinterestModule() {
     { id: 'extract', name: 'استخراج من اللوحات', description: 'استخراج Pins من لوحة', icon: Download, accent: '#ec4899', accentGradient: 'linear-gradient(135deg, #ec4899, #be185d)', requiresSession: true },
     { id: 'extract-hashtag', name: 'استخراج بكلمة مفتاحية', description: 'Pins من البحث / الهاشتاج', icon: Heart, accent: '#a855f7', accentGradient: 'linear-gradient(135deg, #a855f7, #7e22ce)', requiresSession: true },
     { id: 'follow-users', name: 'متابعة المستخدمين', description: 'متابعة قائمة من المستخدمين', icon: UserPlus, accent: '#0ea5e9', accentGradient: 'linear-gradient(135deg, #0ea5e9, #0369a1)', requiresSession: true },
-    { id: 'broadcast', name: 'مشاركة Pins', description: 'مشاركة Pin على لوحات (قريباً)', icon: Send, accent: '#10b981', accentGradient: 'linear-gradient(135deg, #10b981, #047857)', requiresSession: true },
+    { id: 'broadcast', name: 'مشاركة Pins', description: 'مشاركة Pin على لوحات', icon: Send, accent: '#10b981', accentGradient: 'linear-gradient(135deg, #10b981, #047857)', requiresSession: true },
+    { id: 'send-message', name: 'إرسال رسائل', description: 'رسائل مباشرة لقائمة مستخدمين', icon: MessageSquare, accent: '#f59e0b', accentGradient: 'linear-gradient(135deg, #f59e0b, #d97706)', requiresSession: true },
+    { id: 'analyze-profile', name: 'تحليل حساب', description: 'متابعين/متابعون/Pins/السيرة', icon: BarChart3, accent: '#7c3aed', accentGradient: 'linear-gradient(135deg, #7c3aed, #5b21b6)', requiresSession: true },
+    { id: 'extract-boards', name: 'استخراج اللوحات', description: 'لوحات بنيتش معين', icon: LayoutGrid, accent: '#14b8a6', accentGradient: 'linear-gradient(135deg, #14b8a6, #0f766e)', requiresSession: true },
+    { id: 'auto-publish', name: 'نشر تلقائي', description: 'نشر Pins جديدة دفعة واحدة', icon: Upload, accent: '#dc2626', accentGradient: 'linear-gradient(135deg, #dc2626, #991b1b)', requiresSession: true },
     { id: 'more', name: 'أدوات إضافية', description: 'أدوات قيد التطوير', icon: Settings, accent: '#64748b', accentGradient: 'linear-gradient(135deg, #64748b, #334155)', requiresSession: false },
   ]
 
@@ -421,6 +522,35 @@ export default function PinterestModule() {
                     </tr>
                   )
                 }
+                if (owner === 'send-message') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium">@{r.username || '-'}</td>
+                      <td><span className={`badge ${r.status === 'sent' ? 'badge-success' : 'badge-danger'}`}>{r.status}</span></td>
+                      <td className="text-xs text-secondary-500">{r.error || '-'}</td>
+                    </tr>
+                  )
+                }
+                if (owner === 'extract-boards') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium">{r.name || '-'}</td>
+                      <td className="text-xs">{r.url ? <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">رابط</a> : '-'}</td>
+                    </tr>
+                  )
+                }
+                if (owner === 'auto-publish') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="text-xs max-w-[260px] truncate">{r.title || '-'}</td>
+                      <td><span className={`badge ${r.status === 'published' ? 'badge-success' : 'badge-danger'}`}>{r.status}</span></td>
+                      <td className="text-xs text-secondary-500">{r.error || '-'}</td>
+                    </tr>
+                  )
+                }
                 return (
                   <tr key={i}>
                     <td className="text-secondary-500">{i + 1}</td>
@@ -588,12 +718,125 @@ export default function PinterestModule() {
     </button>
   )
 
+  // ---- Send message panel ----
+  const renderSendMessageBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">قائمة المستخدمين (سطر لكل username)</label>
+        <textarea className="textarea-field" rows={6} value={msgUsernames} onChange={e => setMsgUsernames(e.target.value)} placeholder="@user1&#10;@user2" />
+      </div>
+      <div>
+        <label className="label-field">نص الرسالة</label>
+        <textarea className="textarea-field" rows={4} value={msgContent} onChange={e => setMsgContent(e.target.value)} placeholder="اكتب رسالتك..." />
+      </div>
+      <div>
+        <label className="label-field">الفاصل (ثانية)</label>
+        <input type="number" min={2} max={60} className="input-field w-32" value={msgDelay} onChange={e => setMsgDelay(Number(e.target.value) || 5)} />
+      </div>
+      {renderResultsTable('send-message', ['#', 'المستخدم', 'الحالة', 'خطأ'], 'pinterest-msg')}
+    </div>
+  )
+  const sendMessageFooter = (<button onClick={handleSendMessage} disabled={loading || !msgUsernames.trim() || !msgContent.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><MessageSquare size={18} /> إرسال</>}</button>)
+
+  // ---- Analyze profile panel ----
+  const renderAnalyzeProfileBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">اسم المستخدم</label>
+        <input type="text" className="input-field" value={analyzeUsername} onChange={e => setAnalyzeUsername(e.target.value)} placeholder="@username" />
+      </div>
+      {analyzeResult && (
+        <div className="space-y-3">
+          <div className="grid grid-cols-3 gap-3">
+            <div className="p-3 rounded-xl border bg-white/60">
+              <p className="text-xs text-secondary-500">Pins</p>
+              <p className="text-2xl font-bold text-secondary-800">{analyzeResult.pins || '-'}</p>
+            </div>
+            <div className="p-3 rounded-xl border bg-white/60">
+              <p className="text-xs text-secondary-500">متابعين</p>
+              <p className="text-2xl font-bold text-rose-700">{analyzeResult.followers || '-'}</p>
+            </div>
+            <div className="p-3 rounded-xl border bg-white/60">
+              <p className="text-xs text-secondary-500">متابعون</p>
+              <p className="text-2xl font-bold text-violet-700">{analyzeResult.following || '-'}</p>
+            </div>
+          </div>
+          {analyzeResult.bio && (
+            <div className="p-3 rounded-xl border bg-white/60">
+              <p className="text-xs text-secondary-500 mb-1">السيرة الذاتية</p>
+              <p className="text-sm text-secondary-700 whitespace-pre-wrap">{analyzeResult.bio}</p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+  const analyzeProfileFooter = (<button onClick={handleAnalyzeProfile} disabled={loading || !analyzeUsername.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #7c3aed, #5b21b6)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><BarChart3 size={18} /> تحليل</>}</button>)
+
+  // ---- Extract boards panel ----
+  const renderExtractBoardsBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">النيتش / الكلمة المفتاحية</label>
+        <input type="text" className="input-field" value={boardsKeyword} onChange={e => setBoardsKeyword(e.target.value)} placeholder="travel, fashion, fitness" />
+      </div>
+      <div>
+        <label className="label-field">الحد الأقصى: {boardsLimit}</label>
+        <input type="range" min={10} max={300} step={5} className="w-full accent-teal-500" value={boardsLimit} onChange={e => setBoardsLimit(parseInt(e.target.value))} />
+      </div>
+      {renderResultsTable('extract-boards', ['#', 'اسم اللوحة', 'الرابط'], 'pinterest-boards')}
+    </div>
+  )
+  const extractBoardsFooter = (<button onClick={handleExtractBoards} disabled={loading || !boardsKeyword.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #14b8a6, #0f766e)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><LayoutGrid size={18} /> بحث اللوحات</>}</button>)
+
+  // ---- Auto-publish panel ----
+  const renderAutoPublishBody = () => (
+    <div className="space-y-5">
+      <div className="p-3 rounded-lg text-xs text-amber-700" style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.3)' }}>
+        <AlertCircle size={14} className="inline ml-1" />
+        أضف الصور أولاً، ثم لكل صورة يمكن إضافة عنوان ووصف ورابط، وستُنشر تباعاً.
+      </div>
+      <input ref={autoPublishFileRef} type="file" multiple accept="image/*" onChange={handleAutoPublishImagesSelected} className="hidden" />
+      <div className="flex items-center gap-2 flex-wrap">
+        <button type="button" onClick={handlePickAutoPublishImages} className="btn-secondary text-sm"><Plus size={16} /> أضف صور</button>
+        {autoPublishPins.length === 0 && <span className="text-xs text-secondary-400">لم تتم إضافة أي صورة</span>}
+      </div>
+      {autoPublishPins.length > 0 && (
+        <ul className="space-y-3">
+          {autoPublishPins.map((p, i) => (
+            <li key={i} className="rounded-xl border border-secondary-100 bg-white/70 p-3 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="flex items-center gap-2 text-xs truncate" dir="ltr"><ImageIcon size={14} /> {p.imagePath}</span>
+                <button onClick={() => handleRemoveAutoPublishPin(i)} type="button" className="text-danger-500 p-1 hover:bg-danger-50 rounded"><X size={14} /></button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <input type="text" className="input-field text-sm" value={p.title} onChange={e => handleUpdateAutoPublishPin(i, 'title', e.target.value)} placeholder="العنوان" />
+                <input type="text" className="input-field text-sm" value={p.description} onChange={e => handleUpdateAutoPublishPin(i, 'description', e.target.value)} placeholder="الوصف" />
+                <input type="url" className="input-field text-sm" value={p.link} onChange={e => handleUpdateAutoPublishPin(i, 'link', e.target.value)} placeholder="الرابط (اختياري)" />
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div>
+        <label className="label-field">الفاصل بين Pins (ثانية)</label>
+        <input type="number" min={3} max={120} className="input-field w-32" value={autoPublishDelay} onChange={e => setAutoPublishDelay(Number(e.target.value) || 8)} />
+      </div>
+      {renderResultsTable('auto-publish', ['#', 'العنوان', 'الحالة', 'خطأ'], 'pinterest-publish')}
+    </div>
+  )
+  const autoPublishFooter = (<button onClick={handleAutoPublish} disabled={loading || autoPublishPins.length === 0} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #dc2626, #991b1b)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><Upload size={18} /> نشر {autoPublishPins.length} Pin</>}</button>)
+
   const panelMap: Record<Exclude<ActiveTool, null>, { body: React.ReactNode; footer: React.ReactNode }> = {
     search: { body: renderSearchBody(), footer: searchFooter },
     extract: { body: renderExtractBody(), footer: extractFooter },
     'extract-hashtag': { body: renderExtractHashtagBody(), footer: extractHashtagFooter },
+    'extract-boards': { body: renderExtractBoardsBody(), footer: extractBoardsFooter },
     'follow-users': { body: renderFollowUsersBody(), footer: followUsersFooter },
     broadcast: { body: renderBroadcastBody(), footer: broadcastFooter },
+    'send-message': { body: renderSendMessageBody(), footer: sendMessageFooter },
+    'analyze-profile': { body: renderAnalyzeProfileBody(), footer: analyzeProfileFooter },
+    'auto-publish': { body: renderAutoPublishBody(), footer: autoPublishFooter },
     more: { body: renderMoreBody(), footer: null },
   }
 

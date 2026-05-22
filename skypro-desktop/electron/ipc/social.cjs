@@ -1324,6 +1324,485 @@ ipcm('facebook-page-send-messages', async (e, { sessionId, pageUrl, recipients, 
   return { success: true, data: results }
 })
 
+// Search Facebook pages by keyword. Different from `facebook-search` which is
+// generic — this targets the "Pages" tab on the search results page so we
+// only get pages (no profiles, posts, or groups).
+ipcm('facebook-search-pages', async (e, { sessionId, query, location, limit = 50, jobId, delayMs = 2000 }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!query) return { success: false, error: 'الكلمة المفتاحية مطلوبة' }
+  if (!jobId) jobId = `fb-pages-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const seen = new Set()
+  const pages = []
+  try {
+    let url = `https://www.facebook.com/search/pages/?q=${encodeURIComponent(query)}`
+    if (location) url += `&filters_location=${encodeURIComponent(location)}`
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+    await page.waitForTimeout(randomDelay(2500, 4000))
+    const maxScrolls = Math.max(Math.ceil(limit / 8), 10)
+    for (let i = 0; i < maxScrolls; i++) {
+      if (globals.cancelFlags.get(jobId)) break
+      if (pages.length >= limit) break
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.waitForTimeout(delayMs + Math.random() * 1500)
+      const batch = await page.evaluate(() => {
+        const r = []
+        document.querySelectorAll('div[role="article"], div[data-pagelet*="SearchResults"] > div > div').forEach(card => {
+          const linkEl = card.querySelector('a[role="link"][href*="/"]:not([href*="/posts/"]):not([href*="/photo"])')
+          if (!linkEl) return
+          const href = linkEl.getAttribute('href') || ''
+          if (!href || href === '#' || href.includes('/groups/') || href.includes('/photo')) return
+          const cleanHref = href.split('?')[0]
+          const name = linkEl.innerText.trim().split('\n')[0]
+          if (!name || name.length > 100) return
+          const followersText = (Array.from(card.querySelectorAll('span'))
+            .map(s => s.innerText)
+            .find(t => /(\d[\d,.]*)\s*(K|M|متابع|follower|like|إعجاب)/i.test(t)) || '').trim()
+          r.push({
+            name,
+            url: cleanHref.startsWith('http') ? cleanHref : `https://www.facebook.com${cleanHref}`,
+            followers: followersText,
+          })
+        })
+        return r
+      })
+      for (const p of batch) {
+        if (seen.has(p.url)) continue
+        seen.add(p.url)
+        pages.push(p)
+        if (pages.length >= limit) break
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: pages.length, total: limit, data: batch })
+    }
+    saveLeads('facebook', 'search-pages', pages.map(p => ({ name: p.name, url: p.url, extra: p.followers })))
+    return { success: true, data: pages, count: pages.length, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: pages, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// Bulk-like a list of Facebook pages (by URL). Opens each page, clicks the
+// "Like" button if it's not already liked.
+ipcm('facebook-like-pages', async (e, { sessionId, pageUrls = [], delayMs = 4500, jobId }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!jobId) jobId = `fb-like-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const results = []
+  try {
+    for (const url of pageUrls) {
+      if (globals.cancelFlags.get(jobId)) break
+      try {
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+        await page.waitForTimeout(randomDelay(1800, 3000))
+        const liked = await smartActionClick(page, [
+          'div[role="button"][aria-label="Like"]:not([aria-pressed="true"])',
+          'div[role="button"][aria-label="إعجاب"]:not([aria-pressed="true"])',
+          'div[aria-label="Like this Page"]', 'div[aria-label="إعجاب هذه الصفحة"]',
+          'div[role="button"]:has-text("Like"):not(:has-text("Liked"))'
+        ], 'like page')
+        results.push({ url, status: liked ? 'liked' : 'skipped' })
+      } catch (err) {
+        results.push({ url, status: 'failed', error: err.message })
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: results.length, total: pageUrls.length, last: results[results.length - 1] })
+      await page.waitForTimeout(delayMs + Math.random() * 1500)
+    }
+    return { success: true, data: results, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: results, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// Extract people who shared a Facebook post. The shares modal shows
+// reshares — we scroll and collect user names + profile URLs.
+ipcm('facebook-extract-sharers', async (e, { sessionId, postUrl, limit = 100, jobId, delayMs = 2000 }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!postUrl) return { success: false, error: 'رابط المنشور مطلوب' }
+  if (!jobId) jobId = `fb-sharers-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const seen = new Set()
+  const sharers = []
+  try {
+    await page.goto(postUrl, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+    await page.waitForTimeout(randomDelay(2500, 4000))
+    // Click the shares count to open the people-who-shared dialog.
+    const opened = await smartClick(page, [
+      'span:has-text("Share") + span', 'span:has-text("shares") a', 'span:has-text("share")',
+      'a:has-text("People who shared this")', 'div[role="button"]:has-text("Share")',
+      'span:has-text("مشاركة") a', 'a:has-text("الأشخاص الذين شاركوا")'
+    ], 'open shares')
+    if (!opened) return { success: false, error: 'لم نستطع فتح قائمة المشاركين' }
+    await page.waitForSelector('div[role="dialog"]', { timeout: 10000 }).catch(() => {})
+    await page.waitForTimeout(randomDelay(1500, 2500))
+    let stagnant = 0
+    while (sharers.length < limit && stagnant < 5) {
+      if (globals.cancelFlags.get(jobId)) break
+      const before = sharers.length
+      const batch = await page.evaluate(() => {
+        const r = []
+        document.querySelectorAll('div[role="dialog"] a[role="link"][href*="/"]').forEach(a => {
+          const href = a.getAttribute('href') || ''
+          if (!href || href.includes('/photo') || href === '#') return
+          const name = a.innerText.trim().split('\n')[0]
+          if (!name || name.length > 80) return
+          r.push({
+            name,
+            profile: href.startsWith('http') ? href.split('?')[0] : `https://www.facebook.com${href.split('?')[0]}`,
+          })
+        })
+        return r
+      })
+      for (const s of batch) {
+        if (seen.has(s.profile)) continue
+        seen.add(s.profile)
+        sharers.push(s)
+        if (sharers.length >= limit) break
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: sharers.length, total: limit, data: batch })
+      if (sharers.length === before) stagnant++
+      else stagnant = 0
+      await page.evaluate(() => {
+        const dlg = document.querySelector('div[role="dialog"] div[style*="overflow"]')
+        if (dlg) dlg.scrollTop = dlg.scrollHeight
+      })
+      await page.waitForTimeout(delayMs + Math.random() * 1000)
+    }
+    saveLeads('facebook', 'sharers', sharers)
+    return { success: true, data: sharers, count: sharers.length, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: sharers, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// Invite friends to like a page. Opens the page's "Invite Friends" dialog
+// and selects-all + send. Selection by username if provided.
+ipcm('facebook-invite-friends', async (e, { sessionId, pageUrl, usernames = [], inviteAll = false }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!pageUrl) return { success: false, error: 'رابط الصفحة مطلوب' }
+  try {
+    await page.goto(pageUrl, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+    await page.waitForTimeout(randomDelay(2000, 3500))
+    // Open the "..." or "Invite Friends" action.
+    const opened = await smartClick(page, [
+      'div[aria-label="Invite Friends"]', 'div[role="button"]:has-text("Invite friends")',
+      'div[role="button"]:has-text("Invite Friends")', 'div[aria-label="More"] + div[aria-label="Invite Friends"]',
+      'div[aria-label="دعوة الأصدقاء"]', 'div[role="button"]:has-text("دعوة")'
+    ], 'invite-friends button')
+    if (!opened) return { success: false, error: 'تعذّر فتح زر دعوة الأصدقاء' }
+    await page.waitForTimeout(randomDelay(1500, 2500))
+    const results = []
+    if (inviteAll) {
+      // Click each friend tile in the modal.
+      const tiles = await page.$$('div[role="dialog"] div[role="button"]:has(div[role="img"])')
+      let invited = 0
+      for (const tile of tiles) {
+        if (invited >= 50) break
+        try { await tile.click({ force: true }); invited++ } catch { /* skip */ }
+        await page.waitForTimeout(randomDelay(200, 500))
+      }
+      results.push({ invited })
+    } else {
+      for (const handle of usernames) {
+        try {
+          const u = String(handle).replace(/^@/, '').trim()
+          await smartType(page, ['div[role="dialog"] input[type="search"]', 'div[role="dialog"] input[placeholder*="Search"]'], u, 'search')
+          await page.waitForTimeout(randomDelay(800, 1500))
+          const picked = await smartClick(page, ['div[role="dialog"] div[role="button"]:has-text("' + u + '")', 'div[role="dialog"] div[role="checkbox"]:not([aria-checked="true"])'], 'pick')
+          results.push({ username: u, status: picked ? 'selected' : 'skipped' })
+          const input = await page.$('div[role="dialog"] input[type="search"]')
+          if (input) { await input.click({ clickCount: 3 }); await page.keyboard.press('Backspace') }
+        } catch (err) {
+          results.push({ username: handle, status: 'failed', error: err.message })
+        }
+      }
+    }
+    const sent = await smartClick(page, ['div[role="dialog"] div[role="button"]:has-text("Send Invites")', 'div[role="dialog"] div[role="button"]:has-text("Send")', 'div[role="dialog"] div[role="button"]:has-text("إرسال")'], 'send invites')
+    return { success: true, sent, data: results }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+})
+
+// Post a comment on a list of business pages.
+ipcm('facebook-comment-on-pages', async (e, { sessionId, pageUrls = [], commentText, delayMs = 5000, jobId }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!commentText) return { success: false, error: 'نص التعليق مطلوب' }
+  if (!jobId) jobId = `fb-comment-pages-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const results = []
+  try {
+    let idx = 0
+    for (const url of pageUrls) {
+      if (globals.cancelFlags.get(jobId)) break
+      idx++
+      try {
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+        await page.waitForTimeout(randomDelay(2500, 4000))
+        // Find the latest post on the page and open its comment box.
+        const opened = await smartClick(page, [
+          'div[role="article"]:first-of-type div[aria-label="Leave a comment"]',
+          'div[role="article"]:first-of-type div[role="button"]:has-text("Comment")',
+          'div[role="article"]:first-of-type div[role="button"]:has-text("تعليق")'
+        ], 'open comment')
+        if (!opened) { results.push({ url, status: 'skipped', error: 'لم يتم العثور على زر التعليق' }); continue }
+        await page.waitForTimeout(randomDelay(800, 1500))
+        const text = String(commentText).replace(/\{\{n\}\}/g, String(idx))
+        const typed = await smartType(page, ['div[role="article"]:first-of-type div[contenteditable="true"]', 'div[contenteditable="true"][aria-label*="Comment"]'], text, 'comment')
+        if (!typed) { results.push({ url, status: 'failed', error: 'لم يتم العثور على حقل التعليق' }); continue }
+        await page.waitForTimeout(randomDelay(500, 1200))
+        await page.keyboard.press('Enter')
+        await page.waitForTimeout(randomDelay(1500, 2500))
+        results.push({ url, status: 'commented' })
+      } catch (err) {
+        results.push({ url, status: 'failed', error: err.message })
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: results.length, total: pageUrls.length, last: results[results.length - 1] })
+      await page.waitForTimeout(delayMs + Math.random() * 1500)
+    }
+    return { success: true, data: results, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: results, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// Post text + up to 3 images to a list of groups. Builds on the existing
+// post-to-groups but supports media uploads via file input.
+ipcm('facebook-post-with-images', async (e, { sessionId, groups = [], message, imagePaths = [], delayMs = 8000, jobId }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!message && imagePaths.length === 0) return { success: false, error: 'النص أو الصور مطلوبة' }
+  for (const p of imagePaths) {
+    if (!fs.existsSync(p)) return { success: false, error: `الملف غير موجود: ${p}` }
+  }
+  if (!jobId) jobId = `fb-post-img-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const results = []
+  try {
+    for (const groupUrl of groups) {
+      if (globals.cancelFlags.get(jobId)) break
+      try {
+        await page.goto(groupUrl.replace(/\/$/, ''), { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+        await page.waitForTimeout(randomDelay(3000, 5000))
+        // Open composer.
+        const opened = await smartClick(page, [
+          'div[role="button"][aria-label*="Write"]', 'div[role="button"][aria-label*="Create"]',
+          'div[role="button"]:has-text("Write something")', 'div[role="button"]:has-text("اكتب شيئًا")'
+        ], 'composer')
+        if (!opened) { results.push({ group: groupUrl, status: 'failed', error: 'لم يتم العثور على نافذة النشر' }); continue }
+        await page.waitForTimeout(randomDelay(1500, 2500))
+        if (message) {
+          await smartType(page, ['div[role="textbox"][contenteditable="true"]', 'div[contenteditable="true"][aria-label*="message"]'], message, 'post')
+          await page.waitForTimeout(randomDelay(500, 1200))
+        }
+        if (imagePaths.length > 0) {
+          // Click photos/video button.
+          await smartClick(page, [
+            'div[aria-label="Photo/video"]', 'div[aria-label="صورة/فيديو"]',
+            'div[role="button"]:has-text("Photo/video")', 'div[role="button"]:has-text("صورة/فيديو")'
+          ], 'photo-video')
+          await page.waitForTimeout(randomDelay(800, 1500))
+          const fileInput = await page.$('input[type="file"][accept*="image"], input[type="file"]')
+          if (fileInput) {
+            await fileInput.setInputFiles(imagePaths.slice(0, 3))
+            await page.waitForTimeout(randomDelay(2500, 4500))
+          }
+        }
+        // Click Post.
+        const posted = await smartClick(page, [
+          'div[aria-label="Post"]:not([aria-disabled="true"])',
+          'div[role="button"]:has-text("Post"):not(:has-text("post a job"))',
+          'div[role="button"]:has-text("نشر")'
+        ], 'post')
+        results.push({ group: groupUrl, status: posted ? 'posted' : 'failed' })
+      } catch (err) {
+        results.push({ group: groupUrl, status: 'failed', error: err.message })
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: results.length, total: groups.length, last: results[results.length - 1] })
+      await page.waitForTimeout(delayMs + Math.random() * 2000)
+    }
+    return { success: true, data: results, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: results, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// Aggregate demographic data from the in-memory results of a previous
+// extraction (likers, comments, members…). Counts gender, location keywords,
+// and age bands when surfaced in profile data. Pure JS aggregation — no
+// network calls needed.
+ipcm('facebook-demographics-analyze', async (e, { items = [] }) => {
+  try {
+    const stats = {
+      total: items.length,
+      genderGuess: { male: 0, female: 0, unknown: 0 },
+      topLocations: {},
+      topNames: {},
+      hasPhone: 0,
+      hasEmail: 0,
+    }
+    // Heuristic Arabic male/female name endings + common English markers.
+    const malePatterns = /(محمد|أحمد|علي|عمر|حسن|حسين|إبراهيم|يوسف|عبدالله|عبد الله|عبد الرحمن|خالد|سعيد|طارق|كريم|بلال|هشام|طاهر|مصطفى|سامي|نبيل|سامر|أيمن|عماد|سامح|محمود|بدر|باسل|مالك|باسم|ماجد|مجدي|بهاء|سيف|راشد|صلاح|نواف|ناصر|عبده|أنس|سعد|طلال)/i
+    const femalePatterns = /(فاطمه|فاطمة|مريم|عائشه|عائشة|سارة|سارا|نور|هند|دينا|رنا|ميا|مها|دانا|رهف|إيمان|نهى|نسرين|أمل|سها|سوسن|لينا|روان|نادين|هبة|هبه|هدى|إسراء|روعة|رؤى|ميساء|أسماء|سلمى|دالية|ولاء|جوانا|جوان|سحر|نسمة|نهاد|نهال)/i
+    items.forEach(it => {
+      const name = String(it.name || it.username || '').trim()
+      if (malePatterns.test(name)) stats.genderGuess.male++
+      else if (femalePatterns.test(name)) stats.genderGuess.female++
+      else stats.genderGuess.unknown++
+      const loc = String(it.location || it.city || it.country || '').trim()
+      if (loc) stats.topLocations[loc] = (stats.topLocations[loc] || 0) + 1
+      const first = name.split(/\s+/)[0]
+      if (first) stats.topNames[first] = (stats.topNames[first] || 0) + 1
+      if (it.phone) stats.hasPhone++
+      if (it.email) stats.hasEmail++
+    })
+    const sortObj = (o, max = 10) => Object.entries(o).sort((a, b) => b[1] - a[1]).slice(0, max).map(([k, v]) => ({ value: k, count: v }))
+    return {
+      success: true,
+      data: {
+        total: stats.total,
+        genderGuess: stats.genderGuess,
+        hasPhone: stats.hasPhone,
+        hasEmail: stats.hasEmail,
+        topLocations: sortObj(stats.topLocations),
+        topNames: sortObj(stats.topNames, 20),
+      },
+    }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+})
+
+// Detect which of the user's joined groups are "anyone-can-post" vs need
+// admin approval. Walks each group's About section.
+ipcm('facebook-detect-open-groups', async (e, { sessionId, groupUrls = [], delayMs = 3000, jobId }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!jobId) jobId = `fb-open-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const results = []
+  try {
+    for (const url of groupUrls) {
+      if (globals.cancelFlags.get(jobId)) break
+      try {
+        const aboutUrl = url.replace(/\/$/, '') + '/about'
+        await page.goto(aboutUrl, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+        await page.waitForTimeout(randomDelay(2000, 3500))
+        const info = await page.evaluate(() => {
+          const text = document.body.innerText
+          const approval = /(Membership approval|All posts must be approved|require admin approval|بحاجة لموافقة مشرف|كل المنشورات بحاجة لموافقة)/i.test(text)
+          const open = /(Anyone can post|Public group|Anyone can join|أي شخص يمكنه النشر|مجموعة عامة)/i.test(text)
+          const nameEl = document.querySelector('h1, h2 a, h2')
+          const memberMatch = text.match(/(\d[\d,.\s]*)\s*(members|عضو)/i)
+          return {
+            name: nameEl ? nameEl.innerText.trim() : '',
+            approvalRequired: approval,
+            openPosting: open && !approval,
+            members: memberMatch ? memberMatch[1].trim() : '',
+          }
+        })
+        results.push({ url, ...info, status: info.openPosting ? 'open' : info.approvalRequired ? 'approval-needed' : 'unknown' })
+      } catch (err) {
+        results.push({ url, status: 'failed', error: err.message })
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: results.length, total: groupUrls.length, last: results[results.length - 1] })
+      await page.waitForTimeout(delayMs + Math.random() * 1500)
+    }
+    return { success: true, data: results, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: results, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// Extract active friends — friends who have posted recently. Walks /friends/
+// then checks each profile's latest post timestamp. Heuristic but useful.
+ipcm('facebook-extract-active-friends', async (e, { sessionId, limit = 50, activeDays = 30, jobId, delayMs = 2500 }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!jobId) jobId = `fb-active-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const active = []
+  try {
+    await page.goto('https://www.facebook.com/friends/list', { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+    await page.waitForTimeout(randomDelay(2500, 4000))
+    // Scroll friends list.
+    for (let i = 0; i < 5; i++) {
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.waitForTimeout(randomDelay(1500, 2500))
+    }
+    const friends = await page.evaluate((max) => {
+      const r = []
+      const seen = new Set()
+      document.querySelectorAll('a[role="link"][href*="/"][href*="profile"], a[href*="facebook.com/profile.php"], a[href^="/"][href*="?fref"]').forEach(a => {
+        const href = a.getAttribute('href') || ''
+        if (!href || seen.has(href)) return
+        const name = a.innerText.trim().split('\n')[0]
+        if (!name || name.length > 80) return
+        seen.add(href)
+        r.push({ name, profile: href.startsWith('http') ? href : `https://www.facebook.com${href}` })
+        if (r.length >= max) return r
+      })
+      return r
+    }, Math.max(limit * 4, 200))
+    // Check each friend's profile for recent activity.
+    for (let i = 0; i < friends.length && active.length < limit; i++) {
+      if (globals.cancelFlags.get(jobId)) break
+      const friend = friends[i]
+      try {
+        await page.goto(friend.profile, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
+        await page.waitForTimeout(randomDelay(1500, 2500))
+        const recent = await page.evaluate((days) => {
+          const timeEls = document.querySelectorAll('a[role="link"] abbr, a[role="link"] span[title]')
+          for (const el of timeEls) {
+            const t = (el.getAttribute('title') || el.innerText || '').trim()
+            // Heuristic: count "h", "d", "m", "now" for recent posts.
+            if (/(now|just now|الآن)/i.test(t)) return { recent: true, label: t }
+            const mh = t.match(/(\d+)\s*(h|hr|hour|س|ساعة)/i)
+            if (mh) return { recent: true, label: t }
+            const md = t.match(/(\d+)\s*(d|day|يوم|أيام)/i)
+            if (md && parseInt(md[1]) <= days) return { recent: true, label: t }
+          }
+          return { recent: false }
+        }, activeDays)
+        if (recent.recent) {
+          active.push({ ...friend, lastSeen: recent.label })
+          sendProgress(sender, jobId, { type: 'progress', count: active.length, total: limit, data: [{ ...friend, lastSeen: recent.label }] })
+        }
+      } catch { /* skip this friend */ }
+      await page.waitForTimeout(delayMs + Math.random() * 1000)
+    }
+    saveLeads('facebook', 'active-friends', active)
+    return { success: true, data: active, count: active.length, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: active, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
 // ==================== MULTI-ACCOUNT ROTATION ====================
 
 ipcm('get-active-sessions', async () => {
@@ -2056,6 +2535,186 @@ ipcm('whatsapp-numbers-to-vcf', async (e, { numbers = [], namePrefix = 'Lead', s
   }
 })
 
+// Create a temporary group with the provided members, send the broadcast
+// message, then leave the group. This is the "brand-name broadcast" pattern
+// from the user's feature list. Requires WhatsApp Web logged-in session.
+ipcm('whatsapp-temp-group-broadcast', async (e, { sessionId, groupName = 'SkyPro Broadcast', members = [], message, leaveAfter = true, jobId }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!Array.isArray(members) || members.length === 0) return { success: false, error: 'لم يتم إدخال أعضاء' }
+  if (!message) return { success: false, error: 'الرسالة مطلوبة' }
+  if (!jobId) jobId = `wa-temp-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  try {
+    // Open new chat menu.
+    const opened = await smartClick(page, [
+      '[data-testid="new-chat-btn"]', 'span[data-icon="new-chat-outline"]',
+      'div[title="New chat"]', 'div[aria-label="New chat"]'
+    ], 'new chat')
+    if (!opened) return { success: false, error: 'تعذّر فتح قائمة محادثة جديدة' }
+    await page.waitForTimeout(randomDelay(800, 1500))
+    // Click "New group" inside.
+    const newGroup = await smartClick(page, [
+      'div[role="button"]:has-text("New group")', 'span:has-text("New group")',
+      'div[role="button"]:has-text("مجموعة جديدة")', 'span:has-text("مجموعة جديدة")'
+    ], 'new group')
+    if (!newGroup) return { success: false, error: 'تعذّر فتح "مجموعة جديدة"' }
+    await page.waitForTimeout(randomDelay(1500, 2500))
+    // Add members one by one.
+    const added = []
+    for (const phone of members) {
+      if (globals.cancelFlags.get(jobId)) break
+      try {
+        const clean = String(phone).replace(/[^0-9+]/g, '')
+        await smartType(page, ['div[contenteditable="true"][data-tab]', 'input[type="text"]', 'input[placeholder*="Search"]'], clean, 'add member')
+        await page.waitForTimeout(randomDelay(1200, 2000))
+        const picked = await smartClick(page, ['div[role="listitem"]:first-of-type', 'div[role="button"][data-testid="cell-frame-container"]:first-of-type'], 'pick member')
+        added.push({ phone: clean, status: picked ? 'added' : 'failed' })
+        // Clear search.
+        const input = await page.$('div[contenteditable="true"][data-tab], input[type="text"]')
+        if (input) { try { await input.click({ clickCount: 3 }); await page.keyboard.press('Backspace') } catch { /* ignore */ } }
+      } catch (err) {
+        added.push({ phone, status: 'failed', error: err.message })
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: added.length, total: members.length + 3, last: added[added.length - 1] })
+      await page.waitForTimeout(randomDelay(800, 1500))
+    }
+    // Proceed to group naming.
+    await smartClick(page, ['span[data-icon="arrow-forward"]', 'div[role="button"][aria-label="Next"]', 'div[role="button"]:has-text("Next")'], 'next step')
+    await page.waitForTimeout(randomDelay(1500, 2500))
+    await smartType(page, ['div[contenteditable="true"][data-tab]:not([data-testid*="chat"])', 'div[contenteditable="true"][data-tab="3"]'], groupName, 'group name')
+    await page.waitForTimeout(randomDelay(800, 1500))
+    await smartClick(page, ['span[data-icon="checkmark-medium"]', 'div[role="button"][aria-label="Create group"]', 'div[role="button"]:has-text("Create group")'], 'create')
+    await page.waitForTimeout(randomDelay(3000, 5000))
+    // Type the broadcast in the composer.
+    await smartType(page, ['[data-testid="conversation-compose-box-input"] [contenteditable="true"]', '[data-testid="conversation-compose-box-input"]', 'div[contenteditable="true"][data-tab="10"]'], message, 'broadcast msg')
+    await page.waitForTimeout(randomDelay(800, 1500))
+    await page.keyboard.press('Enter')
+    await page.waitForTimeout(randomDelay(2000, 3500))
+    let leftStatus = 'kept'
+    if (leaveAfter) {
+      // Open group info → leave group.
+      await smartClick(page, ['header [data-testid="conversation-info-header"]', 'header div[role="button"]'], 'group header')
+      await page.waitForTimeout(randomDelay(1500, 2500))
+      // Scroll info pane.
+      await page.evaluate(() => {
+        const drawer = document.querySelector('section[data-animate-drawer="true"]') || document.querySelector('section')
+        if (drawer) drawer.scrollTop = drawer.scrollHeight
+      })
+      await page.waitForTimeout(randomDelay(800, 1500))
+      const exited = await smartActionClick(page, [
+        'div[role="button"]:has-text("Exit group")', 'div[role="button"]:has-text("Leave group")',
+        'div[role="button"]:has-text("الخروج")', 'div[role="button"]:has-text("مغادرة")'
+      ], 'exit group')
+      if (exited) {
+        await page.waitForTimeout(randomDelay(800, 1500))
+        const confirmed = await smartActionClick(page, ['div[role="button"]:has-text("Exit")', 'div[role="button"]:has-text("Leave")', 'div[role="button"]:has-text("خروج")'], 'confirm exit')
+        leftStatus = confirmed ? 'left' : 'kept'
+      }
+    }
+    return { success: true, data: { groupName, members: added, broadcasted: true, leftStatus }, jobId }
+  } catch (err) {
+    return { success: false, error: err.message, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// Extract chats from the "Archived" view. Click the Archived label, scroll,
+// collect rows. Returns same shape as extract-chats.
+ipcm('whatsapp-extract-archived', async (e, { sessionId, limit = 200 }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  try {
+    await page.waitForSelector('[data-testid="chat-list"], #pane-side', { timeout: 30000 }).catch(() => {})
+    await page.waitForTimeout(randomDelay(800, 1500))
+    // Click "Archived" button at top of chat list.
+    const opened = await smartClick(page, [
+      '[data-testid="archived-button"]', 'div[role="button"]:has-text("Archived")',
+      'div[role="button"]:has-text("الأرشيف")', 'span:has-text("Archived")'
+    ], 'archived')
+    if (!opened) return { success: false, error: 'لم يتم العثور على الأرشيف' }
+    await page.waitForTimeout(randomDelay(1500, 2500))
+    const chats = []
+    const seen = new Set()
+    for (let i = 0; i < Math.max(Math.ceil(limit / 15), 5); i++) {
+      const batch = await page.evaluate(() => {
+        const out = []
+        document.querySelectorAll('[data-testid="cell-frame-container"], #pane-side div[role="listitem"]').forEach(row => {
+          const nameEl = row.querySelector('[data-testid="cell-frame-title"] span[title], span[dir="auto"][title]')
+          const subEl = row.querySelector('[data-testid="cell-frame-secondary"] span[title]')
+          const timeEl = row.querySelector('[data-testid="cell-frame-meta"]')
+          if (!nameEl) return
+          const name = nameEl.getAttribute('title') || nameEl.innerText
+          if (!name) return
+          out.push({ name, lastMessage: subEl ? (subEl.getAttribute('title') || subEl.innerText || '') : '', time: timeEl ? timeEl.innerText : '' })
+        })
+        return out
+      })
+      for (const c of batch) {
+        if (seen.has(c.name)) continue
+        seen.add(c.name)
+        chats.push(c)
+        if (chats.length >= limit) break
+      }
+      if (chats.length >= limit) break
+      await page.evaluate(() => {
+        const pane = document.querySelector('#pane-side') || document.querySelector('[data-testid="chat-list"]')
+        if (pane) pane.scrollTop = pane.scrollHeight
+      })
+      await page.waitForTimeout(randomDelay(900, 1500))
+    }
+    saveLeads('whatsapp', 'archived-chats', chats.map(c => ({ name: c.name, extra: c.lastMessage })))
+    return { success: true, data: chats, count: chats.length }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+})
+
+// Send the same message from multiple WhatsApp sessions (number rotation).
+// Each number is tried in turn round-robin to share rate limits. Requires
+// that all sessionIds are pre-launched (e.g. via cycle).
+ipcm('whatsapp-multi-number-rotation', async (e, { sessionIds = [], recipients = [], message, delayMs = 6000, jobId }) => {
+  if (!Array.isArray(sessionIds) || sessionIds.length === 0) return { success: false, error: 'يجب إدخال جلسة واحدة على الأقل' }
+  if (!message) return { success: false, error: 'الرسالة مطلوبة' }
+  if (!jobId) jobId = `wa-rotate-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const results = []
+  try {
+    let cursor = 0
+    for (const raw of recipients) {
+      if (globals.cancelFlags.get(jobId)) break
+      const sid = sessionIds[cursor % sessionIds.length]
+      cursor++
+      const page = globals.bm.getPage(sid)
+      const clean = String(raw).replace(/[^0-9]/g, '')
+      if (!page || !clean) { results.push({ recipient: raw, sessionId: sid, status: 'failed', error: 'جلسة أو رقم غير صالح' }); continue }
+      try {
+        const url = `https://web.whatsapp.com/send?phone=${clean}&text=${encodeURIComponent(message)}`
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+        await page.waitForSelector('[data-testid="conversation-compose-box-input"], div[contenteditable="true"][data-tab]', { timeout: 25000 }).catch(() => {})
+        await page.waitForTimeout(randomDelay(1500, 2800))
+        const clicked = await smartClick(page, ['[data-testid="send"]', 'span[data-icon="send"]', 'button[aria-label="Send"]'], 'send')
+        if (!clicked) await page.keyboard.press('Enter')
+        await page.waitForTimeout(randomDelay(1500, 2500))
+        const sent = await page.evaluate(() => !!document.querySelector('[data-testid="msg-time"], [data-pre-plain-text]'))
+        results.push({ recipient: clean, sessionId: sid, status: sent ? 'sent' : 'unknown' })
+      } catch (err) {
+        results.push({ recipient: clean, sessionId: sid, status: 'failed', error: err.message })
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: results.length, total: recipients.length, last: results[results.length - 1] })
+      await page.waitForTimeout(delayMs + Math.random() * 2000)
+    }
+    return { success: true, data: results, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: results, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
 // Faster bulk text sender — opens each chat through wa.me deep links which is
 // 2-3x faster than the in-app search but slightly more visible to WhatsApp's
 // rate limiter. Use small batches.
@@ -2576,6 +3235,166 @@ ipcm('instagram-extract-following', async (e, { sessionId, targetUser, limit = 2
   }
 })
 
+// Extract suggested users — opens the user's profile's "Suggested for you"
+// dropdown which shows similar accounts. Useful for finding niche influencers.
+ipcm('instagram-extract-suggested', async (e, { sessionId, baseUser, limit = 50, jobId, delayMs = 1500 }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!baseUser) return { success: false, error: 'اسم المستخدم المرجعي مطلوب' }
+  if (!jobId) jobId = `ig-suggested-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const suggested = []
+  try {
+    const handle = String(baseUser).replace(/^@/, '').trim()
+    await page.goto(`https://www.instagram.com/${handle}/`, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+    await page.waitForTimeout(randomDelay(2000, 3500))
+    // Click the chevron-down ("See suggested" toggle).
+    await smartClick(page, [
+      'button[aria-label="See suggested users"]', 'svg[aria-label="See suggested users"]',
+      'div[role="button"]:has-text("Discover people")', 'svg[aria-label="Down chevron"]',
+      'button[aria-label*="Suggested"]'
+    ], 'open suggested')
+    await page.waitForTimeout(randomDelay(1500, 2500))
+    const seen = new Set()
+    let stagnant = 0
+    while (suggested.length < limit && stagnant < 5) {
+      if (globals.cancelFlags.get(jobId)) break
+      const before = suggested.length
+      const batch = await page.evaluate(() => {
+        const r = []
+        // Suggested users are in a horizontal scroll list — read all anchors.
+        document.querySelectorAll('a[href^="/"][href*="/"]:not([href*="/explore/"]):not([href*="/p/"])').forEach(a => {
+          const href = a.getAttribute('href') || ''
+          if (!href || href.length < 2) return
+          const u = href.replace(/\//g, '').split('?')[0]
+          if (!u || u.length > 30) return
+          const nameSpan = a.querySelector('span') || a.parentElement?.querySelector('span')
+          r.push({ username: u, profile: `https://instagram.com/${u}`, name: nameSpan ? nameSpan.innerText.trim() : '' })
+        })
+        return r
+      })
+      for (const s of batch) {
+        if (seen.has(s.username)) continue
+        seen.add(s.username)
+        suggested.push(s)
+        if (suggested.length >= limit) break
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: suggested.length, total: limit, data: batch })
+      if (suggested.length === before) stagnant++
+      else stagnant = 0
+      // Try clicking next button on the carousel.
+      await smartActionClick(page, ['button[aria-label="Next"]'], 'next suggested')
+      await page.waitForTimeout(delayMs + Math.random() * 1000)
+    }
+    saveLeads('instagram', 'suggested-users', suggested)
+    return { success: true, data: suggested, count: suggested.length, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: suggested, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// Extract top "popular" Instagram users for a country by walking the
+// hashtag's "Top posts" and collecting authors. Heuristic — depends on
+// hashtag relevance to the country.
+ipcm('instagram-top-influencers', async (e, { sessionId, hashtag, country = '', limit = 50, jobId, delayMs = 1800 }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!hashtag) return { success: false, error: 'الهاشتاج مطلوب' }
+  if (!jobId) jobId = `ig-influencers-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const influencers = []
+  try {
+    const tag = String(hashtag).replace('#', '').trim()
+    await page.goto(`https://www.instagram.com/explore/tags/${tag}/`, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+    await page.waitForTimeout(randomDelay(2500, 4000))
+    // Collect top-post anchors.
+    const seen = new Set()
+    const postLinks = await page.evaluate(() => {
+      const r = []
+      document.querySelectorAll('a[href^="/p/"]').forEach((a, i) => {
+        if (i >= 30) return
+        r.push(a.href)
+      })
+      return r
+    })
+    for (let i = 0; i < postLinks.length && influencers.length < limit; i++) {
+      if (globals.cancelFlags.get(jobId)) break
+      try {
+        await page.goto(postLinks[i], { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
+        await page.waitForTimeout(randomDelay(1500, 2500))
+        const info = await page.evaluate((countryHint) => {
+          const authorLink = document.querySelector('header a[href^="/"]')
+          if (!authorLink) return null
+          const username = (authorLink.getAttribute('href') || '').replace(/\//g, '')
+          const headerSpan = document.querySelector('header span') || document.querySelector('h2')
+          const name = headerSpan ? headerSpan.innerText.trim() : ''
+          // Followers via the meta tag (when available).
+          const meta = document.querySelector('meta[property="og:description"]')
+          const desc = meta ? meta.getAttribute('content') || '' : ''
+          const m = desc.match(/([\d,.]+)\s*(K|M)?\s*Followers/i)
+          let followers = ''
+          if (m) followers = m[1] + (m[2] || '')
+          // Country mention check.
+          const countryMatch = countryHint ? new RegExp(countryHint, 'i').test(desc) : true
+          return { username, profile: `https://instagram.com/${username}`, name, followers, countryMatch }
+        }, country)
+        if (info && info.username && !seen.has(info.username) && (!country || info.countryMatch)) {
+          seen.add(info.username)
+          influencers.push(info)
+          sendProgress(sender, jobId, { type: 'progress', count: influencers.length, total: limit, data: [info] })
+        }
+      } catch { /* skip */ }
+      await page.waitForTimeout(delayMs + Math.random() * 1000)
+    }
+    saveLeads('instagram', 'influencers', influencers.map(i => ({ name: i.name, url: i.profile, extra: i.followers, source: i.username })))
+    return { success: true, data: influencers, count: influencers.length, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: influencers, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// Analyze a user's profile — followers, following, post count, bio.
+ipcm('instagram-analyze-profile', async (e, { sessionId, username }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!username) return { success: false, error: 'اسم المستخدم مطلوب' }
+  try {
+    const handle = String(username).replace(/^@/, '').trim()
+    await page.goto(`https://www.instagram.com/${handle}/`, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+    await page.waitForTimeout(randomDelay(2500, 4000))
+    const stats = await page.evaluate(() => {
+      const headers = Array.from(document.querySelectorAll('header section ul li, header section ul > li'))
+      const numbers = headers.map(li => {
+        const span = li.querySelector('span[title], span') || li
+        return (span.getAttribute && span.getAttribute('title')) || span.innerText || ''
+      })
+      const nameEl = document.querySelector('header section h2, header h1')
+      const fullNameEl = document.querySelector('header section h1')
+      const bioEl = document.querySelector('header section div[class*="bio"], header section span[class*="bio"]')
+      // Heuristic: posts, followers, following (first three counts).
+      return {
+        username: window.location.pathname.replace(/\//g, ''),
+        name: fullNameEl ? fullNameEl.innerText.trim() : '',
+        handle: nameEl ? nameEl.innerText.trim() : '',
+        posts: numbers[0] || '',
+        followers: numbers[1] || '',
+        following: numbers[2] || '',
+        bio: bioEl ? bioEl.innerText.trim() : '',
+      }
+    })
+    saveLeads('instagram', 'profile-analysis', [stats])
+    return { success: true, data: stats }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+})
+
 // Combo: follow each user, then send them a DM. Useful for cold outreach
 // where the DM only goes through after the follow connects.
 ipcm('instagram-follow-message', async (e, { sessionId, usernames = [], message, followFirst = true, delayMs = 5000, jobId }) => {
@@ -3014,6 +3833,250 @@ ipcm('twitter-reply-tweets', async (e, { sessionId, tweetUrls = [], message, del
   }
 })
 
+// Validate Twitter handles — check if they exist, accept DMs, and aren't
+// suspended/locked. Returns status per handle.
+ipcm('twitter-validate-accounts', async (e, { sessionId, usernames = [], delayMs = 2000, jobId }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!jobId) jobId = `tw-validate-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const results = []
+  try {
+    for (const raw of usernames) {
+      if (globals.cancelFlags.get(jobId)) break
+      const handle = String(raw).replace(/^@/, '').trim()
+      try {
+        await page.goto(`https://x.com/${handle}`, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
+        await page.waitForTimeout(randomDelay(1500, 2500))
+        const info = await page.evaluate(() => {
+          const body = document.body.innerText
+          if (/(This account doesn't exist|Account suspended|الحساب غير موجود|تم تعليق هذا الحساب)/i.test(body)) {
+            return { status: 'invalid', reason: 'الحساب غير موجود/معلق' }
+          }
+          if (/(These posts are protected|These Tweets are protected|تغريدات هذا الحساب محمية)/i.test(body)) {
+            return { status: 'protected', reason: 'حساب محمي' }
+          }
+          // Look for the Message button (means DM is open).
+          const dmBtn = document.querySelector('[data-testid="sendDMFromProfile"], a[aria-label*="Message"], div[aria-label*="Message"]')
+          // Followers count.
+          const followLinks = document.querySelectorAll('a[href$="/verified_followers"], a[href$="/followers"]')
+          let followers = ''
+          followLinks.forEach(a => { const span = a.querySelector('span'); if (span) followers = span.innerText.trim() })
+          return {
+            status: 'valid',
+            dmOpen: !!dmBtn,
+            followers,
+            verified: !!document.querySelector('svg[aria-label="Verified account"]'),
+          }
+        })
+        results.push({ username: handle, ...info })
+      } catch (err) {
+        results.push({ username: handle, status: 'error', error: err.message })
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: results.length, total: usernames.length, last: results[results.length - 1] })
+      await page.waitForTimeout(delayMs + Math.random() * 1000)
+    }
+    return { success: true, data: results, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: results, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// Boost combo: like + save + retweet (no comment) on a list of tweets in
+// one pass. Useful for improving the tweet's search ranking when run from
+// multiple accounts.
+ipcm('twitter-boost-tweets', async (e, { sessionId, tweetUrls = [], doLike = true, doSave = true, doRetweet = true, delayMs = 4000, jobId }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!jobId) jobId = `tw-boost-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const results = []
+  try {
+    for (const url of tweetUrls) {
+      if (globals.cancelFlags.get(jobId)) break
+      const out = { url, liked: false, saved: false, retweeted: false, error: null }
+      try {
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+        await page.waitForTimeout(randomDelay(1800, 2800))
+        if (doLike) {
+          const liked = await smartActionClick(page, ['button[data-testid="like"]', 'div[role="button"][aria-label*="Like"]'], 'like')
+          out.liked = !!liked
+        }
+        if (doRetweet) {
+          await smartClick(page, ['button[data-testid="retweet"]', 'button[aria-label="Retweet"]'], 'retweet menu')
+          await page.waitForTimeout(randomDelay(500, 1200))
+          const rt = await smartActionClick(page, ['div[data-testid="retweetConfirm"]', 'div[role="menuitem"]:has-text("Repost")', 'div[role="menuitem"]:has-text("Retweet")'], 'confirm retweet')
+          out.retweeted = !!rt
+        }
+        if (doSave) {
+          const saved = await smartActionClick(page, ['button[data-testid="bookmark"]', 'div[role="button"][aria-label*="Bookmark"]'], 'bookmark')
+          out.saved = !!saved
+        }
+        out.status = (out.liked || out.saved || out.retweeted) ? 'done' : 'skipped'
+      } catch (err) {
+        out.error = err.message
+        out.status = 'failed'
+      }
+      results.push(out)
+      sendProgress(sender, jobId, { type: 'progress', count: results.length, total: tweetUrls.length, last: out })
+      await page.waitForTimeout(delayMs + Math.random() * 1500)
+    }
+    return { success: true, data: results, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: results, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// Retweet with quote (a.k.a. quote-tweet). Same as reply-tweets but uses
+// the Quote action instead, so the original tweet appears embedded.
+ipcm('twitter-quote-retweet', async (e, { sessionId, tweetUrls = [], comment, delayMs = 4500, jobId }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!comment) return { success: false, error: 'نص الاقتباس مطلوب' }
+  if (!jobId) jobId = `tw-quote-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const results = []
+  try {
+    let idx = 0
+    for (const url of tweetUrls) {
+      if (globals.cancelFlags.get(jobId)) break
+      idx++
+      try {
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+        await page.waitForTimeout(randomDelay(1800, 2800))
+        await smartClick(page, ['button[data-testid="retweet"]', 'button[aria-label="Retweet"]'], 'retweet menu')
+        await page.waitForTimeout(randomDelay(500, 1200))
+        const quote = await smartClick(page, ['div[role="menuitem"]:has-text("Quote")', 'div[role="menuitem"]:has-text("Quote post")', 'a[href$="/compose/post?recent_search_source=tweet_recent_quoted_tweet"]'], 'quote menu')
+        if (!quote) { results.push({ url, status: 'failed', error: 'لم يتم العثور على Quote' }); continue }
+        await page.waitForTimeout(randomDelay(1500, 2500))
+        const text = String(comment).replace(/\{\{n\}\}/g, String(idx))
+        const typed = await smartType(page, ['div[data-testid="tweetTextarea_0"]', 'div[role="textbox"][contenteditable="true"]'], text, 'quote text')
+        if (!typed) { results.push({ url, status: 'failed', error: 'لم يتم العثور على حقل الكتابة' }); continue }
+        await page.waitForTimeout(randomDelay(800, 1500))
+        const sent = await smartClick(page, ['button[data-testid="tweetButton"]', 'button[data-testid="tweetButtonInline"]'], 'send quote')
+        results.push({ url, status: sent ? 'quoted' : 'failed' })
+      } catch (err) {
+        results.push({ url, status: 'failed', error: err.message })
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: results.length, total: tweetUrls.length, last: results[results.length - 1] })
+      await page.waitForTimeout(delayMs + Math.random() * 1500)
+    }
+    return { success: true, data: results, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: results, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// Follow everyone who interacted with a specific tweet (likers + retweeters).
+ipcm('twitter-follow-interactors', async (e, { sessionId, tweetUrl, mode = 'likers', limit = 100, delayMs = 3500, jobId }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!tweetUrl) return { success: false, error: 'رابط التغريدة مطلوب' }
+  if (!jobId) jobId = `tw-follow-int-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const results = []
+  try {
+    const suffix = mode === 'retweeters' ? '/retweets' : '/likes'
+    const url = tweetUrl.replace(/\/$/, '') + suffix
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+    await page.waitForTimeout(randomDelay(2500, 3500))
+    let stagnant = 0
+    const seen = new Set()
+    while (results.length < limit && stagnant < 6) {
+      if (globals.cancelFlags.get(jobId)) break
+      const before = results.length
+      // Scroll once before iteration to ensure new cells appear.
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.waitForTimeout(randomDelay(800, 1500))
+      const cells = await page.$$('button[data-testid="UserCell"]')
+      for (const cell of cells) {
+        if (results.length >= limit || globals.cancelFlags.get(jobId)) break
+        try {
+          const handle = await cell.evaluate(c => {
+            const a = c.querySelector('a[href^="/"]')
+            return a ? (a.getAttribute('href') || '').replace(/\//g, '') : ''
+          })
+          if (!handle || seen.has(handle)) continue
+          seen.add(handle)
+          // Find the follow button inside the cell.
+          const followBtn = await cell.$('div[data-testid$="-follow"], button[data-testid$="-follow"]')
+          if (!followBtn) { results.push({ username: handle, status: 'skipped' }); continue }
+          await followBtn.click({ force: true }).catch(() => {})
+          await page.waitForTimeout(randomDelay(600, 1200))
+          results.push({ username: handle, status: 'followed' })
+        } catch (err) {
+          results.push({ status: 'failed', error: err.message })
+        }
+        sendProgress(sender, jobId, { type: 'progress', count: results.length, total: limit, last: results[results.length - 1] })
+        await page.waitForTimeout(delayMs / 2 + Math.random() * 1000)
+      }
+      if (results.length === before) stagnant++
+      else stagnant = 0
+    }
+    return { success: true, data: results, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: results, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// Mass-publish many tweets in a row from a single account. The tweets array
+// can be plain strings or { text, imagePath } objects.
+ipcm('twitter-mass-publish', async (e, { sessionId, tweets = [], delayMs = 8000, jobId }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!jobId) jobId = `tw-mass-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const results = []
+  try {
+    for (let i = 0; i < tweets.length; i++) {
+      if (globals.cancelFlags.get(jobId)) break
+      const t = typeof tweets[i] === 'string' ? { text: tweets[i] } : tweets[i]
+      if (t.imagePath && !fs.existsSync(t.imagePath)) {
+        results.push({ index: i, status: 'failed', error: `الصورة غير موجودة: ${t.imagePath}` })
+        continue
+      }
+      try {
+        await page.goto('https://x.com/compose/tweet', { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
+        await page.waitForTimeout(randomDelay(2000, 3000))
+        const typed = await smartType(page, ['div[data-testid="tweetTextarea_0"]', 'div[role="textbox"][contenteditable="true"]'], t.text || '', 'tweet text')
+        if (!typed) { results.push({ index: i, status: 'failed', error: 'لم يتم العثور على حقل الكتابة' }); continue }
+        if (t.imagePath) {
+          const fileInput = await page.$('input[type="file"][data-testid="fileInput"], input[type="file"]')
+          if (fileInput) {
+            await fileInput.setInputFiles([t.imagePath])
+            await page.waitForTimeout(randomDelay(2500, 4000))
+          }
+        }
+        await page.waitForTimeout(randomDelay(500, 1200))
+        const sent = await smartClick(page, ['button[data-testid="tweetButton"]', 'button[data-testid="tweetButtonInline"]'], 'send tweet')
+        results.push({ index: i, text: t.text?.slice(0, 60) || '', status: sent ? 'posted' : 'failed' })
+      } catch (err) {
+        results.push({ index: i, status: 'failed', error: err.message })
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: results.length, total: tweets.length, last: results[results.length - 1] })
+      await page.waitForTimeout(delayMs + Math.random() * 2000)
+    }
+    return { success: true, data: results, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: results, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
 // ==================== IPC: LINKEDIN ====================
 ipcm('linkedin-login', async (e, { username, password, headless = false, proxy }) => {
   let sessionId = null
@@ -3302,6 +4365,345 @@ ipcm('linkedin-post-feed', async (e, { sessionId, content }) => {
     if (!posted) return { success: false, error: 'تعذّر النشر' }
     await page.waitForTimeout(randomDelay(2000, 3500))
     return { success: true, message: 'تم نشر المنشور بنجاح' }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+})
+
+// Extract a customer's deep profile data (phone, email, address, current
+// position). LinkedIn shows this only when the contact has shared it
+// publicly or you have a 1st/2nd degree connection.
+ipcm('linkedin-extract-deep-data', async (e, { sessionId, profileUrls = [], delayMs = 2500, jobId }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!jobId) jobId = `li-deep-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const results = []
+  try {
+    for (const url of profileUrls) {
+      if (globals.cancelFlags.get(jobId)) break
+      try {
+        const profileUrl = /^https?:/i.test(url) ? url : `https://www.linkedin.com/in/${url}/`
+        await page.goto(profileUrl, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+        await page.waitForTimeout(randomDelay(2000, 3500))
+        // Open "Contact info" overlay.
+        await smartClick(page, ['a[href$="/overlay/contact-info/"]', 'a:has-text("Contact info")', 'button:has-text("Contact info")'], 'contact info')
+        await page.waitForTimeout(randomDelay(1500, 2500))
+        const info = await page.evaluate((sourceUrl) => {
+          const out = { profile: sourceUrl }
+          // Name + headline outside the dialog.
+          out.name = (document.querySelector('h1.text-heading-xlarge, h1') || {}).innerText?.trim() || ''
+          out.headline = (document.querySelector('div.text-body-medium, .pv-text-details__left-panel + div') || {}).innerText?.trim() || ''
+          // Inside the contact dialog.
+          const dialog = document.querySelector('div[role="dialog"], section.pv-contact-info')
+          if (dialog) {
+            // Sections labeled by h3 inside contact dialog.
+            const sections = dialog.querySelectorAll('section')
+            sections.forEach(s => {
+              const label = (s.querySelector('h3') || {}).innerText?.toLowerCase() || ''
+              const value = (s.querySelector('a, span') || {}).innerText?.trim() || ''
+              if (!value) return
+              if (label.includes('email') || label.includes('بريد')) out.email = value
+              else if (label.includes('phone') || label.includes('هاتف')) out.phone = value
+              else if (label.includes('website') || label.includes('موقع')) out.website = value
+              else if (label.includes('address') || label.includes('عنوان')) out.address = value
+              else if (label.includes('twitter')) out.twitter = value
+              else if (label.includes('birthday') || label.includes('ميلاد')) out.birthday = value
+            })
+          }
+          // Location from the public profile header.
+          const locEl = document.querySelector('.text-body-small.inline.t-black--light.break-words, span.text-body-small')
+          if (locEl) out.location = locEl.innerText.trim()
+          return out
+        }, profileUrl)
+        results.push({ ...info, status: 'extracted' })
+      } catch (err) {
+        results.push({ profile: url, status: 'failed', error: err.message })
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: results.length, total: profileUrls.length, last: results[results.length - 1] })
+      await page.waitForTimeout(delayMs + Math.random() * 1500)
+    }
+    saveLeads('linkedin', 'deep-data', results.filter(r => r.status === 'extracted').map(r => ({ name: r.name, email: r.email, phone: r.phone, url: r.profile, text: r.headline, source: r.location })))
+    return { success: true, data: results, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: results, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// Search/extract universities (Schools tab).
+ipcm('linkedin-extract-schools', async (e, { sessionId, query, limit = 50, jobId, delayMs = 2000 }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!query) return { success: false, error: 'الكلمة المفتاحية مطلوبة' }
+  if (!jobId) jobId = `li-schools-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const seen = new Set()
+  const schools = []
+  try {
+    const url = `https://www.linkedin.com/search/results/schools/?keywords=${encodeURIComponent(query)}`
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+    await page.waitForTimeout(randomDelay(2500, 4000))
+    const maxPages = Math.max(Math.ceil(limit / 10), 5)
+    for (let p = 0; p < maxPages; p++) {
+      if (globals.cancelFlags.get(jobId)) break
+      if (schools.length >= limit) break
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.waitForTimeout(randomDelay(1500, 2500))
+      const batch = await page.evaluate(() => {
+        const r = []
+        document.querySelectorAll('li.reusable-search__result-container, div.entity-result').forEach(card => {
+          const link = card.querySelector('a[href*="/school/"]')
+          if (!link) return
+          const name = link.querySelector('span[aria-hidden="true"], span')?.innerText?.trim() || link.innerText.trim()
+          const subtitle = card.querySelector('.entity-result__primary-subtitle, [class*="subtitle"]')?.innerText?.trim() || ''
+          r.push({ name, type: 'school', subtitle, profile: link.href.split('?')[0] })
+        })
+        return r
+      })
+      for (const s of batch) {
+        if (seen.has(s.profile)) continue
+        seen.add(s.profile)
+        schools.push(s)
+        if (schools.length >= limit) break
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: schools.length, total: limit, data: batch })
+      const next = await smartActionClick(page, ['button[aria-label="Next"]'], 'next')
+      if (!next) break
+      await page.waitForTimeout(delayMs + Math.random() * 1500)
+    }
+    saveLeads('linkedin', 'schools', schools.map(s => ({ name: s.name, url: s.profile, text: s.subtitle })))
+    return { success: true, data: schools, count: schools.length, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: schools, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// Extract employees of a company or alumni of a school.
+ipcm('linkedin-extract-org-members', async (e, { sessionId, orgUrl, kind = 'company', limit = 100, jobId, delayMs = 1800 }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!orgUrl) return { success: false, error: 'رابط المنظمة مطلوب' }
+  if (!jobId) jobId = `li-org-members-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const seen = new Set()
+  const members = []
+  try {
+    const peopleUrl = orgUrl.replace(/\/$/, '') + '/people/'
+    await page.goto(peopleUrl, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+    await page.waitForTimeout(randomDelay(2500, 4000))
+    let stagnant = 0
+    while (members.length < limit && stagnant < 6) {
+      if (globals.cancelFlags.get(jobId)) break
+      const before = members.length
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.waitForTimeout(randomDelay(1500, 2500))
+      const batch = await page.evaluate(() => {
+        const r = []
+        document.querySelectorAll('li.org-people-profile-card, div.artdeco-entity-lockup, li.reusable-search__result-container').forEach(card => {
+          const link = card.querySelector('a[href*="/in/"]')
+          if (!link) return
+          const name = link.querySelector('span[aria-hidden="true"], span')?.innerText?.trim() || link.innerText.trim()
+          const title = card.querySelector('.artdeco-entity-lockup__subtitle, [class*="subtitle"]')?.innerText?.trim() || ''
+          r.push({ name, title, profile: link.href.split('?')[0] })
+        })
+        return r
+      })
+      for (const m of batch) {
+        if (seen.has(m.profile)) continue
+        seen.add(m.profile)
+        members.push(m)
+        if (members.length >= limit) break
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: members.length, total: limit, data: batch })
+      if (members.length === before) stagnant++
+      else stagnant = 0
+      await page.waitForTimeout(delayMs + Math.random() * 800)
+    }
+    saveLeads('linkedin', `${kind}-members`, members.map(m => ({ name: m.name, url: m.profile, text: m.title })))
+    return { success: true, data: members, count: members.length, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: members, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// Extract people who liked / commented on a LinkedIn post.
+ipcm('linkedin-extract-post-engagement', async (e, { sessionId, postUrl, mode = 'reactions', limit = 200, jobId, delayMs = 1800 }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!postUrl) return { success: false, error: 'رابط المنشور مطلوب' }
+  if (!jobId) jobId = `li-post-eng-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const seen = new Set()
+  const out = []
+  try {
+    await page.goto(postUrl, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+    await page.waitForTimeout(randomDelay(2500, 3500))
+    if (mode === 'reactions') {
+      // Click reactions count.
+      await smartClick(page, ['.social-details-social-counts__reactions-count', 'button[aria-label*="reactions"]', 'a:has-text("reactions")'], 'open reactions')
+    } else {
+      // Comments mode — just scroll.
+      await smartClick(page, ['button:has-text("Load more comments")', 'button[aria-label*="comments"]'], 'open comments')
+    }
+    await page.waitForTimeout(randomDelay(1500, 2500))
+    let stagnant = 0
+    while (out.length < limit && stagnant < 6) {
+      if (globals.cancelFlags.get(jobId)) break
+      const before = out.length
+      const batch = await page.evaluate((modeKind) => {
+        const r = []
+        const selector = modeKind === 'reactions'
+          ? 'div[role="dialog"] a[href*="/in/"], div.social-details-reactors-modal a[href*="/in/"]'
+          : 'article.comments-comment-item a[href*="/in/"], .comments-comment-item a[href*="/in/"]'
+        document.querySelectorAll(selector).forEach(a => {
+          const href = a.getAttribute('href') || ''
+          if (!href) return
+          const cleanHref = href.split('?')[0]
+          const name = a.innerText.trim().split('\n')[0]
+          if (!name || name.length > 80) return
+          r.push({ name, profile: cleanHref.startsWith('http') ? cleanHref : `https://www.linkedin.com${cleanHref}` })
+        })
+        return r
+      }, mode)
+      for (const e of batch) {
+        if (seen.has(e.profile)) continue
+        seen.add(e.profile)
+        out.push(e)
+        if (out.length >= limit) break
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: out.length, total: limit, data: batch })
+      if (out.length === before) stagnant++
+      else stagnant = 0
+      // Scroll modal or page.
+      await page.evaluate(() => {
+        const dlg = document.querySelector('div[role="dialog"] div[class*="reactors-list"]') || document.querySelector('div[role="dialog"]')
+        if (dlg) dlg.scrollTop = dlg.scrollHeight
+        else window.scrollTo(0, document.body.scrollHeight)
+      })
+      await page.waitForTimeout(delayMs + Math.random() * 800)
+    }
+    saveLeads('linkedin', `post-${mode}`, out)
+    return { success: true, data: out, count: out.length, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: out, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// Extract the groups the logged-in user is a member of.
+ipcm('linkedin-list-my-groups', async (e, { sessionId, limit = 100, jobId, delayMs = 1500 }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!jobId) jobId = `li-my-groups-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const groups = []
+  try {
+    await page.goto('https://www.linkedin.com/groups/', { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+    await page.waitForTimeout(randomDelay(2500, 4000))
+    for (let i = 0; i < 10 && groups.length < limit; i++) {
+      if (globals.cancelFlags.get(jobId)) break
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.waitForTimeout(randomDelay(1500, 2500))
+      const batch = await page.evaluate(() => {
+        const r = []
+        document.querySelectorAll('a[href*="/groups/"]:not([href$="/groups/"]):not([href*="/groups/discover"])').forEach(a => {
+          const href = a.getAttribute('href') || ''
+          if (!href.includes('/groups/') || /\/groups\/\d+\/?$/.test(href) === false && /\/groups\/[^/]+\/?$/.test(href) === false) return
+          const name = a.innerText.trim().split('\n')[0]
+          if (!name || name.length > 100) return
+          r.push({ name, url: href.startsWith('http') ? href.split('?')[0] : `https://www.linkedin.com${href.split('?')[0]}` })
+        })
+        return r
+      })
+      const seen = new Set(groups.map(g => g.url))
+      for (const g of batch) {
+        if (seen.has(g.url)) continue
+        groups.push(g)
+        if (groups.length >= limit) break
+      }
+    }
+    saveLeads('linkedin', 'my-groups', groups)
+    return { success: true, data: groups, count: groups.length, jobId }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: groups, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// Post text to multiple LinkedIn groups (must be a member first).
+ipcm('linkedin-post-to-groups', async (e, { sessionId, groupUrls = [], content, delayMs = 7000, jobId }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!content) return { success: false, error: 'النص مطلوب' }
+  if (!jobId) jobId = `li-grp-post-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const results = []
+  try {
+    for (const url of groupUrls) {
+      if (globals.cancelFlags.get(jobId)) break
+      try {
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+        await page.waitForTimeout(randomDelay(2500, 4000))
+        await smartClick(page, ['button:has-text("Start a conversation")', 'button[aria-label*="Start a"]'], 'open composer')
+        await page.waitForTimeout(randomDelay(1500, 2500))
+        const typed = await smartType(page, ['div[role="textbox"][contenteditable="true"]', 'div.ql-editor[contenteditable="true"]'], content, 'body')
+        if (!typed) { results.push({ url, status: 'failed', error: 'لم يتم العثور على حقل النشر' }); continue }
+        await page.waitForTimeout(randomDelay(800, 1500))
+        const posted = await smartClick(page, ['button.share-actions__primary-action', 'button:has-text("Post"):not(:has-text("a job"))'], 'publish')
+        results.push({ url, status: posted ? 'posted' : 'failed' })
+      } catch (err) {
+        results.push({ url, status: 'failed', error: err.message })
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: results.length, total: groupUrls.length, last: results[results.length - 1] })
+      await page.waitForTimeout(delayMs + Math.random() * 2000)
+    }
+    return { success: true, data: results, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: results, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// Find email addresses via Google site-search of LinkedIn profiles
+// matching an interest + country combination. Uses Bing as fallback if
+// Google rate-limits.
+ipcm('linkedin-emails-by-interest', async (e, { sessionId, interest, country, limit = 30 }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!interest) return { success: false, error: 'الاهتمام مطلوب' }
+  try {
+    const queryParts = [
+      'site:linkedin.com/in',
+      `"${interest}"`,
+      country ? `"${country}"` : '',
+      '("@gmail.com" OR "@yahoo.com" OR "@hotmail.com" OR "@outlook.com")',
+    ].filter(Boolean).join(' ')
+    const url = `https://www.google.com/search?q=${encodeURIComponent(queryParts)}&num=50`
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+    await page.waitForTimeout(randomDelay(2500, 4000))
+    const found = await page.evaluate((lim) => {
+      const text = document.body.innerText
+      const emailRe = /([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)/g
+      const matches = text.match(emailRe) || []
+      const unique = Array.from(new Set(matches))
+      return unique.slice(0, lim).map(em => ({ email: em }))
+    }, limit)
+    saveLeads('linkedin', 'emails', found.map(f => ({ name: '', email: f.email })))
+    return { success: true, data: found, count: found.length }
   } catch (err) {
     return { success: false, error: err.message }
   }
@@ -3700,6 +5102,326 @@ ipcm('telegram-send-to-groups', async (e, { sessionId, groups = [], message, del
   }
 })
 
+// Add users to a group by Telegram numeric ID. The flow opens the
+// "Add member" dialog in the group's info pane and types the ID.
+ipcm('telegram-add-by-id', async (e, { sessionId, groupName, userIds = [], delayMs = 3500, jobId }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!groupName) return { success: false, error: 'اسم المجموعة مطلوب' }
+  if (!jobId) jobId = `tg-add-id-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const results = []
+  try {
+    // Search and open the group.
+    await smartClick(page, ['.input-search', 'input[type="search"]', 'input[placeholder*="Search"]'], 'search')
+    await page.waitForTimeout(randomDelay(400, 900))
+    await smartType(page, ['.input-search input', 'input[type="search"]'], groupName, 'search')
+    await page.waitForTimeout(randomDelay(1500, 2500))
+    await page.keyboard.press('Enter')
+    await page.waitForTimeout(randomDelay(1500, 2500))
+    // Open group info.
+    await smartClick(page, ['.topbar', '.chat-info', 'div.peer-title', 'header div[role="button"]'], 'group header')
+    await page.waitForTimeout(randomDelay(1500, 2500))
+    for (const id of userIds) {
+      if (globals.cancelFlags.get(jobId)) break
+      try {
+        const clean = String(id).replace(/[^0-9]/g, '')
+        if (!clean) { results.push({ userId: id, status: 'failed', error: 'ID غير صالح' }); continue }
+        // Click "Add Members".
+        await smartClick(page, ['li:has-text("Add Members")', 'li:has-text("Add Member")', 'button:has-text("Add Member")', '.btn-icon[aria-label*="Add"]'], 'add member btn')
+        await page.waitForTimeout(randomDelay(900, 1500))
+        const typed = await smartType(page, ['.input-search input', 'input[type="text"]', 'input[placeholder*="user"]'], clean, 'id search')
+        if (!typed) { results.push({ userId: clean, status: 'failed', error: 'تعذّر الكتابة' }); continue }
+        await page.waitForTimeout(randomDelay(1200, 2000))
+        const picked = await smartClick(page, ['div[role="listitem"]:first-of-type', '.chatlist-chat:first-of-type'], 'pick user')
+        await page.waitForTimeout(randomDelay(700, 1200))
+        const confirmed = await smartClick(page, ['button:has-text("Add")', 'button.btn-primary:has-text("Add")', 'button:has-text("إضافة")'], 'confirm add')
+        results.push({ userId: clean, status: picked && confirmed ? 'added' : 'failed' })
+      } catch (err) {
+        results.push({ userId: id, status: 'failed', error: err.message })
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: results.length, total: userIds.length, last: results[results.length - 1] })
+      await page.waitForTimeout(delayMs + Math.random() * 1500)
+    }
+    return { success: true, data: results, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: results, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// Mass search + collect groups/channels across multiple keywords/topics.
+// Builds the "20K+ groups" dataset the user asked for by running the search
+// for each keyword and concatenating results.
+ipcm('telegram-bulk-groups-download', async (e, { sessionId, keywords = [], type = 'group', perKeyword = 50, jobId }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (keywords.length === 0) return { success: false, error: 'أدخل قائمة الكلمات المفتاحية' }
+  if (!jobId) jobId = `tg-bulk-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const seen = new Set()
+  const collected = []
+  try {
+    for (const kw of keywords) {
+      if (globals.cancelFlags.get(jobId)) break
+      try {
+        await smartClick(page, ['.input-search', 'input[type="search"]', 'input[placeholder*="Search"]'], 'search box')
+        await page.waitForTimeout(randomDelay(400, 900))
+        // Clear previous search.
+        const input = await page.$('.input-search input, input[type="search"]')
+        if (input) { try { await input.click({ clickCount: 3 }); await page.keyboard.press('Backspace') } catch { /* ignore */ } }
+        await smartType(page, ['.input-search input', 'input[type="search"]'], kw, 'kw')
+        await page.waitForTimeout(randomDelay(2500, 4000))
+        const batch = await page.evaluate((lim) => {
+          const r = []
+          document.querySelectorAll('.chatlist-chat, .ListItem-button, .search-result, .ListItem').forEach((row, i) => {
+            if (r.length >= lim) return
+            const nameEl = row.querySelector('.dialog-title, h3, .title, .user-title')
+            const subEl = row.querySelector('.dialog-subtitle, .subtitle, .user-last-message')
+            const link = row.querySelector('a[href*="t.me/"]')
+            if (!nameEl) return
+            const name = nameEl.innerText.trim()
+            if (!name) return
+            const sub = subEl ? subEl.innerText.trim() : ''
+            let kind = 'chat'
+            if (sub.toLowerCase().includes('channel') || sub.includes('قناة')) kind = 'channel'
+            else if (/\d+\s*member/i.test(sub) || sub.includes('عضو') || sub.toLowerCase().includes('group')) kind = 'group'
+            else if (sub.toLowerCase().includes('bot')) kind = 'bot'
+            r.push({ name, type: kind, subtitle: sub, url: link ? link.href : '' })
+          })
+          return r
+        }, perKeyword)
+        for (const item of batch) {
+          if (type !== 'all' && item.type !== type) continue
+          const key = item.name + '|' + item.type
+          if (seen.has(key)) continue
+          seen.add(key)
+          collected.push({ ...item, keyword: kw })
+        }
+        sendProgress(sender, jobId, { type: 'progress', count: collected.length, total: keywords.length * perKeyword, data: batch })
+      } catch (err) { /* continue with next keyword */ }
+      await page.waitForTimeout(randomDelay(1500, 2500))
+    }
+    saveLeads('telegram', 'bulk-groups', collected.map(c => ({ name: c.name, url: c.url, source: c.keyword, extra: c.subtitle })))
+    return { success: true, data: collected, count: collected.length, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: collected, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// ==================== IPC: TELEGRAM PREMIUM ====================
+
+// Extract members from a Telegram group/channel WHERE THE ADMIN HID THE
+// MEMBER LIST. Works only on a Premium account (Telegram limitation). The
+// trick: even with hidden members, the message history reveals senders;
+// we walk the message history and dedupe the unique authors.
+ipcm('telegram-premium-extract-hidden', async (e, { sessionId, groupName, limit = 500, jobId, delayMs = 1200 }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!groupName) return { success: false, error: 'اسم المجموعة مطلوب' }
+  if (!jobId) jobId = `tg-prem-hidden-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const seen = new Set()
+  const members = []
+  try {
+    // Open the group via search.
+    await smartClick(page, ['.input-search', 'input[type="search"]', 'input[placeholder*="Search"]'], 'search')
+    await page.waitForTimeout(randomDelay(400, 900))
+    await smartType(page, ['.input-search input', 'input[type="search"]'], groupName, 'group')
+    await page.waitForTimeout(randomDelay(1500, 2500))
+    await page.keyboard.press('Enter')
+    await page.waitForTimeout(randomDelay(1500, 2500))
+    // Scroll the messages backward to surface more senders.
+    let stagnant = 0
+    while (members.length < limit && stagnant < 8) {
+      if (globals.cancelFlags.get(jobId)) break
+      const before = members.length
+      const batch = await page.evaluate(() => {
+        const out = []
+        document.querySelectorAll('.Message, .message, [data-message-id], .bubble').forEach(msg => {
+          const senderEl = msg.querySelector('.peer-title, .Message-author, .user-link, a.peer-title, .from-name')
+          if (!senderEl) return
+          const name = senderEl.innerText.trim()
+          if (!name) return
+          // Try to find a username next to the sender.
+          const a = senderEl.closest('a, [data-peer-id]') || senderEl
+          const usernameAttr = a.getAttribute('data-username') || a.getAttribute('data-peer-id') || ''
+          out.push({ name, username: usernameAttr })
+        })
+        return out
+      })
+      for (const m of batch) {
+        const key = m.name + '|' + (m.username || '')
+        if (seen.has(key)) continue
+        seen.add(key)
+        members.push(m)
+        if (members.length >= limit) break
+      }
+      if (members.length === before) stagnant++
+      else stagnant = 0
+      // Scroll history up.
+      await page.evaluate(() => {
+        const scroller = document.querySelector('.MessageList .Messages, .messages-container, .chat-scrollable') || document.querySelector('.scrollable-y')
+        if (scroller) scroller.scrollTop = 0
+      })
+      await page.waitForTimeout(delayMs + Math.random() * 800)
+    }
+    saveLeads('telegram', 'premium-hidden-members', members)
+    return { success: true, data: members, count: members.length, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: members, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// Add/move members to a target group by username (premium-only on some
+// privacy-restricted accounts). Uses the group's "Add members" search.
+ipcm('telegram-premium-add-by-username', async (e, { sessionId, targetGroup, usernames = [], delayMs = 3500, jobId }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!targetGroup) return { success: false, error: 'المجموعة المستهدفة مطلوبة' }
+  if (!jobId) jobId = `tg-prem-add-u-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const results = []
+  try {
+    // Open target group.
+    await smartClick(page, ['.input-search', 'input[type="search"]'], 'search')
+    await page.waitForTimeout(randomDelay(400, 900))
+    await smartType(page, ['.input-search input', 'input[type="search"]'], targetGroup, 'target')
+    await page.waitForTimeout(randomDelay(1500, 2500))
+    await page.keyboard.press('Enter')
+    await page.waitForTimeout(randomDelay(1500, 2500))
+    await smartClick(page, ['.chat-info-container', '.chat-info', 'header div[role="button"]'], 'group header')
+    await page.waitForTimeout(randomDelay(1500, 2500))
+    for (const u of usernames) {
+      if (globals.cancelFlags.get(jobId)) break
+      try {
+        const handle = String(u).replace(/^@/, '').trim()
+        await smartClick(page, ['li:has-text("Add Members")', 'button:has-text("Add Member")'], 'add member btn')
+        await page.waitForTimeout(randomDelay(800, 1500))
+        await smartType(page, ['.input-search input', 'input[type="text"]', 'input[placeholder*="user"]'], handle, 'username')
+        await page.waitForTimeout(randomDelay(1200, 2000))
+        const picked = await smartClick(page, ['div[role="listitem"]:first-of-type', '.chatlist-chat:first-of-type'], 'pick')
+        await page.waitForTimeout(randomDelay(700, 1200))
+        const confirmed = await smartClick(page, ['button:has-text("Add")', 'button.btn-primary:has-text("Add")'], 'confirm')
+        results.push({ username: handle, status: picked && confirmed ? 'added' : 'failed' })
+      } catch (err) {
+        results.push({ username: u, status: 'failed', error: err.message })
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: results.length, total: usernames.length, last: results[results.length - 1] })
+      await page.waitForTimeout(delayMs + Math.random() * 1500)
+    }
+    return { success: true, data: results, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: results, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// Add/move members to a target group by phone numbers (premium can find
+// non-mutual contacts by phone). Saves the phone temporarily then adds.
+ipcm('telegram-premium-add-by-phone', async (e, { sessionId, targetGroup, phones = [], delayMs = 4000, jobId }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!targetGroup) return { success: false, error: 'المجموعة المستهدفة مطلوبة' }
+  if (!jobId) jobId = `tg-prem-add-p-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const results = []
+  try {
+    await smartClick(page, ['.input-search', 'input[type="search"]'], 'search')
+    await page.waitForTimeout(randomDelay(400, 900))
+    await smartType(page, ['.input-search input', 'input[type="search"]'], targetGroup, 'target')
+    await page.waitForTimeout(randomDelay(1500, 2500))
+    await page.keyboard.press('Enter')
+    await page.waitForTimeout(randomDelay(1500, 2500))
+    await smartClick(page, ['.chat-info-container', '.chat-info', 'header div[role="button"]'], 'group header')
+    await page.waitForTimeout(randomDelay(1500, 2500))
+    for (const phone of phones) {
+      if (globals.cancelFlags.get(jobId)) break
+      try {
+        const clean = String(phone).replace(/[^0-9+]/g, '')
+        await smartClick(page, ['li:has-text("Add Members")', 'button:has-text("Add Member")'], 'add member btn')
+        await page.waitForTimeout(randomDelay(800, 1500))
+        await smartType(page, ['.input-search input', 'input[type="text"]', 'input[placeholder*="phone"]'], clean, 'phone')
+        await page.waitForTimeout(randomDelay(1500, 2500))
+        const picked = await smartClick(page, ['div[role="listitem"]:first-of-type', '.chatlist-chat:first-of-type'], 'pick')
+        await page.waitForTimeout(randomDelay(700, 1200))
+        const confirmed = await smartClick(page, ['button:has-text("Add")', 'button.btn-primary:has-text("Add")'], 'confirm')
+        results.push({ phone: clean, status: picked && confirmed ? 'added' : 'failed' })
+      } catch (err) {
+        results.push({ phone, status: 'failed', error: err.message })
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: results.length, total: phones.length, last: results[results.length - 1] })
+      await page.waitForTimeout(delayMs + Math.random() * 1500)
+    }
+    return { success: true, data: results, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: results, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// React to messages in groups/channels (Telegram Premium feature). Opens
+// each message's emoji picker and picks the chosen reaction.
+ipcm('telegram-premium-react', async (e, { sessionId, groupName, emoji = '❤️', count = 20, delayMs = 1500, jobId }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!groupName) return { success: false, error: 'اسم المجموعة مطلوب' }
+  if (!jobId) jobId = `tg-prem-react-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const results = []
+  try {
+    await smartClick(page, ['.input-search', 'input[type="search"]'], 'search')
+    await page.waitForTimeout(randomDelay(400, 900))
+    await smartType(page, ['.input-search input', 'input[type="search"]'], groupName, 'group')
+    await page.waitForTimeout(randomDelay(1500, 2500))
+    await page.keyboard.press('Enter')
+    await page.waitForTimeout(randomDelay(1500, 2500))
+    const messages = await page.$$('.Message, .message, .bubble')
+    const sample = messages.slice(-count)
+    for (const msg of sample) {
+      if (globals.cancelFlags.get(jobId)) break
+      try {
+        // Hover to surface the quick-reaction button.
+        await msg.hover()
+        await page.waitForTimeout(randomDelay(300, 600))
+        const quickBtn = await msg.$('.Reactions-btn, .quick-react, [data-react], button[aria-label*="React"]')
+        if (quickBtn) {
+          await quickBtn.click({ force: true }).catch(() => {})
+          results.push({ status: 'reacted' })
+        } else {
+          // Fallback: right-click to open menu.
+          try { await msg.click({ button: 'right' }) } catch { /* ignore */ }
+          await page.waitForTimeout(randomDelay(400, 800))
+          const picked = await smartClick(page, [`button:has-text("${emoji}")`, '.reactions-menu button:first-of-type'], 'pick emoji')
+          results.push({ status: picked ? 'reacted' : 'skipped' })
+        }
+      } catch (err) {
+        results.push({ status: 'failed', error: err.message })
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: results.length, total: sample.length, last: results[results.length - 1] })
+      await page.waitForTimeout(delayMs + Math.random() * 800)
+    }
+    return { success: true, data: results, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: results, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
 // ==================== IPC: TIKTOK ====================
 ipcm('tiktok-extract-comments', async (e, { sessionId, videoUrl, limit = 50 }) => {
   const page = globals.bm.getPage(sessionId)
@@ -3871,6 +5593,176 @@ ipcm('pinterest-follow-users', async (e, { sessionId, usernames = [], delayMs = 
       }
       sendProgress(sender, jobId, { type: 'progress', count: results.length, total: usernames.length, last: results[results.length - 1] })
       await page.waitForTimeout(delayMs + Math.random() * 1500)
+    }
+    return { success: true, data: results, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: results, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// Send a direct message to Pinterest users (1:1).
+ipcm('pinterest-send-message', async (e, { sessionId, usernames = [], message, delayMs = 5000, jobId }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!message) return { success: false, error: 'الرسالة مطلوبة' }
+  if (!jobId) jobId = `pin-msg-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const results = []
+  try {
+    for (const u of usernames) {
+      if (globals.cancelFlags.get(jobId)) break
+      const handle = String(u).replace(/^@/, '').trim()
+      try {
+        await page.goto(`https://www.pinterest.com/${handle}/`, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+        await page.waitForTimeout(randomDelay(1800, 3000))
+        // Click message button — Pinterest hides it behind the "..." menu.
+        const opened = await smartClick(page, ['button:has-text("Message")', 'button[aria-label*="Message"]', 'div[data-test-id="user-profile-actions"] button:nth-of-type(2)'], 'open message')
+        if (!opened) { results.push({ username: handle, status: 'failed', error: 'لم يتم العثور على زر المراسلة' }); continue }
+        await page.waitForTimeout(randomDelay(1500, 2500))
+        const typed = await smartType(page, ['textarea[placeholder*="message"]', 'div[contenteditable="true"]', 'textarea'], message, 'msg')
+        if (!typed) { results.push({ username: handle, status: 'failed', error: 'لم يتم العثور على حقل الكتابة' }); continue }
+        await page.waitForTimeout(randomDelay(500, 1200))
+        const sent = await smartClick(page, ['button:has-text("Send")', 'button[aria-label="Send"]'], 'send')
+        if (!sent) await page.keyboard.press('Enter')
+        results.push({ username: handle, status: 'sent' })
+      } catch (err) {
+        results.push({ username: handle, status: 'failed', error: err.message })
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: results.length, total: usernames.length, last: results[results.length - 1] })
+      await page.waitForTimeout(delayMs + Math.random() * 1500)
+    }
+    return { success: true, data: results, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: results, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// Analyze a Pinterest user's profile — followers, following, pin count.
+ipcm('pinterest-analyze-profile', async (e, { sessionId, username }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!username) return { success: false, error: 'اسم المستخدم مطلوب' }
+  try {
+    const handle = String(username).replace(/^@/, '').trim()
+    await page.goto(`https://www.pinterest.com/${handle}/`, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+    await page.waitForTimeout(randomDelay(2000, 3500))
+    const stats = await page.evaluate(() => {
+      const body = document.body.innerText
+      const followersMatch = body.match(/([\d,.]+[KMm]?)\s*follower/i)
+      const followingMatch = body.match(/([\d,.]+[KMm]?)\s*following/i)
+      const nameEl = document.querySelector('h1') || document.querySelector('[data-test-id="profile-name"]')
+      const bioEl = document.querySelector('[data-test-id="profile-description"]') || document.querySelector('div[class*="bio"]')
+      const pinsMatch = body.match(/([\d,]+)\s*pin/i)
+      return {
+        username: window.location.pathname.replace(/\//g, ''),
+        name: nameEl ? nameEl.innerText.trim() : '',
+        followers: followersMatch ? followersMatch[1] : '',
+        following: followingMatch ? followingMatch[1] : '',
+        pins: pinsMatch ? pinsMatch[1] : '',
+        bio: bioEl ? bioEl.innerText.trim() : '',
+      }
+    })
+    saveLeads('pinterest', 'profile-analysis', [stats])
+    return { success: true, data: stats }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+})
+
+// Extract boards matching a niche/keyword.
+ipcm('pinterest-extract-boards', async (e, { sessionId, keyword, limit = 50, jobId, delayMs = 1500 }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!keyword) return { success: false, error: 'الكلمة المفتاحية مطلوبة' }
+  if (!jobId) jobId = `pin-boards-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const seen = new Set()
+  const boards = []
+  try {
+    await page.goto(`https://www.pinterest.com/search/boards/?q=${encodeURIComponent(keyword)}`, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+    await page.waitForTimeout(randomDelay(2500, 4000))
+    let stagnant = 0
+    while (boards.length < limit && stagnant < 5) {
+      if (globals.cancelFlags.get(jobId)) break
+      const before = boards.length
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.waitForTimeout(randomDelay(1500, 2500))
+      const batch = await page.evaluate(() => {
+        const r = []
+        document.querySelectorAll('a[href*="/"][href*="/"][href*="/"]').forEach(a => {
+          const href = a.getAttribute('href') || ''
+          if (!/^\/[^/]+\/[^/]+\/?$/.test(href)) return
+          if (href.includes('/pin/')) return
+          const titleEl = a.querySelector('div[class*="title"]') || a.querySelector('span')
+          const name = titleEl ? titleEl.innerText.trim() : ''
+          if (!name || name.length > 80) return
+          r.push({
+            name,
+            url: href.startsWith('http') ? href : `https://www.pinterest.com${href}`,
+          })
+        })
+        return r
+      })
+      for (const b of batch) {
+        if (seen.has(b.url)) continue
+        seen.add(b.url)
+        boards.push(b)
+        if (boards.length >= limit) break
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: boards.length, total: limit, data: batch })
+      if (boards.length === before) stagnant++
+      else stagnant = 0
+      await page.waitForTimeout(delayMs + Math.random() * 800)
+    }
+    saveLeads('pinterest', 'boards', boards)
+    return { success: true, data: boards, count: boards.length, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: boards, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// Auto-publish: create new Pins from a list of image paths.
+ipcm('pinterest-auto-publish', async (e, { sessionId, pins = [], delayMs = 8000, jobId }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!jobId) jobId = `pin-publish-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const results = []
+  try {
+    for (let i = 0; i < pins.length; i++) {
+      if (globals.cancelFlags.get(jobId)) break
+      const pin = pins[i]
+      if (!pin || !pin.imagePath || !fs.existsSync(pin.imagePath)) {
+        results.push({ index: i, status: 'failed', error: 'الصورة غير موجودة' })
+        continue
+      }
+      try {
+        await page.goto('https://www.pinterest.com/pin-creation-tool/', { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+        await page.waitForTimeout(randomDelay(2500, 4000))
+        const fileInput = await page.$('input[type="file"]')
+        if (!fileInput) { results.push({ index: i, status: 'failed', error: 'لم يتم العثور على مدخل الملف' }); continue }
+        await fileInput.setInputFiles([pin.imagePath])
+        await page.waitForTimeout(randomDelay(3000, 5000))
+        if (pin.title) await smartType(page, ['textarea[placeholder*="Add your title"]', 'input[placeholder*="title"]'], pin.title, 'title')
+        if (pin.description) await smartType(page, ['div[role="textbox"][contenteditable="true"]', 'textarea[placeholder*="description"]'], pin.description, 'desc')
+        if (pin.link) await smartType(page, ['input[placeholder*="Add a link"]', 'input[placeholder*="link"]'], pin.link, 'link')
+        await page.waitForTimeout(randomDelay(800, 1500))
+        const published = await smartClick(page, ['button[data-test-id="board-dropdown-save-button"]', 'button:has-text("Publish")', 'button:has-text("Save")'], 'publish')
+        results.push({ index: i, title: pin.title || '', status: published ? 'published' : 'failed' })
+      } catch (err) {
+        results.push({ index: i, status: 'failed', error: err.message })
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: results.length, total: pins.length, last: results[results.length - 1] })
+      await page.waitForTimeout(delayMs + Math.random() * 2000)
     }
     return { success: true, data: results, jobId, cancelled: globals.cancelFlags.get(jobId) }
   } catch (err) {
@@ -4199,6 +6091,152 @@ ipcm('reddit-upvote', async (e, { sessionId, postUrls = [], delayMs = 3000, jobI
   }
 })
 
+// Save + optional upvote on Reddit posts. Save is the bookmark icon below
+// each post. Pass doUpvote=true to also vote.
+ipcm('reddit-save-posts', async (e, { sessionId, postUrls = [], doUpvote = false, delayMs = 3000, jobId }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!jobId) jobId = `rd-save-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const results = []
+  try {
+    for (const url of postUrls) {
+      if (globals.cancelFlags.get(jobId)) break
+      const out = { url, saved: false, upvoted: false, error: null }
+      try {
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+        await page.waitForTimeout(randomDelay(1500, 2800))
+        // Open the overflow menu and click "Save".
+        await smartClick(page, ['button[aria-label="more options"]', 'shreddit-post button[aria-label*="more"]', 'button[aria-label="More options"]'], 'more')
+        await page.waitForTimeout(randomDelay(500, 1000))
+        const saved = await smartActionClick(page, [
+          'div[role="menuitem"]:has-text("Save")', 'li[role="menuitem"]:has-text("Save")',
+          'button:has-text("Save")', 'a:has-text("save")'
+        ], 'save')
+        out.saved = !!saved
+        if (doUpvote) {
+          await page.waitForTimeout(randomDelay(500, 1000))
+          const upvoted = await smartActionClick(page, [
+            'button[aria-label="upvote"]', 'button[aria-pressed="false"][aria-label="upvote"]',
+            'shreddit-post button[aria-label="upvote"]', 'button[data-click-id="upvote"]'
+          ], 'upvote')
+          out.upvoted = !!upvoted
+        }
+        out.status = out.saved || out.upvoted ? 'done' : 'skipped'
+      } catch (err) {
+        out.error = err.message
+        out.status = 'failed'
+      }
+      results.push(out)
+      sendProgress(sender, jobId, { type: 'progress', count: results.length, total: postUrls.length, last: out })
+      await page.waitForTimeout(delayMs + Math.random() * 1500)
+    }
+    return { success: true, data: results, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: results, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// Extract top growing communities for today by scraping the popular page.
+ipcm('reddit-top-growing-communities', async (e, { sessionId, limit = 50, jobId }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!jobId) jobId = `rd-top-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const seen = new Set()
+  const communities = []
+  try {
+    await page.goto('https://www.reddit.com/best/communities/1/', { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+    await page.waitForTimeout(randomDelay(2500, 4000))
+    let stagnant = 0
+    while (communities.length < limit && stagnant < 5) {
+      if (globals.cancelFlags.get(jobId)) break
+      const before = communities.length
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.waitForTimeout(randomDelay(1500, 2500))
+      const batch = await page.evaluate(() => {
+        const r = []
+        document.querySelectorAll('a[href^="/r/"]:not([href*="/comments"])').forEach(a => {
+          const href = a.getAttribute('href') || ''
+          if (!/^\/r\/[^/]+\/?$/.test(href)) return
+          const name = href.replace(/\//g, '').replace(/^r/, 'r/').replace(/^r\//, 'r/')
+          if (!name) return
+          const desc = a.parentElement?.querySelector('div[class*="description"], p')?.innerText?.trim() || ''
+          const members = a.parentElement?.querySelector('[class*="member"], faceplate-number')?.innerText?.trim() || ''
+          r.push({
+            name: '/r/' + href.replace(/\//g, '').replace(/^r/, ''),
+            url: 'https://www.reddit.com' + href,
+            description: desc,
+            members,
+          })
+        })
+        return r
+      })
+      for (const c of batch) {
+        if (seen.has(c.url)) continue
+        seen.add(c.url)
+        communities.push(c)
+        if (communities.length >= limit) break
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: communities.length, total: limit, data: batch })
+      if (communities.length === before) stagnant++
+      else stagnant = 0
+    }
+    saveLeads('reddit', 'top-growing', communities.map(c => ({ name: c.name, url: c.url, text: c.description, extra: c.members })))
+    return { success: true, data: communities, count: communities.length, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: communities, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// Publish to a subreddit with optional image attached.
+ipcm('reddit-publish-with-image', async (e, { sessionId, subreddit, title, content, imagePath }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!subreddit) return { success: false, error: 'Subreddit مطلوب' }
+  if (!title) return { success: false, error: 'العنوان مطلوب' }
+  if (imagePath && !fs.existsSync(imagePath)) return { success: false, error: 'الصورة غير موجودة' }
+  try {
+    const sub = String(subreddit).replace(/^\/?r\//, '')
+    const submitUrl = imagePath
+      ? `https://www.reddit.com/r/${sub}/submit?type=IMAGE`
+      : `https://www.reddit.com/r/${sub}/submit?type=TEXT`
+    await page.goto(submitUrl, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+    await page.waitForTimeout(randomDelay(2500, 4000))
+    // Title.
+    const titleTyped = await smartType(page, [
+      'textarea[name="title"]', 'textarea[placeholder*="Title"]',
+      'faceplate-textarea-input[name="title"] textarea', 'input[name="title"]'
+    ], title, 'title')
+    if (!titleTyped) return { success: false, error: 'لم يتم العثور على حقل العنوان' }
+    await page.waitForTimeout(randomDelay(500, 1200))
+    if (imagePath) {
+      const fileInput = await page.$('input[type="file"]')
+      if (!fileInput) return { success: false, error: 'لم يتم العثور على مدخل الصورة' }
+      await fileInput.setInputFiles([imagePath])
+      await page.waitForTimeout(randomDelay(3500, 5500))
+    } else if (content) {
+      await smartType(page, ['div[role="textbox"][contenteditable="true"]', 'textarea[name="text"]', 'div.notranslate.public-DraftEditor-content'], content, 'body')
+      await page.waitForTimeout(randomDelay(500, 1200))
+    }
+    const posted = await smartClick(page, [
+      'button[type="submit"]:not(:disabled)', 'button:has-text("Post"):not(:has-text("Posts"))',
+      'button[id*="submit"]:not(:disabled)'
+    ], 'submit')
+    if (!posted) return { success: false, error: 'فشل النقر على Post' }
+    await page.waitForTimeout(randomDelay(3000, 5000))
+    return { success: true, message: 'تم النشر', url: page.url() }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+})
+
 // ==================== IPC: GOOGLE / MAPS / OLX ====================
 ipcm('google-maps-extract', async (e, { searchQuery, location, limit = 50, headless = false, sessionId: existingSessionId }) => {
   let sessionId = existingSessionId || null
@@ -4509,29 +6547,116 @@ ipcm('snapchat-login', async (e, { username, password, headless = false, proxy }
   }
 })
 
-ipcm('snapchat-broadcast', async (e, { sessionId, usernames, message }) => {
+// Real Snapchat broadcast — opens each friend's chat and sends a text + optional image.
+ipcm('snapchat-broadcast', async (e, { sessionId, usernames = [], message, imagePath, delayMs = 5000, jobId }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!message && !imagePath) return { success: false, error: 'النص أو الصورة مطلوبة' }
+  if (imagePath && !fs.existsSync(imagePath)) return { success: false, error: 'الصورة غير موجودة' }
+  if (!jobId) jobId = `snap-bc-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const results = []
   try {
-    const page = sessionId ? globals.bm.getPage(sessionId) : null
-    if (page) {
-      await page.goto('https://web.snapchat.com/', { waitUntil: 'domcontentloaded', timeout: 30000 })
-      await page.waitForTimeout(randomDelay(2000, 4000))
-      return { success: true, message: 'Snapchat Web مفتوح - أكمل المراسلة يدوياً', sessionId }
+    await page.goto('https://web.snapchat.com/', { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+    await page.waitForTimeout(randomDelay(3000, 5000))
+    for (const u of usernames) {
+      if (globals.cancelFlags.get(jobId)) break
+      const handle = String(u).replace(/^@/, '').trim()
+      try {
+        // Open friend search.
+        await smartClick(page, ['button[aria-label="New Chat"]', 'div[role="button"][aria-label*="New"]', 'svg[aria-label="New Chat"]'], 'new chat')
+        await page.waitForTimeout(randomDelay(800, 1500))
+        await smartType(page, ['input[placeholder*="Search"]', 'input[type="search"]', 'input[type="text"]'], handle, 'search friend')
+        await page.waitForTimeout(randomDelay(1200, 2000))
+        const picked = await smartClick(page, [`div[role="option"]:has-text("${handle}")`, 'div[role="option"]:first-of-type', 'div[role="listitem"]:first-of-type'], 'pick friend')
+        if (!picked) { results.push({ username: handle, status: 'failed', error: 'لم يتم العثور على الصديق' }); continue }
+        await page.waitForTimeout(randomDelay(1500, 2500))
+        await smartClick(page, ['button:has-text("Chat")', 'button:has-text("Send Chat")', 'div[role="button"]:has-text("Chat")'], 'open chat')
+        await page.waitForTimeout(randomDelay(1500, 2500))
+        if (imagePath) {
+          const fileInput = await page.$('input[type="file"]')
+          if (fileInput) {
+            await fileInput.setInputFiles([imagePath])
+            await page.waitForTimeout(randomDelay(2000, 3500))
+          }
+        }
+        if (message) {
+          await smartType(page, ['div[contenteditable="true"]', 'textarea[placeholder*="message"]', 'textarea'], message, 'msg')
+          await page.waitForTimeout(randomDelay(500, 1200))
+        }
+        const sent = await smartClick(page, ['button[aria-label="Send"]', 'svg[aria-label="Send"]', 'button:has-text("Send")'], 'send')
+        if (!sent) await page.keyboard.press('Enter')
+        await page.waitForTimeout(randomDelay(1500, 2500))
+        results.push({ username: handle, status: 'sent' })
+      } catch (err) {
+        results.push({ username: handle, status: 'failed', error: err.message })
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: results.length, total: usernames.length, last: results[results.length - 1] })
+      await page.waitForTimeout(delayMs + Math.random() * 2000)
     }
-    let newSessionId = null
-    try {
-      const res = await globals.bm.launch({ headless: false, platform: 'snapchat' })
-      if (!res.success) return res
-      newSessionId = res.sessionId
-      const newPage = globals.bm.getPage(newSessionId)
-      await newPage.goto('https://web.snapchat.com/', { waitUntil: 'domcontentloaded', timeout: 30000 })
-      await newPage.waitForTimeout(randomDelay(4000, 6000))
-      return { success: true, message: 'Snapchat Web مفتوح - أكمل المراسلة يدوياً', sessionId: newSessionId }
-    } catch (err) {
-      if (newSessionId) await safeClose(newSessionId)
-      return { success: false, error: err.message }
-    }
+    return { success: true, data: results, jobId, cancelled: globals.cancelFlags.get(jobId) }
   } catch (err) {
-    return { success: false, error: err.message }
+    return { success: false, error: err.message, partialData: results, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// Extract Snapchat friends from the friends sidebar.
+ipcm('snapchat-extract-friends', async (e, { sessionId, limit = 200, jobId, delayMs = 1500 }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!jobId) jobId = `snap-friends-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const friends = []
+  try {
+    await page.goto('https://web.snapchat.com/', { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+    await page.waitForTimeout(randomDelay(2500, 4000))
+    // Open friends list (the side panel).
+    await smartClick(page, ['button[aria-label="Friends"]', 'div[role="button"]:has-text("Friends")', 'svg[aria-label="Friends"]'], 'friends')
+    await page.waitForTimeout(randomDelay(1500, 2500))
+    const seen = new Set()
+    let stagnant = 0
+    while (friends.length < limit && stagnant < 5) {
+      if (globals.cancelFlags.get(jobId)) break
+      const before = friends.length
+      const batch = await page.evaluate(() => {
+        const r = []
+        document.querySelectorAll('div[role="option"], div[role="listitem"], a[href^="/add/"], div[data-testid*="friend"]').forEach(row => {
+          const nameEl = row.querySelector('span, div[class*="name"], h3')
+          if (!nameEl) return
+          const name = nameEl.innerText.trim().split('\n')[0]
+          if (!name || name.length > 60) return
+          const subEl = row.querySelectorAll('span')[1]
+          r.push({ name, username: subEl ? subEl.innerText.trim() : '' })
+        })
+        return r
+      })
+      for (const f of batch) {
+        const key = f.name + '|' + f.username
+        if (seen.has(key)) continue
+        seen.add(key)
+        friends.push(f)
+        if (friends.length >= limit) break
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: friends.length, total: limit, data: batch })
+      if (friends.length === before) stagnant++
+      else stagnant = 0
+      // Scroll the friends pane.
+      await page.evaluate(() => {
+        const pane = document.querySelector('div[role="listbox"], div[role="list"]') || document.querySelector('[class*="friends"]')
+        if (pane) pane.scrollTop = pane.scrollHeight
+      })
+      await page.waitForTimeout(delayMs + Math.random() * 800)
+    }
+    saveLeads('snapchat', 'friends', friends)
+    return { success: true, data: friends, count: friends.length, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: friends, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
   }
 })
 

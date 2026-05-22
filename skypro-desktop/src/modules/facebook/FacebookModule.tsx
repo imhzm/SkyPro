@@ -12,6 +12,7 @@ import {
   Trash2, AlertCircle, CheckCircle, Loader2, FileSpreadsheet, Heart,
   UserPlus, MessageSquare, Globe, AtSign, BarChart3, FileText,
   Share2, Copy, ThumbsUp, Bot, Square, LogOut, Facebook as FacebookIcon,
+  Image as ImageIcon, ShieldCheck, UserCheck, X,
 } from 'lucide-react'
 
 type ActiveTool =
@@ -20,6 +21,9 @@ type ActiveTool =
   | 'friend-requests' | 'delete-friends' | 'interaction-farm' | 'delete-posts'
   | 'analyze-group' | 'add-to-group-chat' | 'send-page-messages'
   | 'users-to-ids' | 'links-to-ids'
+  | 'search-pages' | 'like-pages' | 'extract-sharers' | 'invite-friends'
+  | 'comment-on-pages' | 'post-with-images' | 'demographics-analyze'
+  | 'detect-open-groups' | 'extract-active-friends'
   | null
 
 type ResultsOwner = Exclude<ActiveTool, null> | null
@@ -84,6 +88,32 @@ export default function FacebookModule() {
   const [usersToIds, setUsersToIds] = useState('')
   const [linksToIds, setLinksToIds] = useState('')
   const [toolResults, setToolResults] = useState<any[]>([])
+
+  // ---- New tool state (Phase: Facebook completion) ----
+  const [pagesSearchQuery, setPagesSearchQuery] = useState('')
+  const [pagesSearchLocation, setPagesSearchLocation] = useState('')
+  const [pagesSearchLimit, setPagesSearchLimit] = useState(100)
+  const [likePagesUrls, setLikePagesUrls] = useState('')
+  const [likePagesDelay, setLikePagesDelay] = useState(5)
+  const [sharersPostUrl, setSharersPostUrl] = useState('')
+  const [sharersLimit, setSharersLimit] = useState(200)
+  const [invitePageUrl, setInvitePageUrl] = useState('')
+  const [inviteUsernames, setInviteUsernames] = useState('')
+  const [inviteAll, setInviteAll] = useState(true)
+  const [commentPagesUrls, setCommentPagesUrls] = useState('')
+  const [commentPagesText, setCommentPagesText] = useState('')
+  const [commentPagesDelay, setCommentPagesDelay] = useState(6)
+  const [imagePostGroups, setImagePostGroups] = useState('')
+  const [imagePostMessage, setImagePostMessage] = useState('')
+  const [imagePostPaths, setImagePostPaths] = useState<string[]>([])
+  const imagePostInputRef = useRef<HTMLInputElement | null>(null)
+  const [imagePostDelay, setImagePostDelay] = useState(8)
+  const [demoInputJson, setDemoInputJson] = useState('')
+  const [demoResult, setDemoResult] = useState<any>(null)
+  const [openGroupsUrls, setOpenGroupsUrls] = useState('')
+  const [openGroupsDelay, setOpenGroupsDelay] = useState(3)
+  const [activeFriendsLimit, setActiveFriendsLimit] = useState(50)
+  const [activeFriendsDays, setActiveFriendsDays] = useState(30)
 
   useEffect(() => {
     const cleanup = window.electronAPI.onExtractionProgress((data: any) => {
@@ -428,6 +458,208 @@ export default function FacebookModule() {
     setLoading(false)
   }
 
+  // ---- New tool handlers (Phase: Facebook completion) ----
+  const handleSearchPages = async () => {
+    if (!ensureSession()) return
+    if (!pagesSearchQuery.trim()) { showMsg('أدخل الكلمة المفتاحية', true); return }
+    setLoading(true)
+    setResultsOwner('search-pages')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.facebookSearchPages({ sessionId, query: pagesSearchQuery.trim(), location: pagesSearchLocation.trim() || undefined, limit: pagesSearchLimit })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        showMsg(`تم العثور على ${res.count || items.length} صفحة`)
+        await loadResults()
+      } else {
+        showMsg(res.error || 'فشل البحث', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  const handleLikePages = async () => {
+    if (!ensureSession()) return
+    const urls = likePagesUrls.split('\n').map(s => s.trim()).filter(Boolean)
+    if (urls.length === 0) { showMsg('أدخل روابط الصفحات', true); return }
+    setLoading(true)
+    setResultsOwner('like-pages')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.facebookLikePages({ sessionId, pageUrls: urls, delayMs: Math.max(2, likePagesDelay) * 1000 })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        const ok = items.filter((r: any) => r.status === 'liked').length
+        showMsg(`تم الإعجاب بـ ${ok} من ${urls.length} صفحة`)
+      } else {
+        showMsg(res.error || 'فشلت العملية', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  const handleExtractSharers = async () => {
+    if (!ensureSession()) return
+    if (!sharersPostUrl.trim()) { showMsg('أدخل رابط المنشور', true); return }
+    setLoading(true)
+    setResultsOwner('extract-sharers')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.facebookExtractSharers({ sessionId, postUrl: sharersPostUrl.trim(), limit: sharersLimit })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        showMsg(`تم استخراج ${res.count || items.length} مشارك`)
+        await loadResults()
+      } else {
+        showMsg(res.error || 'فشل الاستخراج', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  const handleInviteFriends = async () => {
+    if (!ensureSession()) return
+    if (!invitePageUrl.trim()) { showMsg('أدخل رابط الصفحة', true); return }
+    setLoading(true)
+    try {
+      const usernames = inviteUsernames.split('\n').map(s => s.trim()).filter(Boolean)
+      const res = await window.electronAPI.facebookInviteFriends({
+        sessionId, pageUrl: invitePageUrl.trim(),
+        usernames: inviteAll ? undefined : usernames,
+        inviteAll: inviteAll,
+      })
+      if (res.success) {
+        showMsg('تم إرسال الدعوات بنجاح')
+      } else showMsg(res.error || 'فشلت العملية', true)
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  const handleCommentOnPages = async () => {
+    if (!ensureSession()) return
+    const urls = commentPagesUrls.split('\n').map(s => s.trim()).filter(Boolean)
+    if (urls.length === 0) { showMsg('أدخل روابط الصفحات', true); return }
+    if (!commentPagesText.trim()) { showMsg('أدخل نص التعليق', true); return }
+    setLoading(true)
+    setResultsOwner('comment-on-pages')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.facebookCommentOnPages({ sessionId, pageUrls: urls, commentText: commentPagesText, delayMs: Math.max(2, commentPagesDelay) * 1000 })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        const ok = items.filter((r: any) => r.status === 'commented').length
+        showMsg(`تم التعليق على ${ok} من ${urls.length}`)
+      } else {
+        showMsg(res.error || 'فشلت العملية', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  const handlePickImages = () => imagePostInputRef.current?.click()
+  const handleImagesSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+    const paths = Array.from(files).map(f => (f as any).path).filter(Boolean).slice(0, 3)
+    setImagePostPaths(paths)
+    if (imagePostInputRef.current) imagePostInputRef.current.value = ''
+  }
+  const handlePostWithImages = async () => {
+    if (!ensureSession()) return
+    const groups = imagePostGroups.split('\n').map(s => s.trim()).filter(Boolean)
+    if (groups.length === 0) { showMsg('أدخل روابط المجموعات', true); return }
+    if (!imagePostMessage.trim() && imagePostPaths.length === 0) { showMsg('أدخل نص أو صور على الأقل', true); return }
+    setLoading(true)
+    setResultsOwner('post-with-images')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.facebookPostWithImages({ sessionId, groups, message: imagePostMessage, imagePaths: imagePostPaths, delayMs: Math.max(3, imagePostDelay) * 1000 })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        const ok = items.filter((r: any) => r.status === 'posted').length
+        showMsg(`تم النشر في ${ok} من ${groups.length} مجموعة`)
+      } else {
+        showMsg(res.error || 'فشلت العملية', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  const handleDemographicsAnalyze = async () => {
+    if (!demoInputJson.trim() && toolResults.length === 0) {
+      showMsg('استخدم نتائج أداة استخراج موجودة، أو الصق JSON', true); return
+    }
+    setLoading(true)
+    setDemoResult(null)
+    try {
+      let items: any[] = []
+      if (demoInputJson.trim()) {
+        try { items = JSON.parse(demoInputJson) } catch { items = [] }
+        if (!Array.isArray(items)) items = [items]
+      } else {
+        items = toolResults
+      }
+      const res = await window.electronAPI.facebookDemographicsAnalyze({ items })
+      if (res.success) {
+        setDemoResult(res.data)
+        showMsg(`تم تحليل ${res.data?.total ?? items.length} نتيجة`)
+      } else showMsg(res.error || 'فشل التحليل', true)
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  const handleDetectOpenGroups = async () => {
+    if (!ensureSession()) return
+    const urls = openGroupsUrls.split('\n').map(s => s.trim()).filter(Boolean)
+    if (urls.length === 0) { showMsg('أدخل روابط المجموعات', true); return }
+    setLoading(true)
+    setResultsOwner('detect-open-groups')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.facebookDetectOpenGroups({ sessionId, groupUrls: urls, delayMs: Math.max(2, openGroupsDelay) * 1000 })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        const open = items.filter((r: any) => r.status === 'open').length
+        showMsg(`${open} مفتوحة للنشر من أصل ${urls.length}`)
+      } else {
+        showMsg(res.error || 'فشلت العملية', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  const handleExtractActiveFriends = async () => {
+    if (!ensureSession()) return
+    setLoading(true)
+    setResultsOwner('extract-active-friends')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.facebookExtractActiveFriends({ sessionId, limit: activeFriendsLimit, activeDays: activeFriendsDays })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        showMsg(`تم العثور على ${res.count || items.length} صديق نشط`)
+        await loadResults()
+      } else {
+        showMsg(res.error || 'فشل الاستخراج', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
   const handlePageSendMessages = async () => {
     if (!ensureSession()) return
     if (!pageMsgUrl || !pageMsgRecipients || !pageMsgText) { showMsg('أدخل رابط الصفحة والمستلمين والرسالة', true); return }
@@ -471,13 +703,22 @@ export default function FacebookModule() {
 
   const extractCategoryTools: ToolDef[] = [
     { id: 'extract', name: 'استخراج البيانات', description: 'متابعين، تعليقات، مجموعات، أرقام، تقييمات', icon: Download, accent: '#0A6CF1', accentGradient: 'linear-gradient(135deg, #0A6CF1, #1d4ed8)' },
+    { id: 'search-pages', name: 'البحث عن الصفحات', description: 'بحث متقدم + استهداف بالموقع', icon: Search, accent: '#06b6d4', accentGradient: 'linear-gradient(135deg, #06b6d4, #0891b2)' },
+    { id: 'extract-sharers', name: 'استخراج المشاركين', description: 'العملاء الذين شاركوا المنشور', icon: Share2, accent: '#f43f5e', accentGradient: 'linear-gradient(135deg, #f43f5e, #be123c)' },
+    { id: 'extract-active-friends', name: 'الأصدقاء النشطين', description: 'الأصدقاء بمنشورات حديثة', icon: UserCheck, accent: '#10b981', accentGradient: 'linear-gradient(135deg, #10b981, #047857)' },
+    { id: 'detect-open-groups', name: 'كشف المجموعات المفتوحة', description: 'فحص قبول النشر بدون موافقة', icon: ShieldCheck, accent: '#84cc16', accentGradient: 'linear-gradient(135deg, #84cc16, #4d7c0f)' },
+    { id: 'demographics-analyze', name: 'تحليل ديموغرافي', description: 'إحصائيات الجنس والمواقع', icon: BarChart3, accent: '#a855f7', accentGradient: 'linear-gradient(135deg, #a855f7, #7e22ce)' },
   ]
 
   const marketingTools: ToolDef[] = [
     { id: 'post-to-groups', name: 'النشر في المجموعات', description: 'نشر منشور في عدة مجموعات', icon: Megaphone, accent: '#10b981', accentGradient: 'linear-gradient(135deg, #10b981, #047857)' },
+    { id: 'post-with-images', name: 'النشر بنص + صور', description: 'نشر بنص و3 صور وروابط للمجموعات', icon: ImageIcon, accent: '#ec4899', accentGradient: 'linear-gradient(135deg, #ec4899, #be185d)' },
     { id: 'share-post', name: 'مشاركة منشور', description: 'مشاركة منشور في مجموعات متعددة', icon: Share2, accent: '#3b82f6', accentGradient: 'linear-gradient(135deg, #3b82f6, #1e40af)' },
     { id: 'auto-reply', name: 'رد تلقائي', description: 'الرد على التعليقات تلقائياً', icon: Bot, accent: '#8b5cf6', accentGradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' },
     { id: 'mention', name: 'منشن جماعي', description: 'منشن مستخدمين في عدة منشورات', icon: AtSign, accent: '#f97316', accentGradient: 'linear-gradient(135deg, #f97316, #c2410c)' },
+    { id: 'like-pages', name: 'إعجاب جماعي بالصفحات', description: 'إعجاب بقائمة صفحات', icon: ThumbsUp, accent: '#22c55e', accentGradient: 'linear-gradient(135deg, #22c55e, #15803d)' },
+    { id: 'comment-on-pages', name: 'تعليقات على الصفحات', description: 'تعليق على آخر منشور لقائمة صفحات', icon: MessageSquare, accent: '#0ea5e9', accentGradient: 'linear-gradient(135deg, #0ea5e9, #0369a1)' },
+    { id: 'invite-friends', name: 'دعوة الأصدقاء', description: 'دعوة الأصدقاء للإعجاب بصفحة', icon: UserPlus, accent: '#eab308', accentGradient: 'linear-gradient(135deg, #eab308, #a16207)' },
   ]
 
   const messagingTools: ToolDef[] = [
@@ -976,12 +1217,281 @@ export default function FacebookModule() {
   )
   const linksToIdsFooter = (<button onClick={handleLinksToIds} disabled={loading} className="btn-primary w-full" style={{ background: 'linear-gradient(135deg, #eab308, #a16207)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><FileText size={18} /> تحويل</>}</button>)
 
+  // ---- New panel renderers (Phase: Facebook completion) ----
+  const newResultsTable = (owner: Exclude<ActiveTool, null>, columns: string[], exportKey: string) => {
+    if (resultsOwner !== owner || toolResults.length === 0) return null
+    return (
+      <div className="mt-5 rounded-xl border border-secondary-200 bg-white/60 overflow-hidden">
+        <div className="flex items-center justify-between p-3 border-b border-secondary-100 flex-wrap gap-2">
+          <h4 className="font-bold text-secondary-900 text-sm">النتائج ({toolResults.length})</h4>
+          <div className="flex gap-2">
+            <button onClick={() => handleExport(columns, exportKey, toolResults)} className="btn-success text-xs"><FileSpreadsheet size={14} /> تصدير CSV</button>
+            <button onClick={handleClearResults} className="btn-danger text-xs"><Trash2 size={14} /> مسح</button>
+          </div>
+        </div>
+        <div className="table-container" style={{ maxHeight: '380px', overflow: 'auto' }}>
+          <table className="data-table">
+            <thead><tr>{columns.map((c, i) => <th key={i}>{c}</th>)}</tr></thead>
+            <tbody>
+              {toolResults.map((r: any, i: number) => {
+                if (owner === 'search-pages') {
+                  return (<tr key={i}><td className="text-secondary-500">{i + 1}</td><td className="font-medium">{r.name || '-'}</td><td className="text-xs text-secondary-600">{r.followers || '-'}</td><td className="text-xs">{r.url ? <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">رابط</a> : '-'}</td></tr>)
+                }
+                if (owner === 'like-pages') {
+                  return (<tr key={i}><td className="text-secondary-500">{i + 1}</td><td className="text-xs max-w-[300px] truncate" dir="ltr">{r.url}</td><td><span className={`badge ${r.status === 'liked' ? 'badge-success' : r.status === 'skipped' ? 'badge-warning' : 'badge-danger'}`}>{r.status}</span></td><td className="text-xs text-secondary-500">{r.error || '-'}</td></tr>)
+                }
+                if (owner === 'extract-sharers') {
+                  return (<tr key={i}><td className="text-secondary-500">{i + 1}</td><td className="font-medium">{r.name || '-'}</td><td className="text-xs">{r.profile ? <a href={r.profile} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">رابط</a> : '-'}</td></tr>)
+                }
+                if (owner === 'comment-on-pages') {
+                  return (<tr key={i}><td className="text-secondary-500">{i + 1}</td><td className="text-xs max-w-[300px] truncate" dir="ltr">{r.url}</td><td><span className={`badge ${r.status === 'commented' ? 'badge-success' : r.status === 'skipped' ? 'badge-warning' : 'badge-danger'}`}>{r.status}</span></td><td className="text-xs text-secondary-500">{r.error || '-'}</td></tr>)
+                }
+                if (owner === 'post-with-images') {
+                  return (<tr key={i}><td className="text-secondary-500">{i + 1}</td><td className="text-xs max-w-[300px] truncate" dir="ltr">{r.group}</td><td><span className={`badge ${r.status === 'posted' ? 'badge-success' : 'badge-danger'}`}>{r.status}</span></td><td className="text-xs text-secondary-500">{r.error || '-'}</td></tr>)
+                }
+                if (owner === 'detect-open-groups') {
+                  return (<tr key={i}><td className="text-secondary-500">{i + 1}</td><td className="font-medium">{r.name || '-'}</td><td className="text-xs text-secondary-600">{r.members || '-'}</td><td><span className={`badge ${r.status === 'open' ? 'badge-success' : r.status === 'approval-needed' ? 'badge-warning' : 'badge-danger'}`}>{r.status === 'open' ? 'مفتوحة' : r.status === 'approval-needed' ? 'بحاجة موافقة' : r.status}</span></td><td className="text-xs">{r.url ? <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">رابط</a> : '-'}</td></tr>)
+                }
+                if (owner === 'extract-active-friends') {
+                  return (<tr key={i}><td className="text-secondary-500">{i + 1}</td><td className="font-medium">{r.name || '-'}</td><td className="text-xs text-secondary-600">{r.lastSeen || '-'}</td><td className="text-xs">{r.profile ? <a href={r.profile} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">رابط</a> : '-'}</td></tr>)
+                }
+                return null
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    )
+  }
+
+  const renderSearchPagesBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">الكلمة المفتاحية</label>
+        <input type="text" className="input-field" value={pagesSearchQuery} onChange={e => setPagesSearchQuery(e.target.value)} placeholder="مطعم، عيادة أسنان، استشارات تسويق" />
+      </div>
+      <div>
+        <label className="label-field">الموقع (اختياري)</label>
+        <input type="text" className="input-field" value={pagesSearchLocation} onChange={e => setPagesSearchLocation(e.target.value)} placeholder="القاهرة، الرياض، Cairo" />
+      </div>
+      <div>
+        <label className="label-field">الحد الأقصى: {pagesSearchLimit}</label>
+        <input type="range" min={20} max={1000} step={10} className="w-full accent-cyan-500" value={pagesSearchLimit} onChange={e => setPagesSearchLimit(parseInt(e.target.value))} />
+      </div>
+      {newResultsTable('search-pages', ['#', 'الاسم', 'المتابعين', 'الرابط'], 'fb-pages-search')}
+    </div>
+  )
+  const searchPagesFooter = (<button onClick={handleSearchPages} disabled={loading || !pagesSearchQuery.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #06b6d4, #0891b2)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><Search size={18} /> بحث</>}</button>)
+
+  const renderLikePagesBody = () => (
+    <div className="space-y-5">
+      <div className="p-3 rounded-lg text-xs text-amber-700" style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.3)' }}>
+        <AlertCircle size={14} className="inline ml-1" />
+        فيسبوك يحدد ~50 إعجاب صفحة يومياً للحسابات الجديدة. استخدم فاصل ≥ 4 ثوانٍ.
+      </div>
+      <div>
+        <label className="label-field">روابط الصفحات (سطر لكل رابط)</label>
+        <textarea className="textarea-field" rows={7} value={likePagesUrls} onChange={e => setLikePagesUrls(e.target.value)} placeholder="https://facebook.com/page-name" />
+      </div>
+      <div>
+        <label className="label-field">الفاصل (ثانية)</label>
+        <input type="number" min={2} max={120} className="input-field w-32" value={likePagesDelay} onChange={e => setLikePagesDelay(Number(e.target.value) || 5)} />
+      </div>
+      {newResultsTable('like-pages', ['#', 'الصفحة', 'الحالة', 'خطأ'], 'fb-like-pages')}
+    </div>
+  )
+  const likePagesFooter = (<button onClick={handleLikePages} disabled={loading || !likePagesUrls.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #22c55e, #15803d)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><ThumbsUp size={18} /> إعجاب</>}</button>)
+
+  const renderExtractSharersBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">رابط المنشور</label>
+        <input type="url" className="input-field" value={sharersPostUrl} onChange={e => setSharersPostUrl(e.target.value)} placeholder="https://facebook.com/posts/..." />
+      </div>
+      <div>
+        <label className="label-field">الحد الأقصى: {sharersLimit}</label>
+        <input type="range" min={20} max={2000} step={20} className="w-full accent-rose-500" value={sharersLimit} onChange={e => setSharersLimit(parseInt(e.target.value))} />
+      </div>
+      {newResultsTable('extract-sharers', ['#', 'الاسم', 'الرابط'], 'fb-sharers')}
+    </div>
+  )
+  const extractSharersFooter = (<button onClick={handleExtractSharers} disabled={loading || !sharersPostUrl.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #f43f5e, #be123c)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><Share2 size={18} /> استخراج المشاركين</>}</button>)
+
+  const renderInviteFriendsBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">رابط الصفحة</label>
+        <input type="url" className="input-field" value={invitePageUrl} onChange={e => setInvitePageUrl(e.target.value)} placeholder="https://facebook.com/your-page" />
+      </div>
+      <label className="flex items-center gap-2 text-sm cursor-pointer">
+        <input type="checkbox" checked={inviteAll} onChange={e => setInviteAll(e.target.checked)} className="rounded" />
+        دعوة كل الأصدقاء (الحد الافتراضي 50)
+      </label>
+      {!inviteAll && (
+        <div>
+          <label className="label-field">قائمة الأصدقاء بالاسم (سطر لكل اسم)</label>
+          <textarea className="textarea-field" rows={5} value={inviteUsernames} onChange={e => setInviteUsernames(e.target.value)} placeholder="Ahmed Mohamed&#10;Sara Ali" />
+        </div>
+      )}
+    </div>
+  )
+  const inviteFriendsFooter = (<button onClick={handleInviteFriends} disabled={loading || !invitePageUrl.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #eab308, #a16207)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><UserPlus size={18} /> إرسال الدعوات</>}</button>)
+
+  const renderCommentOnPagesBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">روابط الصفحات (سطر لكل صفحة)</label>
+        <textarea className="textarea-field" rows={6} value={commentPagesUrls} onChange={e => setCommentPagesUrls(e.target.value)} placeholder="https://facebook.com/page-name" />
+      </div>
+      <div>
+        <label className="label-field">نص التعليق ({'{{n}}'} = رقم الصفحة)</label>
+        <textarea className="textarea-field" rows={3} value={commentPagesText} onChange={e => setCommentPagesText(e.target.value)} placeholder="تعليق احترافي ومحترم..." />
+      </div>
+      <div>
+        <label className="label-field">الفاصل (ثانية)</label>
+        <input type="number" min={2} max={120} className="input-field w-32" value={commentPagesDelay} onChange={e => setCommentPagesDelay(Number(e.target.value) || 6)} />
+      </div>
+      {newResultsTable('comment-on-pages', ['#', 'الصفحة', 'الحالة', 'خطأ'], 'fb-comment-pages')}
+    </div>
+  )
+  const commentOnPagesFooter = (<button onClick={handleCommentOnPages} disabled={loading || !commentPagesUrls.trim() || !commentPagesText.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #0ea5e9, #0369a1)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><MessageSquare size={18} /> تعليق</>}</button>)
+
+  const renderPostWithImagesBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">روابط المجموعات (سطر لكل مجموعة)</label>
+        <textarea className="textarea-field" rows={5} value={imagePostGroups} onChange={e => setImagePostGroups(e.target.value)} placeholder="https://facebook.com/groups/..." />
+      </div>
+      <div>
+        <label className="label-field">نص المنشور</label>
+        <textarea className="textarea-field" rows={4} value={imagePostMessage} onChange={e => setImagePostMessage(e.target.value)} placeholder="اكتب منشورك مع روابط 🎉 ورموز تعبيرية 💎" />
+      </div>
+      <div>
+        <label className="label-field">الصور (حد أقصى 3)</label>
+        <input ref={imagePostInputRef} type="file" multiple accept="image/*" onChange={handleImagesSelected} className="hidden" />
+        <div className="flex flex-wrap gap-2 items-center">
+          <button onClick={handlePickImages} type="button" className="btn-secondary text-sm"><ImageIcon size={16} /> اختر صور</button>
+          {imagePostPaths.length === 0 && <span className="text-xs text-secondary-400">لم يتم اختيار صور</span>}
+        </div>
+        {imagePostPaths.length > 0 && (
+          <ul className="mt-3 space-y-1.5 text-xs">
+            {imagePostPaths.map((p, i) => (
+              <li key={i} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-white/70 border border-secondary-100">
+                <span className="truncate" dir="ltr">{p}</span>
+                <button onClick={() => setImagePostPaths(prev => prev.filter((_, j) => j !== i))} className="text-danger-500 p-1 hover:bg-danger-50 rounded" type="button"><X size={14} /></button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      <div>
+        <label className="label-field">الفاصل (ثانية)</label>
+        <input type="number" min={3} max={120} className="input-field w-32" value={imagePostDelay} onChange={e => setImagePostDelay(Number(e.target.value) || 8)} />
+      </div>
+      {newResultsTable('post-with-images', ['#', 'المجموعة', 'الحالة', 'خطأ'], 'fb-post-images')}
+    </div>
+  )
+  const postWithImagesFooter = (<button onClick={handlePostWithImages} disabled={loading || !imagePostGroups.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #ec4899, #be185d)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><ImageIcon size={18} /> نشر</>}</button>)
+
+  const renderDemographicsAnalyzeBody = () => (
+    <div className="space-y-5">
+      <div className="p-3 rounded-lg text-xs text-secondary-600" style={{ background: 'rgba(168,85,247,0.05)', border: '1px solid rgba(168,85,247,0.2)' }}>
+        استخدم نتائج أداة استخراج موجودة (سيتم استخدام النتائج الحالية تلقائياً) أو الصق JSON يدوياً.
+      </div>
+      <div>
+        <label className="label-field">JSON يدوي (اختياري)</label>
+        <textarea className="textarea-field font-mono text-xs" rows={4} value={demoInputJson} onChange={e => setDemoInputJson(e.target.value)} placeholder='[{"name":"Ahmed", "location":"Cairo"}, ...]' dir="ltr" />
+      </div>
+      {demoResult && (
+        <div className="space-y-3">
+          <div className="grid grid-cols-3 gap-3">
+            <div className="p-3 rounded-xl border" style={{ background: 'rgba(34,197,94,0.06)', borderColor: 'rgba(34,197,94,0.2)' }}>
+              <p className="text-xs text-secondary-500">المجموع</p>
+              <p className="text-2xl font-bold text-emerald-700">{demoResult.total}</p>
+            </div>
+            <div className="p-3 rounded-xl border" style={{ background: 'rgba(59,130,246,0.06)', borderColor: 'rgba(59,130,246,0.2)' }}>
+              <p className="text-xs text-secondary-500">ذكور</p>
+              <p className="text-2xl font-bold text-blue-700">{demoResult.genderGuess?.male ?? 0}</p>
+            </div>
+            <div className="p-3 rounded-xl border" style={{ background: 'rgba(236,72,153,0.06)', borderColor: 'rgba(236,72,153,0.2)' }}>
+              <p className="text-xs text-secondary-500">إناث</p>
+              <p className="text-2xl font-bold text-pink-700">{demoResult.genderGuess?.female ?? 0}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="p-3 rounded-xl border bg-white/60">
+              <p className="text-xs font-bold text-secondary-700 mb-2">أكثر المواقع</p>
+              <ul className="space-y-1 text-xs">
+                {(demoResult.topLocations || []).slice(0, 8).map((r: any, i: number) => (
+                  <li key={i} className="flex justify-between"><span>{r.value}</span><span className="text-secondary-500">{r.count}</span></li>
+                ))}
+              </ul>
+            </div>
+            <div className="p-3 rounded-xl border bg-white/60">
+              <p className="text-xs font-bold text-secondary-700 mb-2">أكثر الأسماء</p>
+              <ul className="space-y-1 text-xs">
+                {(demoResult.topNames || []).slice(0, 10).map((r: any, i: number) => (
+                  <li key={i} className="flex justify-between"><span>{r.value}</span><span className="text-secondary-500">{r.count}</span></li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+  const demographicsAnalyzeFooter = (<button onClick={handleDemographicsAnalyze} disabled={loading} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #a855f7, #7e22ce)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><BarChart3 size={18} /> تحليل</>}</button>)
+
+  const renderDetectOpenGroupsBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">روابط المجموعات (سطر لكل مجموعة)</label>
+        <textarea className="textarea-field" rows={7} value={openGroupsUrls} onChange={e => setOpenGroupsUrls(e.target.value)} placeholder="https://facebook.com/groups/..." />
+      </div>
+      <div>
+        <label className="label-field">الفاصل (ثانية)</label>
+        <input type="number" min={1} max={60} className="input-field w-32" value={openGroupsDelay} onChange={e => setOpenGroupsDelay(Number(e.target.value) || 3)} />
+      </div>
+      {newResultsTable('detect-open-groups', ['#', 'الاسم', 'الأعضاء', 'الحالة', 'الرابط'], 'fb-open-groups')}
+    </div>
+  )
+  const detectOpenGroupsFooter = (<button onClick={handleDetectOpenGroups} disabled={loading || !openGroupsUrls.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #84cc16, #4d7c0f)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><ShieldCheck size={18} /> فحص</>}</button>)
+
+  const renderExtractActiveFriendsBody = () => (
+    <div className="space-y-5">
+      <div className="p-3 rounded-lg text-xs text-secondary-600" style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.2)' }}>
+        يفحص آخر نشاط لكل صديق ويعتبره نشطاً إذا نشر خلال الفترة المحددة.
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="label-field">عدد الأصدقاء للفحص: {activeFriendsLimit}</label>
+          <input type="range" min={10} max={300} step={5} className="w-full accent-emerald-500" value={activeFriendsLimit} onChange={e => setActiveFriendsLimit(parseInt(e.target.value))} />
+        </div>
+        <div>
+          <label className="label-field">أيام النشاط: {activeFriendsDays}</label>
+          <input type="range" min={1} max={365} step={1} className="w-full accent-emerald-500" value={activeFriendsDays} onChange={e => setActiveFriendsDays(parseInt(e.target.value))} />
+        </div>
+      </div>
+      {newResultsTable('extract-active-friends', ['#', 'الاسم', 'آخر نشاط', 'الرابط'], 'fb-active-friends')}
+    </div>
+  )
+  const extractActiveFriendsFooter = (<button onClick={handleExtractActiveFriends} disabled={loading} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #10b981, #047857)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><UserCheck size={18} /> استخراج</>}</button>)
+
   const panelMap: Record<Exclude<ActiveTool, null>, { body: React.ReactNode; footer: React.ReactNode }> = {
     extract: { body: renderExtractBody(), footer: extractFooter },
+    'search-pages': { body: renderSearchPagesBody(), footer: searchPagesFooter },
+    'extract-sharers': { body: renderExtractSharersBody(), footer: extractSharersFooter },
+    'extract-active-friends': { body: renderExtractActiveFriendsBody(), footer: extractActiveFriendsFooter },
+    'detect-open-groups': { body: renderDetectOpenGroupsBody(), footer: detectOpenGroupsFooter },
+    'demographics-analyze': { body: renderDemographicsAnalyzeBody(), footer: demographicsAnalyzeFooter },
     'post-to-groups': { body: renderPostToGroupsBody(), footer: postToGroupsFooter },
+    'post-with-images': { body: renderPostWithImagesBody(), footer: postWithImagesFooter },
     'share-post': { body: renderSharePostBody(), footer: sharePostFooter },
     'auto-reply': { body: renderAutoReplyBody(), footer: autoReplyFooter },
     mention: { body: renderMentionBody(), footer: mentionFooter },
+    'like-pages': { body: renderLikePagesBody(), footer: likePagesFooter },
+    'comment-on-pages': { body: renderCommentOnPagesBody(), footer: commentOnPagesFooter },
+    'invite-friends': { body: renderInviteFriendsBody(), footer: inviteFriendsFooter },
     'send-messages': { body: renderSendMessagesBody(), footer: sendMessagesFooter },
     'page-send-messages': { body: renderPageSendMessagesBody(), footer: pageSendMessagesFooter },
     'friend-requests': { body: renderFriendRequestsBody(), footer: friendRequestsFooter },

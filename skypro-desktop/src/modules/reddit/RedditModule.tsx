@@ -11,12 +11,18 @@ import {
   LogIn, Search, PenTool,
   AlertCircle, CheckCircle, Loader2, Trash2, FileSpreadsheet, Eye, EyeOff,
   Users, TrendingUp, Settings, Megaphone, ArrowBigUp,
-  LogOut, Wrench,
+  LogOut, Wrench, Bookmark, Image as ImageIcon, X,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
-type ActiveTool = 'search' | 'publish' | 'vote' | 'more' | 'search-communities' | 'join-communities' | null
-type ResultsOwner = 'search' | 'publish' | 'vote' | 'search-communities' | 'join-communities' | null
+type ActiveTool =
+  | 'search' | 'publish' | 'vote' | 'more' | 'search-communities' | 'join-communities'
+  | 'save-posts' | 'top-growing' | 'publish-image'
+  | null
+type ResultsOwner =
+  | 'search' | 'publish' | 'vote' | 'search-communities' | 'join-communities'
+  | 'save-posts' | 'top-growing'
+  | null
 
 const ACCENT = '#FF4500'
 const ACCENT_GRADIENT = 'linear-gradient(135deg, #FF4500, #CC3700)'
@@ -49,6 +55,18 @@ export default function RedditModule() {
   // --- Join communities ---
   const [joinList, setJoinList] = useState('')
   const [joinDelay, setJoinDelay] = useState(3)
+  // --- Save posts ---
+  const [savePostUrls, setSavePostUrls] = useState('')
+  const [saveDoUpvote, setSaveDoUpvote] = useState(true)
+  const [saveDelay, setSaveDelay] = useState(3)
+  // --- Top growing ---
+  const [topLimit, setTopLimit] = useState(50)
+  // --- Publish with image ---
+  const [publishImgSubreddit, setPublishImgSubreddit] = useState('')
+  const [publishImgTitle, setPublishImgTitle] = useState('')
+  const [publishImgContent, setPublishImgContent] = useState('')
+  const [publishImgPath, setPublishImgPath] = useState<string>('')
+  const publishImgInputRef = useRef<HTMLInputElement | null>(null)
 
   const redditAccounts = allAccounts.filter(a => a.platform === 'reddit')
   const ensureSession = () => {
@@ -175,8 +193,64 @@ export default function RedditModule() {
     setLoading(false)
   }
 
+  const handleSavePosts = async () => {
+    if (!ensureSession()) return
+    const urls = savePostUrls.split('\n').map(s => s.trim()).filter(Boolean)
+    if (urls.length === 0) { showMsg('أدخل روابط المنشورات', true); return }
+    setLoading(true)
+    setResultsOwner('save-posts')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.redditSavePosts({ sessionId, postUrls: urls, doUpvote: saveDoUpvote, delayMs: Math.max(1, saveDelay) * 1000 })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        const ok = items.filter((r: any) => r.status === 'done').length
+        showMsg(`تمت العملية على ${ok} من ${urls.length}`)
+      } else { showMsg(res.error || 'فشلت العملية', true); if (res.partialData) setToolResults(res.partialData as any[]) }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  const handleTopGrowing = async () => {
+    if (!ensureSession()) return
+    setLoading(true)
+    setResultsOwner('top-growing')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.redditTopGrowingCommunities({ sessionId, limit: topLimit })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        showMsg(`تم العثور على ${res.count || items.length} مجتمع`)
+        await loadResults()
+      } else showMsg(res.error || 'فشل الاستخراج', true)
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  const handlePickPublishImg = () => publishImgInputRef.current?.click()
+  const handlePublishImgSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+    const p = (files[0] as any).path
+    if (p) setPublishImgPath(p)
+    if (publishImgInputRef.current) publishImgInputRef.current.value = ''
+  }
+  const handlePublishWithImage = async () => {
+    if (!ensureSession()) return
+    if (!publishImgSubreddit.trim()) { showMsg('أدخل اسم الـ Subreddit', true); return }
+    if (!publishImgTitle.trim()) { showMsg('أدخل العنوان', true); return }
+    setLoading(true)
+    try {
+      const res = await window.electronAPI.redditPublishWithImage({ sessionId, subreddit: publishImgSubreddit.trim(), title: publishImgTitle.trim(), content: publishImgContent || undefined, imagePath: publishImgPath || undefined })
+      if (res.success) showMsg('تم النشر بنجاح')
+      else showMsg(res.error || 'فشلت العملية', true)
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
   const stubTools = [
-    { id: 'top-growing', name: 'الأكثر نمواً', desc: 'استخراج المواضيع الرائجة', icon: TrendingUp },
     { id: 'schedule-posts', name: 'جدولة المنشورات', desc: 'نشر مجدول', icon: PenTool },
     { id: 'auto-comment', name: 'التعليق التلقائي', desc: 'تعليقات تلقائية', icon: Megaphone },
   ]
@@ -195,6 +269,9 @@ export default function RedditModule() {
     { id: 'join-communities', name: 'الانضمام للمجتمعات', description: 'الانضمام لقائمة Subreddits', icon: Users, accent: '#84cc16', accentGradient: 'linear-gradient(135deg, #84cc16, #4d7c0f)', requiresSession: true },
     { id: 'publish', name: 'نشر منشور', description: 'نشر منشور في Subreddit', icon: PenTool, accent: '#8b5cf6', accentGradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', requiresSession: true },
     { id: 'vote', name: 'تصويت Upvote', description: 'تصويت Up على عدة منشورات', icon: ArrowBigUp, accent: '#10b981', accentGradient: 'linear-gradient(135deg, #10b981, #047857)', requiresSession: true },
+    { id: 'save-posts', name: 'حفظ + Upvote', description: 'حفظ منشورات (وتصويت اختياري)', icon: Bookmark, accent: '#f59e0b', accentGradient: 'linear-gradient(135deg, #f59e0b, #d97706)', requiresSession: true },
+    { id: 'top-growing', name: 'مجتمعات صاعدة', description: 'أكثر المجتمعات نمواً', icon: TrendingUp, accent: '#dc2626', accentGradient: 'linear-gradient(135deg, #dc2626, #991b1b)', requiresSession: true },
+    { id: 'publish-image', name: 'نشر بصورة', description: 'منشور بنص + صورة في Subreddit', icon: ImageIcon, accent: '#ec4899', accentGradient: 'linear-gradient(135deg, #ec4899, #be185d)', requiresSession: true },
     { id: 'more', name: 'أدوات إضافية', description: 'أدوات قيد التطوير', icon: Settings, accent: '#64748b', accentGradient: 'linear-gradient(135deg, #64748b, #334155)', requiresSession: false },
   ]
 
@@ -421,6 +498,28 @@ export default function RedditModule() {
                     </tr>
                   )
                 }
+                if (owner === 'save-posts') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="text-xs max-w-[280px] truncate" dir="ltr">{r.url}</td>
+                      <td>{r.saved ? <CheckCircle size={14} className="text-emerald-500" /> : <span className="text-secondary-300">-</span>}</td>
+                      <td>{r.upvoted ? <CheckCircle size={14} className="text-emerald-500" /> : <span className="text-secondary-300">-</span>}</td>
+                      <td><span className={`badge ${r.status === 'done' ? 'badge-success' : r.status === 'skipped' ? 'badge-warning' : 'badge-danger'}`}>{r.status}</span></td>
+                    </tr>
+                  )
+                }
+                if (owner === 'top-growing') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium" dir="ltr">{r.name || '-'}</td>
+                      <td className="text-xs">{r.members || '-'}</td>
+                      <td className="text-xs max-w-[260px] truncate">{r.description || '-'}</td>
+                      <td className="text-xs">{r.url ? <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">رابط</a> : '-'}</td>
+                    </tr>
+                  )
+                }
                 const extra = (() => { try { return JSON.parse(r.extra_data || '{}') } catch { return {} as any } })()
                 const name = r.title || r.name || extra.title || '-'
                 const link = r.link || r.url || extra.link || '-'
@@ -558,6 +657,85 @@ export default function RedditModule() {
     </button>
   )
 
+  // ---- Save posts panel ----
+  const renderSavePostsBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">روابط المنشورات (سطر لكل رابط)</label>
+        <textarea className="textarea-field" rows={6} value={savePostUrls} onChange={e => setSavePostUrls(e.target.value)} placeholder="https://reddit.com/r/.../comments/..." />
+      </div>
+      <label className="flex items-center gap-2 text-sm cursor-pointer">
+        <input type="checkbox" checked={saveDoUpvote} onChange={e => setSaveDoUpvote(e.target.checked)} className="rounded" />
+        تصويت Upvote مع الحفظ
+      </label>
+      <div>
+        <label className="label-field">الفاصل (ثانية)</label>
+        <input type="number" min={1} max={60} className="input-field w-32" value={saveDelay} onChange={e => setSaveDelay(Number(e.target.value) || 3)} />
+      </div>
+      {renderResultsTable('save-posts', ['#', 'الرابط', 'محفوظ', 'مُصوَّت', 'الحالة'], 'reddit-save')}
+    </div>
+  )
+  const savePostsFooter = (
+    <button onClick={handleSavePosts} disabled={loading || !sessionId || !savePostUrls.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Bookmark size={18} /> حفظ</>}
+    </button>
+  )
+
+  // ---- Top growing panel ----
+  const renderTopGrowingBody = () => (
+    <div className="space-y-5">
+      <div className="p-3 rounded-lg text-xs text-secondary-600" style={{ background: 'rgba(220,38,38,0.05)', border: '1px solid rgba(220,38,38,0.2)' }}>
+        المجتمعات الأكثر نمواً اليوم في Reddit — استخدمها للانضمام والنشر فيها.
+      </div>
+      <div>
+        <label className="label-field">الحد الأقصى: {topLimit}</label>
+        <input type="range" min={20} max={500} step={5} className="w-full accent-red-600" value={topLimit} onChange={e => setTopLimit(parseInt(e.target.value))} />
+      </div>
+      {renderResultsTable('top-growing', ['#', 'الاسم', 'الأعضاء', 'الوصف', 'الرابط'], 'reddit-top-growing')}
+    </div>
+  )
+  const topGrowingFooter = (
+    <button onClick={handleTopGrowing} disabled={loading || !sessionId} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #dc2626, #991b1b)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><TrendingUp size={18} /> استخراج</>}
+    </button>
+  )
+
+  // ---- Publish with image panel ----
+  const renderPublishImageBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">Subreddit</label>
+        <input type="text" className="input-field" dir="ltr" value={publishImgSubreddit} onChange={e => setPublishImgSubreddit(e.target.value)} placeholder="marketing" />
+      </div>
+      <div>
+        <label className="label-field">العنوان</label>
+        <input type="text" className="input-field" value={publishImgTitle} onChange={e => setPublishImgTitle(e.target.value)} placeholder="عنوان المنشور" />
+      </div>
+      <div>
+        <label className="label-field">النص (يستخدم إذا لم تتم إضافة صورة)</label>
+        <textarea className="textarea-field" rows={4} value={publishImgContent} onChange={e => setPublishImgContent(e.target.value)} placeholder="اكتب النص هنا..." />
+      </div>
+      <div>
+        <label className="label-field">الصورة (اختياري)</label>
+        <input ref={publishImgInputRef} type="file" accept="image/*" onChange={handlePublishImgSelected} className="hidden" />
+        <div className="flex items-center gap-2 flex-wrap">
+          <button type="button" onClick={handlePickPublishImg} className="btn-secondary text-sm"><ImageIcon size={16} /> اختر صورة</button>
+          {publishImgPath && (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/70 border border-secondary-100">
+              <span className="text-xs truncate max-w-[280px]" dir="ltr">{publishImgPath}</span>
+              <button type="button" onClick={() => setPublishImgPath('')} className="text-danger-500 p-1 hover:bg-danger-50 rounded"><X size={14} /></button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+  const publishImageFooter = (
+    <button onClick={handlePublishWithImage} disabled={loading || !sessionId || !publishImgSubreddit.trim() || !publishImgTitle.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #ec4899, #be185d)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><ImageIcon size={18} /> نشر</>}
+    </button>
+  )
+
   const renderMoreBody = () => (
     <div className="space-y-5">
       <p className="text-xs text-secondary-500">أدوات قيد التطوير — ستتوفر قريباً</p>
@@ -579,9 +757,12 @@ export default function RedditModule() {
   const panelMap: Record<Exclude<ActiveTool, null>, { body: React.ReactNode; footer: React.ReactNode }> = {
     search: { body: renderSearchBody(), footer: searchFooter },
     'search-communities': { body: renderSearchCommunitiesBody(), footer: searchCommunitiesFooter },
+    'top-growing': { body: renderTopGrowingBody(), footer: topGrowingFooter },
     'join-communities': { body: renderJoinCommunitiesBody(), footer: joinCommunitiesFooter },
     publish: { body: renderPublishBody(), footer: publishFooter },
+    'publish-image': { body: renderPublishImageBody(), footer: publishImageFooter },
     vote: { body: renderVoteBody(), footer: voteFooter },
+    'save-posts': { body: renderSavePostsBody(), footer: savePostsFooter },
     more: { body: renderMoreBody(), footer: null },
   }
 
