@@ -11,7 +11,7 @@ import {
   Filter, Download, Users, Send, Play, AlertCircle, CheckCircle, Loader2,
   Trash2, BarChart3, MessageSquare, FileSpreadsheet, LogIn, LogOut, Wrench,
   MessageCircle, Image as ImageIcon, Zap, UserPlus, Contact, FileText, X,
-  Megaphone, Archive, Network,
+  Megaphone, Archive, Network, Search,
 } from 'lucide-react'
 
 type ActiveTool =
@@ -19,12 +19,14 @@ type ActiveTool =
   | 'fast-send' | 'send-media' | 'extract-chats' | 'extract-contacts'
   | 'extract-group-members' | 'add-to-group' | 'numbers-to-vcf'
   | 'temp-group-broadcast' | 'extract-archived' | 'multi-number-rotation'
+  | 'extract-cross-platform'
   | null
 type ResultsOwner =
   | 'broadcast' | 'filter' | 'extract' | 'groups'
   | 'fast-send' | 'send-media' | 'extract-chats' | 'extract-contacts'
   | 'extract-group-members' | 'add-to-group'
   | 'temp-group-broadcast' | 'extract-archived' | 'multi-number-rotation'
+  | 'extract-cross-platform'
   | null
 
 const ACCENT = '#25D366'
@@ -87,6 +89,10 @@ export default function WhatsappModule() {
   const [rotationRecipients, setRotationRecipients] = useState('')
   const [rotationMessage, setRotationMessage] = useState('')
   const [rotationDelay, setRotationDelay] = useState(6)
+  // --- Cross-platform extract ---
+  const [crossKeyword, setCrossKeyword] = useState('')
+  const [crossSources, setCrossSources] = useState<('google' | 'facebook' | 'telegram' | 'twitter')[]>(['google', 'telegram'])
+  const [crossLimit, setCrossLimit] = useState(100)
 
   const handleLaunch = async () => {
     setLoading(true)
@@ -378,6 +384,26 @@ export default function WhatsappModule() {
     setLoading(false)
   }
 
+  // ---- Cross-platform extract ----
+  const handleExtractCrossPlatform = async () => {
+    if (!sessionId) { showMsg('افتح WhatsApp أولاً (الجلسة تُستخدم لتشغيل المتصفح)', true); return }
+    if (!crossKeyword.trim()) { showMsg('أدخل الكلمة المفتاحية', true); return }
+    if (crossSources.length === 0) { showMsg('اختر مصدر واحد على الأقل', true); return }
+    setLoading(true)
+    setResultsOwner('extract-cross-platform')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.whatsappExtractGroupsFromPlatforms({ sessionId, keyword: crossKeyword.trim(), sources: crossSources, limit: crossLimit })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        showMsg(`تم العثور على ${res.count || items.length} جروب WhatsApp`)
+        await loadResults()
+      } else { showMsg(res.error || 'فشل الاستخراج', true); if (res.partialData) setToolResults(res.partialData as any[]) }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
   // ---- Numbers -> vCard ----
   const handleNumbersToVcf = async () => {
     const numbers = vcfNumbers.split('\n').map(s => s.trim()).filter(Boolean)
@@ -421,6 +447,7 @@ export default function WhatsappModule() {
     { id: 'temp-group-broadcast', name: 'بث عبر مجموعة مؤقتة', description: 'إنشاء مجموعة + بث + خروج تلقائي', icon: Megaphone, accent: '#06b6d4', accentGradient: 'linear-gradient(135deg, #06b6d4, #0891b2)', requiresSession: true },
     { id: 'extract-archived', name: 'استخراج المؤرشفات', description: 'استخراج المحادثات المؤرشفة', icon: Archive, accent: '#64748b', accentGradient: 'linear-gradient(135deg, #64748b, #334155)', requiresSession: true },
     { id: 'multi-number-rotation', name: 'بث بأرقام متعددة', description: 'تدوير الأرقام لتقليل الحظر', icon: Network, accent: '#22c55e', accentGradient: 'linear-gradient(135deg, #22c55e, #15803d)', requiresSession: false },
+    { id: 'extract-cross-platform', name: 'استخراج من منصات أخرى', description: 'جروبات WA من Google/FB/TG', icon: Search, accent: '#6366f1', accentGradient: 'linear-gradient(135deg, #6366f1, #4338ca)', requiresSession: true },
   ]
 
   const currentTool = tools.find(t => t.id === activeTool) ?? null
@@ -663,6 +690,16 @@ export default function WhatsappModule() {
                       <td dir="ltr" className="text-xs text-secondary-500 max-w-[140px] truncate">{r.sessionId || '-'}</td>
                       <td><span className={`badge ${r.status === 'sent' ? 'badge-success' : 'badge-danger'}`}>{r.status}</span></td>
                       <td className="text-xs text-secondary-500">{r.error || '-'}</td>
+                    </tr>
+                  )
+                }
+                if (owner === 'extract-cross-platform') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="text-xs"><a href={r.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline" dir="ltr">{(r.url || '').replace('https://chat.whatsapp.com/', '')}</a></td>
+                      <td className="text-xs"><span className="badge badge-warning">{r.source}</span></td>
+                      <td className="text-xs text-secondary-500">{r.keyword || '-'}</td>
                     </tr>
                   )
                 }
@@ -1065,6 +1102,42 @@ export default function WhatsappModule() {
     </button>
   )
 
+  // -------- Cross-platform extract panel --------
+  const renderExtractCrossPlatformBody = () => (
+    <div className="space-y-5">
+      <div className="p-3 rounded-lg text-xs text-secondary-600" style={{ background: 'rgba(99,102,241,0.05)', border: '1px solid rgba(99,102,241,0.2)' }}>
+        يبحث عن روابط <code>chat.whatsapp.com</code> في Google + Facebook + Telegram لإيجاد جروبات نشطة في نيتش معين.
+      </div>
+      <div>
+        <label className="label-field">الكلمة المفتاحية / المجال</label>
+        <input type="text" className="input-field" value={crossKeyword} onChange={e => setCrossKeyword(e.target.value)} placeholder="تسويق إلكتروني، ecommerce، crypto" />
+      </div>
+      <div>
+        <label className="label-field">المصادر</label>
+        <div className="flex gap-2 flex-wrap">
+          {(['google', 'facebook', 'telegram', 'twitter'] as const).map(s => {
+            const active = crossSources.includes(s)
+            return (
+              <button key={s} type="button" onClick={() => setCrossSources(prev => active ? prev.filter(x => x !== s) : [...prev, s])} className="px-3 py-1.5 rounded-lg text-sm font-medium" style={active ? { background: 'rgba(99,102,241,0.12)', color: '#6366f1', border: '1px solid #6366f1' } : { background: 'white', color: '#475569', border: '1px solid #e2e8f0' }}>
+                {s.toUpperCase()}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+      <div>
+        <label className="label-field">الحد الأقصى: {crossLimit}</label>
+        <input type="range" min={20} max={500} step={10} className="w-full accent-indigo-500" value={crossLimit} onChange={e => setCrossLimit(parseInt(e.target.value))} />
+      </div>
+      {renderResultsTable('extract-cross-platform', ['#', 'الرابط', 'المصدر', 'الكلمة'], 'whatsapp-cross-platform')}
+    </div>
+  )
+  const extractCrossPlatformFooter = (
+    <button onClick={handleExtractCrossPlatform} disabled={loading || !crossKeyword.trim() || crossSources.length === 0} className="btn-success w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #6366f1, #4338ca)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Search size={18} /> استخراج</>}
+    </button>
+  )
+
   const panelMap: Record<Exclude<ActiveTool, null>, { body: React.ReactNode; footer: React.ReactNode }> = {
     broadcast: { body: renderBroadcastBody(), footer: broadcastFooter },
     'fast-send': { body: renderFastSendBody(), footer: fastSendFooter },
@@ -1075,6 +1148,7 @@ export default function WhatsappModule() {
     'extract-archived': { body: renderExtractArchivedBody(), footer: extractArchivedFooter },
     'extract-contacts': { body: renderExtractContactsBody(), footer: extractContactsFooter },
     'extract-group-members': { body: renderExtractGroupMembersBody(), footer: extractGroupMembersFooter },
+    'extract-cross-platform': { body: renderExtractCrossPlatformBody(), footer: extractCrossPlatformFooter },
     groups: { body: renderGroupsBody(), footer: groupsFooter },
     'add-to-group': { body: renderAddToGroupBody(), footer: addToGroupFooter },
     'temp-group-broadcast': { body: renderTempGroupBroadcastBody(), footer: tempGroupBroadcastFooter },

@@ -2535,6 +2535,74 @@ ipcm('whatsapp-numbers-to-vcf', async (e, { numbers = [], namePrefix = 'Lead', s
   }
 })
 
+// Crawl other platforms (Facebook, Telegram, Twitter, Google) for chat.whatsapp.com
+// invite links. Builds a deduplicated list of WA groups discovered from
+// social posts, public group/channel descriptions, and Google indexing.
+ipcm('whatsapp-extract-groups-from-platforms', async (e, { sessionId, keyword, sources = ['google', 'facebook', 'telegram'], limit = 100, jobId }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!keyword) return { success: false, error: 'الكلمة المفتاحية مطلوبة' }
+  if (!jobId) jobId = `wa-cross-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const seen = new Set()
+  const found = []
+  const LINK_RE = /https?:\/\/chat\.whatsapp\.com\/[A-Za-z0-9_-]+/g
+  try {
+    for (const src of sources) {
+      if (globals.cancelFlags.get(jobId)) break
+      if (found.length >= limit) break
+      let url = ''
+      if (src === 'google') {
+        url = `https://www.google.com/search?q=${encodeURIComponent(`"chat.whatsapp.com" ${keyword}`)}&num=50`
+      } else if (src === 'facebook') {
+        url = `https://www.facebook.com/search/posts/?q=${encodeURIComponent(`chat.whatsapp.com ${keyword}`)}`
+      } else if (src === 'telegram') {
+        url = `https://www.google.com/search?q=${encodeURIComponent(`site:t.me "chat.whatsapp.com" ${keyword}`)}&num=50`
+      } else if (src === 'twitter') {
+        url = `https://x.com/search?q=${encodeURIComponent(`chat.whatsapp.com ${keyword}`)}&src=typed_query`
+      } else { continue }
+      try {
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+        await page.waitForTimeout(randomDelay(2500, 4000))
+        // Scroll a couple of times to load more results.
+        for (let s = 0; s < 4; s++) {
+          await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+          await page.waitForTimeout(randomDelay(1200, 2000))
+        }
+        const text = await page.evaluate(() => document.body.innerText).catch(() => '')
+        const linkMatches = text.match(LINK_RE) || []
+        // Also walk anchor tags directly (Google often hides links in cite tags).
+        const anchors = await page.evaluate(() => {
+          const arr = []
+          document.querySelectorAll('a[href*="chat.whatsapp.com/"]').forEach(a => {
+            const h = a.getAttribute('href') || ''
+            const m = h.match(/chat\.whatsapp\.com\/[A-Za-z0-9_-]+/)
+            if (m) arr.push('https://' + m[0])
+          })
+          return arr
+        }).catch(() => [])
+        for (const link of [...linkMatches, ...anchors]) {
+          if (seen.has(link)) continue
+          seen.add(link)
+          found.push({ url: link, source: src, keyword })
+          if (found.length >= limit) break
+        }
+        sendProgress(sender, jobId, { type: 'progress', count: found.length, total: limit, last: { source: src, found: found.length } })
+      } catch (err) {
+        sendProgress(sender, jobId, { type: 'progress', count: found.length, total: limit, last: { source: src, error: err.message } })
+      }
+      await page.waitForTimeout(randomDelay(1500, 2500))
+    }
+    saveLeads('whatsapp', 'cross-platform-groups', found.map(f => ({ name: f.keyword, url: f.url, source: f.source })))
+    return { success: true, data: found, count: found.length, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: found, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
 // Create a temporary group with the provided members, send the broadcast
 // message, then leave the group. This is the "brand-name broadcast" pattern
 // from the user's feature list. Requires WhatsApp Web logged-in session.
@@ -4367,6 +4435,83 @@ ipcm('linkedin-post-feed', async (e, { sessionId, content }) => {
     return { success: true, message: 'تم نشر المنشور بنجاح' }
   } catch (err) {
     return { success: false, error: err.message }
+  }
+})
+
+// Extract full company data on LinkedIn including HQ, size, specialty,
+// founding year, type, website, phone, email. Walks /about/.
+ipcm('linkedin-extract-company-full', async (e, { sessionId, companyUrls = [], delayMs = 2500, jobId }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!jobId) jobId = `li-co-full-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const results = []
+  try {
+    for (const raw of companyUrls) {
+      if (globals.cancelFlags.get(jobId)) break
+      try {
+        const u = String(raw).trim()
+        const baseUrl = /^https?:/i.test(u) ? u : `https://www.linkedin.com/company/${u.replace(/^\/?company\//, '')}/`
+        const aboutUrl = baseUrl.replace(/\/$/, '') + '/about/'
+        await page.goto(aboutUrl, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+        await page.waitForTimeout(randomDelay(2000, 3500))
+        const info = await page.evaluate((sourceUrl) => {
+          const out = { url: sourceUrl, status: 'extracted' }
+          const nameEl = document.querySelector('h1.org-top-card-summary__title, h1') || document.querySelector('h2')
+          out.name = nameEl ? nameEl.innerText.trim() : ''
+          // About / overview text.
+          const overviewEl = document.querySelector('p.org-about-us-organization-description__text, p[data-test-id="about-us__description"]')
+          out.description = overviewEl ? overviewEl.innerText.trim() : ''
+          // Walk dt/dd pairs in the Overview section.
+          const labelMap = {
+            website: ['website', 'الموقع'],
+            phone: ['phone', 'الهاتف'],
+            industry: ['industry', 'الصناعة', 'القطاع', 'تخصص'],
+            companySize: ['company size', 'حجم', 'employees'],
+            headquarters: ['headquarters', 'مقر', 'المقر'],
+            type: ['type', 'النوع'],
+            founded: ['founded', 'تأسيس'],
+            specialties: ['specialties', 'specialty', 'تخصصات'],
+          }
+          const dts = document.querySelectorAll('dt')
+          dts.forEach(dt => {
+            const label = (dt.innerText || '').toLowerCase().trim()
+            const dd = dt.nextElementSibling
+            if (!dd || dd.tagName !== 'DD') return
+            const value = dd.innerText.trim()
+            if (!value) return
+            for (const [field, keywords] of Object.entries(labelMap)) {
+              if (keywords.some(k => label.includes(k))) {
+                out[field] = value
+                return
+              }
+            }
+          })
+          // Followers (sometimes shown on page header).
+          const bodyText = document.body.innerText
+          const followers = bodyText.match(/([\d,.]+[KMm]?)\s*follower/i)
+          if (followers) out.followers = followers[1]
+          // Email — scan the page text.
+          const emailMatch = bodyText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)
+          if (emailMatch) out.email = emailMatch[0]
+          return out
+        }, baseUrl)
+        results.push(info)
+      } catch (err) {
+        results.push({ url: raw, status: 'failed', error: err.message })
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: results.length, total: companyUrls.length, last: results[results.length - 1] })
+      await page.waitForTimeout(delayMs + Math.random() * 1500)
+    }
+    saveLeads('linkedin', 'company-full-data', results.filter(r => r.status === 'extracted').map(r => ({
+      name: r.name, url: r.url, email: r.email, phone: r.phone, text: r.description, source: r.industry,
+    })))
+    return { success: true, data: results, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: results, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
   }
 })
 
