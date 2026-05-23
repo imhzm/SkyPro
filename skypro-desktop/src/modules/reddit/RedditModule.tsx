@@ -10,13 +10,13 @@ import ToolPanel from '../../components/tools/ToolPanel'
 import {
   LogIn, Search, PenTool,
   AlertCircle, CheckCircle, Loader2, Trash2, FileSpreadsheet, Eye, EyeOff,
-  Users, TrendingUp, Settings, Megaphone, ArrowBigUp,
+  Users, TrendingUp, ArrowBigUp,
   LogOut, Wrench, Bookmark, Image as ImageIcon, X,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 type ActiveTool =
-  | 'search' | 'publish' | 'vote' | 'more' | 'search-communities' | 'join-communities'
+  | 'search' | 'publish' | 'vote' | 'search-communities' | 'join-communities'
   | 'save-posts' | 'top-growing' | 'publish-image'
   | null
 type ResultsOwner =
@@ -250,11 +250,6 @@ export default function RedditModule() {
     setLoading(false)
   }
 
-  const stubTools = [
-    { id: 'schedule-posts', name: 'جدولة المنشورات', desc: 'نشر مجدول', icon: PenTool },
-    { id: 'auto-comment', name: 'التعليق التلقائي', desc: 'تعليقات تلقائية', icon: Megaphone },
-  ]
-
   const tools: Array<{
     id: Exclude<ActiveTool, null>
     name: string
@@ -272,7 +267,6 @@ export default function RedditModule() {
     { id: 'save-posts', name: 'حفظ + Upvote', description: 'حفظ منشورات (وتصويت اختياري)', icon: Bookmark, accent: '#f59e0b', accentGradient: 'linear-gradient(135deg, #f59e0b, #d97706)', requiresSession: true },
     { id: 'top-growing', name: 'مجتمعات صاعدة', description: 'أكثر المجتمعات نمواً', icon: TrendingUp, accent: '#dc2626', accentGradient: 'linear-gradient(135deg, #dc2626, #991b1b)', requiresSession: true },
     { id: 'publish-image', name: 'نشر بصورة', description: 'منشور بنص + صورة في Subreddit', icon: ImageIcon, accent: '#ec4899', accentGradient: 'linear-gradient(135deg, #ec4899, #be185d)', requiresSession: true },
-    { id: 'more', name: 'أدوات إضافية', description: 'أدوات قيد التطوير', icon: Settings, accent: '#64748b', accentGradient: 'linear-gradient(135deg, #64748b, #334155)', requiresSession: false },
   ]
 
   const currentTool = tools.find(t => t.id === activeTool) ?? null
@@ -736,24 +730,6 @@ export default function RedditModule() {
     </button>
   )
 
-  const renderMoreBody = () => (
-    <div className="space-y-5">
-      <p className="text-xs text-secondary-500">أدوات قيد التطوير — ستتوفر قريباً</p>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {stubTools.map(tool => (
-          <div key={tool.id} className="tool-card text-center relative opacity-60 cursor-not-allowed">
-            <span className="absolute top-1 left-1 text-[9px] bg-secondary-200 text-secondary-600 px-1.5 py-0.5 rounded font-medium">قريباً</span>
-            <div className="w-10 h-10 rounded-xl mx-auto flex items-center justify-center" style={{ background: 'rgba(255,69,0,0.08)' }}>
-              <tool.icon size={20} style={{ color: ACCENT }} />
-            </div>
-            <h4 className="font-bold text-secondary-900 text-xs mt-2">{tool.name}</h4>
-            <p className="text-[10px] text-secondary-500">{tool.desc}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-
   const panelMap: Record<Exclude<ActiveTool, null>, { body: React.ReactNode; footer: React.ReactNode }> = {
     search: { body: renderSearchBody(), footer: searchFooter },
     'search-communities': { body: renderSearchCommunitiesBody(), footer: searchCommunitiesFooter },
@@ -763,7 +739,6 @@ export default function RedditModule() {
     'publish-image': { body: renderPublishImageBody(), footer: publishImageFooter },
     vote: { body: renderVoteBody(), footer: voteFooter },
     'save-posts': { body: renderSavePostsBody(), footer: savePostsFooter },
-    more: { body: renderMoreBody(), footer: null },
   }
 
   return (

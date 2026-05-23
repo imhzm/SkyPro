@@ -10,13 +10,13 @@ import ToolPanel from '../../components/tools/ToolPanel'
 import {
   LogIn, Download, AtSign, Send,
   AlertCircle, CheckCircle, Loader2, Trash2, FileSpreadsheet, Eye, EyeOff,
-  Users, MessageSquare, Heart, Hash, Settings, ExternalLink, Megaphone,
+  Users, Megaphone, MessageSquare, ExternalLink,
   LogOut, Wrench,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
-type ActiveTool = 'extract' | 'mention' | 'broadcast' | 'more' | null
-type ResultsOwner = 'extract' | 'mention' | 'broadcast' | null
+type ActiveTool = 'extract' | 'mention' | 'broadcast' | 'publish' | 'follow-send' | null
+type ResultsOwner = 'extract' | 'mention' | 'broadcast' | 'follow-send' | null
 
 const ACCENT = '#000000'
 const ACCENT_GRADIENT = 'linear-gradient(135deg, #1a1a1a, #404040)'
@@ -41,6 +41,14 @@ export default function ThreadsModule() {
   const [mentionMessage, setMentionMessage] = useState('')
   const [broadcastRecipients, setBroadcastRecipients] = useState('')
   const [broadcastMessage, setBroadcastMessage] = useState('')
+  const [broadcastDelay, setBroadcastDelay] = useState(5)
+  const [publishContent, setPublishContent] = useState('')
+  const [publishImagePath, setPublishImagePath] = useState('')
+  const publishFileRef = useRef<HTMLInputElement | null>(null)
+  const [followSendList, setFollowSendList] = useState('')
+  const [followSendMessage, setFollowSendMessage] = useState('')
+  const [followSendFirst, setFollowSendFirst] = useState(true)
+  const [followSendDelay, setFollowSendDelay] = useState(5)
   const [toolResults, setToolResults] = useState<any[]>([])
 
   const threadsAccounts = allAccounts.filter(a => a.platform === 'threads')
@@ -118,18 +126,57 @@ export default function ThreadsModule() {
     clearResults()
   }
 
-  const extractStubTools = [
-    { id: 'page-likers', name: 'استخراج معجبين المنشورات', desc: 'المعجبين', icon: Heart },
-    { id: 'post-comments', name: 'استخراج التعليقات', desc: 'تعليقات المنشورات', icon: MessageSquare },
-    { id: 'followers', name: 'استخراج المتابعين', desc: 'قائمة المتابعين', icon: Users },
-    { id: 'hashtag', name: 'استخراج الهاشتاجات', desc: 'من الهاشتاجات', icon: Hash },
-  ]
+  const handleBroadcast = async () => {
+    if (!ensureSession()) return
+    const list = broadcastRecipients.split('\n').map(s => s.trim()).filter(Boolean)
+    if (list.length === 0) { showMsg('أدخل المستلمين', true); return }
+    if (!broadcastMessage.trim()) { showMsg('أدخل نص الرسالة', true); return }
+    setLoading(true); setResultsOwner('broadcast'); setToolResults([])
+    try {
+      const res = await window.electronAPI.threadsSendMessage({ sessionId, usernames: list, message: broadcastMessage, delayMs: Math.max(2, broadcastDelay) * 1000 })
+      if (res.success) {
+        const items = (res.data as any[]) || []; setToolResults(items)
+        const ok = items.filter((r: any) => r.status === 'sent').length
+        showMsg(`تم إرسال ${ok} من ${list.length}`)
+      } else { showMsg(res.error || 'فشل الإرسال', true); if (res.partialData) setToolResults(res.partialData as any[]) }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
 
-  const stubTools = [
-    { id: 'follow-send', name: 'متابعة وإرسال رسائل', desc: 'متابعة تلقائية', icon: Users, soon: true },
-    { id: 'multi-mention', name: 'منشن متعدد', desc: 'من حسابات متعددة', icon: AtSign, soon: true },
-    { id: 'schedule-posts', name: 'جدولة المنشورات', desc: 'نشر مجدول', icon: Megaphone, soon: true },
-  ]
+  const handlePickPublishImage = () => publishFileRef.current?.click()
+  const handlePublishImageSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]; if (!f) return
+    setPublishImagePath((f as any).path || '')
+    if (publishFileRef.current) publishFileRef.current.value = ''
+  }
+  const handlePublish = async () => {
+    if (!ensureSession()) return
+    if (!publishContent.trim() && !publishImagePath) { showMsg('أدخل نص أو صورة', true); return }
+    setLoading(true)
+    try {
+      const res = await window.electronAPI.threadsPublish({ sessionId, content: publishContent, imagePath: publishImagePath || undefined })
+      if (res.success) showMsg('تم النشر ✓')
+      else showMsg(res.error || 'فشل النشر', true)
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  const handleFollowSend = async () => {
+    if (!ensureSession()) return
+    const list = followSendList.split('\n').map(s => s.trim()).filter(Boolean)
+    if (list.length === 0) { showMsg('أدخل الحسابات', true); return }
+    if (!followSendMessage.trim()) { showMsg('أدخل الرسالة', true); return }
+    setLoading(true); setResultsOwner('follow-send'); setToolResults([])
+    try {
+      const res = await window.electronAPI.threadsFollowSend({ sessionId, usernames: list, message: followSendMessage, followFirst: followSendFirst, delayMs: Math.max(2, followSendDelay) * 1000 })
+      if (res.success) {
+        const items = (res.data as any[]) || []; setToolResults(items)
+        const ok = items.filter((r: any) => r.status === 'sent').length
+        showMsg(`تم إرسال ${ok} رسالة`)
+      } else { showMsg(res.error || 'فشل', true); if (res.partialData) setToolResults(res.partialData as any[]) }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
 
   const tools: Array<{
     id: Exclude<ActiveTool, null>
@@ -141,9 +188,10 @@ export default function ThreadsModule() {
     requiresSession: boolean
   }> = [
     { id: 'extract', name: 'استخراج البيانات', description: 'استخراج من المنشورات والحسابات', icon: Download, accent: '#1a1a1a', accentGradient: 'linear-gradient(135deg, #1a1a1a, #404040)', requiresSession: true },
+    { id: 'publish', name: 'نشر منشور', description: 'منشور جديد بنص + صورة', icon: Megaphone, accent: '#a855f7', accentGradient: 'linear-gradient(135deg, #a855f7, #6d28d9)', requiresSession: true },
     { id: 'mention', name: 'منشن جماعي', description: 'منشن مستخدمين في منشور', icon: AtSign, accent: '#0ea5e9', accentGradient: 'linear-gradient(135deg, #0ea5e9, #0369a1)', requiresSession: true },
-    { id: 'broadcast', name: 'إرسال رسائل', description: 'بث رسائل مباشرة (قريباً)', icon: Send, accent: '#10b981', accentGradient: 'linear-gradient(135deg, #10b981, #047857)', requiresSession: true },
-    { id: 'more', name: 'أدوات إضافية', description: 'أدوات قيد التطوير', icon: Settings, accent: '#64748b', accentGradient: 'linear-gradient(135deg, #64748b, #334155)', requiresSession: false },
+    { id: 'broadcast', name: 'إرسال رسائل', description: 'بث رسائل مباشرة (DM)', icon: Send, accent: '#10b981', accentGradient: 'linear-gradient(135deg, #10b981, #047857)', requiresSession: true },
+    { id: 'follow-send', name: 'متابعة + رسالة', description: 'متابعة + DM في خطوة واحدة', icon: Users, accent: '#f59e0b', accentGradient: 'linear-gradient(135deg, #f59e0b, #d97706)', requiresSession: true },
   ]
 
   const currentTool = tools.find(t => t.id === activeTool) ?? null
@@ -369,10 +417,21 @@ export default function ThreadsModule() {
                     </tr>
                   )
                 }
+                if (owner === 'follow-send') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium">@{r.username || '-'}</td>
+                      <td>{r.followed ? <CheckCircle size={14} className="text-emerald-500" /> : <span className="text-secondary-300">-</span>}</td>
+                      <td>{r.messaged ? <CheckCircle size={14} className="text-emerald-500" /> : <span className="text-secondary-300">-</span>}</td>
+                      <td><span className={`badge ${r.status === 'sent' ? 'badge-success' : r.status === 'followed-only' ? 'badge-warning' : 'badge-danger'}`}>{r.status}</span></td>
+                    </tr>
+                  )
+                }
                 return (
                   <tr key={i}>
                     <td className="text-secondary-500">{i + 1}</td>
-                    <td className="font-medium">{r.recipient || r.name || '-'}</td>
+                    <td className="font-medium">{r.recipient || r.username || r.name || '-'}</td>
                     <td><span className={`badge ${r.status === 'sent' ? 'badge-success' : r.status === 'failed' ? 'badge-danger' : 'badge-warning'}`}>{r.status}</span></td>
                     <td className="text-xs text-secondary-500">{r.error || '-'}</td>
                   </tr>
@@ -405,19 +464,6 @@ export default function ThreadsModule() {
       <div>
         <label className="label-field">الحد الأقصى: {extractLimit}</label>
         <input type="range" min="10" max="200" value={extractLimit} onChange={e => setExtractLimit(parseInt(e.target.value))} className="w-full" />
-      </div>
-      <div>
-        <h4 className="font-bold text-secondary-900 text-sm mb-2">أدوات استخراج إضافية</h4>
-        <div className="grid grid-cols-2 gap-3">
-          {extractStubTools.map(tool => (
-            <div key={tool.id} className="tool-card text-center relative opacity-60 cursor-not-allowed">
-              <span className="absolute top-1 left-1 text-[9px] bg-secondary-200 text-secondary-600 px-1.5 py-0.5 rounded font-medium">قريباً</span>
-              <div className="w-10 h-10 rounded-xl mx-auto flex items-center justify-center bg-secondary-100"><tool.icon size={20} className="text-secondary-600" /></div>
-              <h4 className="font-bold text-secondary-900 text-xs mt-2">{tool.name}</h4>
-              <p className="text-[10px] text-secondary-500">{tool.desc}</p>
-            </div>
-          ))}
-        </div>
       </div>
       {renderResultsTable('extract', ['#', 'الاسم', 'المعرف', 'الرابط', 'المصدر', 'التاريخ', ''], 'threads-extract')}
     </div>
@@ -455,50 +501,71 @@ export default function ThreadsModule() {
 
   const renderBroadcastBody = () => (
     <div className="space-y-5">
-      <div className="p-3 rounded-lg text-sm" style={{ background: 'rgba(0,0,0,0.04)', border: '1px solid rgba(0,0,0,0.1)', color: '#555' }}>
-        <AlertCircle size={16} className="inline ml-1" /> هذه الخاصية قيد التطوير - ستتوفر قريباً
+      <div>
+        <label className="label-field">المستلمين (username - سطر لكل مستخدم)</label>
+        <textarea className="textarea-field" rows={5} value={broadcastRecipients} onChange={e => setBroadcastRecipients(e.target.value)} placeholder="user1&#10;user2" />
       </div>
-      <div className="space-y-4 opacity-60">
-        <div>
-          <label className="label-field">المستلمين (username - سطر لكل مستخدم)</label>
-          <textarea className="textarea-field" rows={5} value={broadcastRecipients} onChange={e => setBroadcastRecipients(e.target.value)} placeholder="user1&#10;user2" />
-        </div>
-        <div>
-          <label className="label-field">الرسالة</label>
-          <textarea className="textarea-field" rows={4} value={broadcastMessage} onChange={e => setBroadcastMessage(e.target.value)} placeholder="اكتب رسالتك هنا..." />
-        </div>
+      <div>
+        <label className="label-field">الرسالة</label>
+        <textarea className="textarea-field" rows={4} value={broadcastMessage} onChange={e => setBroadcastMessage(e.target.value)} placeholder="اكتب رسالتك هنا..." />
+      </div>
+      <div>
+        <label className="label-field">الفاصل (ثانية)</label>
+        <input type="number" min={2} max={60} className="input-field w-32" value={broadcastDelay} onChange={e => setBroadcastDelay(Number(e.target.value) || 5)} />
       </div>
       {renderResultsTable('broadcast', ['#', 'المستلم', 'الحالة', 'خطأ'], 'threads-broadcast')}
     </div>
   )
 
   const broadcastFooter = (
-    <button disabled className="btn-primary w-full opacity-50 cursor-not-allowed" style={{ background: 'linear-gradient(135deg, #10b981, #047857)' }}>
-      <Send size={18} /> إرسال (قريباً)
+    <button onClick={handleBroadcast} disabled={loading || !sessionId || !broadcastRecipients.trim() || !broadcastMessage.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #10b981, #047857)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Send size={18} /> إرسال</>}
     </button>
   )
 
-  const renderMoreBody = () => (
+  const renderPublishBody = () => (
     <div className="space-y-5">
-      <p className="text-xs text-secondary-500">أدوات قيد التطوير — ستتوفر قريباً</p>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {stubTools.map(tool => (
-          <div key={tool.id} className="tool-card text-center relative opacity-60 cursor-not-allowed">
-            <span className="absolute top-1 left-1 text-[9px] bg-secondary-200 text-secondary-600 px-1.5 py-0.5 rounded font-medium">قريباً</span>
-            <div className="w-10 h-10 rounded-xl mx-auto flex items-center justify-center bg-secondary-100"><tool.icon size={20} className="text-secondary-600" /></div>
-            <h4 className="font-bold text-secondary-900 text-xs mt-2">{tool.name}</h4>
-            <p className="text-[10px] text-secondary-500">{tool.desc}</p>
-          </div>
-        ))}
+      <input ref={publishFileRef} type="file" accept="image/*" onChange={handlePublishImageSelected} className="hidden" />
+      <div><label className="label-field">نص المنشور</label><textarea className="textarea-field" rows={5} value={publishContent} onChange={e => setPublishContent(e.target.value)} placeholder="اكتب منشورك..." /></div>
+      <div>
+        <label className="label-field">صورة (اختياري)</label>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button type="button" onClick={handlePickPublishImage} className="btn-secondary text-sm"><Megaphone size={16} /> اختر صورة</button>
+          {publishImagePath && <span className="text-xs truncate max-w-[400px]" dir="ltr">{publishImagePath}</span>}
+        </div>
       </div>
     </div>
+  )
+  const publishFooter = (
+    <button onClick={handlePublish} disabled={loading || !sessionId || (!publishContent.trim() && !publishImagePath)} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #a855f7, #6d28d9)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Megaphone size={18} /> نشر</>}
+    </button>
+  )
+
+  const renderFollowSendBody = () => (
+    <div className="space-y-5">
+      <div><label className="label-field">قائمة الحسابات (سطر لكل username)</label><textarea className="textarea-field" rows={6} value={followSendList} onChange={e => setFollowSendList(e.target.value)} placeholder="@user1&#10;@user2" /></div>
+      <div><label className="label-field">نص الرسالة</label><textarea className="textarea-field" rows={4} value={followSendMessage} onChange={e => setFollowSendMessage(e.target.value)} placeholder="رسالة تواصل ودية..." /></div>
+      <label className="flex items-center gap-2 text-sm cursor-pointer">
+        <input type="checkbox" checked={followSendFirst} onChange={e => setFollowSendFirst(e.target.checked)} className="rounded" />
+        متابعة الحساب قبل الإرسال
+      </label>
+      <div><label className="label-field">الفاصل (ثانية)</label><input type="number" min={2} max={60} className="input-field w-32" value={followSendDelay} onChange={e => setFollowSendDelay(Number(e.target.value) || 5)} /></div>
+      {renderResultsTable('follow-send', ['#', 'المستخدم', 'متابعة', 'رسالة', 'الحالة'], 'threads-follow-send')}
+    </div>
+  )
+  const followSendFooter = (
+    <button onClick={handleFollowSend} disabled={loading || !sessionId || !followSendList.trim() || !followSendMessage.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Users size={18} /> متابعة + إرسال</>}
+    </button>
   )
 
   const panelMap: Record<Exclude<ActiveTool, null>, { body: React.ReactNode; footer: React.ReactNode }> = {
     extract: { body: renderExtractBody(), footer: extractFooter },
+    publish: { body: renderPublishBody(), footer: publishFooter },
     mention: { body: renderMentionBody(), footer: mentionFooter },
     broadcast: { body: renderBroadcastBody(), footer: broadcastFooter },
-    more: { body: renderMoreBody(), footer: null },
+    'follow-send': { body: renderFollowSendBody(), footer: followSendFooter },
   }
 
   return (

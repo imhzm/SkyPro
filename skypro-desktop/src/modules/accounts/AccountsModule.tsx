@@ -5,6 +5,7 @@ import {
   Users, Plus, Trash2, Edit3, Save, X, Search,
   Facebook, MessageCircle, Instagram, Twitter, Linkedin, Send,
   Globe, AtSign, Bookmark, Eye, EyeOff, CheckCircle, AlertCircle, Shield,
+  CheckSquare, Square as SquareIcon, Filter,
 } from 'lucide-react'
 import ModuleHeader from '../../components/common/ModuleHeader'
 
@@ -41,7 +42,7 @@ const EMPTY_FORM: FormState = {
 }
 
 export default function AccountsModule() {
-  const { accounts, loadAccounts, addAccount, updateAccount, deleteAccount } = useAccountsStore()
+  const { accounts, loadAccounts, addAccount, updateAccount, deleteAccount, bulkDeleteAccounts, deleteEmptyAccounts } = useAccountsStore()
   const [filterPlatform, setFilterPlatform] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [showForm, setShowForm] = useState(false)
@@ -52,6 +53,8 @@ export default function AccountsModule() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const [bulkBusy, setBulkBusy] = useState(false)
 
   const showMsg = useCallback((msg: string, isError = false) => {
     if (isError) { setError(msg); setMessage('') }
@@ -140,18 +143,66 @@ export default function AccountsModule() {
     // First click: ask for confirmation.
     if (deleteConfirmId !== acc.id) {
       setDeleteConfirmId(acc.id)
-      showMsg(`اضغط مرة أخرى لتأكيد حذف "${acc.username}"`, false)
+      showMsg(`اضغط مرة أخرى لتأكيد حذف "${acc.username || 'الصف الفارغ'}"`, false)
       return
     }
     // Second click within 4s: actually delete.
     setDeleteConfirmId(null)
     try {
       await deleteAccount(acc.id)
-      showMsg(`تم حذف "${acc.username}" ✓`)
+      showMsg(`تم حذف "${acc.username || 'الصف الفارغ'}" ✓`)
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'خطأ غير معروف'
       showMsg(`فشل الحذف: ${msg}`, true)
     }
+  }
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filtered.length && filtered.length > 0) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(filtered.map(a => a.id)))
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) { showMsg('لم يتم تحديد أي حسابات', true); return }
+    const ok = window.confirm(`تأكيد حذف ${selectedIds.size} حساب؟ لا يمكن التراجع.`)
+    if (!ok) return
+    setBulkBusy(true)
+    try {
+      const removed = await bulkDeleteAccounts(Array.from(selectedIds))
+      setSelectedIds(new Set())
+      showMsg(`تم حذف ${removed} حساب ✓`)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'خطأ غير معروف'
+      showMsg(`فشل الحذف الجماعي: ${msg}`, true)
+    }
+    setBulkBusy(false)
+  }
+
+  const handleDeleteEmpty = async () => {
+    const ok = window.confirm('حذف كل الحسابات بدون اسم مستخدم؟')
+    if (!ok) return
+    setBulkBusy(true)
+    try {
+      const removed = await deleteEmptyAccounts()
+      if (removed === 0) showMsg('مفيش حسابات فارغة للحذف', false)
+      else showMsg(`تم حذف ${removed} حساب فارغ ✓`)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'خطأ غير معروف'
+      showMsg(`فشل حذف الحسابات الفارغة: ${msg}`, true)
+    }
+    setBulkBusy(false)
   }
 
   const platformInfo = (pid: string) => PLATFORMS.find((p) => p.id === pid) || { id: pid, label: pid, icon: Globe }
@@ -436,10 +487,58 @@ export default function AccountsModule() {
             )}
           </div>
         ) : (
+          <>
+            {/* Bulk action toolbar */}
+            <div className="px-4 py-3 border-b border-secondary-100 flex flex-wrap items-center gap-2 bg-white/40">
+              <button
+                type="button"
+                onClick={toggleSelectAll}
+                className="btn-secondary text-xs"
+                title={selectedIds.size === filtered.length && filtered.length > 0 ? 'إلغاء تحديد الكل' : 'تحديد الكل'}
+              >
+                {selectedIds.size === filtered.length && filtered.length > 0
+                  ? <><CheckSquare size={14} /> إلغاء تحديد الكل</>
+                  : <><SquareIcon size={14} /> تحديد الكل</>}
+              </button>
+              {selectedIds.size > 0 && (
+                <button
+                  type="button"
+                  onClick={handleBulkDelete}
+                  disabled={bulkBusy}
+                  className="btn-danger text-xs disabled:opacity-50"
+                >
+                  <Trash2 size={14} /> حذف {selectedIds.size} حساب
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleDeleteEmpty}
+                disabled={bulkBusy}
+                className="text-xs px-3 py-1.5 rounded-lg border disabled:opacity-50"
+                style={{ background: 'rgba(245,158,11,0.08)', borderColor: 'rgba(245,158,11,0.25)', color: '#b45309' }}
+                title="حذف كل الصفوف بدون اسم مستخدم"
+              >
+                <Filter size={14} className="inline ml-1" /> حذف الحسابات الفارغة
+              </button>
+              <div className="text-xs text-secondary-500 mr-auto">
+                {selectedIds.size > 0 && `${selectedIds.size} محدد • `}
+                {filtered.length} حساب{filtered.length !== 1 ? '' : ''}
+              </div>
+            </div>
           <div className="table-container" style={{ border: 'none' }}>
             <table className="data-table">
               <thead>
                 <tr>
+                  <th style={{ width: 36 }}>
+                    <button
+                      type="button"
+                      onClick={toggleSelectAll}
+                      className="text-secondary-500 hover:text-brand-600 transition-colors"
+                      title="تحديد الكل"
+                    >
+                      {selectedIds.size === filtered.length && filtered.length > 0 ? <CheckSquare size={16} /> : <SquareIcon size={16} />}
+                    </button>
+                  </th>
                   <th>المنصة</th>
                   <th>اسم المستخدم</th>
                   <th>البروكسي</th>
@@ -454,8 +553,18 @@ export default function AccountsModule() {
                   const p = platformInfo(acc.platform)
                   const gradient = getPlatformGradient(acc.platform)
                   const isConfirming = deleteConfirmId === acc.id
+                  const isSelected = selectedIds.has(acc.id)
                   return (
-                    <tr key={acc.id}>
+                    <tr key={acc.id} style={isSelected ? { background: 'rgba(99,102,241,0.05)' } : undefined}>
+                      <td>
+                        <button
+                          type="button"
+                          onClick={() => toggleSelect(acc.id)}
+                          className="text-secondary-500 hover:text-brand-600 transition-colors"
+                        >
+                          {isSelected ? <CheckSquare size={16} className="text-brand-600" /> : <SquareIcon size={16} />}
+                        </button>
+                      </td>
                       <td>
                         <div className="flex items-center gap-2.5">
                           <div
@@ -535,6 +644,7 @@ export default function AccountsModule() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
     </div>

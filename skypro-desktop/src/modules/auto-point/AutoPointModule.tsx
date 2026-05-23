@@ -2,9 +2,9 @@ import { useState } from 'react'
 import ToolGrid from '../../components/tools/ToolGrid'
 import ToolCard from '../../components/tools/ToolCard'
 import ToolPanel from '../../components/tools/ToolPanel'
-import { Zap, Twitter, Instagram, AlertCircle, CheckCircle, Loader2, Settings, ExternalLink } from 'lucide-react'
+import { Zap, Twitter, Instagram, AlertCircle, CheckCircle, Loader2 } from 'lucide-react'
 
-type ActiveTool = 'get' | 'auto' | 'tools' | null
+type ActiveTool = 'get' | 'auto' | null
 
 const ACCENT = '#f59e0b'
 const ACCENT_GRADIENT = 'linear-gradient(135deg, #f59e0b, #d97706)'
@@ -49,11 +49,6 @@ export default function AutoPointModule() {
     { value: 'likesplanet', label: 'LikesPlanet', desc: 'كوكب الإعجابات' },
   ]
 
-  const stubTools = [
-    { id: 'auto-youtube', name: 'يوتيوب تلقائي', desc: 'مشاهدات واشتراكات', icon: ExternalLink },
-    { id: 'auto-tiktok', name: 'تيك توك تلقائي', desc: 'إعجابات ومتابعات', icon: ExternalLink },
-  ]
-
   const tools: Array<{
     id: Exclude<ActiveTool, null>
     name: string
@@ -65,7 +60,6 @@ export default function AutoPointModule() {
   }> = [
     { id: 'get', name: 'تبادل إعجابات تويتر', description: 'تبادل التفاعل عبر مواقع خارجية', icon: Twitter, accent: '#1da1f2', accentGradient: 'linear-gradient(135deg, #1da1f2, #0d8bd9)', requiresSession: false },
     { id: 'auto', name: 'تبادل تفاعل انستجرام', description: 'إعجابات ومتابعات انستجرام', icon: Instagram, accent: '#e4405f', accentGradient: 'linear-gradient(135deg, #e4405f, #c13584)', requiresSession: false },
-    { id: 'tools', name: 'أدوات إضافية', description: 'أدوات مساعدة قادمة قريباً', icon: Settings, accent: '#64748b', accentGradient: 'linear-gradient(135deg, #64748b, #475569)', requiresSession: false },
   ]
 
   const currentTool = tools.find(t => t.id === activeTool) ?? null
@@ -117,19 +111,6 @@ export default function AutoPointModule() {
     </button>
   )
 
-  const renderToolsBody = () => (
-    <div className="grid grid-cols-2 gap-4">
-      {stubTools.map(tool => (
-        <div key={tool.id} className="tool-card text-center relative opacity-60 cursor-not-allowed">
-          <span className="absolute top-1 left-1 text-[9px] bg-secondary-200 text-secondary-600 px-1.5 py-0.5 rounded font-medium">قريباً</span>
-          <div className="w-10 h-10 rounded-xl mx-auto flex items-center justify-center bg-secondary-100"><tool.icon size={20} className="text-secondary-600" /></div>
-          <h4 className="font-bold text-secondary-900 text-xs mt-2">{tool.name}</h4>
-          <p className="text-[10px] text-secondary-500">{tool.desc}</p>
-        </div>
-      ))}
-    </div>
-  )
-
   const panelMap: Record<Exclude<ActiveTool, null>, { body: React.ReactNode; footer: React.ReactNode }> = {
     get: {
       body: renderExchangeBody('site-get', [
@@ -147,7 +128,6 @@ export default function AutoPointModule() {
       ]),
       footer: exchangeFooter,
     },
-    tools: { body: renderToolsBody(), footer: null },
   }
 
   return (

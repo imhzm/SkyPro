@@ -8,14 +8,14 @@ import ToolGrid from '../../components/tools/ToolGrid'
 import ToolCard from '../../components/tools/ToolCard'
 import ToolPanel from '../../components/tools/ToolPanel'
 import {
-  LogIn, Send, UserPlus, Users, MessageSquare,
+  LogIn, Send, Users,
   AlertCircle, CheckCircle, Loader2, Trash2, Eye, EyeOff,
-  ExternalLink, Settings, Download, Image as ImageIcon, X, FileSpreadsheet,
+  Image as ImageIcon, X, FileSpreadsheet, ExternalLink,
   LogOut, Wrench, Ghost,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
-type ActiveTool = 'broadcast' | 'extract-friends' | 'more' | null
+type ActiveTool = 'broadcast' | 'extract-friends' | null
 type ResultsOwner = 'broadcast' | 'extract-friends' | null
 
 const ACCENT_GRADIENT = 'linear-gradient(135deg, #FFD400, #f5c800)'
@@ -141,12 +141,6 @@ export default function SnapchatModule() {
     clearResults()
   }
 
-  const stubTools = [
-    { id: 'extract-stories', name: 'استخراج القصص', desc: 'القصص العامة', icon: Download },
-    { id: 'add-friends', name: 'إضافة أصدقاء', desc: 'إضافة تلقائية', icon: UserPlus },
-    { id: 'groups', name: 'إرسال للمجموعات', desc: 'رسائل جماعية', icon: MessageSquare },
-  ]
-
   const tools: Array<{
     id: Exclude<ActiveTool, null>
     name: string
@@ -158,7 +152,6 @@ export default function SnapchatModule() {
   }> = [
     { id: 'broadcast', name: 'إرسال رسائل', description: 'إرسال للأصدقاء (نص + صورة)', icon: Send, accent: '#FFD400', accentGradient: 'linear-gradient(135deg, #FFD400, #f5c800)', requiresSession: true },
     { id: 'extract-friends', name: 'استخراج الأصدقاء', description: 'قائمة الأصدقاء', icon: Users, accent: '#ec4899', accentGradient: 'linear-gradient(135deg, #ec4899, #be185d)', requiresSession: true },
-    { id: 'more', name: 'أدوات إضافية', description: 'أدوات قيد التطوير', icon: Settings, accent: '#64748b', accentGradient: 'linear-gradient(135deg, #64748b, #334155)', requiresSession: false },
   ]
 
   const currentTool = tools.find(t => t.id === activeTool) ?? null
@@ -443,26 +436,9 @@ export default function SnapchatModule() {
     </button>
   )
 
-  const renderMoreBody = () => (
-    <div className="space-y-5">
-      <p className="text-xs text-secondary-500">أدوات قيد التطوير — ستتوفر قريباً</p>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {stubTools.map(tool => (
-          <div key={tool.id} className="tool-card text-center relative opacity-60 cursor-not-allowed">
-            <span className="absolute top-1 left-1 text-[9px] bg-secondary-200 text-secondary-600 px-1.5 py-0.5 rounded font-medium">قريباً</span>
-            <div className="w-10 h-10 rounded-xl mx-auto flex items-center justify-center" style={{ background: 'rgba(255,212,0,0.15)' }}><tool.icon size={20} style={{ color: ACCENT_DARK }} /></div>
-            <h4 className="font-bold text-secondary-900 text-xs mt-2">{tool.name}</h4>
-            <p className="text-[10px] text-secondary-500">{tool.desc}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-
   const panelMap: Record<Exclude<ActiveTool, null>, { body: React.ReactNode; footer: React.ReactNode }> = {
     broadcast: { body: renderBroadcastBody(), footer: broadcastFooter },
     'extract-friends': { body: renderExtractFriendsBody(), footer: extractFriendsFooter },
-    more: { body: renderMoreBody(), footer: null },
   }
 
   return (

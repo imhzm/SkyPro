@@ -214,10 +214,19 @@ function migrateStoredSecrets() {
 
 function saveAccount(platform, username, password, status = 'active') {
   if (!globals.db) return
+  // GUARD: refuse empty username/platform — these used to leak in from
+  // session-detect callbacks and pollute the saved-accounts table with
+  // unreadable rows the user couldn't tell apart.
+  const cleanPlatform = String(platform || '').trim()
+  const cleanUsername = String(username || '').trim()
+  if (!cleanPlatform || !cleanUsername) {
+    console.warn(`saveAccount refused empty row (platform="${cleanPlatform}", username="${cleanUsername}")`)
+    return
+  }
   globals.db.prepare('INSERT OR IGNORE INTO accounts (platform, username, password, status) VALUES (?, ?, ?, ?)')
-    .run(platform, username, encryptSecret(password), status)
+    .run(cleanPlatform, cleanUsername, encryptSecret(password), status)
   globals.db.prepare('UPDATE accounts SET password = ?, status = ? WHERE platform = ? AND username = ?')
-    .run(encryptSecret(password), status, platform, username)
+    .run(encryptSecret(password), status, cleanPlatform, cleanUsername)
 }
 
 function openExternalUrl(rawUrl) {
@@ -826,6 +835,40 @@ ipcm('db-delete', async (e, { table, id }) => {
   } catch (err) {
     console.error('db-delete error:', err)
     return { success: false, error: err?.message || 'فشل حذف البيانات' }
+  }
+})
+
+// Bulk delete — pass an array of ids. Used by the "delete selected" UI.
+ipcm('db-bulk-delete', async (e, { table, ids = [] }) => {
+  try {
+    if (!globals.db) return { success: false, error: 'قاعدة البيانات غير جاهزة' }
+    validateTable(table)
+    const numericIds = (Array.isArray(ids) ? ids : [])
+      .map(Number)
+      .filter((n) => Number.isInteger(n) && n >= 1)
+    if (numericIds.length === 0) return { success: false, error: 'لم يتم تحديد أي صفوف' }
+    const placeholders = numericIds.map(() => '?').join(', ')
+    const result = globals.db.prepare(`DELETE FROM ${table} WHERE id IN (${placeholders})`).run(...numericIds)
+    return { success: true, changes: result.changes, requested: numericIds.length }
+  } catch (err) {
+    console.error('db-bulk-delete error:', err)
+    return { success: false, error: err?.message || 'فشل حذف البيانات' }
+  }
+})
+
+// Targeted cleanup: delete every account row whose username is empty/whitespace.
+// This is what fixes the "4 empty accounts I can't delete" complaint — those
+// rows pre-date the saveAccount() validation guard.
+ipcm('db-delete-empty-accounts', async () => {
+  try {
+    if (!globals.db) return { success: false, error: 'قاعدة البيانات غير جاهزة' }
+    const result = globals.db
+      .prepare("DELETE FROM accounts WHERE username IS NULL OR TRIM(username) = '' OR TRIM(username) = 'undefined' OR TRIM(username) = 'null'")
+      .run()
+    return { success: true, changes: result.changes }
+  } catch (err) {
+    console.error('db-delete-empty-accounts error:', err)
+    return { success: false, error: err?.message || 'فشل حذف الحسابات الفارغة' }
   }
 })
 

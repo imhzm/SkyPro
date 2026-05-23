@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Download, FileText, Hash, Shield, Calendar, Settings, AlertCircle, CheckCircle, Loader2, Star, Wand2, Contact, Sparkles, Trash2, Wrench } from 'lucide-react'
+import { Download, FileText, Hash, Shield, Calendar, Settings, AlertCircle, CheckCircle, Loader2, Contact, Sparkles, Trash2, Wrench } from 'lucide-react'
 import ProxyManager from '../../components/common/ProxyManager'
 import CampaignScheduler from '../../components/common/CampaignScheduler'
 import AntiBanSystem from '../../components/common/AntiBanSystem'
@@ -150,11 +150,6 @@ export default function OtherToolsModule() {
     { id: 'text-editor', name: 'محرر النصوص', description: 'تقسيم وعكس ونسخ النصوص', icon: FileText, accent: '#0ea5e9', accentGradient: 'linear-gradient(135deg, #0ea5e9, #0369a1)', width: 'lg' },
     { id: 'text-as-vcf', name: 'تحويل لـ VCF', description: 'تحويل قوائم لجهات اتصال', icon: Contact, accent: '#f59e0b', accentGradient: 'linear-gradient(135deg, #f59e0b, #d97706)', width: 'md' },
     { id: 'generate', name: 'توليد أسماء', description: 'توليد أسماء مستخدمين عشوائية', icon: Sparkles, accent: '#a855f7', accentGradient: 'linear-gradient(135deg, #a855f7, #7e22ce)', width: 'md' },
-  ]
-
-  const disabledTools = [
-    { id: 'haraj-rate', name: 'تقييم حراج', desc: 'تقييمات حراج آلي', icon: Star },
-    { id: 'magic-editor', name: 'محرر سحري', desc: 'تحرير متقدم للملفات', icon: Wand2 },
   ]
 
   const currentTool = tools.find(t => t.id === activeTool) ?? null
@@ -337,18 +332,6 @@ export default function OtherToolsModule() {
             accent={tool.accent}
             accentGradient={tool.accentGradient}
             onClick={() => setActiveTool(tool.id)}
-          />
-        ))}
-        {disabledTools.map(tool => (
-          <ToolCard
-            key={tool.id}
-            icon={tool.icon}
-            name={tool.name}
-            description={tool.desc}
-            badge="قريباً"
-            badgeTone="warning"
-            disabled
-            onClick={() => {}}
           />
         ))}
       </ToolGrid>

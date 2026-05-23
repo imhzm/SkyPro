@@ -369,6 +369,10 @@ declare global {
       // TikTok
       tiktokExtractComments: (data: ExtractionParams) => Promise<ExtractionResult>
       tiktokExtractFollowers: (data: ExtractionParams) => Promise<ExtractionResult>
+      tiktokSearch: (data: { sessionId: string; query: string; limit?: number; jobId?: string; delayMs?: number }) => Promise<ExtractionResult>
+      tiktokFollow: (data: { sessionId: string; usernames: string[]; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>
+      tiktokInteract: (data: { sessionId: string; videoUrls: string[]; doLike?: boolean; comment?: string; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>
+      tiktokUploadVideo: (data: { sessionId: string; videoPath: string; caption?: string }) => Promise<IpcResult>
 
       // Pinterest
       pinterestLogin: (data: PlatformLoginParams) => Promise<LoginResult>
@@ -385,6 +389,12 @@ declare global {
       threadsLogin: (data: PlatformLoginParams) => Promise<LoginResult>
       threadsExtract: (data: ExtractionParams) => Promise<ExtractionResult>
       threadsMention: (data: Record<string, unknown>) => Promise<IpcResult>
+      threadsPublish: (data: { sessionId: string; content?: string; imagePath?: string }) => Promise<IpcResult>
+      threadsSendMessage: (data: { sessionId: string; usernames: string[]; message: string; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>
+      threadsFollowSend: (data: { sessionId: string; usernames: string[]; message: string; followFirst?: boolean; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>
+      pinterestDownload: (data: { sessionId: string; source?: 'search' | 'board'; query?: string; boardUrl?: string; saveDir: string; limit?: number; jobId?: string }) => Promise<ExtractionResult>
+      pinterestOpenSignupBatch: (data: { count?: number }) => Promise<IpcResult<{ sessionIds: string[] }>>
+      pinterestSharePin: (data: { sessionId: string; pinUrl: string; boards: string[]; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>
 
       // Snapchat
       snapchatLogin: (data: PlatformLoginParams) => Promise<LoginResult>
@@ -449,6 +459,8 @@ declare global {
       dbInsert: (data: DbInsertParams) => Promise<IpcResult<{ id: number }>>
       dbUpdate: (data: DbUpdateParams) => Promise<IpcResult>
       dbDelete: (data: DbDeleteParams) => Promise<IpcResult>
+      dbBulkDelete: (data: { table: string; ids: number[] }) => Promise<IpcResult<{ changes: number; requested: number }>>
+      dbDeleteEmptyAccounts: () => Promise<IpcResult<{ changes: number }>>
       clearLeadsByPlatform: (data: { platform: string }) => Promise<IpcResult>
       dbCount: (data: DbQueryParams) => Promise<{ success: boolean; count?: number; error?: string }>
 
