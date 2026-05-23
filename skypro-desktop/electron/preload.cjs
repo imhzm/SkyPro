@@ -168,6 +168,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // TikTok
   tiktokExtractComments: (data) => ipcRenderer.invoke('tiktok-extract-comments', data),
   tiktokExtractFollowers: (data) => ipcRenderer.invoke('tiktok-extract-followers', data),
+  tiktokSearch: (data) => ipcRenderer.invoke('tiktok-search', data),
+  tiktokFollow: (data) => ipcRenderer.invoke('tiktok-follow', data),
+  tiktokInteract: (data) => ipcRenderer.invoke('tiktok-interact', data),
+  tiktokUploadVideo: (data) => ipcRenderer.invoke('tiktok-upload-video', data),
 
   // Pinterest
   pinterestLogin: (data) => ipcRenderer.invoke('pinterest-login', data),
@@ -184,6 +188,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   threadsLogin: (data) => ipcRenderer.invoke('threads-login', data),
   threadsExtract: (data) => ipcRenderer.invoke('threads-extract', data),
   threadsMention: (data) => ipcRenderer.invoke('threads-mention', data),
+  threadsPublish: (data) => ipcRenderer.invoke('threads-publish', data),
+  threadsSendMessage: (data) => ipcRenderer.invoke('threads-send-message', data),
+  threadsFollowSend: (data) => ipcRenderer.invoke('threads-follow-send', data),
+  pinterestDownload: (data) => ipcRenderer.invoke('pinterest-download', data),
+  pinterestOpenSignupBatch: (data) => ipcRenderer.invoke('pinterest-open-signup-batch', data),
+  pinterestSharePin: (data) => ipcRenderer.invoke('pinterest-share-pin', data),
 
   // Reddit
   redditLogin: (data) => ipcRenderer.invoke('reddit-login', data),
@@ -248,6 +258,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbInsert: (data) => ipcRenderer.invoke('db-insert', data),
   dbUpdate: (data) => ipcRenderer.invoke('db-update', data),
   dbDelete: (data) => ipcRenderer.invoke('db-delete', data),
+  dbBulkDelete: (data) => ipcRenderer.invoke('db-bulk-delete', data),
+  dbDeleteEmptyAccounts: () => ipcRenderer.invoke('db-delete-empty-accounts'),
   clearLeadsByPlatform: (data) => ipcRenderer.invoke('clear-leads-by-platform', data),
   dbCount: (data) => ipcRenderer.invoke('db-count', data),
 

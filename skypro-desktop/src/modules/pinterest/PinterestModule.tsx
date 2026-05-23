@@ -10,18 +10,19 @@ import ToolPanel from '../../components/tools/ToolPanel'
 import {
   LogIn, Search, Download, Send, UserPlus,
   AlertCircle, CheckCircle, Loader2, Trash2, FileSpreadsheet, Eye, EyeOff,
-  Heart, Globe, Settings, BarChart3, Link2,
+  Heart, Globe, BarChart3,
   LogOut, Wrench, Pin, MessageSquare, LayoutGrid, Upload, X, Image as ImageIcon, Plus,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 type ActiveTool =
-  | 'search' | 'extract' | 'broadcast' | 'more' | 'follow-users' | 'extract-hashtag'
+  | 'search' | 'extract' | 'broadcast' | 'follow-users' | 'extract-hashtag'
   | 'send-message' | 'analyze-profile' | 'extract-boards' | 'auto-publish'
+  | 'download' | 'signup-batch'
   | null
 type ResultsOwner =
   | 'search' | 'extract' | 'broadcast' | 'follow-users' | 'extract-hashtag'
-  | 'send-message' | 'extract-boards' | 'auto-publish'
+  | 'send-message' | 'extract-boards' | 'auto-publish' | 'download'
   | null
 
 const ACCENT = '#E60023'
@@ -69,6 +70,14 @@ export default function PinterestModule() {
   const [autoPublishPins, setAutoPublishPins] = useState<Array<{ imagePath: string; title: string; description: string; link: string }>>([])
   const autoPublishFileRef = useRef<HTMLInputElement | null>(null)
   const [autoPublishDelay, setAutoPublishDelay] = useState(8)
+  // --- Download ---
+  const [downloadSource, setDownloadSource] = useState<'search' | 'board'>('search')
+  const [downloadQuery, setDownloadQuery] = useState('')
+  const [downloadBoardUrl, setDownloadBoardUrl] = useState('')
+  const [downloadSaveDir, setDownloadSaveDir] = useState('')
+  const [downloadLimit, setDownloadLimit] = useState(50)
+  // --- Signup batch ---
+  const [signupCount, setSignupCount] = useState(3)
 
   const pinterestAccounts = allAccounts.filter(a => a.platform === 'pinterest')
   const ensureSession = () => {
@@ -255,13 +264,36 @@ export default function PinterestModule() {
     setLoading(false)
   }
 
-  const stubExtractTools: Array<{ id: string; name: string; desc: string; icon: LucideIcon; soon?: boolean }> = []
+  const handleDownload = async () => {
+    if (!ensureSession()) return
+    if (downloadSource === 'search' && !downloadQuery.trim()) { showMsg('أدخل كلمة البحث', true); return }
+    if (downloadSource === 'board' && !downloadBoardUrl.trim()) { showMsg('أدخل رابط البورد', true); return }
+    if (!downloadSaveDir.trim()) { showMsg('أدخل مسار الحفظ', true); return }
+    setLoading(true); setResultsOwner('download'); setToolResults([])
+    try {
+      const res = await window.electronAPI.pinterestDownload({
+        sessionId, source: downloadSource,
+        query: downloadQuery || undefined, boardUrl: downloadBoardUrl || undefined,
+        saveDir: downloadSaveDir, limit: downloadLimit,
+      })
+      if (res.success) {
+        const items = (res.data as any[]) || []; setToolResults(items)
+        const ok = items.filter((r: any) => r.status === 'downloaded').length
+        showMsg(`تم تحميل ${ok} صورة`)
+      } else { showMsg(res.error || 'فشل التحميل', true); if (res.partialData) setToolResults(res.partialData as any[]) }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
 
-  const stubTools: Array<{ id: string; name: string; desc: string; icon: LucideIcon; soon?: boolean }> = [
-    { id: 'download-search', name: 'التحميل من البحث', desc: 'تحميل صور', icon: Download, soon: true },
-    { id: 'download-url', name: 'التحميل من الرابط', desc: 'تحميل من رابط', icon: Link2, soon: true },
-    { id: 'create-account', name: 'إنشاء حسابات', desc: 'إنشاء حسابات Pinterest', icon: Globe, soon: true },
-  ]
+  const handleSignupBatch = async () => {
+    setLoading(true)
+    try {
+      const res = await window.electronAPI.pinterestOpenSignupBatch({ count: signupCount })
+      if (res.success) showMsg(res.message || `تم فتح ${signupCount} نافذة تسجيل`)
+      else showMsg(res.error || 'فشل', true)
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
 
   const tools: Array<{
     id: Exclude<ActiveTool, null>
@@ -281,7 +313,8 @@ export default function PinterestModule() {
     { id: 'analyze-profile', name: 'تحليل حساب', description: 'متابعين/متابعون/Pins/السيرة', icon: BarChart3, accent: '#7c3aed', accentGradient: 'linear-gradient(135deg, #7c3aed, #5b21b6)', requiresSession: true },
     { id: 'extract-boards', name: 'استخراج اللوحات', description: 'لوحات بنيتش معين', icon: LayoutGrid, accent: '#14b8a6', accentGradient: 'linear-gradient(135deg, #14b8a6, #0f766e)', requiresSession: true },
     { id: 'auto-publish', name: 'نشر تلقائي', description: 'نشر Pins جديدة دفعة واحدة', icon: Upload, accent: '#dc2626', accentGradient: 'linear-gradient(135deg, #dc2626, #991b1b)', requiresSession: true },
-    { id: 'more', name: 'أدوات إضافية', description: 'أدوات قيد التطوير', icon: Settings, accent: '#64748b', accentGradient: 'linear-gradient(135deg, #64748b, #334155)', requiresSession: false },
+    { id: 'download', name: 'تحميل الصور', description: 'تحميل Pins من بحث أو بورد', icon: Download, accent: '#0ea5e9', accentGradient: 'linear-gradient(135deg, #0ea5e9, #0369a1)', requiresSession: true },
+    { id: 'signup-batch', name: 'إنشاء حسابات', description: 'فتح نوافذ متعددة للتسجيل', icon: Globe, accent: '#64748b', accentGradient: 'linear-gradient(135deg, #64748b, #334155)', requiresSession: false },
   ]
 
   const currentTool = tools.find(t => t.id === activeTool) ?? null
@@ -551,6 +584,16 @@ export default function PinterestModule() {
                     </tr>
                   )
                 }
+                if (owner === 'download') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="text-xs max-w-[260px] truncate" dir="ltr">{r.url || '-'}</td>
+                      <td className="text-xs max-w-[200px] truncate text-secondary-600" dir="ltr">{r.file || '-'}</td>
+                      <td><span className={`badge ${r.status === 'downloaded' ? 'badge-success' : 'badge-danger'}`}>{r.status}</span></td>
+                    </tr>
+                  )
+                }
                 return (
                   <tr key={i}>
                     <td className="text-secondary-500">{i + 1}</td>
@@ -616,19 +659,6 @@ export default function PinterestModule() {
           <input type="range" min="10" max="500" value={extractLimit} onChange={e => setExtractLimit(parseInt(e.target.value))} className="w-full" style={{ accentColor: ACCENT }} />
         </div>
       </div>
-      <div>
-        <h4 className="font-bold text-secondary-900 text-sm mb-2">أدوات استخراج إضافية</h4>
-        <div className="grid grid-cols-2 gap-3">
-          {stubExtractTools.map(tool => (
-            <div key={tool.id} className="tool-card text-center relative opacity-60 cursor-not-allowed">
-              <span className="absolute top-1 left-1 text-[9px] bg-secondary-200 text-secondary-600 px-1.5 py-0.5 rounded font-medium">قريباً</span>
-              <div className="w-10 h-10 rounded-xl mx-auto flex items-center justify-center" style={{ background: 'rgba(230,0,35,0.08)' }}><tool.icon size={20} style={{ color: ACCENT }} /></div>
-              <h4 className="font-bold text-secondary-900 text-xs mt-2">{tool.name}</h4>
-              <p className="text-[10px] text-secondary-500">{tool.desc}</p>
-            </div>
-          ))}
-        </div>
-      </div>
       {renderResultsTable('extract', ['#', 'الوصف', 'الرابط', 'الحالة'], 'pinterest-extract')}
     </div>
   )
@@ -639,45 +669,81 @@ export default function PinterestModule() {
     </button>
   )
 
+  const handleSharePin = async () => {
+    if (!ensureSession()) return
+    if (!pinUrl.trim()) { showMsg('أدخل رابط الـ Pin', true); return }
+    const boards = pinBoards.split('\n').map(s => s.trim()).filter(Boolean)
+    if (boards.length === 0) { showMsg('أدخل أسماء اللوحات', true); return }
+    setLoading(true); setResultsOwner('broadcast'); setToolResults([])
+    try {
+      const res = await window.electronAPI.pinterestSharePin({ sessionId, pinUrl: pinUrl.trim(), boards })
+      if (res.success) {
+        const items = (res.data as any[]) || []; setToolResults(items)
+        const ok = items.filter((r: any) => r.status === 'saved').length
+        showMsg(`تم حفظ Pin في ${ok} لوحة`)
+      } else { showMsg(res.error || 'فشل', true); if (res.partialData) setToolResults(res.partialData as any[]) }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
   const renderBroadcastBody = () => (
     <div className="space-y-5">
-      <div className="p-3 rounded-lg text-sm" style={{ background: 'rgba(230,0,35,0.06)', border: '1px solid rgba(230,0,35,0.2)', color: '#BD081C' }}>
-        <AlertCircle size={16} className="inline ml-1" /> هذه الخاصية قيد التطوير - ستتوفر قريباً
+      <div>
+        <label className="label-field">رابط الـ Pin</label>
+        <input type="url" className="input-field" placeholder="https://pinterest.com/pin/..." value={pinUrl} onChange={e => setPinUrl(e.target.value)} />
       </div>
-      <div className="space-y-4 opacity-60">
-        <div>
-          <label className="label-field">رابط الـ Pin</label>
-          <input type="url" className="input-field" placeholder="https://pinterest.com/pin/..." value={pinUrl} onChange={e => setPinUrl(e.target.value)} />
-        </div>
-        <div>
-          <label className="label-field">اللوحات المستهدفة</label>
-          <textarea className="textarea-field" rows={4} placeholder="board1&#10;board2" value={pinBoards} onChange={e => setPinBoards(e.target.value)} />
-        </div>
+      <div>
+        <label className="label-field">اللوحات المستهدفة (سطر لكل لوحة)</label>
+        <textarea className="textarea-field" rows={5} placeholder="board1&#10;board2" value={pinBoards} onChange={e => setPinBoards(e.target.value)} />
       </div>
       {renderResultsTable('broadcast', ['#', 'اللوحة', 'الحالة', 'خطأ'], 'pinterest-broadcast')}
     </div>
   )
 
   const broadcastFooter = (
-    <button disabled className="btn-primary w-full opacity-50 cursor-not-allowed" style={{ background: 'linear-gradient(135deg, #10b981, #047857)' }}>
-      <Send size={18} /> مشاركة (قريباً)
+    <button onClick={handleSharePin} disabled={loading || !sessionId || !pinUrl.trim() || !pinBoards.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #10b981, #047857)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Send size={18} /> حفظ</>}
     </button>
   )
 
-  const renderMoreBody = () => (
+  const renderDownloadBody = () => (
     <div className="space-y-5">
-      <p className="text-xs text-secondary-500">أدوات قيد التطوير — ستتوفر قريباً</p>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {stubTools.map(tool => (
-          <div key={tool.id} className="tool-card text-center relative opacity-60 cursor-not-allowed">
-            <span className="absolute top-1 left-1 text-[9px] bg-secondary-200 text-secondary-600 px-1.5 py-0.5 rounded font-medium">قريباً</span>
-            <div className="w-10 h-10 rounded-xl mx-auto flex items-center justify-center" style={{ background: 'rgba(230,0,35,0.08)' }}><tool.icon size={20} style={{ color: ACCENT }} /></div>
-            <h4 className="font-bold text-secondary-900 text-xs mt-2">{tool.name}</h4>
-            <p className="text-[10px] text-secondary-500">{tool.desc}</p>
-          </div>
-        ))}
+      <div>
+        <label className="label-field">المصدر</label>
+        <div className="flex gap-3 flex-wrap">
+          <button type="button" onClick={() => setDownloadSource('search')} className="px-4 py-2 rounded-lg text-sm font-medium" style={downloadSource === 'search' ? { background: 'rgba(14,165,233,0.12)', color: '#0ea5e9', border: '1px solid #0ea5e9' } : { background: 'white', color: '#475569', border: '1px solid #e2e8f0' }}>من البحث</button>
+          <button type="button" onClick={() => setDownloadSource('board')} className="px-4 py-2 rounded-lg text-sm font-medium" style={downloadSource === 'board' ? { background: 'rgba(14,165,233,0.12)', color: '#0ea5e9', border: '1px solid #0ea5e9' } : { background: 'white', color: '#475569', border: '1px solid #e2e8f0' }}>من رابط لوحة</button>
+        </div>
       </div>
+      {downloadSource === 'search' ? (
+        <div><label className="label-field">كلمة البحث</label><input type="text" className="input-field" value={downloadQuery} onChange={e => setDownloadQuery(e.target.value)} placeholder="design, fashion, travel" /></div>
+      ) : (
+        <div><label className="label-field">رابط اللوحة</label><input type="url" className="input-field" value={downloadBoardUrl} onChange={e => setDownloadBoardUrl(e.target.value)} placeholder="https://pinterest.com/user/board" /></div>
+      )}
+      <div><label className="label-field">مسار الحفظ على القرص</label><input type="text" className="input-field" value={downloadSaveDir} onChange={e => setDownloadSaveDir(e.target.value)} placeholder="C:\Pinterest" dir="ltr" /></div>
+      <div><label className="label-field">الحد الأقصى: {downloadLimit}</label><input type="range" min={10} max={500} step={10} className="w-full accent-sky-500" value={downloadLimit} onChange={e => setDownloadLimit(parseInt(e.target.value))} /></div>
+      {renderResultsTable('download', ['#', 'الرابط', 'الملف', 'الحالة'], 'pinterest-download')}
     </div>
+  )
+  const downloadFooter = (
+    <button onClick={handleDownload} disabled={loading || !sessionId || !downloadSaveDir.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #0ea5e9, #0369a1)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Download size={18} /> تحميل</>}
+    </button>
+  )
+
+  const renderSignupBatchBody = () => (
+    <div className="space-y-5">
+      <div className="p-3 rounded-lg text-xs text-amber-700" style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.3)' }}>
+        <AlertCircle size={14} className="inline ml-1" />
+        يفتح عدة نوافذ تسجيل في Pinterest. أكمل كل حساب يدوياً (Pinterest تستخدم CAPTCHA + تحقق بريد).
+      </div>
+      <div><label className="label-field">عدد الحسابات (أقصى 5 في المرة): {signupCount}</label><input type="range" min={1} max={5} step={1} className="w-full accent-red-600" value={signupCount} onChange={e => setSignupCount(parseInt(e.target.value))} /></div>
+    </div>
+  )
+  const signupBatchFooter = (
+    <button onClick={handleSignupBatch} disabled={loading} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #64748b, #334155)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Globe size={18} /> فتح نوافذ التسجيل</>}
+    </button>
   )
 
   const renderFollowUsersBody = () => (
@@ -837,7 +903,8 @@ export default function PinterestModule() {
     'send-message': { body: renderSendMessageBody(), footer: sendMessageFooter },
     'analyze-profile': { body: renderAnalyzeProfileBody(), footer: analyzeProfileFooter },
     'auto-publish': { body: renderAutoPublishBody(), footer: autoPublishFooter },
-    more: { body: renderMoreBody(), footer: null },
+    download: { body: renderDownloadBody(), footer: downloadFooter },
+    'signup-batch': { body: renderSignupBatchBody(), footer: signupBatchFooter },
   }
 
   return (

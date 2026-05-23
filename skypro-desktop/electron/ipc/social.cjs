@@ -6055,6 +6055,186 @@ ipcm('tiktok-extract-followers', async (e, { sessionId, username, limit = 100 })
   }
 })
 
+// Search videos by keyword on TikTok and return links + meta.
+ipcm('tiktok-search', async (e, { sessionId, query, limit = 50, jobId, delayMs = 1500 }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!query) return { success: false, error: 'الكلمة المفتاحية مطلوبة' }
+  if (!jobId) jobId = `tt-search-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const seen = new Set()
+  const videos = []
+  try {
+    await page.goto(`https://www.tiktok.com/search?q=${encodeURIComponent(query)}`, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+    await page.waitForTimeout(randomDelay(2500, 4000))
+    let stagnant = 0
+    while (videos.length < limit && stagnant < 5) {
+      if (globals.cancelFlags.get(jobId)) break
+      const before = videos.length
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.waitForTimeout(randomDelay(1500, 2500))
+      const batch = await page.evaluate(() => {
+        const r = []
+        document.querySelectorAll('a[href*="/video/"]').forEach(a => {
+          const href = a.getAttribute('href') || ''
+          if (!href || !href.includes('/video/')) return
+          const url = href.startsWith('http') ? href : `https://www.tiktok.com${href}`
+          const author = (url.match(/@([^/]+)\//) || [])[1] || ''
+          const captionEl = a.querySelector('img[alt]')
+          const caption = captionEl ? (captionEl.getAttribute('alt') || '') : ''
+          r.push({ url, author, caption })
+        })
+        return r
+      })
+      for (const v of batch) {
+        if (seen.has(v.url)) continue
+        seen.add(v.url)
+        videos.push(v)
+        if (videos.length >= limit) break
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: videos.length, total: limit, data: batch })
+      if (videos.length === before) stagnant++
+      else stagnant = 0
+      await page.waitForTimeout(delayMs + Math.random() * 800)
+    }
+    saveLeads('tiktok', 'search-videos', videos.map(v => ({ name: v.author, url: v.url, text: v.caption })))
+    return { success: true, data: videos, count: videos.length, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: videos, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// Follow a list of TikTok users.
+ipcm('tiktok-follow', async (e, { sessionId, usernames = [], delayMs = 4500, jobId }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!jobId) jobId = `tt-follow-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const results = []
+  try {
+    for (const u of usernames) {
+      if (globals.cancelFlags.get(jobId)) break
+      const handle = String(u).replace(/^@/, '').trim()
+      try {
+        await page.goto(`https://www.tiktok.com/@${handle}`, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+        await page.waitForTimeout(randomDelay(1800, 3000))
+        const followed = await smartActionClick(page, [
+          'button[data-e2e="follow-button"]:not(:has-text("Following"))',
+          'button:has-text("Follow"):not(:has-text("Following"))',
+          'button:has-text("متابعة"):not(:has-text("متابَع"))',
+          'button[aria-label*="Follow"]'
+        ], 'follow tiktok')
+        results.push({ username: handle, status: followed ? 'followed' : 'skipped' })
+      } catch (err) {
+        results.push({ username: u, status: 'failed', error: err.message })
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: results.length, total: usernames.length, last: results[results.length - 1] })
+      await page.waitForTimeout(delayMs + Math.random() * 1500)
+    }
+    return { success: true, data: results, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: results, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// Like + optionally comment on a list of TikTok video URLs.
+ipcm('tiktok-interact', async (e, { sessionId, videoUrls = [], doLike = true, comment, delayMs = 4500, jobId }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!jobId) jobId = `tt-interact-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const results = []
+  try {
+    let idx = 0
+    for (const url of videoUrls) {
+      if (globals.cancelFlags.get(jobId)) break
+      idx++
+      const out = { url, liked: false, commented: false, error: null }
+      try {
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+        await page.waitForTimeout(randomDelay(2000, 3500))
+        if (doLike) {
+          const liked = await smartActionClick(page, [
+            'button[aria-label*="Like"]:not([aria-pressed="true"])',
+            'span[data-e2e="like-icon"]',
+            'svg[data-e2e="like-icon"]'
+          ], 'like tiktok')
+          out.liked = !!liked
+        }
+        if (comment) {
+          const text = String(comment).replace(/\{\{n\}\}/g, String(idx))
+          await smartClick(page, ['div[data-e2e="comment-icon"]', 'svg[data-e2e="comment-icon"]'], 'open comments')
+          await page.waitForTimeout(randomDelay(800, 1500))
+          const typed = await smartType(page, [
+            'div[contenteditable="true"][data-e2e="comment-input"]',
+            'div[contenteditable="true"]',
+            'textarea[placeholder*="comment"]'
+          ], text, 'comment')
+          if (typed) {
+            await page.waitForTimeout(randomDelay(400, 1000))
+            await page.keyboard.press('Enter')
+            await page.waitForTimeout(randomDelay(1500, 2500))
+            out.commented = true
+          }
+        }
+        out.status = out.liked || out.commented ? 'done' : 'skipped'
+      } catch (err) {
+        out.error = err.message
+        out.status = 'failed'
+      }
+      results.push(out)
+      sendProgress(sender, jobId, { type: 'progress', count: results.length, total: videoUrls.length, last: out })
+      await page.waitForTimeout(delayMs + Math.random() * 1500)
+    }
+    return { success: true, data: results, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: results, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// Upload a video to TikTok via the web uploader.
+ipcm('tiktok-upload-video', async (e, { sessionId, videoPath, caption = '' }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!videoPath || !fs.existsSync(videoPath)) return { success: false, error: 'الفيديو غير موجود' }
+  try {
+    await page.goto('https://www.tiktok.com/upload', { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+    await page.waitForTimeout(randomDelay(3000, 5000))
+    const fileInput = await page.$('input[type="file"][accept*="video"], input[type="file"]')
+    if (!fileInput) return { success: false, error: 'لم يتم العثور على مدخل الفيديو' }
+    await fileInput.setInputFiles([videoPath])
+    // Wait for processing.
+    await page.waitForTimeout(randomDelay(8000, 12000))
+    if (caption) {
+      await smartType(page, [
+        'div[contenteditable="true"][data-text]',
+        'div.public-DraftEditor-content',
+        'div[contenteditable="true"]'
+      ], caption, 'caption')
+      await page.waitForTimeout(randomDelay(800, 1500))
+    }
+    const posted = await smartClick(page, [
+      'button[data-e2e="post_video_button"]:not([aria-disabled="true"])',
+      'button:has-text("Post"):not(:has-text("Posts"))',
+      'button:has-text("نشر")'
+    ], 'post video')
+    if (!posted) return { success: false, error: 'لم يتم نشر الفيديو' }
+    await page.waitForTimeout(randomDelay(3000, 5000))
+    return { success: true, message: 'تم نشر الفيديو' }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+})
+
 // ==================== IPC: PINTEREST ====================
 ipcm('pinterest-login', async (e, { username, password, headless = false, proxy }) => {
   let sessionId = null
@@ -6389,6 +6569,143 @@ ipcm('pinterest-extract-hashtag', async (e, { sessionId, keyword, limit = 100 })
   }
 })
 
+// Download Pin images from a search query or board URL to disk.
+ipcm('pinterest-download', async (e, { sessionId, source, query, boardUrl, saveDir, limit = 50, jobId }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!saveDir || !fs.existsSync(saveDir)) return { success: false, error: 'المجلد غير موجود' }
+  if (!jobId) jobId = `pin-dl-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const downloaded = []
+  try {
+    const url = source === 'board' && boardUrl
+      ? boardUrl
+      : `https://www.pinterest.com/search/pins/?q=${encodeURIComponent(query || '')}`
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+    await page.waitForTimeout(randomDelay(2500, 4000))
+    const seen = new Set()
+    let stagnant = 0
+    while (downloaded.length < limit && stagnant < 5) {
+      if (globals.cancelFlags.get(jobId)) break
+      const before = downloaded.length
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.waitForTimeout(randomDelay(1500, 2500))
+      const batch = await page.evaluate(() => {
+        const r = []
+        document.querySelectorAll('img[srcset], img[src*="pinimg"]').forEach(img => {
+          const srcset = img.getAttribute('srcset') || ''
+          const src = img.getAttribute('src') || ''
+          let largest = src
+          if (srcset) {
+            const parts = srcset.split(',').map(s => s.trim())
+            const last = parts[parts.length - 1]
+            largest = (last || '').split(' ')[0] || src
+          }
+          if (largest && largest.includes('pinimg')) {
+            // Upgrade to full-quality original.
+            const original = largest.replace(/\/\d+x\//, '/originals/')
+            r.push({ url: original, alt: img.getAttribute('alt') || '' })
+          }
+        })
+        return r
+      })
+      for (const item of batch) {
+        if (seen.has(item.url)) continue
+        seen.add(item.url)
+        try {
+          const filename = path.join(saveDir, `pin_${Date.now()}_${downloaded.length + 1}.jpg`)
+          const buf = await page.evaluate(async (u) => {
+            const r = await fetch(u)
+            const ab = await r.arrayBuffer()
+            return Array.from(new Uint8Array(ab))
+          }, item.url)
+          fs.writeFileSync(filename, Buffer.from(buf))
+          downloaded.push({ url: item.url, file: filename, alt: item.alt, status: 'downloaded' })
+        } catch (err) {
+          downloaded.push({ url: item.url, status: 'failed', error: err.message })
+        }
+        sendProgress(sender, jobId, { type: 'progress', count: downloaded.length, total: limit, last: downloaded[downloaded.length - 1] })
+        if (downloaded.length >= limit) break
+      }
+      if (downloaded.length === before) stagnant++
+      else stagnant = 0
+    }
+    return { success: true, data: downloaded, count: downloaded.length, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: downloaded, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// Share a Pin to multiple boards. Opens the Pin, clicks Save → picks each
+// board → clicks Save again.
+ipcm('pinterest-share-pin', async (e, { sessionId, pinUrl, boards = [], delayMs = 4000, jobId }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!pinUrl) return { success: false, error: 'رابط الـ Pin مطلوب' }
+  if (!jobId) jobId = `pin-share-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const results = []
+  try {
+    await page.goto(pinUrl, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+    await page.waitForTimeout(randomDelay(2500, 4000))
+    for (const board of boards) {
+      if (globals.cancelFlags.get(jobId)) break
+      const boardName = String(board).trim()
+      try {
+        // Click "Save" button to open board picker.
+        const opened = await smartClick(page, [
+          'button[data-test-id="board-dropdown-save-button"]',
+          'button:has-text("Save"):not(:has-text("Saved"))',
+          'div[role="button"]:has-text("Save"):not(:has-text("Saved"))'
+        ], 'open save')
+        if (!opened) { results.push({ board: boardName, status: 'failed', error: 'لم يتم فتح قائمة الحفظ' }); continue }
+        await page.waitForTimeout(randomDelay(800, 1500))
+        // Search board name.
+        await smartType(page, ['input[placeholder*="Search boards"]', 'input[placeholder*="board"]', 'input[type="text"]'], boardName, 'board search')
+        await page.waitForTimeout(randomDelay(1200, 2000))
+        // Click first matching board.
+        const picked = await smartClick(page, [
+          `div[role="button"]:has-text("${boardName}")`,
+          'div[role="button"][data-test-id="board-row"]:first-of-type',
+          'div[data-test-id="board-row"]:first-of-type'
+        ], 'pick board')
+        results.push({ board: boardName, status: picked ? 'saved' : 'failed' })
+      } catch (err) {
+        results.push({ board: boardName, status: 'failed', error: err.message })
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: results.length, total: boards.length, last: results[results.length - 1] })
+      await page.waitForTimeout(delayMs + Math.random() * 1500)
+    }
+    return { success: true, data: results, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: results, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// Open Pinterest signup pages in batches — manual completion (Captcha + Email verification stops fully-auto creation).
+ipcm('pinterest-open-signup-batch', async (e, { count = 1 }) => {
+  try {
+    const sessionIds = []
+    for (let i = 0; i < Math.min(count, 5); i++) {
+      const res = await globals.bm.launch({ platform: `pinterest-signup-${i}`, headless: false })
+      if (res.success) {
+        const page = globals.bm.getPage(res.sessionId)
+        await page.goto('https://www.pinterest.com/login/?referrer=signup_page', { waitUntil: 'domcontentloaded' }).catch(() => {})
+        sessionIds.push(res.sessionId)
+      }
+    }
+    return { success: true, sessionIds, message: `تم فتح ${sessionIds.length} نافذة تسجيل — أكمل التسجيل يدوياً` }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+})
+
 // ==================== IPC: THREADS ====================
 ipcm('threads-login', async (e, { username, password, headless = false, proxy }) => {
   let sessionId = null
@@ -6461,6 +6778,133 @@ ipcm('threads-mention', async (e, { sessionId, postUrl, mentions, message }) => 
     return { success: true, message: 'تم المنشن' }
   } catch (err) {
     return { success: false, error: err.message }
+  }
+})
+
+// Publish a new Threads post (text-only or with image).
+ipcm('threads-publish', async (e, { sessionId, content, imagePath }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!content && !imagePath) return { success: false, error: 'النص أو الصورة مطلوبة' }
+  if (imagePath && !fs.existsSync(imagePath)) return { success: false, error: 'الصورة غير موجودة' }
+  try {
+    await page.goto('https://www.threads.net/', { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+    await page.waitForTimeout(randomDelay(2500, 4000))
+    await smartClick(page, ['svg[aria-label="Create"]', 'div[role="button"][aria-label="Create"]', 'div[role="button"]:has-text("Start a thread")'], 'open composer')
+    await page.waitForTimeout(randomDelay(1500, 2500))
+    if (content) {
+      await smartType(page, ['div[contenteditable="true"]', 'textarea[placeholder*="thread"]', 'div[role="textbox"]'], content, 'body')
+      await page.waitForTimeout(randomDelay(500, 1200))
+    }
+    if (imagePath) {
+      await smartClick(page, ['svg[aria-label="Attach media"]', 'button[aria-label="Attach"]'], 'attach media')
+      await page.waitForTimeout(randomDelay(500, 1000))
+      const fileInput = await page.$('input[type="file"]')
+      if (fileInput) {
+        await fileInput.setInputFiles([imagePath])
+        await page.waitForTimeout(randomDelay(2500, 4000))
+      }
+    }
+    const posted = await smartClick(page, ['div[role="button"]:has-text("Post"):not(:has-text("Posts"))', 'button:has-text("Post"):not(:has-text("Posts"))'], 'post thread')
+    if (!posted) return { success: false, error: 'لم يتم النقر على زر النشر' }
+    await page.waitForTimeout(randomDelay(2500, 4000))
+    return { success: true, message: 'تم النشر' }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+})
+
+// Send a direct message to Threads users.
+ipcm('threads-send-message', async (e, { sessionId, usernames = [], message, delayMs = 4500, jobId }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!message) return { success: false, error: 'الرسالة مطلوبة' }
+  if (!jobId) jobId = `th-send-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const results = []
+  try {
+    for (const u of usernames) {
+      if (globals.cancelFlags.get(jobId)) break
+      const handle = String(u).replace(/^@/, '').trim()
+      try {
+        await page.goto(`https://www.threads.net/@${handle}`, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+        await page.waitForTimeout(randomDelay(1800, 3000))
+        // Threads DMs route via Instagram inbox.
+        await page.goto(`https://www.instagram.com/direct/t/${handle}`, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+        await page.waitForTimeout(randomDelay(2500, 4000))
+        const typed = await smartType(page, [
+          'textarea[placeholder*="Message"]', 'div[contenteditable="true"][aria-label*="Message"]',
+          'div[contenteditable="true"]'
+        ], message, 'msg')
+        if (typed) {
+          await page.waitForTimeout(randomDelay(500, 1200))
+          await page.keyboard.press('Enter')
+          await page.waitForTimeout(randomDelay(1500, 2500))
+          results.push({ username: handle, status: 'sent' })
+        } else {
+          results.push({ username: handle, status: 'failed', error: 'لم يتم العثور على حقل الرسالة' })
+        }
+      } catch (err) {
+        results.push({ username: u, status: 'failed', error: err.message })
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: results.length, total: usernames.length, last: results[results.length - 1] })
+      await page.waitForTimeout(delayMs + Math.random() * 1500)
+    }
+    return { success: true, data: results, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: results, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// Follow + send DM combo for Threads.
+ipcm('threads-follow-send', async (e, { sessionId, usernames = [], message, followFirst = true, delayMs = 5000, jobId }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!message) return { success: false, error: 'الرسالة مطلوبة' }
+  if (!jobId) jobId = `th-fs-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const results = []
+  try {
+    for (const u of usernames) {
+      if (globals.cancelFlags.get(jobId)) break
+      const handle = String(u).replace(/^@/, '').trim()
+      const row = { username: handle, followed: false, messaged: false, error: null }
+      try {
+        if (followFirst) {
+          await page.goto(`https://www.threads.net/@${handle}`, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+          await page.waitForTimeout(randomDelay(1500, 2500))
+          const followed = await smartActionClick(page, [
+            'button:has-text("Follow"):not(:has-text("Following"))',
+            'div[role="button"]:has-text("Follow"):not(:has-text("Following"))'
+          ], 'follow threads')
+          row.followed = !!followed
+        }
+        await page.goto(`https://www.instagram.com/direct/t/${handle}`, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+        await page.waitForTimeout(randomDelay(2000, 3500))
+        const typed = await smartType(page, ['textarea[placeholder*="Message"]', 'div[contenteditable="true"]'], message, 'msg')
+        if (typed) {
+          await page.waitForTimeout(randomDelay(500, 1200))
+          await page.keyboard.press('Enter')
+          row.messaged = true
+        }
+        row.status = row.messaged ? 'sent' : row.followed ? 'followed-only' : 'failed'
+      } catch (err) {
+        row.error = err.message
+        row.status = 'failed'
+      }
+      results.push(row)
+      sendProgress(sender, jobId, { type: 'progress', count: results.length, total: usernames.length, last: row })
+      await page.waitForTimeout(delayMs + Math.random() * 1500)
+    }
+    return { success: true, data: results, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: results, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
   }
 })
 

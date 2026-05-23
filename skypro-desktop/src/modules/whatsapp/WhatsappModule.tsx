@@ -419,7 +419,7 @@ export default function WhatsappModule() {
     setLoading(false)
   }
 
-  const extractTools: Array<{ id: string; name: string; desc: string; icon: LucideIcon; soon?: boolean }> = [
+  const extractTools: Array<{ id: string; name: string; desc: string; icon: LucideIcon }> = [
     { id: 'groups', name: 'استخراج المجموعات', desc: 'قائمة المجموعات الظاهرة', icon: Users },
     { id: 'chats', name: 'محادثاتي الحالية', desc: 'المحادثات في القائمة الجانبية', icon: MessageSquare },
     { id: 'analyze-groups', name: 'تحليل آخر الرسائل', desc: 'عدد + آخر رسالة لكل دردشة', icon: BarChart3 },
@@ -782,22 +782,21 @@ export default function WhatsappModule() {
       <div>
         <label className="label-field">نوع الاستخراج</label>
         <select className="select-field" value={extractType} onChange={e => setExtractType(e.target.value)}>
-          {extractTools.map(t => <option key={t.id} value={t.id} disabled={t.soon}>{t.name}{t.soon ? ' (قريباً)' : ''}</option>)}
+          {extractTools.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
         </select>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {extractTools.map(tool => {
           const isSel = extractType === tool.id
           return (
-            <button key={tool.id} onClick={() => !tool.soon && setExtractType(tool.id)} disabled={tool.soon}
-              className={`rounded-xl border bg-white/60 p-3 text-center relative ${tool.soon ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-              style={isSel && !tool.soon ? { borderColor: '#22c55e', boxShadow: '0 0 0 2px rgba(34,197,94,0.2)' } : { borderColor: 'rgba(226,232,240,0.7)' }}>
-              {tool.soon && <span className="absolute top-1 left-1 text-[9px] bg-secondary-200 text-secondary-600 px-1.5 py-0.5 rounded font-medium">قريباً</span>}
+            <button key={tool.id} onClick={() => setExtractType(tool.id)}
+              className="rounded-xl border bg-white/60 p-3 text-center relative cursor-pointer"
+              style={isSel ? { borderColor: '#22c55e', boxShadow: '0 0 0 2px rgba(34,197,94,0.2)' } : { borderColor: 'rgba(226,232,240,0.7)' }}>
               <div className="w-9 h-9 rounded-xl mx-auto flex items-center justify-center"
-                style={isSel && !tool.soon ? { background: ACCENT_GRADIENT, color: 'white' } : { background: 'rgba(248,250,252,0.8)', color: '#64748b' }}>
+                style={isSel ? { background: ACCENT_GRADIENT, color: 'white' } : { background: 'rgba(248,250,252,0.8)', color: '#64748b' }}>
                 <tool.icon size={18} />
               </div>
-              <p className="text-[10px] font-bold mt-2" style={{ color: isSel && !tool.soon ? '#22c55e' : '#334155' }}>{tool.name}</p>
+              <p className="text-[10px] font-bold mt-2" style={{ color: isSel ? '#22c55e' : '#334155' }}>{tool.name}</p>
             </button>
           )
         })}
@@ -809,7 +808,7 @@ export default function WhatsappModule() {
   const extractFooter = (
     <button
       onClick={handleExtract}
-      disabled={loading || extractTools.find(t => t.id === extractType)?.soon}
+      disabled={loading}
       className="btn-success w-full disabled:opacity-50"
       style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' }}
     >

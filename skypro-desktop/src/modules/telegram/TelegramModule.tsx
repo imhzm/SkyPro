@@ -10,12 +10,12 @@ import type { LucideIcon } from 'lucide-react'
 import {
   LogIn, Download, Send, UserPlus, AlertCircle, CheckCircle, Loader2,
   Trash2, FileSpreadsheet, Users, MessageSquare,
-  Shield, Settings, Megaphone, Phone, KeyRound, LogOut, Wrench,
+  Megaphone, Phone, KeyRound, LogOut, Wrench,
   Contact, Search, Hash, Database,
 } from 'lucide-react'
 
 type ActiveTool =
-  | 'extract' | 'broadcast' | 'add' | 'tools'
+  | 'extract' | 'broadcast' | 'add'
   | 'extract-dialogs' | 'extract-contacts' | 'search-public' | 'join-groups' | 'send-to-groups'
   | 'add-by-id' | 'bulk-groups-download'
   | null
@@ -302,12 +302,6 @@ export default function TelegramModule() {
     setLoading(false)
   }
 
-  const toolStubTools = [
-    { id: 'enable-2fa', name: 'تفعيل المصادقة الثنائية', desc: 'حماية الحساب', icon: Shield },
-    { id: 'change-account-data', name: 'تغيير بيانات الحساب', desc: 'تعديل بيانات الحساب', icon: Settings },
-    { id: 'schedule-messages', name: 'جدولة الرسائل', desc: 'إرسال مجدول', icon: Send },
-  ]
-
   const tools: Array<{
     id: Exclude<ActiveTool, null>
     name: string
@@ -327,7 +321,6 @@ export default function TelegramModule() {
     { id: 'add', name: 'إضافة أعضاء', description: 'إضافة مستخدمين لمجموعة', icon: UserPlus, accent: '#8b5cf6', accentGradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', requiresSession: true },
     { id: 'add-by-id', name: 'إضافة بالـ ID', description: 'إضافة أعضاء برقم Telegram ID', icon: Hash, accent: '#0d9488', accentGradient: 'linear-gradient(135deg, #0d9488, #115e59)', requiresSession: true },
     { id: 'bulk-groups-download', name: 'استخراج بالكميات', description: 'مجموعات/قنوات بكلمات متعددة', icon: Database, accent: '#7c3aed', accentGradient: 'linear-gradient(135deg, #7c3aed, #5b21b6)', requiresSession: true },
-    { id: 'tools', name: 'إعدادات الحساب', description: '2FA، تغيير البيانات، جدولة', icon: Settings, accent: '#ef4444', accentGradient: 'linear-gradient(135deg, #ef4444, #b91c1c)', requiresSession: false },
   ]
 
   const currentTool = tools.find(t => t.id === activeTool) ?? null
@@ -706,26 +699,6 @@ export default function TelegramModule() {
     </button>
   )
 
-  const renderToolsBody = () => (
-    <div className="space-y-5">
-      <p className="text-sm text-secondary-500">أدوات إضافية قيد التطوير — ستكون متاحة قريباً.</p>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {toolStubTools.map(t => (
-          <div key={t.id} className="rounded-xl border border-secondary-200 bg-white/60 p-4 text-center opacity-70 relative">
-            <span className="absolute top-1 left-1 text-[9px] bg-secondary-200 text-secondary-600 px-1.5 py-0.5 rounded font-medium">قريباً</span>
-            <div className="w-10 h-10 rounded-xl mx-auto flex items-center justify-center" style={{ background: 'rgba(0,136,204,0.08)' }}>
-              <t.icon size={20} style={{ color: '#0088cc' }} />
-            </div>
-            <h4 className="font-bold text-secondary-900 text-xs mt-2">{t.name}</h4>
-            <p className="text-[10px] text-secondary-500 mt-1">{t.desc}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-
-  const toolsFooter = null
-
   // ---- Extract dialogs (my chats) panel ----
   const renderExtractDialogsBody = () => (
     <div className="space-y-5">
@@ -909,7 +882,6 @@ export default function TelegramModule() {
     'send-to-groups': { body: renderSendToGroupsBody(), footer: sendToGroupsFooter },
     add: { body: renderAddBody(), footer: addFooter },
     'add-by-id': { body: renderAddByIdBody(), footer: addByIdFooter },
-    tools: { body: renderToolsBody(), footer: toolsFooter },
   }
 
   return (

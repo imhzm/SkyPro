@@ -45,6 +45,8 @@ interface AccountsStore {
   addAccount: (account: Omit<Account, 'id' | 'created_at'>) => Promise<void>
   updateAccount: (id: number, data: Partial<Account>) => Promise<void>
   deleteAccount: (id: number) => Promise<void>
+  bulkDeleteAccounts: (ids: number[]) => Promise<number>
+  deleteEmptyAccounts: () => Promise<number>
   getAccountsByPlatform: (platform: string) => Account[]
 }
 
@@ -147,6 +149,31 @@ export const useAccountsStore = create<AccountsStore>((set, get) => ({
       await get().loadAccounts()
     } catch (err: unknown) {
       console.error('Failed to delete account:', errorMessage(err))
+      throw err
+    }
+  },
+
+  bulkDeleteAccounts: async (ids) => {
+    if (!Array.isArray(ids) || ids.length === 0) return 0
+    try {
+      const res = await window.electronAPI.dbBulkDelete({ table: 'accounts', ids })
+      if (!res?.success) throw new Error(res?.error || 'فشل الحذف الجماعي')
+      await get().loadAccounts()
+      return res.data?.changes ?? 0
+    } catch (err: unknown) {
+      console.error('Failed bulk-delete accounts:', errorMessage(err))
+      throw err
+    }
+  },
+
+  deleteEmptyAccounts: async () => {
+    try {
+      const res = await window.electronAPI.dbDeleteEmptyAccounts()
+      if (!res?.success) throw new Error(res?.error || 'فشل حذف الحسابات الفارغة')
+      await get().loadAccounts()
+      return res.data?.changes ?? 0
+    } catch (err: unknown) {
+      console.error('Failed delete-empty-accounts:', errorMessage(err))
       throw err
     }
   },

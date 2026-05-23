@@ -8,14 +8,14 @@ import ToolCard from '../../components/tools/ToolCard'
 import ToolPanel from '../../components/tools/ToolPanel'
 import {
   LogIn, Download, Heart, UserPlus, AtSign, Upload,
-  AlertCircle, CheckCircle, Loader2, Trash2, FileSpreadsheet,
-  Eye, EyeOff, Settings, Megaphone, ExternalLink, MessageSquare,
+  AlertCircle, CheckCircle, Loader2, Trash2, FileSpreadsheet, ExternalLink,
+  Eye, EyeOff,
   LogOut, Wrench, Music, Play,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
-type ActiveTool = 'extract' | 'mention' | 'download' | 'upload' | 'more' | null
-type ResultsOwner = 'extract' | 'mention' | 'download' | 'upload' | null
+type ActiveTool = 'extract' | 'mention' | 'download' | 'upload' | 'search' | 'follow' | 'interact' | null
+type ResultsOwner = 'extract' | 'mention' | 'download' | 'upload' | 'search' | 'follow' | 'interact' | null
 
 const ACCENT = '#fe2c55'
 const ACCENT_GRADIENT = 'linear-gradient(135deg, #fe2c55, #25f4ee)'
@@ -44,6 +44,18 @@ export default function TiktokModule() {
   const [downloadSavePath, setDownloadSavePath] = useState('')
   const [uploadVideoPath, setUploadVideoPath] = useState('')
   const [uploadCaption, setUploadCaption] = useState('')
+  const uploadFileRef = useRef<HTMLInputElement | null>(null)
+  // --- Search ---
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchLimit, setSearchLimit] = useState(50)
+  // --- Follow ---
+  const [followList, setFollowList] = useState('')
+  const [followDelay, setFollowDelay] = useState(5)
+  // --- Interact ---
+  const [interactUrls, setInteractUrls] = useState('')
+  const [interactDoLike, setInteractDoLike] = useState(true)
+  const [interactComment, setInteractComment] = useState('')
+  const [interactDelay, setInteractDelay] = useState(5)
 
   const tiktokAccounts = allAccounts.filter(a => a.platform === 'tiktok')
   const ensureSession = () => {
@@ -95,17 +107,68 @@ export default function TiktokModule() {
     clearResults()
   }
 
-  const extractStubTools = [
-    { id: 'search', name: 'استخراج من البحث', desc: 'نتائج البحث', icon: Download, soon: true },
-  ]
+  const handleSearch = async () => {
+    if (!ensureSession()) return
+    if (!searchQuery.trim()) { showMsg('أدخل الكلمة المفتاحية', true); return }
+    setLoading(true); setResultsOwner('search'); setToolResults([])
+    try {
+      const res = await window.electronAPI.tiktokSearch({ sessionId, query: searchQuery.trim(), limit: searchLimit })
+      if (res.success) { setToolResults((res.data as any[]) || []); showMsg(`تم العثور على ${res.count || ((res.data as any[]) || []).length} فيديو`) }
+      else { showMsg(res.error || 'فشلت العملية', true); if (res.partialData) setToolResults(res.partialData as any[]) }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
 
-  const stubTools = [
-    { id: 'follow-send', name: 'متابعة وإرسال رسائل', desc: 'متابعة تلقائية', icon: UserPlus, soon: true },
-    { id: 'interaction-farm', name: 'مزرعة التفاعل', desc: 'إعجاب وتعليقات', icon: Heart, soon: true },
-    { id: 'live-support', name: 'دعم البث المباشر', desc: 'تفاعل مباشر', icon: MessageSquare, soon: true },
-    { id: 'auto-post', name: 'النشر التلقائي', desc: 'نشر فيديوهات', icon: Megaphone, soon: true },
-    { id: 'schedule-posts', name: 'جدولة المنشورات', desc: 'نشر مجدول', icon: Upload, soon: true },
-  ]
+  const handleFollow = async () => {
+    if (!ensureSession()) return
+    const list = followList.split('\n').map(s => s.trim()).filter(Boolean)
+    if (list.length === 0) { showMsg('أدخل قائمة الحسابات', true); return }
+    setLoading(true); setResultsOwner('follow'); setToolResults([])
+    try {
+      const res = await window.electronAPI.tiktokFollow({ sessionId, usernames: list, delayMs: Math.max(2, followDelay) * 1000 })
+      if (res.success) {
+        const items = (res.data as any[]) || []; setToolResults(items)
+        const ok = items.filter((r: any) => r.status === 'followed').length
+        showMsg(`تمت متابعة ${ok} من ${list.length}`)
+      } else { showMsg(res.error || 'فشلت', true); if (res.partialData) setToolResults(res.partialData as any[]) }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  const handleInteract = async () => {
+    if (!ensureSession()) return
+    const urls = interactUrls.split('\n').map(s => s.trim()).filter(Boolean)
+    if (urls.length === 0) { showMsg('أدخل روابط الفيديوهات', true); return }
+    if (!interactDoLike && !interactComment.trim()) { showMsg('اختر إعجاب أو تعليق', true); return }
+    setLoading(true); setResultsOwner('interact'); setToolResults([])
+    try {
+      const res = await window.electronAPI.tiktokInteract({ sessionId, videoUrls: urls, doLike: interactDoLike, comment: interactComment || undefined, delayMs: Math.max(2, interactDelay) * 1000 })
+      if (res.success) {
+        const items = (res.data as any[]) || []; setToolResults(items)
+        const ok = items.filter((r: any) => r.status === 'done').length
+        showMsg(`تم التفاعل مع ${ok} من ${urls.length}`)
+      } else { showMsg(res.error || 'فشلت', true); if (res.partialData) setToolResults(res.partialData as any[]) }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
+  const handlePickVideo = () => uploadFileRef.current?.click()
+  const handleVideoSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]; if (!f) return
+    setUploadVideoPath((f as any).path || '')
+    if (uploadFileRef.current) uploadFileRef.current.value = ''
+  }
+  const handleUpload = async () => {
+    if (!ensureSession()) return
+    if (!uploadVideoPath) { showMsg('اختر ملف فيديو', true); return }
+    setLoading(true); setResultsOwner('upload')
+    try {
+      const res = await window.electronAPI.tiktokUploadVideo({ sessionId, videoPath: uploadVideoPath, caption: uploadCaption })
+      if (res.success) showMsg('تم نشر الفيديو ✓')
+      else showMsg(res.error || 'فشل النشر', true)
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
 
   const tools: Array<{
     id: Exclude<ActiveTool, null>
@@ -117,10 +180,12 @@ export default function TiktokModule() {
     requiresSession: boolean
   }> = [
     { id: 'extract', name: 'استخراج البيانات', description: 'تعليقات الفيديوهات والمتابعين', icon: Download, accent: '#fe2c55', accentGradient: 'linear-gradient(135deg, #fe2c55, #25f4ee)', requiresSession: true },
+    { id: 'search', name: 'البحث في TikTok', description: 'استخراج فيديوهات بكلمة مفتاحية', icon: Heart, accent: '#ec4899', accentGradient: 'linear-gradient(135deg, #ec4899, #be185d)', requiresSession: true },
+    { id: 'follow', name: 'متابعة المستخدمين', description: 'متابعة قائمة حسابات', icon: UserPlus, accent: '#8b5cf6', accentGradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', requiresSession: true },
+    { id: 'interact', name: 'إعجاب + تعليق', description: 'تفاعل على فيديوهات (مزرعة)', icon: Heart, accent: '#f59e0b', accentGradient: 'linear-gradient(135deg, #f59e0b, #d97706)', requiresSession: true },
     { id: 'mention', name: 'منشن جماعي', description: 'منشن مستخدمين في فيديوهات', icon: AtSign, accent: '#0ea5e9', accentGradient: 'linear-gradient(135deg, #0ea5e9, #0369a1)', requiresSession: true },
     { id: 'download', name: 'تحميل فيديو', description: 'تحميل فيديوهات TikTok', icon: Play, accent: '#22c55e', accentGradient: 'linear-gradient(135deg, #22c55e, #15803d)', requiresSession: false },
-    { id: 'upload', name: 'نشر فيديو', description: 'نشر فيديوهات (قريباً)', icon: Upload, accent: '#a855f7', accentGradient: 'linear-gradient(135deg, #a855f7, #6d28d9)', requiresSession: true },
-    { id: 'more', name: 'أدوات إضافية', description: 'أدوات قيد التطوير', icon: Settings, accent: '#64748b', accentGradient: 'linear-gradient(135deg, #64748b, #334155)', requiresSession: false },
+    { id: 'upload', name: 'نشر فيديو', description: 'رفع فيديو من ملف محلي', icon: Upload, accent: '#a855f7', accentGradient: 'linear-gradient(135deg, #a855f7, #6d28d9)', requiresSession: true },
   ]
 
   const currentTool = tools.find(t => t.id === activeTool) ?? null
@@ -320,6 +385,37 @@ export default function TiktokModule() {
                     </tr>
                   )
                 }
+                if (owner === 'search') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium">@{r.author || '-'}</td>
+                      <td className="text-xs max-w-[260px] truncate">{r.caption || '-'}</td>
+                      <td className="text-xs"><a href={r.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">رابط</a></td>
+                    </tr>
+                  )
+                }
+                if (owner === 'follow') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium">@{r.username || '-'}</td>
+                      <td><span className={`badge ${r.status === 'followed' ? 'badge-success' : r.status === 'skipped' ? 'badge-warning' : 'badge-danger'}`}>{r.status}</span></td>
+                      <td className="text-xs text-secondary-500">{r.error || '-'}</td>
+                    </tr>
+                  )
+                }
+                if (owner === 'interact') {
+                  return (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="text-xs max-w-[260px] truncate"><a href={r.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline" dir="ltr">{r.url}</a></td>
+                      <td>{r.liked ? <CheckCircle size={14} className="text-emerald-500" /> : <span className="text-secondary-300">-</span>}</td>
+                      <td>{r.commented ? <CheckCircle size={14} className="text-emerald-500" /> : <span className="text-secondary-300">-</span>}</td>
+                      <td><span className={`badge ${r.status === 'done' ? 'badge-success' : r.status === 'skipped' ? 'badge-warning' : 'badge-danger'}`}>{r.status}</span></td>
+                    </tr>
+                  )
+                }
                 return (
                   <tr key={i}>
                     <td className="text-secondary-500">{i + 1}</td>
@@ -364,19 +460,6 @@ export default function TiktokModule() {
         <label className="label-field">الحد الأقصى: {extractLimit}</label>
         <input type="range" min="10" max="500" value={extractLimit} onChange={e => setExtractLimit(parseInt(e.target.value))} className="w-full" style={{ accentColor: ACCENT }} />
       </div>
-      <div>
-        <h4 className="font-bold text-secondary-900 text-sm mb-2">أدوات استخراج إضافية</h4>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {extractStubTools.map(tool => (
-            <div key={tool.id} className="tool-card text-center relative opacity-60 cursor-not-allowed">
-              <span className="absolute top-1 left-1 text-[9px] bg-secondary-200 text-secondary-600 px-1.5 py-0.5 rounded font-medium">قريباً</span>
-              <div className="w-10 h-10 rounded-xl mx-auto flex items-center justify-center" style={{ background: 'rgba(254,44,85,0.08)' }}><tool.icon size={20} style={{ color: ACCENT }} /></div>
-              <h4 className="font-bold text-secondary-900 text-xs mt-2">{tool.name}</h4>
-              <p className="text-[10px] text-secondary-500">{tool.desc}</p>
-            </div>
-          ))}
-        </div>
-      </div>
       {renderResultsTable('extract', ['#', 'الاسم', 'المعرف', 'النص', 'الرابط', 'التاريخ', ''], 'tiktok-extract')}
     </div>
   )
@@ -387,23 +470,36 @@ export default function TiktokModule() {
     </button>
   )
 
+  const handleMention = async () => {
+    if (!ensureSession()) return
+    const urls = mentionVideoUrls.split('\n').map(s => s.trim()).filter(Boolean)
+    const users = mentionUsers.split('\n').map(s => s.trim().replace(/^@/, '')).filter(Boolean)
+    if (urls.length === 0 || users.length === 0) { showMsg('أدخل الروابط والمستخدمين', true); return }
+    const text = users.map(u => `@${u}`).join(' ') + ' ' + (mentionMessage || '')
+    setLoading(true); setResultsOwner('mention'); setToolResults([])
+    try {
+      const res = await window.electronAPI.tiktokInteract({ sessionId, videoUrls: urls, doLike: false, comment: text, delayMs: 5000 })
+      if (res.success) {
+        const items = (res.data as any[]) || []; setToolResults(items)
+        const ok = items.filter((r: any) => r.commented).length
+        showMsg(`تم المنشن في ${ok} من ${urls.length}`)
+      } else { showMsg(res.error || 'فشل', true); if (res.partialData) setToolResults(res.partialData as any[]) }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
   const renderMentionBody = () => (
     <div className="space-y-5">
-      <div className="p-3 rounded-lg text-sm" style={{ background: 'rgba(254,44,85,0.06)', border: '1px solid rgba(254,44,85,0.2)', color: '#be123c' }}>
-        <AlertCircle size={16} className="inline ml-1" /> هذه الخاصية قيد التطوير - ستتوفر قريباً
-      </div>
-      <div className="space-y-4 opacity-60">
-        <div><label className="label-field">روابط الفيديو</label><textarea className="textarea-field" rows={4} value={mentionVideoUrls} onChange={e => setMentionVideoUrls(e.target.value)} placeholder="https://tiktok.com/..." /></div>
-        <div><label className="label-field">المستخدمين</label><textarea className="textarea-field" rows={4} value={mentionUsers} onChange={e => setMentionUsers(e.target.value)} placeholder="user1&#10;user2" /></div>
-        <div><label className="label-field">الرسالة (اختياري)</label><textarea className="textarea-field" rows={3} value={mentionMessage} onChange={e => setMentionMessage(e.target.value)} placeholder="..." /></div>
-      </div>
+      <div><label className="label-field">روابط الفيديو (سطر لكل رابط)</label><textarea className="textarea-field" rows={5} value={mentionVideoUrls} onChange={e => setMentionVideoUrls(e.target.value)} placeholder="https://tiktok.com/@user/video/..." /></div>
+      <div><label className="label-field">المستخدمين للمنشن (سطر لكل اسم)</label><textarea className="textarea-field" rows={4} value={mentionUsers} onChange={e => setMentionUsers(e.target.value)} placeholder="@user1&#10;@user2" /></div>
+      <div><label className="label-field">رسالة إضافية (اختياري)</label><textarea className="textarea-field" rows={3} value={mentionMessage} onChange={e => setMentionMessage(e.target.value)} placeholder="شوف ده 🔥" /></div>
       {renderResultsTable('mention', ['#', 'المستخدم', 'الحالة', 'التفاصيل'], 'tiktok-mention')}
     </div>
   )
 
   const mentionFooter = (
-    <button disabled className="btn-primary w-full opacity-50 cursor-not-allowed" style={{ background: 'linear-gradient(135deg, #0ea5e9, #0369a1)' }}>
-      <AtSign size={18} /> بدء المنشن (قريباً)
+    <button onClick={handleMention} disabled={loading || !sessionId || !mentionVideoUrls.trim() || !mentionUsers.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #0ea5e9, #0369a1)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><AtSign size={18} /> منشن جماعي</>}
     </button>
   )
 
@@ -429,44 +525,64 @@ export default function TiktokModule() {
 
   const renderUploadBody = () => (
     <div className="space-y-5">
-      <div className="p-3 rounded-lg text-sm" style={{ background: 'rgba(168,85,247,0.06)', border: '1px solid rgba(168,85,247,0.2)', color: '#7c3aed' }}>
-        <AlertCircle size={16} className="inline ml-1" /> هذه الخاصية قيد التطوير - ستتوفر قريباً
+      <input ref={uploadFileRef} type="file" accept="video/*" onChange={handleVideoSelected} className="hidden" />
+      <div>
+        <label className="label-field">ملف الفيديو</label>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button type="button" onClick={handlePickVideo} className="btn-secondary text-sm"><Play size={16} /> اختر فيديو</button>
+          {uploadVideoPath && <span className="text-xs truncate max-w-[400px]" dir="ltr">{uploadVideoPath}</span>}
+        </div>
       </div>
-      <div className="space-y-4 opacity-60">
-        <div><label className="label-field">مسار الفيديو</label><input type="text" className="input-field" placeholder="C:\video.mp4" value={uploadVideoPath} onChange={e => setUploadVideoPath(e.target.value)} /></div>
-        <div><label className="label-field">الوصف</label><textarea className="textarea-field" rows={4} value={uploadCaption} onChange={e => setUploadCaption(e.target.value)} placeholder="..." /></div>
-      </div>
+      <div><label className="label-field">الوصف / الكابشن (يدعم #هاشتاجات)</label><textarea className="textarea-field" rows={4} value={uploadCaption} onChange={e => setUploadCaption(e.target.value)} placeholder="اكتب الوصف..." /></div>
     </div>
   )
 
   const uploadFooter = (
-    <button disabled className="btn-primary w-full opacity-50 cursor-not-allowed" style={{ background: 'linear-gradient(135deg, #a855f7, #6d28d9)' }}>
-      <Upload size={18} /> نشر (قريباً)
+    <button onClick={handleUpload} disabled={loading || !sessionId || !uploadVideoPath} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #a855f7, #6d28d9)' }}>
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Upload size={18} /> نشر الفيديو</>}
     </button>
   )
 
-  const renderMoreBody = () => (
+  const renderSearchBody = () => (
     <div className="space-y-5">
-      <p className="text-xs text-secondary-500">أدوات قيد التطوير — ستتوفر قريباً</p>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {stubTools.map(tool => (
-          <div key={tool.id} className="tool-card text-center relative opacity-60 cursor-not-allowed">
-            <span className="absolute top-1 left-1 text-[9px] bg-secondary-200 text-secondary-600 px-1.5 py-0.5 rounded font-medium">قريباً</span>
-            <div className="w-10 h-10 rounded-xl mx-auto flex items-center justify-center" style={{ background: 'rgba(254,44,85,0.08)' }}><tool.icon size={20} style={{ color: ACCENT }} /></div>
-            <h4 className="font-bold text-secondary-900 text-xs mt-2">{tool.name}</h4>
-            <p className="text-[10px] text-secondary-500">{tool.desc}</p>
-          </div>
-        ))}
-      </div>
+      <div><label className="label-field">الكلمة المفتاحية</label><input type="text" className="input-field" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="dance, music, travel" /></div>
+      <div><label className="label-field">الحد الأقصى: {searchLimit}</label><input type="range" min={10} max={500} step={10} className="w-full accent-pink-500" value={searchLimit} onChange={e => setSearchLimit(parseInt(e.target.value))} /></div>
+      {renderResultsTable('search', ['#', 'المستخدم', 'الكابشن', 'الرابط'], 'tiktok-search')}
     </div>
   )
+  const searchFooter = (<button onClick={handleSearch} disabled={loading || !sessionId || !searchQuery.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #ec4899, #be185d)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><Heart size={18} /> بحث</>}</button>)
+
+  const renderFollowBody = () => (
+    <div className="space-y-5">
+      <div><label className="label-field">قائمة الحسابات (سطر لكل username)</label><textarea className="textarea-field" rows={6} value={followList} onChange={e => setFollowList(e.target.value)} placeholder="@user1&#10;@user2" /></div>
+      <div><label className="label-field">الفاصل (ثانية)</label><input type="number" min={2} max={60} className="input-field w-32" value={followDelay} onChange={e => setFollowDelay(Number(e.target.value) || 5)} /></div>
+      {renderResultsTable('follow', ['#', 'المستخدم', 'الحالة', 'خطأ'], 'tiktok-follow')}
+    </div>
+  )
+  const followFooter = (<button onClick={handleFollow} disabled={loading || !sessionId || !followList.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><UserPlus size={18} /> متابعة</>}</button>)
+
+  const renderInteractBody = () => (
+    <div className="space-y-5">
+      <div><label className="label-field">روابط الفيديوهات (سطر لكل رابط)</label><textarea className="textarea-field" rows={6} value={interactUrls} onChange={e => setInteractUrls(e.target.value)} placeholder="https://www.tiktok.com/@user/video/..." /></div>
+      <label className="flex items-center gap-2 text-sm cursor-pointer">
+        <input type="checkbox" checked={interactDoLike} onChange={e => setInteractDoLike(e.target.checked)} className="rounded" />
+        إعجاب
+      </label>
+      <div><label className="label-field">نص التعليق (اختياري — {'{{n}}'} = رقم الفيديو)</label><textarea className="textarea-field" rows={3} value={interactComment} onChange={e => setInteractComment(e.target.value)} placeholder="رائع 🔥" /></div>
+      <div><label className="label-field">الفاصل (ثانية)</label><input type="number" min={2} max={60} className="input-field w-32" value={interactDelay} onChange={e => setInteractDelay(Number(e.target.value) || 5)} /></div>
+      {renderResultsTable('interact', ['#', 'الرابط', 'إعجاب', 'تعليق', 'الحالة'], 'tiktok-interact')}
+    </div>
+  )
+  const interactFooter = (<button onClick={handleInteract} disabled={loading || !sessionId || !interactUrls.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><Heart size={18} /> تفاعل</>}</button>)
 
   const panelMap: Record<Exclude<ActiveTool, null>, { body: React.ReactNode; footer: React.ReactNode }> = {
     extract: { body: renderExtractBody(), footer: extractFooter },
+    search: { body: renderSearchBody(), footer: searchFooter },
+    follow: { body: renderFollowBody(), footer: followFooter },
+    interact: { body: renderInteractBody(), footer: interactFooter },
     mention: { body: renderMentionBody(), footer: mentionFooter },
     download: { body: renderDownloadBody(), footer: downloadFooter },
     upload: { body: renderUploadBody(), footer: uploadFooter },
-    more: { body: renderMoreBody(), footer: null },
   }
 
   return (
