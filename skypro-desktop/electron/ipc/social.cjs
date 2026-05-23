@@ -2598,14 +2598,24 @@ ipcm('whatsapp-launch', async (e, { proxy } = {}) => {
     const page = globals.bm.getPage(sessionId)
     await page.goto('https://web.whatsapp.com', { waitUntil: 'domcontentloaded', timeout: 120000 })
     await page.waitForTimeout(randomDelay(3000, 5000))
-    try {
-      await page.waitForSelector('[data-testid="chat-list"]', { timeout: 30000 })
+    // Detect either the logged-in chat list OR the QR code login screen using
+    // multiple selectors — WA Web rotates data-testid attributes regularly.
+    const loggedInSelectors = [
+      '[data-testid="chat-list"]', '#pane-side', '[data-testid="cell-frame-container"]',
+      '[aria-label="Chat list"]', 'div[role="grid"][aria-label*="Chat"]',
+      'header[data-testid="chatlist-header"]', 'header[data-testid="search-container"]',
+    ]
+    const qrSelectors = [
+      'canvas[aria-label*="Scan"]', 'div[data-testid="qrcode"]', 'canvas[aria-label*="QR"]',
+      'div[data-ref] canvas', 'div._akau canvas',
+    ]
+    const matched = await waitForAny(page, [...loggedInSelectors, ...qrSelectors], 30000)
+    if (matched && loggedInSelectors.includes(matched)) {
       return { success: true, message: 'WhatsApp متصل', sessionId }
-    } catch {
-      return { success: true, message: 'افتح كاميرا الهاتف وامسح QR code', sessionId, needsQR: true }
     }
+    return { success: true, message: 'افتح كاميرا الهاتف وامسح QR code', sessionId, needsQR: true }
   } catch (err) {
-    return { success: false, error: err.message }
+    return { success: false, error: err.message, sessionId }
   }
 })
 
@@ -2645,7 +2655,7 @@ ipcm('whatsapp-extract-groups', async (e, { sessionId }) => {
   const page = globals.bm.getPage(sessionId)
   if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
   try {
-    await page.waitForSelector('[data-testid="chat-list"]', { timeout: 30000 })
+    await waitForAny(page, ['[data-testid="chat-list"]', '#pane-side', '[data-testid="cell-frame-container"]', 'div[role="grid"][aria-label*="Chat"]'], 30000)
     await page.waitForTimeout(randomDelay(1000, 2000))
     const groups = await page.evaluate(() => {
       const r = []
