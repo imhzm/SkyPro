@@ -119,6 +119,22 @@ export function usePlatform(platformId: string) {
   const handleExport = useCallback(async (headers: string[], filenamePrefix: string, customData?: any[]) => {
     const dataToExport = customData && customData.length > 0 ? customData : results.length > 0 ? results : []
     if (dataToExport.length === 0) { showMsg('لا توجد نتائج للتصدير', true); return }
+    // Helper that prefers top-level property over extra_data JSON. This is
+    // critical: when toolResults are fed in directly (live IPC results), the
+    // fields are at the top level (r.userId, r.profile). When loaded from
+    // the DB, they sit inside extra_data. The CSV exporter must work for
+    // both — try direct prop first, then extra_data, then any alias.
+    const pick = (r: any, extra: any, keys: string[]): string => {
+      for (const k of keys) {
+        const v = r?.[k]
+        if (v !== undefined && v !== null && v !== '') return String(v)
+      }
+      for (const k of keys) {
+        const v = extra?.[k]
+        if (v !== undefined && v !== null && v !== '') return String(v)
+      }
+      return ''
+    }
     const data = dataToExport.map(r => {
       const row: any = {}
       let extraData: any = {}
@@ -126,47 +142,63 @@ export function usePlatform(platformId: string) {
       const raw: Record<string, unknown> = {}
       headers.forEach(h => {
         switch (h) {
-          case 'الاسم': raw[h] = r.name || extraData.name || ''; break
-          case 'معرف المستخدم': raw[h] = extraData.userId || extraData.id || r.extra_data?.userId || ''; break
-          case 'المعرف': raw[h] = r.username || extraData.username || extraData.userId || extraData.id || ''; break
-          case 'الرابط': raw[h] = r.url || extraData.profile || extraData.url || r.link || ''; break
-          case 'الهاتف': raw[h] = r.phone || extraData.phone || ''; break
-          case 'البريد': raw[h] = r.email || extraData.email || ''; break
-          case 'النص': raw[h] = r.text || r.content || extraData.text || extraData.extra || ''; break
-          case 'المصدر': raw[h] = r.source || extraData.source || ''; break
-          case 'التاريخ': raw[h] = r.created_at || ''; break
-          case 'العنوان': raw[h] = r.title || r.name || extraData.title || extraData.name || ''; break
-          case 'السعر': raw[h] = r.price || extraData.price || ''; break
-          case 'الموقع': raw[h] = r.location || r.address || extraData.location || ''; break
-          case 'التقييم': raw[h] = r.rating || extraData.rating || ''; break
-          case 'النوع': raw[h] = r.type || r.category || extraData.type || ''; break
-          case 'الصورة': raw[h] = r.image || r.thumbnail || extraData.image || extraData.thumbnail || ''; break
-          case 'الأعضاء': raw[h] = r.members || r.memberCount || extraData.members || extraData.memberCount || ''; break
-          case 'المجموعة': raw[h] = r.group || r.groupName || extraData.group || extraData.groupName || ''; break
-          case 'الرقم': raw[h] = r.phone || r.number || extraData.phone || extraData.number || ''; break
-          case 'المستلم': raw[h] = r.recipient || r.username || extraData.recipient || extraData.username || ''; break
-          case 'الحالة': raw[h] = r.status || r.state || extraData.status || ''; break
-          case 'خطأ': raw[h] = r.error || r.message || extraData.error || extraData.message || ''; break
-          case 'المستخدم': raw[h] = r.username || r.user || extraData.username || extraData.user || r.name || ''; break
-          case 'Name': raw[h] = r.name || extraData.name || ''; break
-          case 'UserID': raw[h] = extraData.userId || extraData.id || ''; break
-          case 'Profile': raw[h] = r.url || extraData.profile || ''; break
-          case 'Phone': raw[h] = r.phone || extraData.phone || ''; break
-          case 'Email': raw[h] = r.email || extraData.email || ''; break
-          case 'Text': raw[h] = extraData.text || ''; break
-          case 'Source': raw[h] = r.source || ''; break
-          case 'Date': raw[h] = r.created_at || ''; break
-          case 'Recipient': raw[h] = r.recipient || r.username || extraData.recipient || ''; break
-          case 'Status': raw[h] = r.status || extraData.status || ''; break
-          case 'Error': raw[h] = r.error || extraData.error || ''; break
-          default: raw[h] = r[h] || extraData[h] || ''; break
+          case 'الاسم':           raw[h] = pick(r, extraData, ['name', 'title', 'fullName', 'displayName']); break
+          case 'معرف المستخدم':   raw[h] = pick(r, extraData, ['userId', 'user_id', 'id', 'uid', 'fbId']); break
+          case 'المعرف':          raw[h] = pick(r, extraData, ['username', 'handle', 'userId', 'user_id', 'id']); break
+          case 'الرابط':          raw[h] = pick(r, extraData, ['url', 'profile', 'link', 'href', 'profileUrl']); break
+          case 'الهاتف':          raw[h] = pick(r, extraData, ['phone', 'phoneNumber', 'mobile', 'number']); break
+          case 'البريد':          raw[h] = pick(r, extraData, ['email', 'emailAddress', 'mail']); break
+          case 'النص':            raw[h] = pick(r, extraData, ['text', 'content', 'message', 'caption', 'extra', 'comment']); break
+          case 'المصدر':          raw[h] = pick(r, extraData, ['source', 'src', 'origin']); break
+          case 'التاريخ':         raw[h] = pick(r, extraData, ['created_at', 'date', 'timestamp', 'time']); break
+          case 'العنوان':         raw[h] = pick(r, extraData, ['title', 'name', 'heading']); break
+          case 'السعر':           raw[h] = pick(r, extraData, ['price', 'cost', 'amount']); break
+          case 'الموقع':          raw[h] = pick(r, extraData, ['location', 'address', 'city', 'country']); break
+          case 'التقييم':         raw[h] = pick(r, extraData, ['rating', 'score', 'stars']); break
+          case 'النوع':           raw[h] = pick(r, extraData, ['type', 'category', 'kind']); break
+          case 'الصورة':          raw[h] = pick(r, extraData, ['image', 'thumbnail', 'avatar', 'photo']); break
+          case 'الأعضاء':         raw[h] = pick(r, extraData, ['members', 'memberCount', 'membersCount']); break
+          case 'المتابعين':       raw[h] = pick(r, extraData, ['followers', 'followersCount', 'followerCount']); break
+          case 'المتابعون':       raw[h] = pick(r, extraData, ['following', 'followingCount']); break
+          case 'المجموعة':        raw[h] = pick(r, extraData, ['group', 'groupName', 'groupTitle']); break
+          case 'الرقم':           raw[h] = pick(r, extraData, ['phone', 'number', 'phoneNumber']); break
+          case 'المستلم':         raw[h] = pick(r, extraData, ['recipient', 'username', 'target', 'name']); break
+          case 'الحالة':          raw[h] = pick(r, extraData, ['status', 'state', 'result']); break
+          case 'خطأ':             raw[h] = pick(r, extraData, ['error', 'message', 'errorMessage']); break
+          case 'المستخدم':        raw[h] = pick(r, extraData, ['username', 'user', 'name', 'handle']); break
+          case 'آخر نشاط':        raw[h] = pick(r, extraData, ['lastActive', 'lastSeen', 'lastActivity', 'time']); break
+          case 'آخر ظهور':        raw[h] = pick(r, extraData, ['lastSeen', 'lastActive', 'lastActivity']); break
+          case 'تفاصيل':          raw[h] = pick(r, extraData, ['details', 'description', 'bio', 'about']); break
+          case 'البلد':           raw[h] = pick(r, extraData, ['country', 'location']); break
+          case 'الجنس':           raw[h] = pick(r, extraData, ['gender', 'sex']); break
+          case 'اللغة':           raw[h] = pick(r, extraData, ['language', 'lang']); break
+          // English headers (legacy + bilingual modules)
+          case 'Name':            raw[h] = pick(r, extraData, ['name', 'title']); break
+          case 'UserID':          raw[h] = pick(r, extraData, ['userId', 'user_id', 'id']); break
+          case 'Username':        raw[h] = pick(r, extraData, ['username', 'handle']); break
+          case 'Profile':         raw[h] = pick(r, extraData, ['profile', 'url', 'link']); break
+          case 'URL':             raw[h] = pick(r, extraData, ['url', 'profile', 'link']); break
+          case 'Phone':           raw[h] = pick(r, extraData, ['phone', 'phoneNumber']); break
+          case 'Email':           raw[h] = pick(r, extraData, ['email']); break
+          case 'Text':            raw[h] = pick(r, extraData, ['text', 'content', 'message']); break
+          case 'Source':          raw[h] = pick(r, extraData, ['source']); break
+          case 'Date':            raw[h] = pick(r, extraData, ['created_at', 'date', 'timestamp']); break
+          case 'Recipient':       raw[h] = pick(r, extraData, ['recipient', 'username', 'name']); break
+          case 'Status':          raw[h] = pick(r, extraData, ['status', 'state']); break
+          case 'Error':           raw[h] = pick(r, extraData, ['error', 'message']); break
+          // # column is just the row index — emit nothing, table component handles it
+          case '#':               raw[h] = ''; break
+          // Fallback: try the header itself, then extra_data, then aliases
+          default:                raw[h] = pick(r, extraData, [h]); break
         }
       })
       for (const k of headers) row[k] = sanitizeCsvValue(raw[k])
       return row
     })
+    // Filter `#` column out of CSV — it's just a UI row counter, not data.
+    const csvHeaders = headers.filter(h => h !== '#')
     const res = await window.electronAPI.exportToCSV({
-      filename: `${filenamePrefix}-${Date.now()}.csv`, data, headers
+      filename: `${filenamePrefix}-${Date.now()}.csv`, data, headers: csvHeaders
     })
     if (res.success) showMsg(`تم التصدير إلى: ${res.path}`)
     else showMsg(res.error || 'فشل التصدير', true)

@@ -3,6 +3,7 @@ const fs = require('fs')
 const path = require('path')
 const globals = require('../globals.cjs')
 const { app, BrowserWindow, dialog } = require('electron')
+const { sanitizeRecords, isJunkName, isSystemPath } = require('./extraction-sanitizer.cjs')
 
 module.exports = function(ipcm, helpers) {
   const { safeGoto, humanMouseMove, smartType, smartClick, smartActionClick, randomDelay, saveAccount, encryptSecret, decryptSecret, unprotectRow, getSender, sendProgress, saveLeads } = helpers;
@@ -492,42 +493,88 @@ ipcm('facebook-extract-friends', async (e, { sessionId, limit = 100, jobId, dela
   if (!jobId) jobId = `friends-${++jobIdCounter}`
   globals.cancelFlags.set(jobId, false)
   const sender = getSender(e)
-  const allFriends = []
+  let allFriends = []
   try {
     await page.goto('https://www.facebook.com/me/friends', { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
     await page.waitForTimeout(randomDelay(3000, 5000))
     const maxScrolls = Math.max(Math.ceil(limit / 10), 10)
+
+    // Track seen profile URLs (the unique identifier — not the displayed
+    // name, which collides between people who share a name).
+    const seenUrls = new Set()
+    const raw = []
+
     for (let i = 0; i < maxScrolls; i++) {
       if (globals.cancelFlags.get(jobId)) break
       await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
       await page.waitForTimeout(delayMs + Math.random() * 1000)
-      const batch = await page.evaluate((existingNames) => {
+      const batch = await page.evaluate(() => {
         const r = []
-        const seen = new Set(existingNames)
-        const mainContent = document.querySelector('[role="main"]') || document.body
-        mainContent.querySelectorAll('a[href*="/"]').forEach((a) => {
-          const href = a.getAttribute('href') || ''
-          const name = a.innerText.trim()
-          if (!name || name.length < 2 || name.length > 60 || seen.has(name)) return
-          if (href.includes('/help/') || href.includes('/settings') || href.includes('/login') || href.includes('/legal/')) return
-          if (!href.includes('/profile.php') && !href.startsWith('/') && !href.includes('facebook.com/')) return
-          seen.add(name)
-          let userId = ''
-          const idMatch = href.match(/id=(\d+)/)
-          const profileMatch = href.match(/facebook\.com\/([a-zA-Z0-9.]+)/)
-          if (idMatch) userId = idMatch[1]
-          else if (profileMatch && !['posts','groups','watch','reel','stories','photo','photos','videos','events','marketplace','gaming','login','recover','checkpoint'].includes(profileMatch[1])) userId = profileMatch[1]
-          r.push({ name, profile: href.startsWith('/') ? 'https://www.facebook.com' + href : href, userId, platform: 'facebook' })
-        })
+        // STRICT scoping: friends live inside [role="main"] but we go a level
+        // deeper to skip the page header. A friend tile is a div that wraps:
+        //   - an avatar <image> inside an <svg>
+        //   - the friend's name as the anchor's text
+        //   - optional "X mutual friends" link
+        // We look for anchors with an aria-label OR a structured tile pattern,
+        // and we reject anything where the link text is empty or the URL is
+        // a system path.
+        const main = document.querySelector('[role="main"]')
+        if (!main) return r
+        // Find all profile-style anchors (matching /profile.php?id= or /handle)
+        const candidates = main.querySelectorAll('a[href*="/profile.php?id="], a[href^="/"]:not([href*="/posts/"]):not([href*="/groups/"])')
+        const seenInPass = new Set()
+        for (const a of candidates) {
+          let href = a.getAttribute('href') || ''
+          if (!href) continue
+          // Strip query params for system-path check but keep them in the
+          // stored URL (we need profile.php?id=... intact).
+          const pathOnly = href.split('?')[0]
+          // Reject anchors pointing to non-profile FB sections.
+          const seg1 = pathOnly.replace(/^https?:\/\/[^/]+/, '').replace(/^\/+/, '').split('/')[0].toLowerCase()
+          const SYSTEM = new Set(['login','help','settings','legal','policies','marketplace','watch','reel','reels','stories','story','groups','group','events','event','notes','gaming','messages','messenger','notifications','friends','find-friends','bookmarks','ads','live','i','flx','flow','public','accounts','direct','explore','hashtag','tags','tag','oauth','auth','recover','checkpoint','signup','reg','r','about','careers','directory','business','developers','photo','photos','video','videos','home','logout'])
+          // Empty seg1 = root page link, skip.
+          if (!seg1 || SYSTEM.has(seg1)) continue
+          // Name from the anchor's text — but EXCLUDE text from nested badge
+          // links (those are the "X mutual friends" subtext).
+          // Strategy: find a span/strong inside the anchor that holds JUST
+          // the name (no digit prefix, no UI label).
+          let name = ''
+          const spans = a.querySelectorAll('span, strong')
+          for (const s of spans) {
+            const t = (s.innerText || s.textContent || '').trim()
+            if (!t) continue
+            // Skip badge text (digits-prefixed mutual-friend hints)
+            if (/^\d+\s+(صديق|اصدقاء|أصدقاء|mutual|friend)/i.test(t)) continue
+            if (t.length >= 2 && t.length <= 60) { name = t; break }
+          }
+          if (!name) name = (a.innerText || '').trim().split('\n')[0].trim()
+          if (!name) continue
+          // Build absolute URL.
+          const absUrl = href.startsWith('http') ? href : 'https://www.facebook.com' + (href.startsWith('/') ? href : '/' + href)
+          if (seenInPass.has(absUrl)) continue
+          seenInPass.add(absUrl)
+          r.push({ name, profile: absUrl, platform: 'facebook' })
+        }
         return r
-      }, allFriends.map(f => f.name))
-      for (const u of batch) {
-        if (allFriends.length >= limit) break
-        allFriends.push(u)
+      })
+
+      // Apply centralized sanitizer + URL-based dedup.
+      for (const item of batch) {
+        if (seenUrls.has(item.profile)) continue
+        seenUrls.add(item.profile)
+        raw.push(item)
       }
-      sendProgress(sender, jobId, { type: 'progress', count: allFriends.length, total: limit, data: batch })
-      if (allFriends.length >= limit) break
+      const cleaned = sanitizeRecords(raw, { platform: 'facebook', kind: 'friends' })
+      // Trim to the requested limit.
+      if (cleaned.length >= limit) {
+        allFriends = cleaned.slice(0, limit)
+        sendProgress(sender, jobId, { type: 'progress', count: allFriends.length, total: limit, data: allFriends })
+        break
+      }
+      allFriends = cleaned
+      sendProgress(sender, jobId, { type: 'progress', count: allFriends.length, total: limit, data: allFriends })
     }
+
     saveLeads('facebook', 'friends', allFriends)
     return { success: true, data: allFriends, count: allFriends.length, jobId, cancelled: globals.cancelFlags.get(jobId) }
   } catch (err) {

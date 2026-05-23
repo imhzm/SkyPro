@@ -332,6 +332,26 @@ export default function AccountsModule() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Custom label — shown FIRST and full-width for visibility. */}
+            <div className="sm:col-span-2 lg:col-span-3">
+              <label htmlFor="acc-notes" className="label-field flex items-center gap-1.5">
+                <span className="inline-block w-2 h-2 rounded-full bg-violet-500"></span>
+                اسم مميز للحساب
+                <span className="text-[10px] font-normal text-secondary-500 mr-2">
+                  (تسمية خاصة بك لتمييز هذا الحساب — مثل: حساب المتاجر، حساب رئيسي، إلخ)
+                </span>
+              </label>
+              <input
+                id="acc-notes"
+                name="notes"
+                type="text"
+                className="input-field text-base font-medium"
+                value={form.notes}
+                onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+                placeholder="مثال: حساب صفحات المتاجر • حساب التسويق الرئيسي • حساب احتياطي ..."
+                maxLength={100}
+              />
+            </div>
             <div>
               <label htmlFor="acc-platform" className="label-field">المنصة</label>
               <select
@@ -388,7 +408,7 @@ export default function AccountsModule() {
                 </button>
               </div>
             </div>
-            <div>
+            <div className="sm:col-span-2 lg:col-span-3">
               <label htmlFor="acc-proxy" className="label-field">بروكسي (اختياري)</label>
               <input
                 id="acc-proxy"
@@ -400,18 +420,6 @@ export default function AccountsModule() {
                 onChange={(e) => setForm((f) => ({ ...f, proxy: e.target.value }))}
                 placeholder="user:pass@host:port"
                 autoComplete="off"
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <label htmlFor="acc-notes" className="label-field">ملاحظات</label>
-              <input
-                id="acc-notes"
-                name="notes"
-                type="text"
-                className="input-field"
-                value={form.notes}
-                onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-                placeholder="مثال: حساب صفحات المتاجر / حساب رئيسي / ..."
               />
             </div>
           </div>
@@ -571,9 +579,8 @@ export default function AccountsModule() {
                     </button>
                   </th>
                   <th>المنصة</th>
-                  <th>اسم المستخدم</th>
+                  <th>الاسم المميز / اسم المستخدم</th>
                   <th>البروكسي</th>
-                  <th>الملاحظات</th>
                   <th>الحالة</th>
                   <th>التاريخ</th>
                   <th></th>
@@ -607,7 +614,26 @@ export default function AccountsModule() {
                         </div>
                       </td>
                       <td>
-                        <span className="font-medium text-secondary-800" dir="ltr">{acc.username || '—'}</span>
+                        <div className="flex flex-col gap-0.5 max-w-[280px]">
+                          {acc.notes ? (
+                            <>
+                              <span
+                                className="font-bold text-sm text-violet-700 truncate"
+                                dir="auto"
+                                title={acc.notes}
+                              >
+                                {acc.notes}
+                              </span>
+                              <span className="text-[11px] text-secondary-500 truncate font-mono" dir="ltr" title={acc.username}>
+                                {acc.username || '—'}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="font-medium text-secondary-800 truncate" dir="ltr" title={acc.username}>
+                              {acc.username || '—'}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td>
                         {acc.proxy ? (
@@ -617,9 +643,6 @@ export default function AccountsModule() {
                         ) : (
                           <span className="text-secondary-400">—</span>
                         )}
-                      </td>
-                      <td className="text-xs text-secondary-500 max-w-[220px] truncate">
-                        {acc.notes || <span className="text-secondary-300">—</span>}
                       </td>
                       <td>
                         <span className={`badge ${acc.status === 'active' ? 'badge-success' : 'badge-danger'} text-[10px]`}>

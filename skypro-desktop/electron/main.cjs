@@ -9,6 +9,7 @@ const { randomUA, randomDelay, getSecuritySettings, setDb } = require('./anti-ba
 const { initDatabase } = require('./db-init.cjs')
 const BrowserManager = require('./browser-manager.cjs')
 const { registerAuthIPC } = require('./ipc-auth.cjs')
+const { sanitizeRecords, isJunkName } = require('./ipc/extraction-sanitizer.cjs')
 
 const isDev = Boolean(process.env.VITE_DEV_SERVER_URL)
 
@@ -259,20 +260,68 @@ function isTrustedIpcSender(event) {
   return isTrustedRendererUrl(senderUrl)
 }
 
+// Sources where we explicitly DO NOT want to apply the junk-name filter.
+// These store records that legitimately have empty/numeric/non-name primary
+// fields (phone-only extractions, post details, group analytics, etc.).
+const NO_FILTER_SOURCES = new Set([
+  'phone-numbers',           // phone-only records
+  'post-details',            // single post metadata
+  'group-analysis',          // group statistics
+  'profile-analysis',        // profile statistics
+  'users-to-ids',            // ID conversion
+  'links-to-ids',            // link → ID conversion
+  'page-reviews',            // reviews (text-based, not names)
+  'trends',                  // Twitter trends
+  'olx',                     // OLX listings
+  'maps-extract',            // Google Maps businesses
+  'search-tweets',           // tweet text content
+  'hashtag-posts',           // hashtag posts (URL-keyed)
+  'hashtag-pins',
+  'pins',
+  'cross-platform-groups',   // group links
+  'bulk-groups',
+  'mention',                 // mention results
+  'join-groups',             // join-group results
+  'add-to-group-chat',
+  'delete-friends',
+  'page-messages',
+  'search-pages',            // pages (have followers count)
+  'search-groups',
+])
+
 function saveLeads(platform, source, data) {
   if (!Array.isArray(data) || !globals.db) return
+
+  // Apply the centralized junk-filter UNLESS this source is whitelisted.
+  let cleanedData = data
+  if (!NO_FILTER_SOURCES.has(source)) {
+    try {
+      cleanedData = sanitizeRecords(data, { platform, kind: source })
+    } catch (err) {
+      console.error('[saveLeads] sanitizer failed, falling back to raw:', err.message)
+      cleanedData = data
+    }
+  }
+
   const stmt = globals.db.prepare('INSERT INTO leads (platform, name, email, phone, source, url, extra_data) VALUES (?, ?, ?, ?, ?, ?, ?)')
-  data.forEach(item => {
+  let inserted = 0
+  cleanedData.forEach(item => {
     if (!item) return
     const name = item.name || item.username || item.title || ''
-    if (!name && !item.phone && !item.email && !item.id) return
+    if (!name && !item.phone && !item.email && !item.id && !item.userId) return
+    // Final junk check (defense-in-depth) — only when sanitizer was skipped.
+    if (NO_FILTER_SOURCES.has(source) === false && name && isJunkName(name)) return
     const profile = item.profile || item.url || item.link || ''
     const userId = item.id || item.userId || item.user_id || ''
     const phone = item.phone || ''
     const email = item.email || ''
     const extraData = { ...item, userId }
     stmt.run(platform, name, email, phone, source, profile, JSON.stringify(extraData))
+    inserted++
   })
+  if (inserted < data.length) {
+    console.log(`[saveLeads] ${platform}/${source}: inserted ${inserted}/${data.length}`)
+  }
 }
 
 async function safeClose(sessionId) {
