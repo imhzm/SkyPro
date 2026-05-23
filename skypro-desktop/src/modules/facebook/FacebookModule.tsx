@@ -1418,6 +1418,25 @@ export default function FacebookModule() {
               <p className="text-2xl font-bold text-pink-700">{demoResult.genderGuess?.female ?? 0}</p>
             </div>
           </div>
+          {(demoResult.arabicSpeakers !== undefined || demoResult.topRegions?.length) && (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 rounded-xl border bg-white/60">
+                <p className="text-xs font-bold text-secondary-700 mb-2">اللغة (تقديري)</p>
+                <div className="flex items-center gap-3 text-xs">
+                  <span>🇸🇦 العربية: <strong className="text-emerald-600">{demoResult.arabicSpeakers ?? 0}</strong></span>
+                  <span>🇬🇧 الإنجليزية: <strong className="text-blue-600">{demoResult.englishSpeakers ?? 0}</strong></span>
+                </div>
+              </div>
+              <div className="p-3 rounded-xl border bg-white/60">
+                <p className="text-xs font-bold text-secondary-700 mb-2">حسب البلد</p>
+                <ul className="space-y-1 text-xs max-h-32 overflow-y-auto">
+                  {(demoResult.topRegions || []).slice(0, 12).map((r: any, i: number) => (
+                    <li key={i} className="flex justify-between"><span>{r.value}</span><span className="text-secondary-500">{r.count}</span></li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div className="p-3 rounded-xl border bg-white/60">
               <p className="text-xs font-bold text-secondary-700 mb-2">أكثر المواقع</p>

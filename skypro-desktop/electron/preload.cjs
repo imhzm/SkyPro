@@ -65,6 +65,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => ipcRenderer.removeListener('extraction-progress', handler)
   },
 
+  // Safety / anti-ban
+  safetyGenerateMessageVariations: (data) => ipcRenderer.invoke('safety-generate-message-variations', data),
+  safetySessionHealth: (data) => ipcRenderer.invoke('safety-session-health', data),
+
   // Multi-account cycle
   getActiveSessions: () => ipcRenderer.invoke('get-active-sessions'),
   cycleAccounts: (data) => ipcRenderer.invoke('cycle-accounts', data),

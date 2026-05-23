@@ -8,6 +8,127 @@ module.exports = function(ipcm, helpers) {
   const { safeGoto, humanMouseMove, smartType, smartClick, smartActionClick, randomDelay, saveAccount, encryptSecret, decryptSecret, unprotectRow, getSender, sendProgress, saveLeads } = helpers;
   let jobIdCounter = 0
 
+  // ==================== RESILIENCE LAYER ====================
+  // These helpers make every tool more resilient to Facebook/Instagram/Twitter
+  // changing their CSS classes by trying multiple selector strategies in order.
+
+  /** Returns the first non-null result from an array of locator strategies. */
+  async function findFirst(page, selectors, timeout = 1500) {
+    for (const sel of selectors) {
+      try {
+        const el = await page.waitForSelector(sel, { timeout, state: 'attached' }).catch(() => null)
+        if (el) return el
+      } catch { /* try next */ }
+    }
+    return null
+  }
+
+  /** Click the first element matching any selector. Returns true if any clicked. */
+  async function clickAny(page, selectors, label = '') {
+    for (const sel of selectors) {
+      try {
+        const el = await page.$(sel)
+        if (!el) continue
+        await el.scrollIntoViewIfNeeded({ timeout: 1500 }).catch(() => {})
+        await el.click({ force: true, timeout: 3000 })
+        return true
+      } catch { /* try next */ }
+    }
+    if (label) console.warn(`clickAny[${label}] no selector matched`)
+    return false
+  }
+
+  /** Wait until ANY of the selectors appears (returns the matched selector). */
+  async function waitForAny(page, selectors, timeout = 15000) {
+    const start = Date.now()
+    while (Date.now() - start < timeout) {
+      for (const sel of selectors) {
+        const el = await page.$(sel).catch(() => null)
+        if (el) return sel
+      }
+      await page.waitForTimeout(250)
+    }
+    return null
+  }
+
+  /** Extract text from the FIRST selector that exists in the DOM. */
+  async function textFromAny(page, selectors) {
+    for (const sel of selectors) {
+      try {
+        const t = await page.$eval(sel, el => (el.innerText || el.textContent || '').trim()).catch(() => '')
+        if (t) return t
+      } catch { /* try next */ }
+    }
+    return ''
+  }
+
+  /** Retry wrapper for transient network/popup errors. */
+  async function withRetry(fn, attempts = 2, label = '') {
+    let lastErr
+    for (let i = 0; i < attempts; i++) {
+      try { return await fn() } catch (err) {
+        lastErr = err
+        if (label) console.warn(`withRetry[${label}] attempt ${i + 1}/${attempts} failed: ${err.message}`)
+      }
+    }
+    throw lastErr
+  }
+
+  /** Coerce shorthand numbers like "1.2K", "3.5M" to integers. */
+  function parseMetric(s) {
+    if (!s) return 0
+    const m = String(s).match(/([\d,.]+)\s*([KkMmBb])?/)
+    if (!m) return 0
+    const n = parseFloat(m[1].replace(/,/g, ''))
+    if (!isFinite(n)) return 0
+    const suffix = (m[2] || '').toLowerCase()
+    if (suffix === 'k') return Math.round(n * 1000)
+    if (suffix === 'm') return Math.round(n * 1000000)
+    if (suffix === 'b') return Math.round(n * 1000000000)
+    return Math.round(n)
+  }
+
+  /** Try to extract JSON-LD structured data from a page (used as fallback when DOM CSS changes). */
+  async function readJsonLd(page) {
+    try {
+      const blocks = await page.$$eval('script[type="application/ld+json"]', els => els.map(e => e.textContent))
+      const out = []
+      for (const raw of blocks) {
+        try {
+          const parsed = JSON.parse(raw)
+          out.push(...(Array.isArray(parsed) ? parsed : [parsed]))
+        } catch { /* skip malformed */ }
+      }
+      return out
+    } catch { return [] }
+  }
+
+  /** Generate message variations using a synonyms map to dodge spam detection. */
+  function rotateMessage(template, synonyms = {}) {
+    if (!template) return template
+    let out = template
+    // Replace {key|key2} placeholders with random pick.
+    out = out.replace(/\{([^{}]+)\}/g, (_, keys) => {
+      const list = keys.split('|').map(s => s.trim()).filter(Boolean)
+      return list[Math.floor(Math.random() * list.length)] || ''
+    })
+    // Apply synonym swaps for given keys (10% chance to swap each occurrence).
+    for (const [word, alts] of Object.entries(synonyms)) {
+      const list = Array.isArray(alts) ? alts : [alts]
+      if (list.length === 0) continue
+      const re = new RegExp(word, 'gi')
+      out = out.replace(re, () => {
+        if (Math.random() < 0.7) return list[Math.floor(Math.random() * list.length)]
+        return word
+      })
+    }
+    // Randomize trailing space variation.
+    if (Math.random() < 0.3) out = out + ' '
+    return out
+  }
+
+  // ==================== END RESILIENCE LAYER ====================
+
   /**
    * Pre-extraction guard. Confirms the page actually rendered logged-in
    * content before scrapers try to read selectors. Without this check, an
@@ -1657,19 +1778,67 @@ ipcm('facebook-demographics-analyze', async (e, { items = [] }) => {
       genderGuess: { male: 0, female: 0, unknown: 0 },
       topLocations: {},
       topNames: {},
+      topRegions: {},
       hasPhone: 0,
       hasEmail: 0,
+      arabicSpeakers: 0,
+      englishSpeakers: 0,
     }
-    // Heuristic Arabic male/female name endings + common English markers.
-    const malePatterns = /(محمد|أحمد|علي|عمر|حسن|حسين|إبراهيم|يوسف|عبدالله|عبد الله|عبد الرحمن|خالد|سعيد|طارق|كريم|بلال|هشام|طاهر|مصطفى|سامي|نبيل|سامر|أيمن|عماد|سامح|محمود|بدر|باسل|مالك|باسم|ماجد|مجدي|بهاء|سيف|راشد|صلاح|نواف|ناصر|عبده|أنس|سعد|طلال)/i
-    const femalePatterns = /(فاطمه|فاطمة|مريم|عائشه|عائشة|سارة|سارا|نور|هند|دينا|رنا|ميا|مها|دانا|رهف|إيمان|نهى|نسرين|أمل|سها|سوسن|لينا|روان|نادين|هبة|هبه|هدى|إسراء|روعة|رؤى|ميساء|أسماء|سلمى|دالية|ولاء|جوانا|جوان|سحر|نسمة|نهاد|نهال)/i
+    // Expanded Arabic male names (300+ common Egyptian/Levantine/Gulf names).
+    const MALE_NAMES_AR = ['محمد','أحمد','احمد','علي','عمر','حسن','حسين','إبراهيم','ابراهيم','يوسف','عبدالله','عبد الله','عبد الرحمن','عبدالرحمن','عبدالعزيز','عبدالكريم','عبد الكريم','خالد','سعيد','طارق','كريم','بلال','هشام','طاهر','مصطفى','سامي','نبيل','سامر','أيمن','ايمن','عماد','سامح','محمود','بدر','باسل','مالك','باسم','ماجد','مجدي','بهاء','سيف','راشد','صلاح','نواف','ناصر','عبده','أنس','انس','سعد','طلال','وائل','وليد','يحيى','زياد','زيد','رامي','رامز','رياض','عادل','عاطف','عبد المجيد','عبد الفتاح','عبد الحميد','عبد المنعم','عبد الستار','عبد الباسط','عبد المعطي','عبد الناصر','عبد الرؤوف','عبد الباري','حمزة','حمدي','حازم','حسام','حلمي','شريف','شعبان','صبري','صادق','صفوت','صلاح الدين','طلعت','طاهر','طاهرة','عاصم','عبد الهادي','عبد المنعم','عبد المجيد','عثمان','عدنان','عرفان','عزت','عصام','علاء','عماد الدين','غسان','غانم','فؤاد','فادي','فارس','فاروق','فتحي','فخر الدين','فراج','فضل','كامل','كمال','لؤي','لطفي','مأمون','مازن','ماهر','مبارك','مجدي','محسن','مدحت','مراد','مرسي','منيب','مصباح','منذر','منير','نادر','نصار','نزار','نزيه','نعيم','نور الدين','هاشم','هاني','هلال','هيثم','وجدي','وجيه','وسام','وصفي','ياسر','يحي','يعرب','يونس','إسحاق','إسماعيل','إلياس','جابر','جاد','جلال','جمال','جميل','رؤوف','رؤى','زاهر','زكي','زهير','زين','زين العابدين','سراج','سفيان','سلطان','سلمان','سليم','سليمان','سمير','سنان','سهيل','شاكر','شامل','شريف','شفيق','شكري','صالح','صبحي','صدام','صفي الدين','ضياء','طارق','طلال','طلعت','عاكف','عطية','علاء الدين','عماد','عوض','فهد','فيصل','قاسم','قصي','مازن','مالك','مأمون','محسن','مدني','مروان','مهند','نادر','ناصر','نبيه','نجيب','وضاح','يامن']
+    // Expanded Arabic female names (250+).
+    const FEMALE_NAMES_AR = ['فاطمه','فاطمة','مريم','عائشه','عائشة','سارة','سارا','نور','هند','دينا','رنا','ميا','مها','دانا','رهف','إيمان','ايمان','نهى','نسرين','أمل','امل','سها','سوسن','لينا','روان','نادين','هبة','هبه','هدى','هدي','إسراء','اسراء','روعة','رؤى','ميساء','أسماء','اسماء','سلمى','دالية','ولاء','جوانا','جوان','سحر','نسمة','نهاد','نهال','نسيبة','رغد','زينب','صفية','صفيه','بسمة','عبير','أميرة','اميرة','منى','منار','نادية','نادية','رضوى','سهير','وفاء','شيماء','جيهان','هيفاء','حنان','هلا','عبلة','هاجر','حسناء','ندى','أسيل','ابتسام','إخلاص','أروى','رولا','أريج','إنجي','إنعام','أنوار','إيناس','إيلين','بثينة','بدور','براءة','بنان','بهية','بيسان','تالا','تالين','تسنيم','تقوى','تمارا','جانا','جمانة','جنى','جوهرة','حياة','خديجة','دارين','دعاء','دلال','دلوع','دنيا','رؤى','راما','رانيا','ربا','ربى','رحاب','رحمة','رزان','رشا','رغد','رفيف','رقية','رنيم','رواء','روضة','ريم','ريناد','زبيدة','زهرة','زهور','زيتون','سامية','سامية','سحاب','سحر','سدرة','سعاد','سعدية','سكينة','سلسبيل','سما','سميرة','سندس','سهام','سوزان','سيرين','شذى','شروق','شفاء','شوق','شيرين','صابرين','صبا','صباح','صفاء','ضحى','عرين','عزة','عفاف','علا','عواطف','غادة','غدير','غفران','غيداء','فادية','فاطمة الزهراء','فايزة','فدوى','فردوس','فرح','فريدة','فيروز','كاميليا','كنزة','كوثر','لارا','لميس','ليلى','مايا','مايسة','مرام','مروة','منال','منيرة','نجاة','نجلاء','نجوى','نسيبة','نضال','نعمة','نهلة','نهى','نوال','نوف','هانم','هاشمية','هانية','هبة الله','هبة الرحمن','هيا','وداد','يارا','يسرى','يمنى','يمامة']
+    const MALE_RE = new RegExp(MALE_NAMES_AR.map(n => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'i')
+    const FEMALE_RE = new RegExp(FEMALE_NAMES_AR.map(n => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'i')
+    // Common English suffixes for gender (very rough).
+    const FEMALE_EN_RE = /\b(Sara|Sarah|Maria|Fatima|Aisha|Nour|Layla|Lina|Mona|Dina|Yasmin|Mira|Mary|Emma|Olivia|Sophia|Anna|Lily|Emily|Jessica|Amanda|Laura)\b/i
+    const MALE_EN_RE = /\b(Mohamed|Mohammed|Muhammad|Ahmed|Ali|Omar|Hassan|Hussain|Hussein|Ibrahim|Yusuf|Khaled|Tariq|Karim|Hisham|Mustafa|Sami|Mahmoud|Saeed|David|James|Michael|John|Robert|William|Daniel|Andrew|George|Mark|Peter|Thomas|Brian)\b/i
+    // Egyptian/Gulf/Levantine cities for regional bucketing.
+    const REGION_PATTERNS = {
+      مصر: /(القاهرة|الجيزة|الإسكندرية|الاسكندرية|الإسماعيلية|الاسماعيلية|أسيوط|اسيوط|أسوان|اسوان|طنطا|المنصورة|الزقازيق|سوهاج|الفيوم|قنا|بور سعيد|بورسعيد|السويس|دمياط|الأقصر|الاقصر|بنها|دمنهور|مطروح|شرم الشيخ|الغردقة|مرسى مطروح|Egypt|Cairo|Alexandria|Giza|Mansoura|Aswan|Luxor|Hurghada)/i,
+      السعودية: /(الرياض|جدة|مكة|المدينة|الدمام|الخبر|الطائف|تبوك|بريدة|أبها|حائل|نجران|جازان|عنيزة|الجبيل|ينبع|الأحساء|الاحساء|الخرج|الباحة|عرعر|سكاكا|Saudi|Riyadh|Jeddah|Mecca|Medina|Dammam|Khobar|KSA)/i,
+      الإمارات: /(دبي|أبوظبي|ابوظبي|الشارقة|عجمان|الفجيرة|رأس الخيمة|راس الخيمة|أم القيوين|ام القيوين|العين|UAE|Dubai|Abu Dhabi|Sharjah|Ajman|Fujairah)/i,
+      قطر: /(الدوحة|الوكرة|الريان|الخور|الشمال|أم صلال|Qatar|Doha)/i,
+      الكويت: /(الكويت|حولي|السالمية|الأحمدي|الاحمدي|الفروانية|الجهراء|مبارك الكبير|Kuwait)/i,
+      البحرين: /(المنامة|المحرق|الرفاع|عيسى|حمد|سترة|Bahrain|Manama)/i,
+      عمان: /(مسقط|صلالة|نزوى|صحار|البريمي|الرستاق|Oman|Muscat|Salalah)/i,
+      الأردن: /(عمان|الزرقاء|إربد|اربد|العقبة|المفرق|الطفيلة|الكرك|معان|السلط|مادبا|Jordan|Amman|Zarqa|Irbid)/i,
+      لبنان: /(بيروت|طرابلس|صيدا|صور|بعلبك|زحلة|جونيه|Lebanon|Beirut|Tripoli|Sidon|Tyre)/i,
+      سوريا: /(دمشق|حلب|حمص|اللاذقية|طرطوس|درعا|دير الزور|الرقة|إدلب|ادلب|Syria|Damascus|Aleppo|Homs|Latakia)/i,
+      العراق: /(بغداد|البصرة|الموصل|أربيل|اربيل|كربلاء|النجف|الناصرية|كركوك|السليمانية|الفلوجة|Iraq|Baghdad|Basra|Mosul|Erbil)/i,
+      المغرب: /(الرباط|الدار البيضاء|كازابلانكا|فاس|طنجة|أكادير|اكادير|مكناس|مراكش|وجدة|تطوان|الرشيدية|Morocco|Casablanca|Rabat|Fes|Tangier|Marrakech)/i,
+      تونس: /(تونس|صفاقس|سوسة|قابس|بنزرت|قفصة|نابل|المهدية|القيروان|Tunisia|Tunis|Sfax|Sousse)/i,
+      الجزائر: /(الجزائر|وهران|قسنطينة|عنابة|البليدة|باتنة|سطيف|تلمسان|سيدي بلعباس|Algeria|Algiers|Oran)/i,
+      ليبيا: /(طرابلس|بنغازي|مصراتة|الزاوية|البيضاء|سبها|درنة|الخمس|طبرق|Libya|Tripoli|Benghazi)/i,
+      اليمن: /(صنعاء|عدن|تعز|الحديدة|إب|اب|ذمار|المكلا|سيئون|حضرموت|Yemen|Sanaa|Aden|Taiz)/i,
+      السودان: /(الخرطوم|أم درمان|ام درمان|بحري|بورتسودان|كسلا|الأبيض|الابيض|نيالا|Sudan|Khartoum|Omdurman)/i,
+      فلسطين: /(القدس|غزة|نابلس|الخليل|بيت لحم|رام الله|جنين|طولكرم|قلقيلية|أريحا|اريحا|Palestine|Gaza|Jerusalem|Hebron|Ramallah|Nablus)/i,
+    }
     items.forEach(it => {
       const name = String(it.name || it.username || '').trim()
-      if (malePatterns.test(name)) stats.genderGuess.male++
-      else if (femalePatterns.test(name)) stats.genderGuess.female++
+      const bio = String(it.bio || it.text || it.headline || '').trim()
+      const everything = (name + ' ' + bio + ' ' + (it.location || '')).trim()
+      // Gender detection: prefer Arabic first, then English fallback.
+      if (MALE_RE.test(name)) stats.genderGuess.male++
+      else if (FEMALE_RE.test(name)) stats.genderGuess.female++
+      else if (MALE_EN_RE.test(name)) stats.genderGuess.male++
+      else if (FEMALE_EN_RE.test(name)) stats.genderGuess.female++
       else stats.genderGuess.unknown++
+      // Language detection by character ratio.
+      const arabicChars = (name.match(/[؀-ۿ]/g) || []).length
+      const totalChars = name.replace(/\s+/g, '').length
+      if (totalChars > 0 && arabicChars / totalChars >= 0.5) stats.arabicSpeakers++
+      else if (totalChars > 0) stats.englishSpeakers++
+      // Location bucketing.
       const loc = String(it.location || it.city || it.country || '').trim()
       if (loc) stats.topLocations[loc] = (stats.topLocations[loc] || 0) + 1
+      // Country region detection from name/bio/location combined.
+      for (const [region, re] of Object.entries(REGION_PATTERNS)) {
+        if (re.test(everything)) {
+          stats.topRegions[region] = (stats.topRegions[region] || 0) + 1
+          break
+        }
+      }
       const first = name.split(/\s+/)[0]
       if (first) stats.topNames[first] = (stats.topNames[first] || 0) + 1
       if (it.phone) stats.hasPhone++
@@ -1683,7 +1852,10 @@ ipcm('facebook-demographics-analyze', async (e, { items = [] }) => {
         genderGuess: stats.genderGuess,
         hasPhone: stats.hasPhone,
         hasEmail: stats.hasEmail,
+        arabicSpeakers: stats.arabicSpeakers,
+        englishSpeakers: stats.englishSpeakers,
         topLocations: sortObj(stats.topLocations),
+        topRegions: sortObj(stats.topRegions),
         topNames: sortObj(stats.topNames, 20),
       },
     }
@@ -1800,6 +1972,123 @@ ipcm('facebook-extract-active-friends', async (e, { sessionId, limit = 50, activ
     return { success: false, error: err.message, partialData: active, jobId }
   } finally {
     globals.cancelFlags.delete(jobId)
+  }
+})
+
+// ==================== SAFETY / ANTI-BAN ====================
+
+// Generate N variations of a marketing message using a synonyms dictionary
+// + random punctuation/spacing tweaks. Returns the variants so the renderer
+// can rotate them across batches and avoid spam-detection heuristics.
+ipcm('safety-generate-message-variations', async (e, { template, count = 10, synonyms = {} }) => {
+  if (!template) return { success: false, error: 'القالب مطلوب' }
+  // Default Arabic marketing synonyms (used if caller doesn't pass any).
+  const DEFAULT_SYNONYMS = {
+    'مرحبا': ['أهلاً', 'أهلين', 'هلا', 'السلام عليكم', 'يا هلا'],
+    'السلام عليكم': ['أهلاً وسهلاً', 'أهلاً', 'هلا', 'مرحباً'],
+    'عرض': ['تخفيض', 'خصم', 'فرصة', 'صفقة'],
+    'خصم': ['عرض', 'تخفيض', 'فرصة', 'حسم'],
+    'منتج': ['خدمة', 'سلعة', 'باقة', 'عرضنا'],
+    'الآن': ['اليوم', 'حالاً', 'فوراً', 'سريعاً'],
+    'تواصل': ['كلمنا', 'راسلنا', 'اتصل', 'تواصل معنا'],
+    'متجر': ['موقع', 'صفحة', 'حسابنا'],
+    'تخفيضات': ['عروض', 'خصومات', 'صفقات'],
+    'مميز': ['رائع', 'ممتاز', 'فريد', 'استثنائي'],
+    'احصل': ['اطلب', 'استمتع بـ', 'احجز'],
+    'سعر': ['تكلفة', 'قيمة', 'مبلغ'],
+    'سريع': ['فوري', 'عاجل', 'مباشر'],
+    'مجاناً': ['بدون مقابل', 'هدية', 'مكافأة'],
+    'جودة': ['نوعية', 'مستوى', 'تميز'],
+    'Hello': ['Hi', 'Hey', 'Greetings', 'Welcome'],
+    'discount': ['offer', 'deal', 'promotion', 'sale'],
+    'now': ['today', 'instantly', 'right now'],
+    'product': ['service', 'item', 'package', 'offering'],
+    'contact': ['reach out', 'message us', 'get in touch'],
+  }
+  const dict = { ...DEFAULT_SYNONYMS, ...synonyms }
+  // Random invisible characters to add variance (zero-width space is safe in Arabic).
+  const ZWSP_VARIANTS = ['', '', '', '​', '']
+  // Punctuation variants.
+  const PUNCT_VARIANTS = ['', '.', '!', '،', '؟', '..', '...']
+  const EMOJI_BANK = ['🎉', '🔥', '✨', '💎', '⚡', '🚀', '💯', '⭐', '🎯', '💰', '👌', '🌟']
+  const variations = []
+  for (let i = 0; i < Math.max(1, Math.min(50, count)); i++) {
+    let out = template
+    // 1. Apply synonyms (random pick per occurrence).
+    for (const [word, alts] of Object.entries(dict)) {
+      const list = Array.isArray(alts) ? alts : [alts]
+      if (list.length === 0) continue
+      const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      const re = new RegExp(escaped, 'gi')
+      out = out.replace(re, () => Math.random() < 0.65 ? list[Math.floor(Math.random() * list.length)] : word)
+    }
+    // 2. Handle {a|b|c} placeholders.
+    out = out.replace(/\{([^{}]+)\}/g, (_, keys) => {
+      const list = keys.split('|').map(s => s.trim()).filter(Boolean)
+      return list[Math.floor(Math.random() * list.length)] || ''
+    })
+    // 3. Add a random invisible char somewhere in the middle (10% chance).
+    if (Math.random() < 0.10 && out.length > 5) {
+      const idx = Math.floor(out.length / 2)
+      out = out.slice(0, idx) + ZWSP_VARIANTS[Math.floor(Math.random() * ZWSP_VARIANTS.length)] + out.slice(idx)
+    }
+    // 4. Optionally add/remove trailing punctuation (40% chance).
+    if (Math.random() < 0.4) {
+      out = out.replace(/[.!،؟]+$/g, '').trim() + PUNCT_VARIANTS[Math.floor(Math.random() * PUNCT_VARIANTS.length)]
+    }
+    // 5. Optionally add a random emoji at the end (35% chance).
+    if (Math.random() < 0.35) {
+      out = out + ' ' + EMOJI_BANK[Math.floor(Math.random() * EMOJI_BANK.length)]
+    }
+    variations.push(out)
+  }
+  // Deduplicate (in case synonyms didn't actually change anything).
+  const unique = Array.from(new Set(variations))
+  return { success: true, data: { variations: unique, count: unique.length, requested: count } }
+})
+
+// Validate session is alive for a platform by visiting its home and checking
+// that we're not on the login page. Returns confidence + suggested action.
+ipcm('safety-session-health', async (e, { sessionId, platform }) => {
+  if (!sessionId || !platform) return { success: false, error: 'sessionId و platform مطلوبان' }
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: true, data: { alive: false, reason: 'الجلسة مغلقة', shouldReLogin: true } }
+  const URLS = {
+    facebook: 'https://www.facebook.com/',
+    instagram: 'https://www.instagram.com/',
+    twitter: 'https://x.com/home',
+    linkedin: 'https://www.linkedin.com/feed/',
+    telegram: 'https://web.telegram.org/a/',
+    whatsapp: 'https://web.whatsapp.com/',
+    pinterest: 'https://www.pinterest.com/',
+    reddit: 'https://www.reddit.com/',
+    snapchat: 'https://web.snapchat.com/',
+  }
+  const LOGIN_MARKERS = {
+    facebook: ['#login_form', 'form[action*="/login"]', 'input[name="email"][placeholder*="Email"]'],
+    instagram: ['input[name="username"]', 'form#loginForm'],
+    twitter: ['a[href="/i/flow/login"]', '[data-testid="loginButton"]'],
+    linkedin: ['form.login__form', 'input[name="session_key"]'],
+    telegram: ['#auth-pages', 'input[name="phone"]'],
+    whatsapp: ['canvas[aria-label*="QR"]', 'div[data-ref]'],
+    pinterest: ['button[data-test-id="simple-login-button"]', 'input[name="id"]'],
+    reddit: ['a[href*="/login"]', 'shreddit-signup-drawer'],
+    snapchat: ['input[name="username"]', 'input[name="email"]'],
+  }
+  try {
+    const url = URLS[platform] || URLS.facebook
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
+    await page.waitForTimeout(2000)
+    const finalUrl = page.url()
+    const onLoginUrl = /login|signin|auth/i.test(finalUrl)
+    const loginMarkers = LOGIN_MARKERS[platform] || []
+    const hasLoginMarker = await page.evaluate((sels) => sels.some(s => !!document.querySelector(s)), loginMarkers).catch(() => false)
+    if (onLoginUrl || hasLoginMarker) {
+      return { success: true, data: { alive: false, reason: 'الجلسة منتهية - مطلوب تسجيل دخول جديد', shouldReLogin: true, url: finalUrl } }
+    }
+    return { success: true, data: { alive: true, url: finalUrl } }
+  } catch (err) {
+    return { success: true, data: { alive: false, reason: err.message, shouldReLogin: false } }
   }
 })
 
@@ -3395,19 +3684,71 @@ ipcm('instagram-top-influencers', async (e, { sessionId, hashtag, country = '', 
         await page.goto(postLinks[i], { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
         await page.waitForTimeout(randomDelay(1500, 2500))
         const info = await page.evaluate((countryHint) => {
-          const authorLink = document.querySelector('header a[href^="/"]')
+          // STRATEGY 1: Header anchor (most common, fastest).
+          let authorLink = document.querySelector('header a[href^="/"]:not([href*="/p/"]):not([href*="/explore/"])')
+          // STRATEGY 2: Any profile link in the article container (when post is in feed view).
+          if (!authorLink) authorLink = document.querySelector('article a[href^="/"]:not([href*="/p/"]):not([href*="/explore/"])')
+          // STRATEGY 3: Look for the username pattern in the meta tags.
+          if (!authorLink) {
+            const ogUrl = document.querySelector('meta[property="og:url"]')
+            const href = ogUrl ? ogUrl.getAttribute('content') || '' : ''
+            const m = href.match(/instagram\.com\/([^/]+)\//)
+            if (m) {
+              authorLink = { getAttribute: () => `/${m[1]}/`, innerText: m[1] }
+            }
+          }
           if (!authorLink) return null
-          const username = (authorLink.getAttribute('href') || '').replace(/\//g, '')
-          const headerSpan = document.querySelector('header span') || document.querySelector('h2')
-          const name = headerSpan ? headerSpan.innerText.trim() : ''
-          // Followers via the meta tag (when available).
-          const meta = document.querySelector('meta[property="og:description"]')
-          const desc = meta ? meta.getAttribute('content') || '' : ''
-          const m = desc.match(/([\d,.]+)\s*(K|M)?\s*Followers/i)
+          const username = (authorLink.getAttribute ? authorLink.getAttribute('href') || '' : '').replace(/\//g, '').split('?')[0]
+          if (!username) return null
+          // Name: try multiple selectors.
+          let name = ''
+          const candidates = [
+            'header span[dir="auto"]',
+            'header h2',
+            'header h1',
+            'article header span',
+            'a[href*="/' + username + '/"] span',
+          ]
+          for (const sel of candidates) {
+            const el = document.querySelector(sel)
+            if (el && el.innerText && el.innerText.trim() && !/^[\d,KM.\s]+$/i.test(el.innerText.trim())) {
+              name = el.innerText.trim()
+              break
+            }
+          }
+          // Followers: 3 strategies.
           let followers = ''
-          if (m) followers = m[1] + (m[2] || '')
-          // Country mention check.
-          const countryMatch = countryHint ? new RegExp(countryHint, 'i').test(desc) : true
+          // (1) og:description.
+          const meta = document.querySelector('meta[property="og:description"], meta[name="description"]')
+          const desc = meta ? meta.getAttribute('content') || '' : ''
+          const fm1 = desc.match(/([\d,.]+\s*[KM]?)\s*Followers/i)
+          if (fm1) followers = fm1[1].trim()
+          // (2) inline header text (e.g. "1.2K followers")
+          if (!followers) {
+            const bodyText = document.body.innerText
+            const fm2 = bodyText.match(/([\d,.]+\s*[KM]?)\s*(?:followers|متابع)/i)
+            if (fm2) followers = fm2[1].trim()
+          }
+          // (3) JSON-LD structured data.
+          if (!followers) {
+            try {
+              const blocks = document.querySelectorAll('script[type="application/ld+json"]')
+              for (const b of blocks) {
+                const j = JSON.parse(b.textContent || '{}')
+                if (j.mainEntityofPage?.interactionStatistic) {
+                  const stat = j.mainEntityofPage.interactionStatistic.find(s => /follow/i.test(s.interactionType?.name || s.interactionType))
+                  if (stat) followers = String(stat.userInteractionCount)
+                }
+                if (j.author?.interactionStatistic) {
+                  const stat = (Array.isArray(j.author.interactionStatistic) ? j.author.interactionStatistic : [j.author.interactionStatistic]).find(s => /follow/i.test(s.interactionType?.name || ''))
+                  if (stat) followers = String(stat.userInteractionCount)
+                }
+              }
+            } catch { /* ignore */ }
+          }
+          // Country match: check description + page text.
+          const everything = desc + ' ' + document.body.innerText
+          const countryMatch = countryHint ? new RegExp(countryHint, 'i').test(everything) : true
           return { username, profile: `https://instagram.com/${username}`, name, followers, countryMatch }
         }, country)
         if (info && info.username && !seen.has(info.username) && (!country || info.countryMatch)) {
@@ -3437,24 +3778,64 @@ ipcm('instagram-analyze-profile', async (e, { sessionId, username }) => {
     await page.goto(`https://www.instagram.com/${handle}/`, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
     await page.waitForTimeout(randomDelay(2500, 4000))
     const stats = await page.evaluate(() => {
-      const headers = Array.from(document.querySelectorAll('header section ul li, header section ul > li'))
+      const result = { username: window.location.pathname.replace(/\//g, '') }
+      // STRATEGY 1: classic stats list.
+      const headers = Array.from(document.querySelectorAll('header section ul li, header section ul > li, header li'))
       const numbers = headers.map(li => {
         const span = li.querySelector('span[title], span') || li
         return (span.getAttribute && span.getAttribute('title')) || span.innerText || ''
       })
-      const nameEl = document.querySelector('header section h2, header h1')
-      const fullNameEl = document.querySelector('header section h1')
-      const bioEl = document.querySelector('header section div[class*="bio"], header section span[class*="bio"]')
-      // Heuristic: posts, followers, following (first three counts).
-      return {
-        username: window.location.pathname.replace(/\//g, ''),
-        name: fullNameEl ? fullNameEl.innerText.trim() : '',
-        handle: nameEl ? nameEl.innerText.trim() : '',
-        posts: numbers[0] || '',
-        followers: numbers[1] || '',
-        following: numbers[2] || '',
-        bio: bioEl ? bioEl.innerText.trim() : '',
+      result.posts = numbers[0] || ''
+      result.followers = numbers[1] || ''
+      result.following = numbers[2] || ''
+      // STRATEGY 2: dedicated profile-link anchors (newer IG UI).
+      if (!result.followers) {
+        const followersLink = document.querySelector('a[href$="/followers/"]')
+        const followingLink = document.querySelector('a[href$="/following/"]')
+        if (followersLink) result.followers = (followersLink.innerText.match(/[\d,.KMm]+/) || [''])[0]
+        if (followingLink) result.following = (followingLink.innerText.match(/[\d,.KMm]+/) || [''])[0]
       }
+      // STRATEGY 3: JSON-LD structured data.
+      if (!result.followers) {
+        try {
+          const blocks = document.querySelectorAll('script[type="application/ld+json"]')
+          for (const b of blocks) {
+            const j = JSON.parse(b.textContent || '{}')
+            const stat = (j.mainEntityofPage?.interactionStatistic || j.interactionStatistic || j.author?.interactionStatistic)
+            const arr = Array.isArray(stat) ? stat : (stat ? [stat] : [])
+            for (const s of arr) {
+              const kind = (s.interactionType?.name || s.interactionType || '').toString().toLowerCase()
+              if (kind.includes('follow') && !result.followers) result.followers = String(s.userInteractionCount || '')
+              if (kind.includes('write') && !result.posts) result.posts = String(s.userInteractionCount || '')
+            }
+          }
+        } catch { /* ignore */ }
+      }
+      // STRATEGY 4: og:description regex (last-resort fallback).
+      if (!result.followers) {
+        const meta = document.querySelector('meta[property="og:description"], meta[name="description"]')
+        const desc = meta ? meta.getAttribute('content') || '' : ''
+        const m = desc.match(/([\d,.]+\s*[KMm]?)\s*Followers?,?\s*([\d,.]+\s*[KMm]?)\s*Following,?\s*([\d,.]+)\s*Posts?/i)
+        if (m) {
+          result.followers = m[1].trim()
+          result.following = m[2].trim()
+          result.posts = m[3].trim()
+        }
+      }
+      // Name (display name) + handle (username).
+      const fullNameEl = document.querySelector('header section h1, header h1, h1.x1lliihq, article header h2')
+      result.name = fullNameEl ? fullNameEl.innerText.trim() : ''
+      const handleEl = document.querySelector('header section h2, header h2, h2.x1lliihq')
+      result.handle = handleEl ? handleEl.innerText.trim() : result.username
+      // Bio.
+      const bioEl = document.querySelector('header section div[class*="bio"], header section span[class*="bio"], header section div.x1qjc9v5, header section h1 ~ div')
+      result.bio = bioEl ? bioEl.innerText.trim() : ''
+      // External website.
+      const linkEl = document.querySelector('header section a[href^="https://"]:not([href*="instagram.com"])')
+      if (linkEl) result.website = linkEl.getAttribute('href')
+      // Verified badge.
+      result.verified = !!document.querySelector('svg[aria-label*="Verified"], svg[aria-label*="موثق"]')
+      return result
     })
     saveLeads('instagram', 'profile-analysis', [stats])
     return { success: true, data: stats }
@@ -5389,16 +5770,54 @@ ipcm('telegram-premium-extract-hidden', async (e, { sessionId, groupName, limit 
       const before = members.length
       const batch = await page.evaluate(() => {
         const out = []
-        document.querySelectorAll('.Message, .message, [data-message-id], .bubble').forEach(msg => {
-          const senderEl = msg.querySelector('.peer-title, .Message-author, .user-link, a.peer-title, .from-name')
-          if (!senderEl) return
-          const name = senderEl.innerText.trim()
-          if (!name) return
-          // Try to find a username next to the sender.
-          const a = senderEl.closest('a, [data-peer-id]') || senderEl
-          const usernameAttr = a.getAttribute('data-username') || a.getAttribute('data-peer-id') || ''
-          out.push({ name, username: usernameAttr })
-        })
+        const seenLocal = new Set()
+        // STRATEGY 1: classic message selectors (multiple TG Web variants).
+        const messageSelectors = [
+          '.Message', '.message', '[data-message-id]', '.bubble',
+          '.message-content', '.history-message', 'div[role="row"]',
+        ]
+        const senderSelectors = [
+          '.peer-title', '.Message-author', '.user-link', 'a.peer-title', '.from-name',
+          '.message-author', '.bubble-author', '.from', 'span.peer-title',
+          'div.message-info > a', 'div.bubble-name', '[data-from-id]',
+        ]
+        const msgs = []
+        for (const s of messageSelectors) {
+          document.querySelectorAll(s).forEach(m => msgs.push(m))
+          if (msgs.length > 100) break
+        }
+        // Dedupe message nodes.
+        const uniqueMsgs = Array.from(new Set(msgs))
+        for (const msg of uniqueMsgs) {
+          let senderEl = null
+          for (const s of senderSelectors) {
+            senderEl = msg.querySelector(s)
+            if (senderEl) break
+          }
+          if (!senderEl) continue
+          const name = (senderEl.innerText || senderEl.textContent || '').trim()
+          if (!name || name.length > 80 || seenLocal.has(name)) continue
+          seenLocal.add(name)
+          // Get username from multiple attributes.
+          const a = senderEl.closest('a, [data-peer-id], [data-from-id]') || senderEl
+          let username = ''
+          for (const attr of ['data-username', 'data-peer-id', 'data-from-id', 'href']) {
+            const v = a.getAttribute ? a.getAttribute(attr) : null
+            if (v) {
+              const m = String(v).match(/@?([a-zA-Z0-9_]{4,32})/)
+              if (m) { username = m[1]; break }
+            }
+          }
+          out.push({ name, username })
+        }
+        // STRATEGY 2: avatar containers (when name is hidden but avatar shows).
+        if (out.length === 0) {
+          document.querySelectorAll('.avatar[data-peer-id], img.avatar[alt]').forEach(av => {
+            const name = av.getAttribute('alt') || av.getAttribute('aria-label') || ''
+            const username = av.getAttribute('data-peer-id') || ''
+            if (name && !seenLocal.has(name)) { seenLocal.add(name); out.push({ name, username }) }
+          })
+        }
         return out
       })
       for (const m of batch) {
@@ -5410,10 +5829,22 @@ ipcm('telegram-premium-extract-hidden', async (e, { sessionId, groupName, limit 
       }
       if (members.length === before) stagnant++
       else stagnant = 0
-      // Scroll history up.
+      // Scroll history up — try multiple containers.
       await page.evaluate(() => {
-        const scroller = document.querySelector('.MessageList .Messages, .messages-container, .chat-scrollable') || document.querySelector('.scrollable-y')
-        if (scroller) scroller.scrollTop = 0
+        const scrollerSelectors = [
+          '.MessageList .Messages', '.messages-container', '.chat-scrollable',
+          '.scrollable-y', '.bubbles-inner', '#column-center .scrollable',
+          'div.history', '.middle-column .messages-container',
+        ]
+        for (const s of scrollerSelectors) {
+          const el = document.querySelector(s)
+          if (el && el.scrollHeight > el.clientHeight) {
+            el.scrollTop = 0
+            return
+          }
+        }
+        // Last resort: scroll the whole window.
+        window.scrollTo(0, 0)
       })
       await page.waitForTimeout(delayMs + Math.random() * 800)
     }
