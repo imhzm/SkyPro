@@ -42,7 +42,7 @@ const EMPTY_FORM: FormState = {
 }
 
 export default function AccountsModule() {
-  const { accounts, loadAccounts, addAccount, updateAccount, deleteAccount, bulkDeleteAccounts, deleteEmptyAccounts } = useAccountsStore()
+  const { accounts, loadAccounts, addAccount, updateAccount, deleteAccount, bulkDeleteAccounts, deleteEmptyAccounts, deleteAllAccounts } = useAccountsStore()
   const [filterPlatform, setFilterPlatform] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [showForm, setShowForm] = useState(false)
@@ -52,7 +52,6 @@ export default function AccountsModule() {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
-  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [bulkBusy, setBulkBusy] = useState(false)
 
@@ -63,13 +62,6 @@ export default function AccountsModule() {
   }, [])
 
   useEffect(() => { loadAccounts() }, [loadAccounts])
-
-  // Reset delete-confirm after 4s of inactivity so it doesn't stick forever.
-  useEffect(() => {
-    if (deleteConfirmId === null) return
-    const id = window.setTimeout(() => setDeleteConfirmId(null), 4000)
-    return () => window.clearTimeout(id)
-  }, [deleteConfirmId])
 
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase()
@@ -140,21 +132,33 @@ export default function AccountsModule() {
   }
 
   const handleDelete = async (acc: { id: number; username: string }) => {
-    // First click: ask for confirmation.
-    if (deleteConfirmId !== acc.id) {
-      setDeleteConfirmId(acc.id)
-      showMsg(`اضغط مرة أخرى لتأكيد حذف "${acc.username || 'الصف الفارغ'}"`, false)
-      return
-    }
-    // Second click within 4s: actually delete.
-    setDeleteConfirmId(null)
+    const label = acc.username || 'الصف الفارغ'
+    const ok = window.confirm(`تأكيد حذف "${label}"؟ لا يمكن التراجع.`)
+    if (!ok) return
     try {
       await deleteAccount(acc.id)
-      showMsg(`تم حذف "${acc.username || 'الصف الفارغ'}" ✓`)
+      showMsg(`تم حذف "${label}" ✓`)
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'خطأ غير معروف'
       showMsg(`فشل الحذف: ${msg}`, true)
     }
+  }
+
+  const handleDeleteAll = async () => {
+    const ok = window.confirm(`⚠️ تأكيد حذف جميع الـ ${accounts.length} حساب نهائياً؟ لا يمكن التراجع.`)
+    if (!ok) return
+    const ok2 = window.confirm(`تأكيد ثاني: هذا سيحذف كل حساباتك المحفوظة. تأكد؟`)
+    if (!ok2) return
+    setBulkBusy(true)
+    try {
+      const removed = await deleteAllAccounts()
+      showMsg(`تم حذف جميع الحسابات (${removed}) ✓`)
+      setSelectedIds(new Set())
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'خطأ غير معروف'
+      showMsg(`فشل الحذف: ${msg}`, true)
+    }
+    setBulkBusy(false)
   }
 
   const toggleSelect = (id: number) => {
@@ -196,8 +200,25 @@ export default function AccountsModule() {
     setBulkBusy(true)
     try {
       const removed = await deleteEmptyAccounts()
-      if (removed === 0) showMsg('مفيش حسابات فارغة للحذف', false)
-      else showMsg(`تم حذف ${removed} حساب فارغ ✓`)
+      if (removed === 0) {
+        // Nothing matched as "empty" but the user clearly sees rows with —.
+        // Surface a debug view so we can tell what's actually in the DB.
+        try {
+          const dbg = await window.electronAPI.dbDebugAccounts()
+          if (dbg.success && Array.isArray(dbg.data) && dbg.data.length > 0) {
+            const summary = dbg.data
+              .slice(0, 5)
+              .map((r) => `#${r.id} platform=${JSON.stringify(r.platform)} username=${JSON.stringify(r.username)} (len=${r.username_len}, hex=${r.username_hex || ''})`)
+              .join('\n')
+            console.warn('[accounts] debug dump after empty-delete returned 0:\n' + summary)
+            showMsg(`لا يوجد ما يطابق "فارغ" — تفاصيل الصفوف في الـ console (${dbg.data.length} صف)`, true)
+            return
+          }
+        } catch { /* ignore */ }
+        showMsg('مفيش حسابات فارغة للحذف', false)
+      } else {
+        showMsg(`تم حذف ${removed} حساب فارغ ✓`)
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'خطأ غير معروف'
       showMsg(`فشل حذف الحسابات الفارغة: ${msg}`, true)
@@ -520,6 +541,16 @@ export default function AccountsModule() {
               >
                 <Filter size={14} className="inline ml-1" /> حذف الحسابات الفارغة
               </button>
+              <button
+                type="button"
+                onClick={handleDeleteAll}
+                disabled={bulkBusy || accounts.length === 0}
+                className="text-xs px-3 py-1.5 rounded-lg border disabled:opacity-50"
+                style={{ background: 'rgba(220,38,38,0.08)', borderColor: 'rgba(220,38,38,0.3)', color: '#991b1b' }}
+                title="حذف كل الحسابات في الجدول"
+              >
+                <Trash2 size={14} className="inline ml-1" /> حذف الكل ({accounts.length})
+              </button>
               <div className="text-xs text-secondary-500 mr-auto">
                 {selectedIds.size > 0 && `${selectedIds.size} محدد • `}
                 {filtered.length} حساب{filtered.length !== 1 ? '' : ''}
@@ -552,7 +583,6 @@ export default function AccountsModule() {
                 {filtered.map((acc) => {
                   const p = platformInfo(acc.platform)
                   const gradient = getPlatformGradient(acc.platform)
-                  const isConfirming = deleteConfirmId === acc.id
                   const isSelected = selectedIds.has(acc.id)
                   return (
                     <tr key={acc.id} style={isSelected ? { background: 'rgba(99,102,241,0.05)' } : undefined}>
@@ -624,15 +654,13 @@ export default function AccountsModule() {
                           <button
                             type="button"
                             onClick={() => handleDelete(acc)}
-                            className={`p-1.5 rounded-lg transition-colors ${isConfirming ? 'animate-pulse' : ''}`}
+                            className="p-1.5 rounded-lg transition-colors"
                             style={{
-                              color: isConfirming ? '#dc2626' : '#ef4444',
-                              background: isConfirming
-                                ? 'rgba(239, 68, 68, 0.20)'
-                                : 'rgba(239, 68, 68, 0.08)',
-                              border: `1.5px solid rgba(239, 68, 68, ${isConfirming ? 0.45 : 0.15})`,
+                              color: '#ef4444',
+                              background: 'rgba(239, 68, 68, 0.08)',
+                              border: '1.5px solid rgba(239, 68, 68, 0.15)',
                             }}
-                            title={isConfirming ? 'اضغط مرة أخرى للتأكيد' : 'حذف'}
+                            title="حذف"
                           >
                             <Trash2 size={13} />
                           </button>

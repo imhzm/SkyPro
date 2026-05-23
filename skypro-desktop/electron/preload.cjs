@@ -263,6 +263,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbDelete: (data) => ipcRenderer.invoke('db-delete', data),
   dbBulkDelete: (data) => ipcRenderer.invoke('db-bulk-delete', data),
   dbDeleteEmptyAccounts: () => ipcRenderer.invoke('db-delete-empty-accounts'),
+  dbDeleteAllAccounts: () => ipcRenderer.invoke('db-delete-all-accounts'),
+  dbDebugAccounts: () => ipcRenderer.invoke('db-debug-accounts'),
   clearLeadsByPlatform: (data) => ipcRenderer.invoke('clear-leads-by-platform', data),
   dbCount: (data) => ipcRenderer.invoke('db-count', data),
 

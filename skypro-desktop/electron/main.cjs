@@ -856,19 +856,96 @@ ipcm('db-bulk-delete', async (e, { table, ids = [] }) => {
   }
 })
 
+// Filter that catches every garbage username pattern — Unicode-safe,
+// no regex literals with embedded unprintables (which break lint parsers).
+function isGarbageUsername(s) {
+  if (s === null || s === undefined) return true
+  const str = String(s)
+  // Build the kept-character whitelist programmatically. A char is "real"
+  // if it's NOT whitespace AND has a printable code point > 0x20 and not
+  // in the invisible-Unicode bands.
+  let kept = ''
+  for (const ch of str) {
+    const cp = ch.codePointAt(0)
+    if (cp === 0x09 || cp === 0x0A || cp === 0x0B || cp === 0x0C || cp === 0x0D) continue // whitespace
+    if (cp === 0x20 || cp === 0xA0) continue // space, NBSP
+    if (cp >= 0x2000 && cp <= 0x200F) continue // figure space → RTL mark
+    if (cp === 0x202F || cp === 0x205F || cp === 0x3000) continue // narrow NBSP, math space, ideographic space
+    if (cp >= 0x202A && cp <= 0x202E) continue // directional embeds
+    if (cp === 0x2028 || cp === 0x2029) continue // line/paragraph separators
+    if (cp === 0x2060 || cp === 0xFEFF) continue // word joiner, BOM
+    kept += ch
+  }
+  if (kept.length === 0) return true
+  const lower = kept.toLowerCase()
+  if (lower === 'undefined' || lower === 'null' || lower === 'nan') return true
+  // Just dashes/punctuation (em-dash 0x2014, en-dash 0x2013, hyphen, etc.).
+  let onlyDashes = true
+  for (const ch of kept) {
+    const cp = ch.codePointAt(0)
+    if (cp !== 0x2D && cp !== 0x2014 && cp !== 0x2013 && cp !== 0x5F && cp !== 0x2E) {
+      onlyDashes = false
+      break
+    }
+  }
+  return onlyDashes
+}
+
 // Targeted cleanup: delete every account row whose username is empty/whitespace.
-// This is what fixes the "4 empty accounts I can't delete" complaint — those
-// rows pre-date the saveAccount() validation guard.
+// Done in JS layer (not raw SQL) so we can handle ALL Unicode whitespace,
+// invisible characters, and any future weird patterns reliably.
 ipcm('db-delete-empty-accounts', async () => {
   try {
     if (!globals.db) return { success: false, error: 'قاعدة البيانات غير جاهزة' }
-    const result = globals.db
-      .prepare("DELETE FROM accounts WHERE username IS NULL OR TRIM(username) = '' OR TRIM(username) = 'undefined' OR TRIM(username) = 'null'")
-      .run()
-    return { success: true, changes: result.changes }
+    const rows = globals.db.prepare('SELECT id, platform, username FROM accounts').all()
+
+    const garbageIds = rows
+      .filter((r) => isGarbageUsername(r.platform) || isGarbageUsername(r.username))
+      .map((r) => r.id)
+    if (garbageIds.length === 0) return { success: true, changes: 0 }
+    const placeholders = garbageIds.map(() => '?').join(',')
+    const result = globals.db.prepare(`DELETE FROM accounts WHERE id IN (${placeholders})`).run(...garbageIds)
+    return { success: true, changes: result.changes, deletedIds: garbageIds }
   } catch (err) {
     console.error('db-delete-empty-accounts error:', err)
     return { success: false, error: err?.message || 'فشل حذف الحسابات الفارغة' }
+  }
+})
+
+// Nuclear option: wipe ALL saved accounts. Used by "Delete All" button as
+// the ultimate fallback when nothing else works.
+ipcm('db-delete-all-accounts', async () => {
+  try {
+    if (!globals.db) return { success: false, error: 'قاعدة البيانات غير جاهزة' }
+    const result = globals.db.prepare('DELETE FROM accounts').run()
+    return { success: true, changes: result.changes }
+  } catch (err) {
+    console.error('db-delete-all-accounts error:', err)
+    return { success: false, error: err?.message || 'فشل حذف جميع الحسابات' }
+  }
+})
+
+// Diagnostic: dumps a raw view of every account row so the user (or support)
+// can see exactly what's in the DB, including hidden whitespace/encoding.
+ipcm('db-debug-accounts', async () => {
+  try {
+    if (!globals.db) return { success: false, error: 'قاعدة البيانات غير جاهزة' }
+    const rows = globals.db.prepare(`
+      SELECT
+        id,
+        platform,
+        username,
+        LENGTH(username) AS username_len,
+        HEX(SUBSTR(username, 1, 30)) AS username_hex,
+        status,
+        created_at
+      FROM accounts
+      ORDER BY id DESC
+      LIMIT 200
+    `).all()
+    return { success: true, data: rows }
+  } catch (err) {
+    return { success: false, error: err?.message || 'فشل الاستعلام' }
   }
 })
 

@@ -47,6 +47,7 @@ interface AccountsStore {
   deleteAccount: (id: number) => Promise<void>
   bulkDeleteAccounts: (ids: number[]) => Promise<number>
   deleteEmptyAccounts: () => Promise<number>
+  deleteAllAccounts: () => Promise<number>
   getAccountsByPlatform: (platform: string) => Account[]
 }
 
@@ -159,7 +160,10 @@ export const useAccountsStore = create<AccountsStore>((set, get) => ({
       const res = await window.electronAPI.dbBulkDelete({ table: 'accounts', ids })
       if (!res?.success) throw new Error(res?.error || 'فشل الحذف الجماعي')
       await get().loadAccounts()
-      return res.data?.changes ?? 0
+      // IPC returns { success, changes } at top level (not inside .data).
+      // Be defensive — accept either location to survive shape drift.
+      const r = res as { changes?: number; data?: { changes?: number } }
+      return r.changes ?? r.data?.changes ?? 0
     } catch (err: unknown) {
       console.error('Failed bulk-delete accounts:', errorMessage(err))
       throw err
@@ -171,9 +175,23 @@ export const useAccountsStore = create<AccountsStore>((set, get) => ({
       const res = await window.electronAPI.dbDeleteEmptyAccounts()
       if (!res?.success) throw new Error(res?.error || 'فشل حذف الحسابات الفارغة')
       await get().loadAccounts()
-      return res.data?.changes ?? 0
+      const r = res as { changes?: number; data?: { changes?: number } }
+      return r.changes ?? r.data?.changes ?? 0
     } catch (err: unknown) {
       console.error('Failed delete-empty-accounts:', errorMessage(err))
+      throw err
+    }
+  },
+
+  deleteAllAccounts: async () => {
+    try {
+      const res = await window.electronAPI.dbDeleteAllAccounts()
+      if (!res?.success) throw new Error(res?.error || 'فشل حذف الحسابات')
+      await get().loadAccounts()
+      const r = res as { changes?: number; data?: { changes?: number } }
+      return r.changes ?? r.data?.changes ?? 0
+    } catch (err: unknown) {
+      console.error('Failed delete-all-accounts:', errorMessage(err))
       throw err
     }
   },
