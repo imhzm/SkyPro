@@ -1052,24 +1052,24 @@ ipcm('db-count', async (e, { table, filters }) => {
 })
 
 // ==================== GENERIC TOOL RUNNER ====================
+// Legacy generic tool runner. Real tools should call their dedicated IPC
+// directly (e.g. `instagram-mention`). This fallback is kept ONLY for
+// pre-existing campaign-scheduler entries — it no longer pretends to execute.
 ipcm('run-tool', async (e, { platform, toolId, toolName, params, execute = false }) => {
   try {
-    if (!execute) {
-      if (globals.db) globals.db.prepare('INSERT INTO leads (platform, name, source, extra_data) VALUES (?, ?, ?, ?)')
-        .run(platform, toolName || toolId, 'tool-saved', JSON.stringify({ toolId, params }))
-      return { success: true, message: `تم حفظ أداة ${toolName || toolId} للتشغيل لاحقاً` }
+    // Persist for audit so the user can see what was attempted.
+    if (globals.db) {
+      globals.db
+        .prepare('INSERT INTO leads (platform, name, source, extra_data) VALUES (?, ?, ?, ?)')
+        .run(platform, toolName || toolId, execute ? 'tool-run' : 'tool-saved', JSON.stringify({ toolId, params }))
     }
-
-    if (platform === 'facebook') {
-      if (toolId.includes('mention')) {
-        return { success: false, error: 'ميزة المنشن غير مفعلة حالياً - سيتم تفعيلها قريباً', message: 'ميزة المنشن غير مفعلة حالياً' }
-      }
+    // Surface the truth: caller should use the dedicated IPC. Returning false
+    // is critical — previously this returned success with no execution, so
+    // toasts said "✓" while nothing happened.
+    return {
+      success: false,
+      error: `الأداة "${toolName || toolId}" بحاجة لاستدعاء IPC المخصص لها (electronAPI.${toolId.replace(/-([a-z])/g, (_, c) => c.toUpperCase())}).`,
     }
-
-    if (globals.db) globals.db.prepare('INSERT INTO leads (platform, name, source, extra_data) VALUES (?, ?, ?, ?)')
-      .run(platform, toolName || toolId, 'tool-run', JSON.stringify({ toolId, params, executed: true, status: 'queued' }))
-
-    return { success: true, message: `تم تسجيل أداة ${toolName || toolId} - سيتم تنفيذها عند تفعيل الدعم الكامل` }
   } catch (err) {
     return { success: false, error: err.message }
   }

@@ -90,6 +90,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   whatsappExtractArchived: (data) => ipcRenderer.invoke('whatsapp-extract-archived', data),
   whatsappMultiNumberRotation: (data) => ipcRenderer.invoke('whatsapp-multi-number-rotation', data),
   whatsappExtractGroupsFromPlatforms: (data) => ipcRenderer.invoke('whatsapp-extract-groups-from-platforms', data),
+  whatsappGroupPost: (data) => ipcRenderer.invoke('whatsapp-group-post', data),
 
   // Instagram
   instagramLogin: (data) => ipcRenderer.invoke('instagram-login', data),
@@ -105,6 +106,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   instagramExtractFollowing: (data) => ipcRenderer.invoke('instagram-extract-following', data),
   instagramFollowMessage: (data) => ipcRenderer.invoke('instagram-follow-message', data),
   instagramExtractSuggested: (data) => ipcRenderer.invoke('instagram-extract-suggested', data),
+  instagramMention: (data) => ipcRenderer.invoke('instagram-mention', data),
   instagramTopInfluencers: (data) => ipcRenderer.invoke('instagram-top-influencers', data),
   instagramAnalyzeProfile: (data) => ipcRenderer.invoke('instagram-analyze-profile', data),
 
@@ -125,6 +127,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   twitterQuoteRetweet: (data) => ipcRenderer.invoke('twitter-quote-retweet', data),
   twitterFollowInteractors: (data) => ipcRenderer.invoke('twitter-follow-interactors', data),
   twitterMassPublish: (data) => ipcRenderer.invoke('twitter-mass-publish', data),
+  twitterMention: (data) => ipcRenderer.invoke('twitter-mention', data),
 
   // LinkedIn
   linkedinLogin: (data) => ipcRenderer.invoke('linkedin-login', data),

@@ -291,6 +291,7 @@ declare global {
       whatsappExtractArchived: (data: { sessionId: string; limit?: number }) => Promise<ExtractionResult>
       whatsappMultiNumberRotation: (data: { sessionIds: string[]; recipients: string[]; message: string; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>
       whatsappExtractGroupsFromPlatforms: (data: { sessionId: string; keyword: string; sources?: ('google' | 'facebook' | 'telegram' | 'twitter')[]; limit?: number; jobId?: string }) => Promise<ExtractionResult>
+      whatsappGroupPost: (data: { sessionId: string; groups: string[]; message: string; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>
 
       // Instagram
       instagramLogin: (data: PlatformLoginParams) => Promise<LoginResult>
@@ -306,6 +307,7 @@ declare global {
       instagramExtractFollowing: (data: { sessionId: string; targetUser: string; limit?: number; jobId?: string; delayMs?: number }) => Promise<ExtractionResult>
       instagramFollowMessage: (data: { sessionId: string; usernames: string[]; message: string; followFirst?: boolean; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>
       instagramExtractSuggested: (data: { sessionId: string; baseUser: string; limit?: number; jobId?: string; delayMs?: number }) => Promise<ExtractionResult>
+      instagramMention: (data: { sessionId: string; postUrl: string; mentions: string[]; message?: string; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>
       instagramTopInfluencers: (data: { sessionId: string; hashtag: string; country?: string; limit?: number; jobId?: string; delayMs?: number }) => Promise<ExtractionResult>
       instagramAnalyzeProfile: (data: { sessionId: string; username: string }) => Promise<IpcResult<{ username: string; name: string; handle: string; posts: string; followers: string; following: string; bio: string }>>
 
@@ -326,6 +328,7 @@ declare global {
       twitterQuoteRetweet: (data: { sessionId: string; tweetUrls: string[]; comment: string; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>
       twitterFollowInteractors: (data: { sessionId: string; tweetUrl: string; mode?: 'likers' | 'retweeters'; limit?: number; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>
       twitterMassPublish: (data: { sessionId: string; tweets: Array<string | { text: string; imagePath?: string }>; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>
+      twitterMention: (data: { sessionId: string; postUrl?: string; tweetUrl?: string; mentions: string[]; message?: string; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>
 
       // LinkedIn
       linkedinLogin: (data: PlatformLoginParams) => Promise<LoginResult>

@@ -211,7 +211,7 @@ export default function TwitterModule() {
     setLoading(true)
     setResultsOwner('mention')
     try {
-      const res = await window.electronAPI.runTool({ platform: 'twitter', toolId: 'mention', toolName: 'منشن تويتر', params: { sessionId, postUrl: mentionTweetUrl, mentions, message: mentionMessage } })
+      const res = await window.electronAPI.twitterMention({ sessionId, tweetUrl: mentionTweetUrl, mentions, message: mentionMessage })
       if (res.success) { showMsg('تم المنشن بنجاح'); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
