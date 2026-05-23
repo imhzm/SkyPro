@@ -175,7 +175,7 @@ export default function WhatsappModule() {
     setLoading(true)
     setResultsOwner('groups')
     try {
-      const res = await window.electronAPI.runTool({ platform: 'whatsapp', toolId: 'group-post', toolName: 'النشر في المجموعات', params: { sessionId, groups, message: groupMessage } })
+      const res = await window.electronAPI.whatsappGroupPost({ sessionId, groups, message: groupMessage })
       if (res.success) { showMsg('تم النشر في المجموعات'); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }

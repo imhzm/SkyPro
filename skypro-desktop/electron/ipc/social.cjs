@@ -127,6 +127,38 @@ module.exports = function(ipcm, helpers) {
     return out
   }
 
+  // Pre-flight: ensure the session is valid and the page is on the right
+  // platform before any IPC handler tries to interact. Returns a structured
+  // result that callers can short-circuit on.
+  async function ensurePlatformReady(sessionId, platform, opts = {}) {
+    const page = globals.bm.getPage(sessionId)
+    if (!page) return { ok: false, error: 'الجلسة غير موجودة. سجل الدخول أولاً.' }
+    try {
+      const url = page.url() || ''
+      // If the page is on a login URL, the session is dead.
+      const loginPatterns = {
+        facebook: /\/login|\/checkpoint/i,
+        instagram: /\/accounts\/login/i,
+        twitter: /\/i\/flow\/login/i,
+        linkedin: /\/login|\/checkpoint/i,
+        whatsapp: /\/qr/i,
+        telegram: /\/login/i,
+      }
+      const re = loginPatterns[platform]
+      if (re && re.test(url)) {
+        return { ok: false, error: 'الجلسة منتهية — سجل الدخول مرة أخرى.' }
+      }
+      if (opts.expectLogin) {
+        // Caller asked for a fully-logged-in page (most extract tools).
+        const guard = await verifyExtractionPage(page, { platform, timeoutMs: opts.timeoutMs || 4000 })
+        if (!guard.ok) return { ok: false, error: guard.error }
+      }
+      return { ok: true, page }
+    } catch (err) {
+      return { ok: false, error: err.message }
+    }
+  }
+
   // ==================== END RESILIENCE LAYER ====================
 
   /**
@@ -1443,6 +1475,175 @@ ipcm('facebook-page-send-messages', async (e, { sessionId, pageUrl, recipients, 
     await page.waitForTimeout(randomDelay(3000, 6000))
   }
   return { success: true, data: results }
+})
+
+// Real Instagram mention handler — visits each target post and posts a
+// comment that tags the supplied users. Previously routed through the fake
+// `runTool` stub, which never actually mentioned anyone.
+ipcm('instagram-mention', async (e, { sessionId, postUrl, mentions = [], message = '', delayMs = 3500, jobId }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!postUrl) return { success: false, error: 'رابط المنشور مطلوب' }
+  if (!Array.isArray(mentions) || mentions.length === 0) return { success: false, error: 'يجب إدخال مستخدم واحد على الأقل للمنشن' }
+  if (!jobId) jobId = `ig-mention-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const results = []
+  try {
+    await page.goto(postUrl, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+    await page.waitForTimeout(randomDelay(2000, 3500))
+    // Batch mentions in groups of 5 per comment to avoid IG flagging.
+    const batches = []
+    for (let i = 0; i < mentions.length; i += 5) batches.push(mentions.slice(i, i + 5))
+    for (const batch of batches) {
+      if (globals.cancelFlags.get(jobId)) break
+      const text = batch.map(m => `@${String(m).replace(/^@/, '').trim()}`).join(' ') + (message ? ' ' + message : '')
+      try {
+        await smartClick(page, ['svg[aria-label="Comment"]', 'svg[aria-label="تعليق"]', 'a[href*="/comments/"]'], 'open comments')
+        await page.waitForTimeout(randomDelay(500, 1200))
+        const typed = await smartType(page, [
+          'textarea[placeholder*="Add a comment"]', 'textarea[placeholder*="اكتب"]',
+          'form textarea', 'div[contenteditable="true"][aria-label*="Comment"]'
+        ], text, 'mention comment')
+        if (typed) {
+          await page.waitForTimeout(randomDelay(500, 1200))
+          const posted = await smartClick(page, [
+            'div[role="button"]:has-text("Post")', 'div[role="button"]:has-text("نشر")', 'button[type="submit"]'
+          ], 'post mention')
+          if (!posted) await page.keyboard.press('Enter')
+          await page.waitForTimeout(randomDelay(1500, 2500))
+          results.push({ batch, status: 'mentioned' })
+        } else {
+          results.push({ batch, status: 'failed', error: 'لم يتم العثور على حقل التعليق' })
+        }
+      } catch (err) {
+        results.push({ batch, status: 'failed', error: err.message })
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: results.length, total: batches.length, last: results[results.length - 1] })
+      await page.waitForTimeout(delayMs + Math.random() * 1500)
+    }
+    return { success: true, data: results, jobId, cancelled: globals.cancelFlags.get(jobId), count: results.filter(r => r.status === 'mentioned').reduce((s, r) => s + r.batch.length, 0) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: results, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// Real Twitter mention handler — posts a reply tagging the supplied users on
+// each target tweet (replaces the fake `runTool` stub).
+ipcm('twitter-mention', async (e, { sessionId, postUrl, tweetUrl, mentions = [], message = '', delayMs = 4000, jobId }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  const target = postUrl || tweetUrl
+  if (!target) return { success: false, error: 'رابط التغريدة مطلوب' }
+  if (!Array.isArray(mentions) || mentions.length === 0) return { success: false, error: 'يجب إدخال مستخدم واحد على الأقل للمنشن' }
+  if (!jobId) jobId = `tw-mention-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const results = []
+  try {
+    await page.goto(target, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+    await page.waitForTimeout(randomDelay(2000, 3500))
+    // Twitter allows ~10 mentions per reply.
+    const batches = []
+    for (let i = 0; i < mentions.length; i += 10) batches.push(mentions.slice(i, i + 10))
+    for (const batch of batches) {
+      if (globals.cancelFlags.get(jobId)) break
+      const text = batch.map(m => `@${String(m).replace(/^@/, '').trim()}`).join(' ') + (message ? ' ' + message : '')
+      try {
+        await smartClick(page, [
+          'div[data-testid="reply"]', 'a[href$="/compose/tweet"]',
+          'div[aria-label="Reply"]'
+        ], 'open reply')
+        await page.waitForTimeout(randomDelay(1500, 2500))
+        const typed = await smartType(page, [
+          'div[data-testid="tweetTextarea_0"]', 'div[role="textbox"][contenteditable="true"]'
+        ], text, 'reply text')
+        if (typed) {
+          await page.waitForTimeout(randomDelay(500, 1200))
+          const sent = await smartClick(page, [
+            'button[data-testid="tweetButton"]', 'button[data-testid="tweetButtonInline"]'
+          ], 'send reply')
+          results.push({ batch, status: sent ? 'mentioned' : 'failed' })
+        } else {
+          results.push({ batch, status: 'failed', error: 'لم يتم العثور على حقل الرد' })
+        }
+      } catch (err) {
+        results.push({ batch, status: 'failed', error: err.message })
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: results.length, total: batches.length, last: results[results.length - 1] })
+      await page.waitForTimeout(delayMs + Math.random() * 1500)
+    }
+    return { success: true, data: results, jobId, cancelled: globals.cancelFlags.get(jobId), count: results.filter(r => r.status === 'mentioned').reduce((s, r) => s + r.batch.length, 0) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: results, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// Real WhatsApp group-post handler — posts a message into each group URL.
+// Replaces the fake `runTool` stub used by the WhatsApp UI.
+ipcm('whatsapp-group-post', async (e, { sessionId, groups = [], message, delayMs = 5000, jobId }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!message) return { success: false, error: 'الرسالة مطلوبة' }
+  if (!Array.isArray(groups) || groups.length === 0) return { success: false, error: 'يجب إدخال جروب واحد على الأقل' }
+  if (!jobId) jobId = `wa-grp-post-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const results = []
+  try {
+    for (const groupRef of groups) {
+      if (globals.cancelFlags.get(jobId)) break
+      try {
+        // Accept either chat.whatsapp.com invite link or a plain group name.
+        const isLink = /chat\.whatsapp\.com\//i.test(groupRef)
+        if (isLink) {
+          await page.goto(groupRef, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+          await page.waitForTimeout(randomDelay(2500, 4000))
+          // Click "Continue to Chat" if shown.
+          await smartActionClick(page, ['a:has-text("Continue to Chat")', 'a:has-text("Use WhatsApp Web")'], 'continue to chat')
+          await page.waitForTimeout(randomDelay(2000, 3500))
+        } else {
+          // Search by name in WhatsApp Web sidebar.
+          await smartClick(page, ['[title="Search input textbox"]', '[data-testid="chat-list-search"] [contenteditable="true"]'], 'search')
+          await page.waitForTimeout(randomDelay(400, 900))
+          await page.keyboard.press('Control+A').catch(() => {})
+          await page.keyboard.press('Delete').catch(() => {})
+          await smartType(page, ['[title="Search input textbox"]', '[data-testid="chat-list-search"] [contenteditable="true"]'], groupRef, 'group')
+          await page.waitForTimeout(randomDelay(1500, 2500))
+          await page.keyboard.press('Enter')
+          await page.waitForTimeout(randomDelay(1500, 2500))
+        }
+        // Type the broadcast message in the composer.
+        const typed = await smartType(page, [
+          '[data-testid="conversation-compose-box-input"] [contenteditable="true"]',
+          '[data-testid="conversation-compose-box-input"]',
+          'div[contenteditable="true"][data-tab="10"]',
+          'div[contenteditable="true"][data-tab="6"]'
+        ], message, 'group message')
+        if (typed) {
+          await page.waitForTimeout(randomDelay(500, 1200))
+          await page.keyboard.press('Enter')
+          await page.waitForTimeout(randomDelay(1500, 2500))
+          results.push({ group: groupRef, status: 'sent' })
+        } else {
+          results.push({ group: groupRef, status: 'failed', error: 'لم يتم العثور على حقل الكتابة' })
+        }
+      } catch (err) {
+        results.push({ group: groupRef, status: 'failed', error: err.message })
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: results.length, total: groups.length, last: results[results.length - 1] })
+      await page.waitForTimeout(delayMs + Math.random() * 2000)
+    }
+    return { success: true, data: results, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: results, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
 })
 
 // Search Facebook pages by keyword. Different from `facebook-search` which is

@@ -216,7 +216,7 @@ export default function InstagramModule() {
     setLoading(true)
     setResultsOwner('mention')
     try {
-      const res = await window.electronAPI.runTool({ platform: 'instagram', toolId: 'mention', toolName: 'منشن إنستجرام', params: { sessionId, postUrl: mentionPostUrl, mentions, message: mentionMessage } })
+      const res = await window.electronAPI.instagramMention({ sessionId, postUrl: mentionPostUrl, mentions, message: mentionMessage })
       if (res.success) { showMsg('تم المنشن بنجاح'); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }

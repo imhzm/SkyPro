@@ -16,6 +16,8 @@
     "build:renderer": "tsc -b && vite build",
     "build:desktop": "npm run build:renderer && electron-builder",
     "test:security": "node --test scripts/export-sanitizers.test.mjs",
+    "test:bindings": "node --test scripts/verify-ipc-bindings.test.mjs",
+    "test": "npm run test:security && npm run test:bindings",
     "lint": "eslint .",
     "preview": "vite preview"
   },
