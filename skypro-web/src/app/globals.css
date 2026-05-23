@@ -226,6 +226,10 @@ body {
   .marquee-track {
     display: flex;
     gap: 2rem;
+    /* Padding-right (LTR base) leaves the trailing gap inside the track so
+       the -50% translate lands on the START of the duplicated set rather
+       than skipping the gap — seamless wraparound. */
+    padding-inline-end: 2rem;
     animation: marquee 30s linear infinite;
     width: max-content;
     will-change: transform;
@@ -233,6 +237,14 @@ body {
 
   .marquee-track:hover {
     animation-play-state: paused;
+  }
+
+  /* Respect reduced-motion preference but keep the marquee visible (don't
+     reset to the start every paint, which causes the "disappears" look). */
+  @media (prefers-reduced-motion: reduce) {
+    .marquee-track {
+      animation-duration: 120s;
+    }
   }
 
   /* Scroll progress bar */
@@ -305,8 +317,10 @@ body {
   }
 
   @keyframes marquee {
+    /* The track contains the items twice, so translating exactly -50% lands
+       the start of the second copy where the first one began — seamless. */
     0% { transform: translateX(0); }
-    100% { transform: translateX(calc(-50% - 1rem)); }
+    100% { transform: translateX(-50%); }
   }
 
   /* ============== Cosmic Background animations ============== */

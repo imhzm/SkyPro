@@ -23,7 +23,7 @@ const categories = [
 ]
 
 function getCategory(id: string): string {
-  if (['facebook', 'whatsapp', 'instagram', 'twitter', 'linkedin', 'telegram', 'tiktok', 'pinterest', 'snapchat', 'threads', 'reddit'].includes(id)) return 'social'
+  if (['facebook', 'whatsapp', 'instagram', 'twitter', 'linkedin', 'telegram', 'telegram-premium', 'tiktok', 'pinterest', 'snapchat', 'threads', 'reddit'].includes(id)) return 'social'
   if (['send-emails'].includes(id)) return 'marketing'
   if (['google-maps', 'olx'].includes(id)) return 'data'
   return 'tools'
