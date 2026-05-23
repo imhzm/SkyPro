@@ -1,7 +1,7 @@
 {
   "name": "sender-pro-desktop",
   "private": true,
-  "version": "1.14.0",
+  "version": "1.15.0",
   "description": "SkyPro - تطبيق تسويق إلكتروني احترافي لأتمتة المتصفح",
   "author": "SkyPro <skywaveads@gmail.com>",
   "type": "module",
@@ -17,7 +17,8 @@
     "build:desktop": "npm run build:renderer && electron-builder",
     "test:security": "node --test scripts/export-sanitizers.test.mjs",
     "test:bindings": "node --test scripts/verify-ipc-bindings.test.mjs",
-    "test": "npm run test:security && npm run test:bindings",
+    "test:sanitizer": "node --test scripts/test-extraction-sanitizer.test.mjs",
+    "test": "npm run test:security && npm run test:bindings && npm run test:sanitizer",
     "lint": "eslint .",
     "preview": "vite preview"
   },

@@ -9,6 +9,7 @@ interface Account {
   password?: string
   proxy?: string
   status?: string
+  notes?: string   // custom user-defined label/nickname
 }
 
 interface CycleSettings {
@@ -228,14 +229,22 @@ export default function AccountSelector({
                   )}
                 </div>
                 <span
-                  className="text-sm flex-1 truncate"
+                  className="text-sm flex-1 truncate flex flex-col gap-0.5"
                   style={{
                     color: isSelected ? '#312e81' : '#475569',
                     fontWeight: isSelected ? 600 : 500,
                   }}
-                  dir="ltr"
                 >
-                  {account.username}
+                  {account.notes ? (
+                    <>
+                      <span dir="auto" className="truncate">{account.notes}</span>
+                      <span dir="ltr" className="text-[10px] text-secondary-500 font-normal truncate">
+                        {account.username}
+                      </span>
+                    </>
+                  ) : (
+                    <span dir="ltr">{account.username}</span>
+                  )}
                 </span>
                 {account.proxy && (
                   <span
