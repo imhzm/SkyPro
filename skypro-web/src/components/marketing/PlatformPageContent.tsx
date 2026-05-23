@@ -68,12 +68,11 @@ function getTestimonial(platform: PlatformPageData) {
 }
 
 function getHighlights(platform: PlatformPageData) {
-  const highlights: Record<string, string[]> = {
-    facebook: ['لا حاجة لخبرة تقنية', 'تشغيل تلقائي 24/7', 'حماية متقدمة من الحظر', 'تحديثات مجانية مدى الحياة', 'دعم فني مصري 24/7', 'اشتراك سنوي بدون رسوم خفية'],
-    whatsapp: ['تصفية تلقائية للأرقام', 'قوالب رسائل متغيرة', 'إيقاف ذكي عند الأخطاء', 'حسابات متعددة مع دوران', 'تقارير مفصلة في الوقت الحقيقي', '2,000 ج.م/سنة فقط'],
-    instagram: ['متابعة تلقائية ذكية', 'رسائل DM مخصصة بالاسم', 'حدود آمنة للحماية', 'إشارة تلقائية في التعليقات', 'حماية من القيود', 'تصدير CSV و Excel'],
+  // Prefer the platform's own highlights field; fall back to a generic list
+  if (platform.highlights && platform.highlights.length > 0) {
+    return platform.highlights
   }
-  return highlights[platform.id] || ['تشغيل تلقائي 24/7', 'حماية متقدمة من الحظر', 'حسابات متعددة', 'تحديثات مجانية مدى الحياة', 'دعم فني مصري 24/7', '2,000 ج.م/سنة فقط']
+  return ['تشغيل تلقائي 24/7', 'حماية متقدمة من الحظر', 'حسابات متعددة', 'تحديثات مجانية مدى الحياة', 'دعم فني مصري 24/7', '2,000 ج.م/سنة فقط']
 }
 
 function AnimatedCounter({ value, label, color }: { value: string; label: string; color: string }) {

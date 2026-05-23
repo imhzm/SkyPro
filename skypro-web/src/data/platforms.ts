@@ -5,6 +5,7 @@
   { id: 'twitter', name: 'تويتر / X', icon: 'twitter', color: '#1DA1F2', colorLight: '#1DA1F2', features: ['تغريدات', 'استخراج المتابعين', 'إعادة تغريد', 'الجدولة'] },
   { id: 'linkedin', name: 'لينكد إن', icon: 'linkedin', color: '#0A66C2', colorLight: '#0A66C2', features: ['البحث عن شركات', 'إرسال رسائل', 'استخراج البيانات'] },
   { id: 'telegram', name: 'تيليجرام', icon: 'telegram', color: '#26A5E4', colorLight: '#26A5E4', features: ['إرسال رسائل', 'استخراج الأعضاء', 'إضافة مستخدمين'] },
+  { id: 'telegram-premium', name: 'تيليجرام بريميم', icon: 'telegram', color: '#1B98E0', colorLight: '#1B98E0', features: ['استخراج المخفيين', 'نقل بـ Username', 'تفاعل آلي'] },
   { id: 'tiktok', name: 'تيك توك', icon: 'tiktok', color: '#000000', colorLight: '#69C9D0', features: ['استخراج المتابعين', 'الإعجاب التلقائي'] },
   { id: 'pinterest', name: 'بنترست', icon: 'pinterest', color: '#E60023', colorLight: '#E60023', features: ['تثبيت تلقائي', 'استخراج البيانات'] },
   { id: 'snapchat', name: 'سناب شات', icon: 'snapchat', color: '#FFFC00', colorLight: '#FFFC00', features: ['إرسال رسائل', 'إضافة أصدقاء'] },
