@@ -4,6 +4,7 @@ import { useAccountsStore } from '../../stores/accountsStore'
 import type { Account } from '../../stores/accountsStore'
 import AccountSelector from '../../components/common/AccountSelector'
 import AccountCycleBanner from '../../components/common/AccountCycleBanner'
+import MessageSafetyToolbar from '../../components/common/MessageSafetyToolbar'
 import ToolGrid from '../../components/tools/ToolGrid'
 import ToolCard from '../../components/tools/ToolCard'
 import ToolPanel from '../../components/tools/ToolPanel'
@@ -997,6 +998,7 @@ export default function InstagramModule() {
         <label className="label-field">نص الرسالة</label>
         <textarea className="textarea-field" rows={5} value={broadcastMessage} onChange={e => setBroadcastMessage(e.target.value)} placeholder="اكتب رسالتك هنا..." />
       </div>
+      <MessageSafetyToolbar template={broadcastMessage} onApply={(v) => setBroadcastMessage(v)} accent="#ec4899" />
       {renderResultsTable('broadcast', ['#', 'المستلم', 'الحالة', 'خطأ'], 'instagram-messages')}
     </div>
   )

@@ -3,6 +3,7 @@ import { usePlatform } from '../../hooks/usePlatform'
 import { useAccountsStore } from '../../stores/accountsStore'
 import AccountSelector from '../../components/common/AccountSelector'
 import AccountCycleBanner from '../../components/common/AccountCycleBanner'
+import MessageSafetyToolbar from '../../components/common/MessageSafetyToolbar'
 import ToolGrid from '../../components/tools/ToolGrid'
 import ToolCard from '../../components/tools/ToolCard'
 import ToolPanel from '../../components/tools/ToolPanel'
@@ -729,6 +730,7 @@ export default function WhatsappModule() {
         <label className="label-field">نص الرسالة</label>
         <textarea className="textarea-field" rows={4} value={broadcastMessage} onChange={e => setBroadcastMessage(e.target.value)} placeholder="اكتب رسالتك هنا..." />
       </div>
+      <MessageSafetyToolbar template={broadcastMessage} onApply={(v) => setBroadcastMessage(v)} accent="#25D366" />
       {renderResultsTable('broadcast', ['#', 'المستلم', 'الحالة', 'خطأ'], 'whatsapp-messages')}
     </div>
   )
@@ -855,6 +857,7 @@ export default function WhatsappModule() {
         <label className="label-field">نص الرسالة</label>
         <textarea className="textarea-field" rows={3} value={fastMessage} onChange={e => setFastMessage(e.target.value)} placeholder="اكتب رسالتك..." />
       </div>
+      <MessageSafetyToolbar template={fastMessage} onApply={(v) => setFastMessage(v)} accent="#eab308" />
       <div>
         <label className="label-field">الفاصل الزمني بين الرسائل (ثانية)</label>
         <input type="number" min={1} max={60} className="input-field w-32" value={fastDelay} onChange={e => setFastDelay(Number(e.target.value) || 4)} />

@@ -271,7 +271,7 @@ declare global {
       facebookInviteFriends: (data: { sessionId: string; pageUrl: string; usernames?: string[]; inviteAll?: boolean }) => Promise<IpcResult>
       facebookCommentOnPages: (data: { sessionId: string; pageUrls: string[]; commentText: string; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>
       facebookPostWithImages: (data: { sessionId: string; groups: string[]; message?: string; imagePaths?: string[]; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>
-      facebookDemographicsAnalyze: (data: { items: Record<string, unknown>[] }) => Promise<IpcResult<{ total: number; genderGuess: { male: number; female: number; unknown: number }; hasPhone: number; hasEmail: number; topLocations: Array<{ value: string; count: number }>; topNames: Array<{ value: string; count: number }> }>>
+      facebookDemographicsAnalyze: (data: { items: Record<string, unknown>[] }) => Promise<IpcResult<{ total: number; genderGuess: { male: number; female: number; unknown: number }; hasPhone: number; hasEmail: number; arabicSpeakers?: number; englishSpeakers?: number; topLocations: Array<{ value: string; count: number }>; topRegions?: Array<{ value: string; count: number }>; topNames: Array<{ value: string; count: number }> }>>
       facebookDetectOpenGroups: (data: { sessionId: string; groupUrls: string[]; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>
       facebookExtractActiveFriends: (data: { sessionId: string; limit?: number; activeDays?: number; jobId?: string; delayMs?: number }) => Promise<ExtractionResult>
 
@@ -459,6 +459,10 @@ declare global {
       // Extraction streaming & cancel
       cancelExtraction: (data: { jobId: string }) => void
       onExtractionProgress: (callback: (data: ExtractionProgress) => void) => () => void
+
+      // Safety / anti-ban
+      safetyGenerateMessageVariations: (data: { template: string; count?: number; synonyms?: Record<string, string[]> }) => Promise<IpcResult<{ variations: string[]; count: number; requested: number }>>
+      safetySessionHealth: (data: { sessionId: string; platform: string }) => Promise<IpcResult<{ alive: boolean; reason?: string; shouldReLogin?: boolean; url?: string }>>
 
       // Multi-account cycle
       getActiveSessions: () => Promise<IpcResult>
