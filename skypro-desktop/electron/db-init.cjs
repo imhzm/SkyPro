@@ -1,3 +1,34 @@
+// Filter that catches every garbage username pattern — Unicode-safe,
+// no regex literals with embedded unprintables (which break lint parsers).
+function isGarbageUsername(s) {
+  if (s === null || s === undefined) return true
+  const str = String(s)
+  let kept = ''
+  for (const ch of str) {
+    const cp = ch.codePointAt(0)
+    if (cp === 0x09 || cp === 0x0A || cp === 0x0B || cp === 0x0C || cp === 0x0D) continue
+    if (cp === 0x20 || cp === 0xA0) continue
+    if (cp >= 0x2000 && cp <= 0x200F) continue
+    if (cp === 0x202F || cp === 0x205F || cp === 0x3000) continue
+    if (cp >= 0x202A && cp <= 0x202E) continue
+    if (cp === 0x2028 || cp === 0x2029) continue
+    if (cp === 0x2060 || cp === 0xFEFF) continue
+    kept += ch
+  }
+  if (kept.length === 0) return true
+  const lower = kept.toLowerCase()
+  if (lower === 'undefined' || lower === 'null' || lower === 'nan') return true
+  let onlyDashes = true
+  for (const ch of kept) {
+    const cp = ch.codePointAt(0)
+    if (cp !== 0x2D && cp !== 0x2014 && cp !== 0x2013 && cp !== 0x5F && cp !== 0x2E) {
+      onlyDashes = false
+      break
+    }
+  }
+  return onlyDashes
+}
+
 // ==================== DATABASE SCHEMA ====================
 function initDatabase(db) {
   if (!db) return
@@ -120,6 +151,58 @@ function initDatabase(db) {
   ]
   for (const sql of indexes) {
     try { db.exec(sql) } catch (e) { /* index may conflict with existing data */ }
+  }
+
+  // ==================== AUTO-CLEANUP ====================
+  // Wipe every garbage account row on every boot. JS-layer scan so we catch
+  // every Unicode-whitespace pattern (zero-width, NBSP, BOM, RTL marks).
+  // Idempotent — once empty rows are gone, this is a no-op.
+  try {
+    const rows = db.prepare('SELECT id, platform, username FROM accounts').all()
+    const garbageIds = rows
+      .filter((r) => isGarbageUsername(r.platform) || isGarbageUsername(r.username))
+      .map((r) => r.id)
+    if (garbageIds.length > 0) {
+      const placeholders = garbageIds.map(() => '?').join(',')
+      const result = db.prepare(`DELETE FROM accounts WHERE id IN (${placeholders})`).run(...garbageIds)
+      console.log(`[db-init] auto-cleanup removed ${result.changes} garbage account row(s)`)
+    }
+  } catch (err) {
+    console.error('[db-init] auto-cleanup failed:', err.message)
+  }
+
+  // Install a trigger that REJECTS any future INSERT/UPDATE that would create
+  // an empty-username account row. Belt + braces with the JS-layer guard.
+  try {
+    db.exec(`
+      CREATE TRIGGER IF NOT EXISTS trg_accounts_reject_empty_insert
+      BEFORE INSERT ON accounts
+      FOR EACH ROW
+      WHEN NEW.username IS NULL
+        OR TRIM(NEW.username) = ''
+        OR TRIM(NEW.username) = 'undefined'
+        OR TRIM(NEW.username) = 'null'
+        OR NEW.platform IS NULL
+        OR TRIM(NEW.platform) = ''
+      BEGIN
+        SELECT RAISE(ABORT, 'empty username/platform refused by trigger');
+      END;
+
+      CREATE TRIGGER IF NOT EXISTS trg_accounts_reject_empty_update
+      BEFORE UPDATE OF username, platform ON accounts
+      FOR EACH ROW
+      WHEN NEW.username IS NULL
+        OR TRIM(NEW.username) = ''
+        OR TRIM(NEW.username) = 'undefined'
+        OR TRIM(NEW.username) = 'null'
+        OR NEW.platform IS NULL
+        OR TRIM(NEW.platform) = ''
+      BEGIN
+        SELECT RAISE(ABORT, 'empty username/platform refused by trigger');
+      END;
+    `)
+  } catch (err) {
+    console.error('[db-init] trigger install failed:', err.message)
   }
 }
 
