@@ -25,8 +25,14 @@ export interface Account {
  */
 function normalizeAccount(raw: Record<string, unknown>): Account {
   const password = typeof raw.password === 'string' ? raw.password : ''
+  // Defensive id: better-sqlite3 returns id as a number for INTEGER PRIMARY
+  // KEY, but if anything ever strips/converts it (IPC serialization, BigInt,
+  // etc.) we'd see NaN. Fall back to 0 so the UI never renders "(#NaN)".
+  const rawId = raw.id
+  const numId = typeof rawId === 'number' ? rawId : Number(rawId)
+  const safeId = Number.isFinite(numId) ? numId : 0
   return {
-    id: Number(raw.id),
+    id: safeId,
     platform: String(raw.platform ?? ''),
     username: String(raw.username ?? ''),
     password: password || undefined,

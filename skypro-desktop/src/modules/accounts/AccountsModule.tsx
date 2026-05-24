@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAccountsStore } from '../../stores/accountsStore'
+import { useAppStore } from '../../stores/appStore'
 import { getPlatformGradient } from '../../data/platformGradients'
+import type { PlatformId } from '../../types'
 import {
   Users, Plus, Trash2, Edit3, Save, X, Search,
   Facebook, MessageCircle, Instagram, Twitter, Linkedin, Send,
   Globe, AtSign, Bookmark, Eye, EyeOff, CheckCircle, AlertCircle, Shield,
   CheckSquare, Square as SquareIcon, Filter, AlertOctagon, Bug, Wrench, Copy,
+  LogIn,
 } from 'lucide-react'
 import ModuleHeader from '../../components/common/ModuleHeader'
 import ConfirmDialog from '../../components/common/ConfirmDialog'
@@ -62,6 +65,7 @@ const EMPTY_FORM: FormState = {
 
 export default function AccountsModule() {
   const { accounts, loadAccounts, addAccount, updateAccount, deleteAccount, bulkDeleteAccounts, deleteEmptyAccounts, deleteAllAccounts } = useAccountsStore()
+  const setActivePlatform = useAppStore((s) => s.setActivePlatform)
   const [filterPlatform, setFilterPlatform] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [showForm, setShowForm] = useState(false)
@@ -141,21 +145,20 @@ export default function AccountsModule() {
     const username = form.username.trim()
     const notes = form.notes.trim()
     const proxy = form.proxy.trim()
-    // Require at least ONE identifying piece of info. Username, label,
-    // and proxy are all optional individually — but we need *something*
-    // to distinguish this row from a completely empty placeholder.
-    if (!username && !notes && !proxy) {
-      showMsg('املأ على الأقل: اسم المستخدم، أو الاسم المميز، أو البروكسي', true)
-      return
-    }
+    // No validation — every field is optional. If everything is empty,
+    // we still create a placeholder row tied to the chosen platform so
+    // the user can use the "ربط الحساب" button on this row to log in
+    // and have the credentials captured automatically afterwards.
     setSaving(true)
     try {
+      // Synthesize a unique placeholder username if user filled nothing —
+      // the trigger + cleanup require a non-empty username. The format
+      // `[connect-pending-<timestamp>]` is recognized later by the UI and
+      // hidden from display so it shows as "ربط مطلوب".
+      const synthetic = `[connect-pending-${Date.now()}]`
       const payload = {
         platform: form.platform,
-        // Synthesize a placeholder username if user only filled the label.
-        // saveAccount triggers + sanitizer require non-empty platform/username,
-        // so we derive a stable internal ID from the label/proxy.
-        username: username || `[${notes || proxy.substring(0, 20)}]`,
+        username: username || notes || proxy || synthetic,
         password: form.password,
         proxy,
         notes,
@@ -166,8 +169,11 @@ export default function AccountsModule() {
         showMsg('تم تحديث الحساب بنجاح ✓')
       } else {
         await addAccount(payload)
-        const displayLabel = notes || username || proxy
-        showMsg(`تم حفظ الحساب "${displayLabel}" بنجاح ✓`)
+        const displayLabel = notes || username || proxy || 'حساب جديد'
+        const msg = (!username && !notes && !proxy)
+          ? `تم إنشاء حساب فارغ ✓ — اضغط "ربط الحساب" لتسجيل الدخول وحفظ البيانات`
+          : `تم حفظ الحساب "${displayLabel}" بنجاح ✓`
+        showMsg(msg)
       }
       setForm(EMPTY_FORM)
       setEditingId(null)
@@ -236,6 +242,20 @@ export default function AccountsModule() {
         }
       },
     })
+  }
+
+  // "ربط الحساب" — open the platform's module so user can complete login
+  // there. After successful login, the platform's login IPC fires
+  // saveAccount() which inserts a new full row. The placeholder row this
+  // came from can be deleted manually OR by the user via the trash icon.
+  const handleConnect = (acc: { id: number; platform: string; username: string }) => {
+    if (!acc.platform) {
+      showMsg('لا توجد منصة محددة لهذا الحساب', true)
+      return
+    }
+    showMsg(`جاري الانتقال إلى ${acc.platform} — سجّل الدخول وسيُحفظ الحساب تلقائياً ✓`)
+    // Switch to the platform module — its first tab is usually Login.
+    setActivePlatform(acc.platform as PlatformId)
   }
 
   // Load the raw DB dump for the diagnostic panel.
@@ -617,7 +637,7 @@ export default function AccountsModule() {
               </button>
               <button
                 type="submit"
-                disabled={saving || (!form.username.trim() && !form.notes.trim() && !form.proxy.trim())}
+                disabled={saving}
                 className="btn-primary"
               >
                 <Save size={16} />
@@ -757,6 +777,7 @@ export default function AccountsModule() {
                   </th>
                   <th>المنصة</th>
                   <th>الاسم المميز / اسم المستخدم</th>
+                  <th>كلمة السر</th>
                   <th>البروكسي</th>
                   <th>الحالة</th>
                   <th>التاريخ</th>
@@ -793,58 +814,67 @@ export default function AccountsModule() {
                       <td>
                         <div className="flex flex-col gap-0.5 max-w-[280px]">
                           {(() => {
-                            // Defensive rendering: trim and check if EITHER notes OR username
-                            // has visible content. If both are empty/whitespace, show a
-                            // bright "صف فارغ" warning instead of two em-dashes — this
-                            // makes the problem obvious in the UI so user can take action.
+                            // Show EVERYTHING the row has — never hide data.
+                            // Three slots:
+                            //   1. Label (notes) — bold violet if present
+                            //   2. Username — small mono if present and not a synthetic [X]
+                            //   3. If both empty but proxy present → "proxy only"
+                            //   4. If genuinely all empty → show "ربط مطلوب" with action hint
                             const notesText = (acc.notes || '').trim()
                             const usernameText = (acc.username || '').trim()
                             const proxyText = (acc.proxy || '').trim()
-                            const hasRealUsername = /[\p{L}\p{N}]/u.test(usernameText)
-                            const hasRealNotes = /[\p{L}\p{N}]/u.test(notesText)
-                            // Show the synthesized-brackets prefix as the underlying handle
                             const isSyntheticUsername = /^\[[\s\S]+\]$/.test(usernameText)
-                            if (!hasRealUsername && !hasRealNotes) {
+                            const displayUsername = isSyntheticUsername ? '' : usernameText
+
+                            // Genuinely empty (no notes, no real username, no proxy)
+                            if (!notesText && !displayUsername && !proxyText) {
                               return (
-                                <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-red-50 border border-red-200">
-                                  <AlertCircle size={11} className="text-red-500 flex-shrink-0" />
-                                  <span className="text-[11px] font-bold text-red-700">
-                                    صف بدون بيانات (#{acc.id}) — استخدم زر "إصلاح فوري"
+                                <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-50 border border-amber-200">
+                                  <AlertCircle size={11} className="text-amber-600 flex-shrink-0" />
+                                  <span className="text-[11px] font-bold text-amber-700">
+                                    ربط مطلوب — اضغط زر "ربط الحساب" للدخول
                                   </span>
                                 </div>
                               )
                             }
-                            if (notesText && hasRealNotes) {
-                              return (
-                                <>
+
+                            return (
+                              <>
+                                {notesText && (
                                   <span className="font-bold text-sm text-violet-700 truncate" dir="auto" title={notesText}>
                                     {notesText}
                                   </span>
-                                  {usernameText && !isSyntheticUsername && (
-                                    <span className="text-[11px] text-secondary-500 truncate font-mono" dir="ltr" title={usernameText}>
-                                      {usernameText}
-                                    </span>
-                                  )}
-                                  {proxyText && !usernameText && (
-                                    <span className="text-[10px] text-pink-600 truncate font-mono" dir="ltr">
-                                      proxy: {proxyText}
-                                    </span>
-                                  )}
-                                </>
-                              )
-                            }
-                            // No label, fall back to showing username
-                            return (
-                              <span className="font-medium text-secondary-800 truncate" dir="ltr" title={usernameText}>
-                                {usernameText || (proxyText ? `proxy: ${proxyText}` : `حساب #${acc.id}`)}
-                              </span>
+                                )}
+                                {displayUsername && (
+                                  <span className="text-[11px] text-secondary-700 truncate font-mono" dir="ltr" title={displayUsername}>
+                                    {displayUsername}
+                                  </span>
+                                )}
+                                {!notesText && !displayUsername && proxyText && (
+                                  <span className="text-[11px] text-pink-700 truncate font-mono" dir="ltr">
+                                    حساب عبر بروكسي
+                                  </span>
+                                )}
+                              </>
                             )
                           })()}
                         </div>
                       </td>
+                      {/* Password column — always shown as masked asterisks if set */}
+                      <td>
+                        {acc.has_password ? (
+                          <span className="font-mono text-secondary-700 text-sm tracking-widest" title="كلمة المرور محفوظة ومشفّرة">
+                            ••••••••
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-amber-600 font-semibold" title="لا توجد كلمة سر محفوظة">
+                            بدون
+                          </span>
+                        )}
+                      </td>
                       <td>
                         {acc.proxy ? (
-                          <code className="text-[10.5px] font-mono px-1.5 py-0.5 rounded-md bg-brand-50 text-brand-700 border border-brand-200" dir="ltr">
+                          <code className="text-[10.5px] font-mono px-1.5 py-0.5 rounded-md bg-brand-50 text-brand-700 border border-brand-200" dir="ltr" title={acc.proxy}>
                             {acc.proxy.replace(/^.*@/, '*****@')}
                           </code>
                         ) : (
@@ -868,6 +898,19 @@ export default function AccountsModule() {
                       </td>
                       <td>
                         <div className="flex gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleConnect(acc)}
+                            className="p-1.5 rounded-lg transition-colors"
+                            style={{
+                              color: '#10b981',
+                              background: 'rgba(16, 185, 129, 0.08)',
+                              border: '1px solid rgba(16, 185, 129, 0.15)',
+                            }}
+                            title="ربط الحساب — فتح المتصفح لتسجيل الدخول"
+                          >
+                            <LogIn size={13} />
+                          </button>
                           <button
                             type="button"
                             onClick={() => handleEdit(acc)}
