@@ -1,6 +1,5 @@
 'use client'
 
-import { platforms } from '@/data/platforms'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -32,7 +31,7 @@ const featuredShowcases = [
     id: 'facebook',
     title: 'Facebook — التسويق الذي يحوّل',
     subtitle: 'أكبر شبكة في العالم — استخرج، اشتغل، اربح',
-    image: '/images/app/facebook-friend-extraction-tool.png',
+    image: '/images/app/facebook-extract-data-panel.png',
     benefits: [
       'استخراج كل أعضاء أي جروب أو صفحة (مهما كان عدد الأعضاء)',
       'منشن جماعي + رسائل Messenger تلقائية + طلبات صداقة',
@@ -51,7 +50,7 @@ const featuredShowcases = [
     id: 'whatsapp',
     title: 'WhatsApp — أعلى معدل وصول',
     subtitle: '95%+ نسبة فتح — لا منصة أخرى تقارب هذا الرقم',
-    image: '/images/app/whatsapp-marketing-tools-dashboard.png',
+    image: '/images/app/whatsapp-marketing-tools-grid.png',
     benefits: [
       'إرسال 35 رسالة في الدقيقة بفواصل ذكية ضد الحظر',
       'إضافة 250 رقم لجروب في 3 دقائق فقط',
@@ -70,7 +69,7 @@ const featuredShowcases = [
     id: 'instagram',
     title: 'Instagram — انمو بسرعة بدون حظر',
     subtitle: 'الجمهور الذي يشتري — استهدف بدقة، أوصل سريع',
-    image: '/images/app/instagram-automation-platform.png',
+    image: '/images/app/instagram-extract-data-panel.png',
     benefits: [
       'استخراج المتابعين والمتفاعلين على أي حساب منافس',
       'متابعة تلقائية ذكية + رسائل DM مخصصة بالاسم',
@@ -86,10 +85,29 @@ const featuredShowcases = [
     accentLight: '#E4405F',
   },
   {
+    id: 'twitter',
+    title: 'X (Twitter) — التريندات + التغريدات',
+    subtitle: 'استخدم تريندات الساعة، انشر تلقائياً، تابع المنافسين',
+    image: '/images/app/twitter-x-marketing-tools.png',
+    benefits: [
+      'استخراج المتابعين، التغريدات، التريندات من أي دولة',
+      'تغريدات تلقائية + DM جماعي + ريتويت',
+      'فحص حسابات + رفع ترتيب التغريدات في البحث',
+      'متابعة المتفاعلين على تغريدات المنافسين',
+    ],
+    stats: [
+      { value: '24/7', label: 'تريندات لحظية' },
+      { value: '∞', label: 'حسابات متعددة' },
+      { value: 'AI', label: 'كشف الحسابات النشطة' },
+    ],
+    accent: 'from-sky-500 to-blue-700',
+    accentLight: '#1DA1F2',
+  },
+  {
     id: 'linkedin',
     title: 'LinkedIn — العملاء B2B الجاهزين',
     subtitle: 'البحث، الاستخراج، التواصل — تلقائياً',
-    image: '/images/app/linkedin-b2b-marketing-tools.png',
+    image: '/images/app/linkedin-b2b-tools-grid.png',
     benefits: [
       'بحث عن العملاء والشركات والجامعات بفلترة متقدمة',
       'استخراج البريد، الهاتف، الموقع، المنصب من البروفايلات',
@@ -103,6 +121,158 @@ const featuredShowcases = [
     ],
     accent: 'from-sky-500 to-blue-800',
     accentLight: '#0A66C2',
+  },
+  {
+    id: 'telegram',
+    title: 'Telegram — قاعدة 20K مجموعة',
+    subtitle: 'استخراج بـ Public + Secret، إضافة بـ ID/Username/Phone',
+    image: '/images/app/telegram-marketing-suite.png',
+    benefits: [
+      'تسجيل دخول تيليجرام بدون أي مشاكل أو حظر',
+      'استخراج كل أعضاء أي مجموعة (Public + Secret)',
+      'إضافة العملاء بـ ID، Username، أو Phone — من أرقام متعددة',
+      'قاعدة بيانات جاهزة بـ 20,000+ مجموعة وقناة للاستهداف',
+    ],
+    stats: [
+      { value: '20K+', label: 'مجموعة جاهزة' },
+      { value: '100/h', label: 'إرسال آمن' },
+      { value: '∞', label: 'أرقام متعددة' },
+    ],
+    accent: 'from-sky-500 to-cyan-700',
+    accentLight: '#0088CC',
+  },
+  {
+    id: 'telegram-premium',
+    title: 'Telegram Premium — أدوات حصرية',
+    subtitle: 'تجاوز إخفاء الأعضاء + نقل آلي + تفاعل بإيموجي مخصص',
+    image: '/images/app/telegram-premium-exclusive-tools.png',
+    benefits: [
+      'استخراج الأعضاء من المجموعات المخفية (Hidden Members)',
+      'نقل وإضافة الأعضاء باستخدام Username أو رقم الهاتف',
+      'البحث المتقدم في المجموعات والقنوات بكلمات مفتاحية',
+      'تفاعل آلي (إيموجي) على رسائل المجموعات والقنوات',
+    ],
+    stats: [
+      { value: 'Hidden', label: 'استخراج المخفيين' },
+      { value: '50/d', label: 'نقل آمن/حساب' },
+      { value: 'Premium', label: 'حصري' },
+    ],
+    accent: 'from-cyan-500 to-blue-800',
+    accentLight: '#0088CC',
+  },
+  {
+    id: 'pinterest',
+    title: 'Pinterest — التسويق البصري',
+    subtitle: 'انشر منتجاتك في أكبر منصة بصرية في العالم',
+    image: '/images/app/pinterest-marketing-tools.png',
+    benefits: [
+      'تسجيل دخول بدون حظر + إنشاء حسابات بالجملة',
+      'استخراج Boards + Pins + بيانات العملاء حسب النيتش',
+      'إرسال رسائل + متابعة تلقائية بحسابات متعددة',
+      'تحليل ديموغرافي للعملاء وأنشط الـ Boards',
+    ],
+    stats: [
+      { value: '∞', label: 'حسابات' },
+      { value: 'Pins', label: 'تلقائي' },
+      { value: 'DM', label: 'جماعي' },
+    ],
+    accent: 'from-rose-500 to-red-700',
+    accentLight: '#E60023',
+  },
+  {
+    id: 'reddit',
+    title: 'Reddit — مجتمعات النيتش',
+    subtitle: 'انضم لأكبر المجتمعات في مجالك واستهدف بدقة',
+    image: '/images/app/reddit-community-marketing.png',
+    benefits: [
+      'استخراج المجتمعات الرائدة يومياً والانضمام لها',
+      'بحث متقدم بكلمات مفتاحية معينة',
+      'النشر على المجتمعات بنص + صور بعد الانضمام',
+      'تصويت إيجابي + حفظ تلقائي من حسابات متعددة',
+    ],
+    stats: [
+      { value: 'Daily', label: 'تريندات' },
+      { value: '∞', label: 'مجتمعات' },
+      { value: 'Multi', label: 'تصويت' },
+    ],
+    accent: 'from-orange-500 to-red-700',
+    accentLight: '#FF4500',
+  },
+  {
+    id: 'tiktok',
+    title: 'TikTok — منصة الانتشار السريع',
+    subtitle: 'استخرج التعليقات + المتابعين + رفع الفيديوهات',
+    image: '/images/app/tiktok-marketing-automation.png',
+    benefits: [
+      'استخراج التعليقات والمتفاعلين على أي فيديو',
+      'منشن المتابعين في التعليقات بحسابات متعددة',
+      'رفع الفيديوهات تلقائياً + جدولة',
+      'بحث الفيديوهات بكلمات مفتاحية',
+    ],
+    stats: [
+      { value: 'Live', label: 'تعليقات' },
+      { value: 'Auto', label: 'رفع فيديوهات' },
+      { value: '∞', label: 'حسابات' },
+    ],
+    accent: 'from-pink-500 to-cyan-700',
+    accentLight: '#FE2C55',
+  },
+  {
+    id: 'threads',
+    title: 'Threads — المنصة الجديدة',
+    subtitle: 'استهدف الجمهور قبل المنافسين في منصة Meta الصاعدة',
+    image: '/images/app/threads-marketing-tools.png',
+    benefits: [
+      'استخراج المتفاعلين والمتابعين',
+      'إرسال رسائل + منشن في التعليقات',
+      'النشر التلقائي من حسابات متعددة',
+      'تحليل أداء البوستات',
+    ],
+    stats: [
+      { value: 'Meta', label: 'متكامل' },
+      { value: 'AI', label: 'تحليل' },
+      { value: 'Multi', label: 'حسابات' },
+    ],
+    accent: 'from-slate-700 to-slate-900',
+    accentLight: '#000000',
+  },
+  {
+    id: 'snapchat',
+    title: 'Snapchat — جيل Z',
+    subtitle: 'استخرج أصدقاءك + أرسل رسائل ترويجية بدون إعلانات',
+    image: '/images/app/snapchat-marketing-tools.png',
+    benefits: [
+      'استخراج جميع الأصدقاء والعملاء المهتمين',
+      'إرسال رسائل ترويجية بدون إعلانات ممولة',
+      'رسائل مع صور أو جهات اتصال واتساب',
+      'استهداف دقيق للجمهور المحدد',
+    ],
+    stats: [
+      { value: 'Free', label: 'بدون إعلانات' },
+      { value: 'Gen-Z', label: 'الجمهور' },
+      { value: 'DM', label: 'رسائل ترويج' },
+    ],
+    accent: 'from-yellow-400 to-amber-600',
+    accentLight: '#FFFC00',
+  },
+  {
+    id: 'google',
+    title: 'Google Maps + OLX',
+    subtitle: 'استخرج بيانات الأنشطة التجارية والإعلانات بالملايين',
+    image: '/images/app/google-maps-data-extraction.png',
+    benefits: [
+      'استخراج جميع الأنشطة التجارية من خرائط Google',
+      'بيانات OLX: عنوان، هاتف، صور، تاريخ النشر',
+      'فلترة جغرافية دقيقة بالمدينة والحي',
+      'تصدير CSV/Excel بكل التفاصيل',
+    ],
+    stats: [
+      { value: '∞', label: 'أنشطة تجارية' },
+      { value: 'Geo', label: 'فلترة' },
+      { value: 'CSV', label: 'تصدير' },
+    ],
+    accent: 'from-blue-500 to-green-700',
+    accentLight: '#4285F4',
   },
 ]
 
@@ -335,74 +505,6 @@ export function FeaturesSection() {
             </motion.div>
           ))}
         </div>
-
-        {/* ============= ALL PLATFORMS GRID ============= */}
-        <div className="text-center mb-12">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            className="inline-flex items-center gap-2 rounded-full bg-amber-500/10 border border-amber-500/20 px-4 py-1.5 text-[12px] font-semibold text-amber-400 mb-4"
-          >
-            <Layers className="h-3.5 w-3.5" />
-            18+ منصة في تطبيق واحد
-          </motion.div>
-          <h2 className="section-title">
-            استكشف <span className="gradient-text">كل المنصات</span>
-          </h2>
-          <p className="section-desc mt-3 max-w-2xl mx-auto">
-            من فيسبوك للتيك توك، من واتساب للتيليجرام، من LinkedIn للريديت — استخراج، إرسال، إدارة، تحليل.
-          </p>
-        </div>
-
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: '-30px' }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
-        >
-          {platforms.map((platform) => (
-            <motion.div key={platform.id} variants={cardVariants}>
-              <Link href={`/platforms/${platform.id}`} className="glass-card p-5 group block h-full">
-                <div className="flex items-center gap-3 mb-3">
-                  <div
-                    className="flex h-11 w-11 items-center justify-center rounded-xl shrink-0 transition-transform duration-300 group-hover:scale-110"
-                    style={{ background: `${platform.color}15` }}
-                  >
-                    <PlatformIcon id={platform.id} size={22} className="shrink-0" style={{ color: platform.color }} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-white text-[15px]">{platform.name}</h3>
-                  </div>
-                  <ArrowLeft className="h-4 w-4 text-slate-600 group-hover:text-sky-400 group-hover:-translate-x-1 transition-all duration-300 shrink-0 rotate-180" />
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {platform.features.map((f) => (
-                    <span
-                      key={f}
-                      className="inline-flex items-center rounded-lg bg-white/5 border border-white/6 px-2.5 py-1 text-[11px] font-medium text-slate-400 group-hover:border-white/10 group-hover:text-slate-300 transition-colors"
-                    >
-                      {f}
-                    </span>
-                  ))}
-                </div>
-              </Link>
-            </motion.div>
-          ))}
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="mt-12 text-center"
-        >
-          <Link href="/platforms" className="btn-secondary group">
-            اكتشف كل المنصات بالتفصيل
-            <ArrowLeft className="h-4 w-4 rotate-180 group-hover:-translate-x-1 transition-transform" />
-          </Link>
-        </motion.div>
 
         {/* ============= EXPORT + EXTRACTION SHOWCASE ============= */}
         <motion.div
