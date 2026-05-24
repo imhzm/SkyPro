@@ -964,39 +964,27 @@ ipcm('db-bulk-delete', async (e, { table, ids = [] }) => {
   }
 })
 
-// Filter that catches every garbage username pattern — Unicode-safe,
-// no regex literals with embedded unprintables (which break lint parsers).
+// Aggressive garbage detector for account rows. A row is "garbage" if its
+// platform/username has NO real content. The previous version had a long
+// hand-curated allow-list of invisible chars to strip — that missed edge
+// cases (control chars 0x00-0x08/0x0E-0x1F, replacement char 0xFFFD,
+// IDS chars 0x2FF0-0x2FFB, etc.) and let some rows slip through into the
+// user's table where they showed as "—" (empty).
+//
+// New approach: a row is real ONLY IF it contains AT LEAST ONE visible
+// letter or digit (any script — Arabic, Latin, CJK, etc.). Everything
+// else — pure whitespace, pure punctuation, pure control chars, pure
+// invisible Unicode — is garbage. This is way more durable.
 function isGarbageUsername(s) {
   if (s === null || s === undefined) return true
-  const str = String(s)
-  // Build the kept-character whitelist programmatically. A char is "real"
-  // if it's NOT whitespace AND has a printable code point > 0x20 and not
-  // in the invisible-Unicode bands.
-  let kept = ''
-  for (const ch of str) {
-    const cp = ch.codePointAt(0)
-    if (cp === 0x09 || cp === 0x0A || cp === 0x0B || cp === 0x0C || cp === 0x0D) continue // whitespace
-    if (cp === 0x20 || cp === 0xA0) continue // space, NBSP
-    if (cp >= 0x2000 && cp <= 0x200F) continue // figure space → RTL mark
-    if (cp === 0x202F || cp === 0x205F || cp === 0x3000) continue // narrow NBSP, math space, ideographic space
-    if (cp >= 0x202A && cp <= 0x202E) continue // directional embeds
-    if (cp === 0x2028 || cp === 0x2029) continue // line/paragraph separators
-    if (cp === 0x2060 || cp === 0xFEFF) continue // word joiner, BOM
-    kept += ch
-  }
-  if (kept.length === 0) return true
-  const lower = kept.toLowerCase()
-  if (lower === 'undefined' || lower === 'null' || lower === 'nan') return true
-  // Just dashes/punctuation (em-dash 0x2014, en-dash 0x2013, hyphen, etc.).
-  let onlyDashes = true
-  for (const ch of kept) {
-    const cp = ch.codePointAt(0)
-    if (cp !== 0x2D && cp !== 0x2014 && cp !== 0x2013 && cp !== 0x5F && cp !== 0x2E) {
-      onlyDashes = false
-      break
-    }
-  }
-  return onlyDashes
+  const str = String(s).trim()
+  if (!str) return true
+  // Reject literal "undefined" / "null" / "NaN" strings (case-insensitive).
+  if (/^(undefined|null|nan|none|n\/a|-+|—+|_+|\.+)$/i.test(str)) return true
+  // Require at least one Unicode letter (\p{L}) or digit (\p{N}).
+  // The /u flag is essential — without it, Arabic/CJK chars wouldn't match \p{L}.
+  if (!/[\p{L}\p{N}]/u.test(str)) return true
+  return false
 }
 
 // Targeted cleanup: delete every account row whose username is empty/whitespace.
