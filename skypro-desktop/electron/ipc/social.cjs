@@ -4172,35 +4172,108 @@ ipcm('twitter-login', async (e, { username, password, headless = false, proxy })
     if (!res.success) return res
     sessionId = res.sessionId
     const page = globals.bm.getPage(sessionId)
-    await page.goto('https://x.com/i/flow/login', { waitUntil: 'domcontentloaded', timeout: 30000 })
-    await page.waitForTimeout(randomDelay(2000, 4000))
+
+    // Step 0: check if already logged in (persistent context can survive across launches)
+    try {
+      await page.goto('https://x.com/home', { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
+      await page.waitForTimeout(randomDelay(2500, 4000))
+      const url = page.url() || ''
+      // If we land on /home (not /i/flow/login or /), we're already in
+      if (url.includes('/home') || (!url.includes('/i/flow/login') && !url.includes('/login'))) {
+        const isLoggedIn = await page.evaluate(() => {
+          return !!(document.querySelector('a[href="/home"]') || document.querySelector('a[aria-label*="Home"]') || document.querySelector('div[data-testid="primaryColumn"]'))
+        }).catch(() => false)
+        if (isLoggedIn) {
+          saveAccount('twitter', username || 'saved-session', password || 'saved')
+          return { success: true, message: 'تم اكتشاف جلسة موجودة — تم الدخول', sessionId }
+        }
+      }
+    } catch { /* fall through to manual login */ }
+
+    // Step 1: navigate to login flow
+    await page.goto('https://x.com/i/flow/login', { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
+    // Twitter is VERY sensitive to fast input — wait longer than usual
+    await page.waitForTimeout(randomDelay(4000, 7000))
+
+    // Step 2: type username slowly (Twitter detects fast typing as bot)
     const userTyped = await smartType(page, [
       'input[autocomplete="username"]', 'input[name="text"]', 'input[aria-label*="Username"]',
-      'input[aria-label*="Phone"]', 'input[type="text"]', 'input[autocomplete="username"]'
+      'input[aria-label*="Phone"]', 'input[type="text"]',
     ], username, 'username')
-    if (!userTyped) return { success: false, error: 'لم يتم العثور على حقل اسم المستخدم', sessionId }
-    await page.waitForTimeout(randomDelay(1000, 2000))
+    if (!userTyped) {
+      return { success: false, error: 'لم يتم العثور على حقل اسم المستخدم — قد يكون X يطلب تحقق إضافي. حاول تسجيل دخول يدوي.', sessionId }
+    }
+    // Extra-long pause after typing (mimic human reading the form)
+    await page.waitForTimeout(randomDelay(2500, 4500))
+
+    // Step 3: click Next button
     await smartClick(page, [
-      'button:has-text("Next")', 'button:has-text("التالي")', 'button[type="submit"]'
+      'button:has-text("Next")', 'button:has-text("التالي")',
+      'button[role="button"]:has-text("Next")', 'button[type="submit"]',
+      'div[role="button"]:has-text("Next")', 'div[role="button"]:has-text("التالي")',
     ], 'next')
-    await page.waitForTimeout(randomDelay(2000, 4000))
+    await page.waitForTimeout(randomDelay(3500, 6000))
+
+    // Step 4: detect "unusual login activity" challenge BEFORE going to password
+    const currentAfterNext = page.url()
+    const hasChallengeAfterUsername = await page.evaluate(() => {
+      const t = document.body?.innerText || ''
+      return /unusual|suspicious|verify|تحقق|غير اعتيادي|verification/i.test(t)
+    }).catch(() => false)
+    if (hasChallengeAfterUsername) {
+      return {
+        success: false,
+        error: 'X يطلب تحقق إضافي (رمز/هاتف). أكمل التحقق يدوياً في النافذة المفتوحة، ثم استخدم زر "ربط الحساب" مرة أخرى.',
+        sessionId,
+        needsManualVerification: true,
+      }
+    }
+
+    // Step 5: type password
     const passTyped = await smartType(page, [
       'input[type="password"]', 'input[name="password"]', 'input[aria-label*="Password"]',
-      'input[aria-label*="كلمة"]'
+      'input[aria-label*="كلمة"]',
     ], password, 'password')
-    if (!passTyped) return { success: false, error: 'لم يتم العثور على حقل كلمة المرور', sessionId }
-    await page.waitForTimeout(randomDelay(500, 1500))
-    await smartClick(page, [
-      'button:has-text("Log in")', 'button:has-text("تسجيل الدخول")', 'button[type="submit"]',
-      'button[data-testid="LoginForm_Login_Button"]'
-    ], 'login')
-    await page.waitForTimeout(randomDelay(5000, 8000))
-    const currentUrl = page.url()
-    if (!currentUrl.includes('login') && !currentUrl.includes('challenge')) {
-      saveAccount('twitter', username, password)
-      return { success: true, message: 'تم تسجيل الدخول', sessionId }
+    if (!passTyped) {
+      return { success: false, error: 'لم يتم العثور على حقل كلمة المرور', sessionId, partialUrl: currentAfterNext }
     }
-    return { success: false, error: 'فشل تسجيل الدخول', sessionId }
+    await page.waitForTimeout(randomDelay(1500, 3000))
+
+    // Step 6: submit
+    await smartClick(page, [
+      'button:has-text("Log in")', 'button:has-text("تسجيل الدخول")',
+      'button[data-testid="LoginForm_Login_Button"]',
+      'div[role="button"]:has-text("Log in")',
+      'button[type="submit"]',
+    ], 'login')
+    await page.waitForTimeout(randomDelay(6000, 10000))
+
+    // Step 7: check result
+    const currentUrl = page.url()
+    // Check for "restricted" error text on the page
+    const restricted = await page.evaluate(() => {
+      const t = document.body?.innerText || ''
+      return /restricted|قيد|قمنا بتقييد|temporarily|مؤقتاً/i.test(t)
+    }).catch(() => false)
+    if (restricted) {
+      return {
+        success: false,
+        error: 'قام X بتقييد محاولات الدخول مؤقتاً. انتظر 30-60 دقيقة وحاول مرة أخرى، أو أكمل الدخول يدوياً في النافذة المفتوحة.',
+        sessionId,
+        rateLimited: true,
+      }
+    }
+    if (!currentUrl.includes('login') && !currentUrl.includes('challenge') && !currentUrl.includes('flow')) {
+      saveAccount('twitter', username, password)
+      return { success: true, message: 'تم تسجيل الدخول بنجاح', sessionId }
+    }
+    // If still on login flow, the user might need to complete it manually
+    return {
+      success: false,
+      error: 'تعذّر إكمال تسجيل الدخول تلقائياً. أكمل من النافذة المفتوحة، وسيتم حفظ الحساب تلقائياً.',
+      sessionId,
+      needsManualCompletion: true,
+    }
   } catch (err) {
     return { success: false, error: err.message, sessionId }
   }

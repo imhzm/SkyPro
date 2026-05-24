@@ -104,19 +104,17 @@ export default function AccountsModule() {
     window.setTimeout(() => { setMessage(''); setError('') }, 5000)
   }, [])
 
-  // On mount: load accounts. The db-query handler now does read-time
-  // cleanup of garbage rows automatically, so any stuck empty row from
-  // before this fix gets silently purged on first open.
+  // On mount: load accounts + start auto-refresh.
+  // The db-query handler does read-time cleanup of garbage rows automatically.
+  // Auto-refresh every 8 seconds catches any backend-side INSERTs from
+  // platform-login flows (saveAccount triggered after a successful X/FB/IG
+  // login) so the table updates without user having to leave + come back.
   useEffect(() => {
     let cancelled = false
     ;(async () => {
       try {
-        // First call triggers read-time cleanup AND returns the cleaned list.
         await loadAccounts()
         if (cancelled) return
-        // Belt + suspenders: also fire the explicit empty-row cleanup so
-        // users on older DBs get their leftover garbage rows wiped on first
-        // page open after upgrading.
         try {
           await window.electronAPI.dbDeleteEmptyAccounts()
           if (!cancelled) await loadAccounts()
@@ -125,7 +123,15 @@ export default function AccountsModule() {
         console.error('[AccountsModule] initial load failed:', err)
       }
     })()
-    return () => { cancelled = true }
+    // Periodic refresh — catches rows inserted by saveAccount() from
+    // platform-login IPC handlers running in main process.
+    const intervalId = window.setInterval(() => {
+      if (!cancelled) loadAccounts().catch(() => {})
+    }, 8000)
+    return () => {
+      cancelled = true
+      window.clearInterval(intervalId)
+    }
   }, [loadAccounts])
 
   const filtered = useMemo(() => {
@@ -258,7 +264,9 @@ export default function AccountsModule() {
     setActivePlatform(acc.platform as PlatformId)
   }
 
-  // Load the raw DB dump for the diagnostic panel.
+  // Load the raw DB dump for the diagnostic panel. ALSO refreshes the main
+  // accounts state so the table stays in sync — fixes "DB shows X but main
+  // table shows Y" desyncs that confused the user before.
   const loadDebug = useCallback(async () => {
     setDebugLoading(true)
     try {
@@ -266,11 +274,15 @@ export default function AccountsModule() {
       if (res?.success && Array.isArray(res.data)) {
         setDebugRows(res.data as DebugRow[])
       }
+      // Force-refresh the main accounts table too so the rendering matches
+      // the DB exactly. Without this, the diagnostic panel could show row X
+      // with full data while the main table renders an older state.
+      await loadAccounts()
     } catch (err) {
       console.error('debug load failed:', err)
     }
     setDebugLoading(false)
-  }, [])
+  }, [loadAccounts])
 
   // Aggressive force-clean: deletes any row with truly no useful data.
   const handleForceClean = () => {

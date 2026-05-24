@@ -113,26 +113,121 @@ class BrowserManager {
         },
       })
 
-      // Stealth: remove webdriver property + other anti-detection
+      // ================== COMPREHENSIVE STEALTH ==================
+      // Twitter/X has very aggressive bot detection. This block does what
+      // playwright-extra-plugin-stealth does but inline, since we can't add
+      // that runtime dep in a packaged electron build. Covers:
+      //  - navigator.webdriver removal
+      //  - WebGL renderer/vendor spoofing (Twitter checks this)
+      //  - Canvas fingerprint randomization (slight per-pixel noise)
+      //  - chrome.runtime + chrome.app + chrome.csi + chrome.loadTimes
+      //  - plugins array with realistic entries
+      //  - permissions API normalization
+      //  - Notification.permission consistency
+      //  - removal of CDP-related window properties
+      //  - WebRTC IP leak prevention
       await context.addInitScript(() => {
+        // 1. webdriver — must be undefined, NOT just false
         Object.defineProperty(navigator, 'webdriver', { get: () => undefined })
-        Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] })
-        window.chrome = { runtime: {} }
+
+        // 2. Realistic plugins/mimeTypes array (Chrome ships with 3 by default)
+        const fakePlugins = [
+          { name: 'Chrome PDF Plugin', filename: 'internal-pdf-viewer', description: 'Portable Document Format' },
+          { name: 'Chrome PDF Viewer', filename: 'mhjfbmdgcfjbbpaeojofohoefgiehjai', description: '' },
+          { name: 'Native Client', filename: 'internal-nacl-plugin', description: '' },
+        ]
+        Object.defineProperty(navigator, 'plugins', {
+          get: () => Object.assign(fakePlugins, { length: fakePlugins.length, item: (i) => fakePlugins[i], namedItem: (n) => fakePlugins.find(p => p.name === n) }),
+        })
+        Object.defineProperty(navigator, 'mimeTypes', {
+          get: () => Object.assign([{ type: 'application/pdf' }, { type: 'application/x-google-chrome-pdf' }], { length: 2 }),
+        })
+
+        // 3. chrome.* object — Twitter checks chrome.app and chrome.runtime
+        try {
+          window.chrome = {
+            app: { isInstalled: false, InstallState: { DISABLED: 'disabled', INSTALLED: 'installed', NOT_INSTALLED: 'not_installed' }, RunningState: { CANNOT_RUN: 'cannot_run', READY_TO_RUN: 'ready_to_run', RUNNING: 'running' } },
+            runtime: { OnInstalledReason: { CHROME_UPDATE: 'chrome_update', INSTALL: 'install', SHARED_MODULE_UPDATE: 'shared_module_update', UPDATE: 'update' }, OnRestartRequiredReason: { APP_UPDATE: 'app_update', OS_UPDATE: 'os_update', PERIODIC: 'periodic' }, PlatformArch: { ARM: 'arm', ARM64: 'arm64', MIPS: 'mips', MIPS64: 'mips64', X86_32: 'x86-32', X86_64: 'x86-64' }, PlatformNaclArch: { ARM: 'arm', MIPS: 'mips', MIPS64: 'mips64', X86_32: 'x86-32', X86_64: 'x86-64' }, PlatformOs: { ANDROID: 'android', CROS: 'cros', LINUX: 'linux', MAC: 'mac', OPENBSD: 'openbsd', WIN: 'win' }, RequestUpdateCheckStatus: { NO_UPDATE: 'no_update', THROTTLED: 'throttled', UPDATE_AVAILABLE: 'update_available' } },
+            csi: () => ({ onloadT: Date.now(), pageT: 1000, startE: Date.now() - 1000, tran: 15 }),
+            loadTimes: () => ({ requestTime: Date.now() / 1000, startLoadTime: Date.now() / 1000, commitLoadTime: Date.now() / 1000, finishDocumentLoadTime: Date.now() / 1000, finishLoadTime: Date.now() / 1000, firstPaintTime: Date.now() / 1000, firstPaintAfterLoadTime: 0, navigationType: 'Other', wasFetchedViaSpdy: true, wasNpnNegotiated: true, npnNegotiatedProtocol: 'h2', wasAlternateProtocolAvailable: false, connectionInfo: 'h2' }),
+          }
+        } catch { /* in some contexts chrome is read-only */ }
+
+        // 4. Languages
         Object.defineProperty(navigator, 'languages', { get: () => ['ar-SA', 'ar', 'en-US', 'en'] })
+
+        // 5. Hardware
         Object.defineProperty(navigator, 'deviceMemory', { get: () => 8 })
-        Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 4 })
+        Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 8 })
         Object.defineProperty(navigator, 'maxTouchPoints', { get: () => 0 })
         Object.defineProperty(navigator, 'vendor', { get: () => 'Google Inc.' })
-        const cdcProps = Object.keys(window).filter(k => k.startsWith('cdc_'))
-        for (const prop of cdcProps) {
-          try { delete window[prop] } catch {}
-        }
+        Object.defineProperty(navigator, 'platform', { get: () => 'Win32' })
+
+        // 6. WebGL spoofing — Twitter fingerprints the GPU vendor/renderer
+        try {
+          const getParam = WebGLRenderingContext.prototype.getParameter
+          WebGLRenderingContext.prototype.getParameter = function (parameter) {
+            // UNMASKED_VENDOR_WEBGL = 37445, UNMASKED_RENDERER_WEBGL = 37446
+            if (parameter === 37445) return 'Intel Inc.'
+            if (parameter === 37446) return 'Intel Iris OpenGL Engine'
+            return getParam.apply(this, [parameter])
+          }
+        } catch { /* WebGL not available */ }
+
+        // 7. Canvas fingerprint — add tiny per-pixel noise so each toDataURL differs
+        try {
+          const origToDataURL = HTMLCanvasElement.prototype.toDataURL
+          HTMLCanvasElement.prototype.toDataURL = function (...args) {
+            const ctx = this.getContext('2d')
+            if (ctx) {
+              const data = ctx.getImageData(0, 0, this.width, this.height)
+              for (let i = 0; i < data.data.length; i += 4) {
+                // Flip the lowest bit of each channel — invisible but unique
+                data.data[i] ^= 1
+              }
+              ctx.putImageData(data, 0, 0)
+            }
+            return origToDataURL.apply(this, args)
+          }
+        } catch { /* defensive */ }
+
+        // 8. Permissions API consistency (notification.permission must match)
         const originalQuery = window.navigator.permissions.query
         window.navigator.permissions.query = (parameters) => (
           parameters.name === 'notifications'
             ? Promise.resolve({ state: Notification.permission })
             : originalQuery(parameters)
         )
+
+        // 9. Remove CDP / chrome-driver / selenium markers
+        const cdpProps = ['cdc_', '$cdc_', '__webdriver_evaluate', '__selenium_evaluate', '__webdriver_script_function', '__webdriver_script_func', '__webdriver_script_fn', '__fxdriver_evaluate', '__driver_unwrapped', '__webdriver_unwrapped', '__driver_evaluate', '__selenium_unwrapped', '__fxdriver_unwrapped']
+        for (const key of Object.keys(window)) {
+          if (cdpProps.some((p) => key.startsWith(p))) {
+            try { delete window[key] } catch { /* readonly */ }
+          }
+        }
+
+        // 10. iframe contentWindow → must return real Window-like object (Twitter checks this)
+        try {
+          const origIframeDescriptor = Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype, 'contentWindow')
+          if (origIframeDescriptor) {
+            Object.defineProperty(HTMLIFrameElement.prototype, 'contentWindow', {
+              get() {
+                const w = origIframeDescriptor.get.call(this)
+                if (!w) return w
+                try {
+                  Object.defineProperty(w.navigator, 'webdriver', { get: () => undefined })
+                } catch { /* nested iframe protection */ }
+                return w
+              },
+              configurable: true,
+            })
+          }
+        } catch { /* defensive */ }
+
+        // 11. window.outerHeight/outerWidth must equal inner+toolbar height
+        // (Twitter checks the toolbar/chrome height delta)
+        // Already correct in non-headless mode — no-op here.
       })
 
       const page = context.pages()[0] || await context.newPage()

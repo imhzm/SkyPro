@@ -244,6 +244,12 @@ function migrateStoredSecrets() {
 // and return success:false to the renderer even though the user IS
 // logged in (the Chrome session is open). We wrap every step in try/
 // catch and log details for debugging but NEVER propagate exceptions.
+//
+// DEDUP STRATEGY (v1.21): if a `[connect-pending-*]` placeholder row exists
+// for the same platform (created by the "ربط الحساب" UI flow), UPDATE that
+// row in place instead of inserting a duplicate. This prevents the user
+// from ending up with two rows after they save an empty placeholder then
+// complete the login.
 function saveAccount(platform, username, password, status = 'active') {
   if (!globals.db) { console.warn('saveAccount: db not ready'); return }
   const cleanPlatform = String(platform || '').trim()
@@ -256,19 +262,35 @@ function saveAccount(platform, username, password, status = 'active') {
   try {
     encryptedPassword = encryptSecret(password)
   } catch (err) {
-    // Should never happen now (encryptSecret has fallback), but defensive.
     console.error('saveAccount: encryption failed unexpectedly:', err?.message)
     encryptedPassword = ''
   }
   try {
+    // FIRST: look for a placeholder row created by the "ربط" UI flow.
+    // Placeholders have username like `[connect-pending-1234567890]`.
+    const placeholder = globals.db.prepare(
+      "SELECT id FROM accounts WHERE platform = ? AND username LIKE '[connect-pending-%' LIMIT 1"
+    ).get(cleanPlatform)
+
+    if (placeholder?.id) {
+      // Upgrade the placeholder to the real account. Use UPDATE so the
+      // row ID stays stable (any UI selection state on this row survives).
+      globals.db.prepare(
+        'UPDATE accounts SET username = ?, password = ?, status = ? WHERE id = ?'
+      ).run(cleanUsername, encryptedPassword, status, placeholder.id)
+      console.log(`saveAccount: upgraded placeholder #${placeholder.id} → ${cleanPlatform}/${cleanUsername.substring(0, 30)}`)
+      return
+    }
+
+    // Normal path: INSERT OR IGNORE on (platform, username) unique index.
     globals.db.prepare('INSERT OR IGNORE INTO accounts (platform, username, password, status) VALUES (?, ?, ?, ?)')
       .run(cleanPlatform, cleanUsername, encryptedPassword, status)
+    // Then refresh password/status (the IGNORE clause skips update if
+    // the row already exists, so we explicitly update here).
     globals.db.prepare('UPDATE accounts SET password = ?, status = ? WHERE platform = ? AND username = ?')
       .run(encryptedPassword, status, cleanPlatform, cleanUsername)
     console.log(`saveAccount: stored ${cleanPlatform}/${cleanUsername.substring(0, 30)}`)
   } catch (err) {
-    // Could be SQLITE_CONSTRAINT_TRIGGER (trigger refused), schema issue,
-    // or DB locked. Log full detail but never throw — login must succeed.
     console.error(`saveAccount: SQL failed (${cleanPlatform}/${cleanUsername.substring(0, 30)}):`, err?.message)
   }
 }
