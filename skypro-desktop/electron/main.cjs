@@ -711,7 +711,16 @@ async function safeGoto(page, url, options = {}) {
 
 // --- SOCIAL PLATFORMS LOADED VIA REQUIRE ---
 
-function unprotectRow(row) {
+// CRITICAL BUG FIX (v1.22): there used to be a second `unprotectRow(row)`
+// function declared here that overrode the proper `unprotectRow(table, row)`
+// at line 212 via JS hoisting. The duplicate took only ONE arg, so when
+// `unprotectRows(table, rows)` called `unprotectRow(table, row)` with TWO
+// args, this duplicate received `table` (the STRING 'accounts') as `row`,
+// returned it unchanged, and the entire account row became the literal
+// string 'accounts'. Result: every column in the React state was undefined
+// → UI showed "ربط مطلوب" + globe-icon-only platform, even though the DB
+// had full data. The duplicate is now renamed for the helpers export.
+function unprotectRowForHelpers(row) {
   if (row && row.password) row.password = decryptSecret(row.password)
   return row
 }
@@ -728,7 +737,7 @@ function sendProgress(sender, status, message) {
 
 const helpers = {
   safeGoto, humanMouseMove, smartType, smartClick, smartActionClick, randomDelay, saveAccount,
-  encryptSecret, decryptSecret, unprotectRow, getSender, sendProgress, saveLeads
+  encryptSecret, decryptSecret, unprotectRow: unprotectRowForHelpers, getSender, sendProgress, saveLeads
 }
 require("./ipc/social.cjs")(ipcm, helpers)
 
