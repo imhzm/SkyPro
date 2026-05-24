@@ -5,10 +5,28 @@ import {
   Users, Plus, Trash2, Edit3, Save, X, Search,
   Facebook, MessageCircle, Instagram, Twitter, Linkedin, Send,
   Globe, AtSign, Bookmark, Eye, EyeOff, CheckCircle, AlertCircle, Shield,
-  CheckSquare, Square as SquareIcon, Filter, AlertOctagon,
+  CheckSquare, Square as SquareIcon, Filter, AlertOctagon, Bug, Wrench, Copy,
 } from 'lucide-react'
 import ModuleHeader from '../../components/common/ModuleHeader'
 import ConfirmDialog from '../../components/common/ConfirmDialog'
+
+interface DebugRow {
+  id: number
+  platform: string
+  username: string
+  notes?: string
+  proxy?: string
+  status: string
+  created_at: string
+  platform_len: number
+  username_len: number
+  notes_len: number
+  proxy_len: number
+  platform_hex: string
+  username_hex: string
+  notes_hex: string
+  has_password: number
+}
 
 const PLATFORMS = [
   { id: 'facebook', label: 'Facebook', icon: Facebook },
@@ -56,6 +74,11 @@ export default function AccountsModule() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [bulkBusy, setBulkBusy] = useState(false)
   const [deletingId, setDeletingId] = useState<number | null>(null)
+  // Diagnostic panel state — shows raw DB contents to help debug visible-empty
+  // rows. Toggled by the "تشخيص قاعدة البيانات" button at the bottom.
+  const [showDebug, setShowDebug] = useState(false)
+  const [debugRows, setDebugRows] = useState<DebugRow[]>([])
+  const [debugLoading, setDebugLoading] = useState(false)
   // Confirmation modal state — replaces window.confirm() which can hang
   // the renderer thread in sandboxed Electron.
   type ConfirmState =
@@ -213,6 +236,67 @@ export default function AccountsModule() {
         }
       },
     })
+  }
+
+  // Load the raw DB dump for the diagnostic panel.
+  const loadDebug = useCallback(async () => {
+    setDebugLoading(true)
+    try {
+      const res = await window.electronAPI.dbDebugAccounts()
+      if (res?.success && Array.isArray(res.data)) {
+        setDebugRows(res.data as DebugRow[])
+      }
+    } catch (err) {
+      console.error('debug load failed:', err)
+    }
+    setDebugLoading(false)
+  }, [])
+
+  // Aggressive force-clean: deletes any row with truly no useful data.
+  const handleForceClean = () => {
+    setConfirm({
+      open: true,
+      title: 'تنظيف قاعدة البيانات',
+      message: 'سيتم حذف أي صف فارغ تماماً (بدون منصة + بدون اسم + بدون ملاحظات + بدون بروكسي). الصفوف اللي فيها بيانات حقيقية محفوظة.',
+      confirmLabel: 'نظف الآن',
+      danger: false,
+      onConfirm: async () => {
+        setBulkBusy(true)
+        setConfirmBusy(true)
+        try {
+          const res = await window.electronAPI.dbAccountsForceClean()
+          if (res?.success) {
+            showMsg(`تم تنظيف ${res.changes || 0} صف فارغ ✓`)
+            await loadAccounts()
+            if (showDebug) await loadDebug()
+          } else {
+            showMsg(res?.error || 'فشل التنظيف', true)
+          }
+          setConfirm({ open: false })
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : 'خطأ غير معروف'
+          showMsg(`فشل: ${msg}`, true)
+          setConfirm({ open: false })
+        } finally {
+          setBulkBusy(false)
+          setConfirmBusy(false)
+        }
+      },
+    })
+  }
+
+  const copyDebugToClipboard = async () => {
+    try {
+      await window.electronAPI.dbDebugAccounts().then(async (res) => {
+        if (res?.success && Array.isArray(res.data)) {
+          const text = JSON.stringify(res.data, null, 2)
+          await navigator.clipboard.writeText(text)
+          showMsg('تم نسخ بيانات التشخيص إلى الحافظة')
+        }
+      })
+    } catch {
+      showMsg('فشل النسخ', true)
+    }
   }
 
   const handleDeleteAll = () => {
@@ -708,24 +792,54 @@ export default function AccountsModule() {
                       </td>
                       <td>
                         <div className="flex flex-col gap-0.5 max-w-[280px]">
-                          {acc.notes ? (
-                            <>
-                              <span
-                                className="font-bold text-sm text-violet-700 truncate"
-                                dir="auto"
-                                title={acc.notes}
-                              >
-                                {acc.notes}
+                          {(() => {
+                            // Defensive rendering: trim and check if EITHER notes OR username
+                            // has visible content. If both are empty/whitespace, show a
+                            // bright "صف فارغ" warning instead of two em-dashes — this
+                            // makes the problem obvious in the UI so user can take action.
+                            const notesText = (acc.notes || '').trim()
+                            const usernameText = (acc.username || '').trim()
+                            const proxyText = (acc.proxy || '').trim()
+                            const hasRealUsername = /[\p{L}\p{N}]/u.test(usernameText)
+                            const hasRealNotes = /[\p{L}\p{N}]/u.test(notesText)
+                            // Show the synthesized-brackets prefix as the underlying handle
+                            const isSyntheticUsername = /^\[[\s\S]+\]$/.test(usernameText)
+                            if (!hasRealUsername && !hasRealNotes) {
+                              return (
+                                <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-red-50 border border-red-200">
+                                  <AlertCircle size={11} className="text-red-500 flex-shrink-0" />
+                                  <span className="text-[11px] font-bold text-red-700">
+                                    صف بدون بيانات (#{acc.id}) — استخدم زر "إصلاح فوري"
+                                  </span>
+                                </div>
+                              )
+                            }
+                            if (notesText && hasRealNotes) {
+                              return (
+                                <>
+                                  <span className="font-bold text-sm text-violet-700 truncate" dir="auto" title={notesText}>
+                                    {notesText}
+                                  </span>
+                                  {usernameText && !isSyntheticUsername && (
+                                    <span className="text-[11px] text-secondary-500 truncate font-mono" dir="ltr" title={usernameText}>
+                                      {usernameText}
+                                    </span>
+                                  )}
+                                  {proxyText && !usernameText && (
+                                    <span className="text-[10px] text-pink-600 truncate font-mono" dir="ltr">
+                                      proxy: {proxyText}
+                                    </span>
+                                  )}
+                                </>
+                              )
+                            }
+                            // No label, fall back to showing username
+                            return (
+                              <span className="font-medium text-secondary-800 truncate" dir="ltr" title={usernameText}>
+                                {usernameText || (proxyText ? `proxy: ${proxyText}` : `حساب #${acc.id}`)}
                               </span>
-                              <span className="text-[11px] text-secondary-500 truncate font-mono" dir="ltr" title={acc.username}>
-                                {acc.username || '—'}
-                              </span>
-                            </>
-                          ) : (
-                            <span className="font-medium text-secondary-800 truncate" dir="ltr" title={acc.username}>
-                              {acc.username || '—'}
-                            </span>
-                          )}
+                            )
+                          })()}
                         </div>
                       </td>
                       <td>
@@ -793,11 +907,40 @@ export default function AccountsModule() {
         )}
       </div>
 
-      {/* Force-clean recovery: emergency button for the case where the
-          DB has unkillable garbage rows that don't respond to normal delete.
-          Calls db-delete-all-accounts as a last resort. */}
-      {accounts.length > 0 && (
-        <div className="flex items-center justify-end mt-2">
+      {/* Action row: force-clean, debug toggle, reset DB */}
+      <div className="flex items-center justify-between gap-2 mt-2 flex-wrap">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => { setShowDebug((p) => !p); if (!showDebug) loadDebug() }}
+            className="text-[11px] font-semibold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
+            style={{
+              background: showDebug ? 'rgba(99, 102, 241, 0.12)' : 'rgba(99, 102, 241, 0.06)',
+              color: '#4f46e5',
+              border: '1px solid rgba(99, 102, 241, 0.25)',
+            }}
+            title="عرض البيانات الخام من قاعدة البيانات"
+          >
+            <Bug size={12} />
+            {showDebug ? 'إخفاء التشخيص' : 'تشخيص قاعدة البيانات'}
+          </button>
+          <button
+            type="button"
+            onClick={handleForceClean}
+            disabled={bulkBusy}
+            className="text-[11px] font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1.5"
+            style={{
+              background: 'rgba(245, 158, 11, 0.06)',
+              color: '#b45309',
+              border: '1px solid rgba(245, 158, 11, 0.20)',
+            }}
+            title="حذف الصفوف الفارغة تماماً (بدون أي بيانات حقيقية)"
+          >
+            <Wrench size={12} />
+            إصلاح فوري
+          </button>
+        </div>
+        {accounts.length > 0 && (
           <button
             type="button"
             onClick={handleDeleteAll}
@@ -813,6 +956,100 @@ export default function AccountsModule() {
             <AlertOctagon size={12} />
             إعادة تعيين قاعدة الحسابات
           </button>
+        )}
+      </div>
+
+      {/* ============= DIAGNOSTIC PANEL ============= */}
+      {showDebug && (
+        <div className="rounded-2xl p-5 sw-fade-in-up" style={{ background: 'rgba(15,23,42,0.95)', border: '1px solid rgba(99,102,241,0.3)' }}>
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)' }}>
+                <Bug size={16} className="text-white" />
+              </div>
+              <div>
+                <h3 className="font-bold text-white text-sm">تشخيص قاعدة البيانات</h3>
+                <p className="text-[11px] text-slate-400">عرض البيانات الخام كما هي مخزنة. اللون الأحمر = بيانات فارغة فعلياً.</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <button type="button" onClick={copyDebugToClipboard} className="text-[11px] font-semibold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 bg-slate-700 text-slate-200 hover:bg-slate-600">
+                <Copy size={11} /> نسخ JSON
+              </button>
+              <button type="button" onClick={loadDebug} disabled={debugLoading} className="text-[11px] font-semibold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 bg-violet-600 text-white hover:bg-violet-500 disabled:opacity-50">
+                <Filter size={11} /> {debugLoading ? 'جارٍ...' : 'تحديث'}
+              </button>
+            </div>
+          </div>
+
+          {debugRows.length === 0 ? (
+            <div className="text-center py-8 text-slate-400 text-sm">
+              {debugLoading ? 'جاري التحميل...' : 'لا توجد صفوف في قاعدة البيانات'}
+            </div>
+          ) : (
+            <div className="overflow-x-auto rounded-lg" style={{ background: 'rgba(0,0,0,0.3)' }}>
+              <table className="w-full text-[11px]" style={{ direction: 'ltr' }}>
+                <thead className="bg-slate-800/80 text-slate-300 text-[10px] uppercase tracking-wider">
+                  <tr>
+                    <th className="px-2 py-2 text-left">ID</th>
+                    <th className="px-2 py-2 text-left">platform</th>
+                    <th className="px-2 py-2 text-left">username</th>
+                    <th className="px-2 py-2 text-left">notes</th>
+                    <th className="px-2 py-2 text-left">proxy</th>
+                    <th className="px-2 py-2 text-left">status</th>
+                    <th className="px-2 py-2 text-center">pwd?</th>
+                    <th className="px-2 py-2 text-left">created</th>
+                    <th className="px-2 py-2 text-left">user_hex</th>
+                  </tr>
+                </thead>
+                <tbody className="text-slate-200 font-mono">
+                  {debugRows.map((r) => {
+                    const isEmpty = (r.platform_len === 0) && (r.username_len === 0) && (r.notes_len === 0) && (r.proxy_len === 0)
+                    const userInvis = r.username_len > 0 && !/[\p{L}\p{N}]/u.test(r.username || '')
+                    const trouble = isEmpty || userInvis
+                    return (
+                      <tr key={r.id} className={trouble ? 'bg-red-900/30' : 'hover:bg-slate-800/50'}>
+                        <td className="px-2 py-1.5 text-slate-400">{r.id}</td>
+                        <td className="px-2 py-1.5">
+                          <span className={r.platform_len === 0 ? 'text-red-400' : 'text-emerald-300'}>
+                            {r.platform || '∅'}
+                          </span>
+                          <span className="text-slate-500 ml-1">[{r.platform_len}]</span>
+                        </td>
+                        <td className="px-2 py-1.5">
+                          <span className={r.username_len === 0 ? 'text-red-400' : userInvis ? 'text-amber-300' : 'text-sky-300'}>
+                            {r.username || '∅'}
+                          </span>
+                          <span className="text-slate-500 ml-1">[{r.username_len}]</span>
+                        </td>
+                        <td className="px-2 py-1.5">
+                          <span className={r.notes_len === 0 ? 'text-slate-500' : 'text-violet-300'}>
+                            {r.notes || '∅'}
+                          </span>
+                        </td>
+                        <td className="px-2 py-1.5">
+                          <span className={r.proxy_len === 0 ? 'text-slate-500' : 'text-pink-300'}>
+                            {r.proxy || '∅'}
+                          </span>
+                        </td>
+                        <td className="px-2 py-1.5 text-slate-400">{r.status}</td>
+                        <td className="px-2 py-1.5 text-center">{r.has_password ? '✓' : '∅'}</td>
+                        <td className="px-2 py-1.5 text-slate-500">{r.created_at?.slice(0, 16) || '—'}</td>
+                        <td className="px-2 py-1.5 text-slate-500 text-[9px]">{r.username_hex || '—'}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <div className="mt-3 flex items-center gap-3 text-[10px] text-slate-400 flex-wrap">
+            <span><span className="inline-block w-2 h-2 rounded-full bg-red-400"></span> فارغ تماماً</span>
+            <span><span className="inline-block w-2 h-2 rounded-full bg-amber-300"></span> أحرف خفية فقط</span>
+            <span><span className="inline-block w-2 h-2 rounded-full bg-sky-300"></span> اسم مستخدم سليم</span>
+            <span><span className="inline-block w-2 h-2 rounded-full bg-violet-300"></span> له اسم مميز</span>
+            <span><span className="inline-block w-2 h-2 rounded-full bg-emerald-300"></span> منصة سليمة</span>
+          </div>
         </div>
       )}
 

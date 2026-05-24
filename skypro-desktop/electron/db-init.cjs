@@ -139,18 +139,26 @@ function initDatabase(db) {
   }
 
   // ==================== AUTO-CLEANUP ====================
-  // Wipe every garbage account row on every boot. JS-layer scan so we catch
-  // every Unicode-whitespace pattern (zero-width, NBSP, BOM, RTL marks).
+  // Wipe every truly-empty account row on every boot. A row is "truly empty"
+  // if its platform is garbage OR ALL of (username, notes, proxy) are garbage.
+  // Rescue strategy: if user filled ONLY a label or ONLY a proxy, we keep the
+  // row as long as the platform is real.
+  //
   // Idempotent — once empty rows are gone, this is a no-op.
   try {
-    const rows = db.prepare('SELECT id, platform, username FROM accounts').all()
-    const garbageIds = rows
-      .filter((r) => isGarbageUsername(r.platform) || isGarbageUsername(r.username))
-      .map((r) => r.id)
+    const rows = db.prepare('SELECT id, platform, username, notes, proxy FROM accounts').all()
+    const garbageIds = rows.filter((r) => {
+      const platformBad = isGarbageUsername(r.platform)
+      const usernameBad = isGarbageUsername(r.username)
+      const notesBad = isGarbageUsername(r.notes)
+      const proxyBad = isGarbageUsername(r.proxy)
+      // Delete iff platform is junk OR (username AND notes AND proxy are all junk)
+      return platformBad || (usernameBad && notesBad && proxyBad)
+    }).map((r) => r.id)
     if (garbageIds.length > 0) {
       const placeholders = garbageIds.map(() => '?').join(',')
       const result = db.prepare(`DELETE FROM accounts WHERE id IN (${placeholders})`).run(...garbageIds)
-      console.log(`[db-init] auto-cleanup removed ${result.changes} garbage account row(s)`)
+      console.log(`[db-init] auto-cleanup removed ${result.changes} truly-empty account row(s)`)
     }
   } catch (err) {
     console.error('[db-init] auto-cleanup failed:', err.message)
