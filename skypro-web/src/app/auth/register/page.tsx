@@ -6,6 +6,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Eye, EyeOff, Mail, Lock, User, Inbox, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { Logo } from '@/components/marketing/Logo'
+import { SocialBubblesBackground } from '@/components/marketing/SocialBubblesBackground'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -128,19 +129,22 @@ export default function RegisterPage() {
         </div>
       </div>
     )}
-    <div className="min-h-screen flex items-center justify-center bg-[#060d1b] px-4" dir="rtl">
+    <div className="min-h-screen flex items-center justify-center bg-[#060d1b] px-4 relative overflow-hidden" dir="rtl">
       <div className="absolute inset-0">
-        <div className="absolute top-1/4 right-1/4 w-[400px] h-[400px] bg-sky-500/5 rounded-full blur-[120px]" />
-        <div className="absolute bottom-1/4 left-1/4 w-[300px] h-[300px] bg-violet-500/5 rounded-full blur-[100px]" />
+        {/* Subtle ambient orbs (dimmed) */}
+        <div className="absolute top-1/4 right-1/4 w-[400px] h-[400px] bg-sky-500/[0.04] rounded-full blur-[140px]" />
+        <div className="absolute bottom-1/4 left-1/4 w-[300px] h-[300px] bg-violet-500/[0.04] rounded-full blur-[120px]" />
+        {/* Hero background dramatically dimmed (0.14 → 0.04) */}
         <Image
           src="/images/hero-background.png"
           alt=""
           aria-hidden="true"
           fill
           sizes="100vw"
-          className="absolute inset-0 h-full w-full object-cover opacity-[0.14]"
+          className="absolute inset-0 h-full w-full object-cover opacity-[0.04]"
         />
       </div>
+      <SocialBubblesBackground />
 
       <div className="relative z-10 w-full max-w-md">
         <div className="text-center mb-8">

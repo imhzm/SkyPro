@@ -1,6 +1,7 @@
 ﻿'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
@@ -75,6 +76,101 @@ function getHighlights(platform: PlatformPageData) {
   return ['تشغيل تلقائي 24/7', 'حماية متقدمة من الحظر', 'حسابات متعددة', 'تحديثات مجانية مدى الحياة', 'دعم فني مصري 24/7', '2,000 ج.م/سنة فقط']
 }
 
+// Real app screenshots per platform — used for hero header bg + showcase mockup.
+// These come from the spro folder (renamed to SEO-friendly slugs).
+const PLATFORM_SCREENSHOTS: Record<string, { hero: string; showcase: string[] }> = {
+  facebook: {
+    hero: '/images/app/facebook-marketing-tools.png',
+    showcase: [
+      '/images/app/facebook-extract-data-panel.png',
+      '/images/app/facebook-marketing-tools.png',
+      '/images/app/facebook-broadcast-messages.png',
+      '/images/app/facebook-groups-publishing.png',
+    ],
+  },
+  whatsapp: {
+    hero: '/images/app/whatsapp-marketing-tools-grid.png',
+    showcase: [
+      '/images/app/whatsapp-marketing-tools-grid.png',
+      '/images/app/whatsapp-session-launcher.png',
+    ],
+  },
+  instagram: {
+    hero: '/images/app/instagram-marketing-tools.png',
+    showcase: [
+      '/images/app/instagram-marketing-tools.png',
+      '/images/app/instagram-extract-data-panel.png',
+    ],
+  },
+  twitter: {
+    hero: '/images/app/twitter-x-marketing-tools.png',
+    showcase: ['/images/app/twitter-x-marketing-tools.png'],
+  },
+  linkedin: {
+    hero: '/images/app/linkedin-b2b-tools-grid.png',
+    showcase: ['/images/app/linkedin-b2b-tools-grid.png'],
+  },
+  telegram: {
+    hero: '/images/app/telegram-marketing-suite.png',
+    showcase: ['/images/app/telegram-marketing-suite.png'],
+  },
+  'telegram-premium': {
+    hero: '/images/app/telegram-premium-exclusive-tools.png',
+    showcase: ['/images/app/telegram-premium-exclusive-tools.png'],
+  },
+  snapchat: {
+    hero: '/images/app/snapchat-marketing-tools.png',
+    showcase: ['/images/app/snapchat-marketing-tools.png'],
+  },
+  pinterest: {
+    hero: '/images/app/pinterest-marketing-tools.png',
+    showcase: ['/images/app/pinterest-marketing-tools.png'],
+  },
+  reddit: {
+    hero: '/images/app/reddit-community-marketing.png',
+    showcase: ['/images/app/reddit-community-marketing.png'],
+  },
+  threads: {
+    hero: '/images/app/threads-marketing-tools.png',
+    showcase: ['/images/app/threads-marketing-tools.png'],
+  },
+  tiktok: {
+    hero: '/images/app/tiktok-marketing-automation.png',
+    showcase: ['/images/app/tiktok-marketing-automation.png'],
+  },
+  'google-maps': {
+    hero: '/images/app/google-maps-data-extraction.png',
+    showcase: ['/images/app/google-maps-data-extraction.png'],
+  },
+  google: {
+    hero: '/images/app/google-maps-data-extraction.png',
+    showcase: ['/images/app/google-maps-data-extraction.png'],
+  },
+  'send-emails': {
+    hero: '/images/app/skypro-send-emails-smtp-tools.png',
+    showcase: ['/images/app/skypro-send-emails-smtp-tools.png'],
+  },
+  'auto-point': {
+    hero: '/images/app/skypro-auto-point-automation.png',
+    showcase: ['/images/app/skypro-auto-point-automation.png'],
+  },
+  accounts: {
+    hero: '/images/app/skypro-saved-accounts-manager.png',
+    showcase: ['/images/app/skypro-saved-accounts-manager.png'],
+  },
+  security: {
+    hero: '/images/app/skypro-security-presets-config.png',
+    showcase: ['/images/app/skypro-security-presets-config.png'],
+  },
+}
+
+function getPlatformImages(platformId: string) {
+  return PLATFORM_SCREENSHOTS[platformId] || {
+    hero: '/images/app/skypro-multi-platform-dashboard.png',
+    showcase: ['/images/app/skypro-multi-platform-dashboard.png'],
+  }
+}
+
 function AnimatedCounter({ value, label, color }: { value: string; label: string; color: string }) {
   const [visible, setVisible] = useState(false)
   useEffect(() => { setVisible(true) }, [])
@@ -120,6 +216,7 @@ export function PlatformPageContent({ data }: { data: PlatformPageData }) {
   const highlights = getHighlights(data)
   const comparison = getComparison(data)
   const testimonials = getTestimonial(data)
+  const platformImages = getPlatformImages(data.id)
   const allPages = getPlatformIds().map(id => platformPages[id]).filter(p => p.id !== data.id)
   const relatedPlatforms = allPages.slice(0, 6)
   const allTools = data.features.flatMap(f => f.details)
@@ -130,6 +227,17 @@ export function PlatformPageContent({ data }: { data: PlatformPageData }) {
       <section className="relative pt-20 pb-24 overflow-hidden">
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-gradient-to-b from-[#060d1b] via-[#0a1938] to-[#060d1b]" />
+          {/* Platform-specific real screenshot as ambient hero background — heavily blurred and dimmed */}
+          <Image
+            src={platformImages.hero}
+            alt=""
+            aria-hidden="true"
+            fill
+            priority
+            sizes="100vw"
+            className="absolute inset-0 h-full w-full object-cover opacity-[0.08] blur-[2px]"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#060d1b]/40 via-[#060d1b]/70 to-[#060d1b]" />
           <div className="absolute top-10 w-[700px] h-[500px] rounded-full blur-[160px] opacity-[0.12]" style={{ background: data.color, right: '5%' }} />
           <div className="absolute bottom-0 w-[400px] h-[400px] rounded-full blur-[140px] opacity-10" style={{ background: '#8B2CF5', left: '5%' }} />
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSA2MCAwIEwgMCAwIDAgNjAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjAzKSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-30" />
@@ -179,66 +287,37 @@ export function PlatformPageContent({ data }: { data: PlatformPageData }) {
         </div>
       </section>
 
-      {/* ===== MOCKUP ===== */}
+      {/* ===== SHOWCASE — real app screenshots ===== */}
       <section className="py-12">
         <div className="section-shell">
           <Section>
-            <div className="relative mx-auto max-w-4xl">
-              <div className="gradient-border p-1 overflow-hidden">
-                <div className="rounded-[20px] bg-[#0a1020] p-4 sm:p-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="w-3 h-3 rounded-full bg-red-500/80" />
-                    <div className="w-3 h-3 rounded-full bg-amber-500/80" />
-                    <div className="w-3 h-3 rounded-full bg-emerald-500/80" />
-                    <div className="flex-1 bg-white/5 rounded-lg h-7 mx-4 flex items-center px-3">
-                      <Monitor className="h-3 w-3 text-slate-500 ml-2" />
-                      <span className="text-[11px] text-slate-600 mr-auto">skypro.skywaveads.com/{data.id}</span>
-                      <div className="flex gap-1 ml-auto">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                        <span className="text-[9px] text-emerald-400">متصل</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-12 gap-3">
-                    <div className="col-span-3 space-y-2">
-                      <div className="rounded-lg bg-white/5 h-8 flex items-center px-3" style={{ borderInlineStart: `2px solid ${data.color}` }}>
-                        <PlatformIcon id={data.id} size={14} style={{ color: data.color }} />
-                        <span className="text-[10px] text-slate-500 mr-2">{data.arabicName}</span>
-                      </div>
-                      {[...Array(4)].map((_, i) => (
-                        <div key={i} className="rounded-lg bg-white/[0.03] h-6 flex items-center px-3">
-                          <div className="w-2 h-2 rounded-sm bg-white/10 ml-auto" />
-                        </div>
-                      ))}
-                    </div>
-                    <div className="col-span-9 space-y-3">
-                      <div className="grid grid-cols-3 gap-2">
-                        {data.stats.slice(0, 3).map((s, i) => (
-                          <div key={i} className="rounded-lg bg-white/5 p-3 text-center">
-                            <div className="text-sm font-bold" style={{ color: data.color }}>{s.value}</div>
-                            <div className="text-[9px] text-slate-600">{s.label}</div>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="rounded-lg bg-white/[0.03] h-24 flex items-end justify-around px-4 pb-2">
-                        {[35, 55, 40, 70, 50, 85, 65, 75, 90, 60].map((h, i) => (
-                          <div key={i} className="w-3 rounded-t transition-all" style={{ height: `${h}%`, background: i === 8 ? data.color : `${data.color}30` }} />
-                        ))}
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        {data.features.slice(0, 2).map((f) => (
-                          <div key={f.title} className="rounded-lg bg-white/[0.03] p-2.5 flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0" style={{ background: `${data.color}20` }}>
-                              <Check className="h-3 w-3" style={{ color: data.color }} />
-                            </div>
-                            <span className="text-[10px] text-slate-500 truncate">{f.title}</span>
-                          </div>
-                        ))}
-                      </div>
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-4 py-1.5 text-[12px] font-semibold text-emerald-400 mb-3">
+                <Monitor className="h-3.5 w-3.5" />
+                صور حقيقية من داخل البرنامج
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-bold text-white">
+                شوف {data.arabicName} من <span className="gradient-text">داخل SkyPro</span>
+              </h2>
+            </div>
+            <div className={`grid gap-4 mx-auto ${platformImages.showcase.length > 1 ? 'grid-cols-1 md:grid-cols-2 max-w-5xl' : 'max-w-4xl'}`}>
+              {platformImages.showcase.map((img, i) => (
+                <div key={i} className="relative">
+                  <div className="absolute -inset-4 rounded-3xl blur-[80px] opacity-15" style={{ background: data.color }} />
+                  <div className="relative gradient-border p-1">
+                    <div className="rounded-[18px] overflow-hidden">
+                      <Image
+                        src={img}
+                        alt={`${data.arabicName} — لقطة شاشة ${i + 1} من تطبيق SkyPro`}
+                        width={1400}
+                        height={900}
+                        className="w-full h-auto"
+                        loading="lazy"
+                      />
                     </div>
                   </div>
                 </div>
-              </div>
+              ))}
             </div>
           </Section>
         </div>

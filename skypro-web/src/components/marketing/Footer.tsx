@@ -1,12 +1,46 @@
 ﻿'use client'
 
-import { Mail, Phone, MessageCircle, Globe, ArrowUp, Heart, Sparkles } from 'lucide-react'
+import { Mail, Phone, MessageCircle, Globe, ArrowUp, Heart, ArrowLeft, Sparkles } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { PlatformIcon } from '@/components/marketing/PlatformIcon'
 import { platforms } from '@/data/platforms'
 import { Logo } from '@/components/marketing/Logo'
+
+// Sky Wave ecosystem — sibling products that ship with the same login.
+// Each entry is rendered as a glass card with the real product screenshot
+// pulled from production for authenticity.
+const SKY_ECOSYSTEM = [
+  {
+    name: 'Sky ERP',
+    tagline: 'نظام ERP ذكي لإدارة الشركات بالكامل',
+    description: 'CRM + Sales + Inventory + Accounting + AI + Reports + POS + HR في نظام واحد متكامل.',
+    href: 'https://erp.skywaveads.com',
+    image: '/images/app/ecosystem-sky-erp.png',
+    color: '#8B5CF6',
+    gradient: 'from-violet-500 to-indigo-700',
+  },
+  {
+    name: 'SkyWave Pay',
+    tagline: 'بوابة الدفع الذكية لأعمالك',
+    description: 'بوابة دفع محلية تدعم فودافون كاش، إنستاباي، والمحافظ في منصة واحدة آمنة.',
+    href: 'https://payment.skywaveads.com',
+    image: '/images/app/ecosystem-skywave-pay.png',
+    color: '#06B6D4',
+    gradient: 'from-cyan-500 to-blue-700',
+  },
+  {
+    name: 'Sky CRM',
+    tagline: 'واتساب CRM معتمد من Meta',
+    description: 'إرسال جماعي بدون حظر، شات بوت عربي ذكي، وحملات Gmail — كل ده مع تكامل WhatsApp Business API.',
+    href: 'https://crm.skywaveads.com',
+    image: '/images/app/ecosystem-sky-crm.png',
+    color: '#10B981',
+    gradient: 'from-emerald-500 to-green-700',
+  },
+] as const
 
 const footerLinks = {
   product: [
@@ -27,10 +61,6 @@ export function Footer() {
   const topPlatforms = platforms.slice(0, 8)
   const otherPlatforms = platforms.slice(8, 16)
   const [showBackToTop, setShowBackToTop] = useState(false)
-  const [email, setEmail] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
-
   const handleScroll = useCallback(() => {
     setShowBackToTop(window.scrollY > 500)
   }, [])
@@ -42,37 +72,6 @@ export function Footer() {
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
-  const handleSubscribe = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const trimmed = email.trim()
-    if (!trimmed || submitting) return
-
-    setSubmitting(true)
-    setFeedback(null)
-    try {
-      const res = await fetch('/api/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: trimmed, source: 'homepage_footer' }),
-      })
-      const data = await res.json()
-      if (res.ok && data?.success) {
-        setFeedback({ type: 'success', message: data.message ?? 'تم الاشتراك بنجاح' })
-        setEmail('')
-      } else {
-        setFeedback({
-          type: 'error',
-          message: data?.message ?? data?.error ?? 'تعذّر الاشتراك، حاول مرة أخرى',
-        })
-      }
-    } catch {
-      setFeedback({ type: 'error', message: 'تعذّر الاتصال بالخادم' })
-    } finally {
-      setSubmitting(false)
-      setTimeout(() => setFeedback(null), 6000)
-    }
   }
 
   return (
@@ -100,50 +99,73 @@ export function Footer() {
           <div className="absolute bottom-0 left-1/4 w-[300px] h-[300px] bg-violet-500/5 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
         </div>
 
-        <div className="relative z-10 section-shell py-16">
-          {/* Newsletter section */}
+        <div className="relative z-10 section-shell py-16" id="ecosystem">
+          {/* ============= SKY WAVE ECOSYSTEM ============= */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="glass-card p-6 sm:p-8 mb-14 text-center"
+            className="mb-16"
           >
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-violet-500 mx-auto mb-4">
-              <Sparkles className="h-6 w-6 text-white" />
-            </div>
-            <h3 className="text-xl font-bold text-white mb-2">ابقَ على اطلاع</h3>
-            <p className="text-sm text-slate-400 mb-6 max-w-md mx-auto">
-              اشترك في نشرتنا البريدية لتصلك آخر التحديثات والعروض الحصرية
-            </p>
-            <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="بريدك الإلكتروني"
-                required
-                disabled={submitting}
-                className="flex-1 rounded-full bg-white/5 border border-white/10 px-5 py-3 text-sm text-white placeholder-slate-500 outline-none transition-all focus:border-sky-500/50 focus:bg-white/8 focus:ring-1 focus:ring-sky-500/30 disabled:opacity-60"
-                dir="ltr"
-              />
-              <button
-                type="submit"
-                disabled={submitting || !email.trim()}
-                className="btn-primary !px-6 !py-3 shrink-0 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {submitting ? 'جارٍ الإرسال...' : 'اشترك الآن'}
-              </button>
-            </form>
-            {feedback && (
-              <p
-                role="status"
-                className={`mt-4 text-sm font-medium ${
-                  feedback.type === 'success' ? 'text-emerald-400' : 'text-red-400'
-                }`}
-              >
-                {feedback.message}
+            <div className="text-center mb-10">
+              <div className="inline-flex items-center gap-2 rounded-full bg-amber-500/10 border border-amber-500/20 px-4 py-1.5 text-[12px] font-semibold text-amber-400 mb-4">
+                <Sparkles className="h-3.5 w-3.5" />
+                منظومة Sky Wave الكاملة
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
+                <span className="gradient-text">3 منصات أخرى</span> من تطويرنا — كاملة و جاهزة لأعمالك
+              </h2>
+              <p className="text-sm text-slate-400 max-w-2xl mx-auto leading-relaxed">
+                إلى جانب SkyPro، نطوّر منظومة متكاملة من الحلول البرمجية الاحترافية —
+                كل منتج يعمل وحده أو ضمن المنظومة الكاملة
               </p>
-            )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {SKY_ECOSYSTEM.map((product, i) => (
+                <motion.a
+                  key={product.name}
+                  href={product.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  className="group glass-card overflow-hidden hover:-translate-y-1 transition-all duration-300 flex flex-col"
+                >
+                  <div className="relative h-48 overflow-hidden">
+                    <Image
+                      src={product.image}
+                      alt={`${product.name} — ${product.tagline}`}
+                      width={800}
+                      height={400}
+                      className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#060d1b] via-[#060d1b]/40 to-transparent" />
+                    <div
+                      className={`absolute top-4 right-4 px-3 py-1 rounded-full text-[10px] font-bold text-white bg-gradient-to-r ${product.gradient}`}
+                      style={{ boxShadow: `0 4px 16px ${product.color}40` }}
+                    >
+                      {product.name}
+                    </div>
+                  </div>
+                  <div className="p-5 flex-1 flex flex-col">
+                    <h3 className="text-lg font-bold text-white mb-2 group-hover:text-sky-400 transition-colors">
+                      {product.tagline}
+                    </h3>
+                    <p className="text-sm text-slate-400 leading-relaxed flex-1 mb-4">
+                      {product.description}
+                    </p>
+                    <div className="inline-flex items-center gap-2 text-sm font-semibold transition-all" style={{ color: product.color }}>
+                      زيارة الموقع
+                      <ArrowLeft className="h-4 w-4 rotate-180 group-hover:-translate-x-1 transition-transform" />
+                    </div>
+                  </div>
+                </motion.a>
+              ))}
+            </div>
           </motion.div>
 
           {/* Main footer grid */}
