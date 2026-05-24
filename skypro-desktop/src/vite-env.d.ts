@@ -465,7 +465,30 @@ declare global {
       dbBulkDelete: (data: { table: string; ids: number[] }) => Promise<IpcResult<{ changes: number; requested: number }>>
       dbDeleteEmptyAccounts: () => Promise<IpcResult<{ changes: number }>>
       dbDeleteAllAccounts: () => Promise<IpcResult<{ changes: number }>>
-      dbDebugAccounts: () => Promise<IpcResult<Array<{ id: number; platform: string; username: string; username_len: number; username_hex: string; status: string; created_at: string }>>>
+      dbDebugAccounts: () => Promise<{
+        success: boolean
+        error?: string
+        data?: Array<{
+          id: number
+          platform: string
+          username: string
+          notes?: string
+          proxy?: string
+          status: string
+          cookies?: string
+          proxy_id?: number
+          created_at: string
+          platform_len: number
+          username_len: number
+          notes_len: number
+          proxy_len: number
+          platform_hex: string
+          username_hex: string
+          notes_hex: string
+          has_password: number
+        }>
+      }>
+      dbAccountsForceClean: () => Promise<{ success: boolean; error?: string; changes?: number; deletedIds?: number[] }>
       clearLeadsByPlatform: (data: { platform: string }) => Promise<IpcResult>
       dbCount: (data: DbQueryParams) => Promise<{ success: boolean; count?: number; error?: string }>
 

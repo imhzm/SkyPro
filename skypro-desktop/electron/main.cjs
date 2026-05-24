@@ -891,7 +891,14 @@ ipcm('db-query', async (e, { table, where, filters, limit }) => {
       const visibleRows = []
       const garbageIds = []
       for (const r of rows) {
-        if (isGarbageUsername(r.platform) || isGarbageUsername(r.username)) {
+        // A row is truly garbage iff: platform is junk OR ALL of (username,
+        // notes, proxy) are junk. Rescue strategy: keep rows with platform +
+        // at least one of username/notes/proxy filled.
+        const platformBad = isGarbageUsername(r.platform)
+        const usernameBad = isGarbageUsername(r.username)
+        const notesBad = isGarbageUsername(r.notes)
+        const proxyBad = isGarbageUsername(r.proxy)
+        if (platformBad || (usernameBad && notesBad && proxyBad)) {
           garbageIds.push(r.id)
         } else {
           visibleRows.push(r)
@@ -901,7 +908,7 @@ ipcm('db-query', async (e, { table, where, filters, limit }) => {
         try {
           const ph = garbageIds.map(() => '?').join(',')
           const cleaned = globals.db.prepare(`DELETE FROM accounts WHERE id IN (${ph})`).run(...garbageIds)
-          if (cleaned.changes > 0) console.log(`[db-query] read-time cleanup removed ${cleaned.changes} garbage account row(s)`)
+          if (cleaned.changes > 0) console.log(`[db-query] read-time cleanup removed ${cleaned.changes} truly-empty account row(s)`)
         } catch (err) {
           console.warn('[db-query] read-time cleanup failed:', err.message)
         }
@@ -941,15 +948,19 @@ ipcm('db-insert', async (e, { table, data }) => {
     const stmt = globals.db.prepare(`INSERT INTO ${table} (${keys.join(', ')}) VALUES (${placeholders})`)
     const result = stmt.run(...keys.map(k => safeData[k]))
 
-    // Opportunistic cleanup of any leaked-in garbage rows that bypassed
-    // the triggers (invisible-char usernames, legacy rows, etc.). Runs only
-    // for the accounts table so other inserts stay zero-overhead.
+    // Opportunistic cleanup — only deletes TRULY empty rows (platform junk
+    // OR all of username/notes/proxy are junk). Won't touch the row we just
+    // inserted if it has valid platform + at least one of the rescue fields.
     if (table === 'accounts') {
       try {
-        const rows = globals.db.prepare('SELECT id, platform, username FROM accounts').all()
-        const garbageIds = rows
-          .filter((r) => isGarbageUsername(r.platform) || isGarbageUsername(r.username))
-          .map((r) => r.id)
+        const rows = globals.db.prepare('SELECT id, platform, username, notes, proxy FROM accounts').all()
+        const garbageIds = rows.filter((r) => {
+          const platformBad = isGarbageUsername(r.platform)
+          const usernameBad = isGarbageUsername(r.username)
+          const notesBad = isGarbageUsername(r.notes)
+          const proxyBad = isGarbageUsername(r.proxy)
+          return platformBad || (usernameBad && notesBad && proxyBad)
+        }).map((r) => r.id)
         if (garbageIds.length > 0) {
           const ph = garbageIds.map(() => '?').join(',')
           const cleaned = globals.db.prepare(`DELETE FROM accounts WHERE id IN (${ph})`).run(...garbageIds)
@@ -1069,22 +1080,73 @@ ipcm('db-delete-all-accounts', async () => {
 ipcm('db-debug-accounts', async () => {
   try {
     if (!globals.db) return { success: false, error: 'قاعدة البيانات غير جاهزة' }
+    // Full diagnostic dump — every column + length + hex for username/notes/
+    // platform so we can spot invisible-char issues at a glance.
     const rows = globals.db.prepare(`
       SELECT
         id,
         platform,
         username,
-        LENGTH(username) AS username_len,
-        HEX(SUBSTR(username, 1, 30)) AS username_hex,
+        notes,
+        proxy,
         status,
-        created_at
+        cookies,
+        proxy_id,
+        created_at,
+        LENGTH(platform) AS platform_len,
+        LENGTH(username) AS username_len,
+        LENGTH(notes) AS notes_len,
+        LENGTH(proxy) AS proxy_len,
+        HEX(SUBSTR(username, 1, 40)) AS username_hex,
+        HEX(SUBSTR(notes, 1, 40)) AS notes_hex,
+        HEX(SUBSTR(platform, 1, 40)) AS platform_hex,
+        CASE WHEN password IS NULL OR password = '' THEN 0 ELSE 1 END AS has_password
       FROM accounts
       ORDER BY id DESC
-      LIMIT 200
+      LIMIT 500
     `).all()
     return { success: true, data: rows }
   } catch (err) {
     return { success: false, error: err?.message || 'فشل الاستعلام' }
+  }
+})
+
+// Aggressive force-clean: deletes any row where ALL of (username, notes,
+// proxy) are empty/whitespace — meaning the row carries no useful info no
+// matter how lenient we are about what counts as "real". Used by the
+// "إصلاح قاعدة البيانات" diagnostic button.
+ipcm('db-accounts-force-clean', async () => {
+  try {
+    if (!globals.db) return { success: false, error: 'قاعدة البيانات غير جاهزة' }
+    const rows = globals.db.prepare('SELECT id, platform, username, notes, proxy FROM accounts').all()
+    const truly_empty = rows.filter((r) => {
+      // A row is "truly empty" iff its platform OR username has no real
+      // content AND its notes has no real content AND its proxy has no
+      // real content. We allow ANY visible character (\p{L}/\p{N}) anywhere
+      // to keep the row — only fully-empty rows are deleted.
+      const hasRealContent = (s) => {
+        if (s === null || s === undefined) return false
+        return /[\p{L}\p{N}]/u.test(String(s))
+      }
+      // Platform AND username must be real (one or both garbage = delete).
+      // Notes and proxy are "rescue" fields — if either has real content,
+      // we keep the row IF platform is also real.
+      const platformOK = hasRealContent(r.platform)
+      const usernameOK = hasRealContent(r.username)
+      const notesOK = hasRealContent(r.notes)
+      const proxyOK = hasRealContent(r.proxy)
+      // Delete iff platform is junk OR (username is junk AND notes is junk AND proxy is junk)
+      return !platformOK || (!usernameOK && !notesOK && !proxyOK)
+    }).map((r) => r.id)
+
+    if (truly_empty.length === 0) return { success: true, changes: 0 }
+    const ph = truly_empty.map(() => '?').join(',')
+    const result = globals.db.prepare(`DELETE FROM accounts WHERE id IN (${ph})`).run(...truly_empty)
+    console.log(`[db-accounts-force-clean] removed ${result.changes} truly-empty rows`)
+    return { success: true, changes: result.changes, deletedIds: truly_empty }
+  } catch (err) {
+    console.error('db-accounts-force-clean error:', err)
+    return { success: false, error: err?.message || 'فشل التنظيف' }
   }
 })
 
