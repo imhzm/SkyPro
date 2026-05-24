@@ -173,30 +173,43 @@ function initDatabase(db) {
 
   // Install a trigger that REJECTS any future INSERT/UPDATE that would create
   // an empty-username account row. Belt + braces with the JS-layer guard.
+  //
+  // The TRIM-based check below catches plain whitespace but NOT every
+  // invisible Unicode char (zero-width-space 0x200B, RLM 0x200F, BOM 0xFEFF,
+  // etc.). For those we rely on the JS-layer isGarbageUsername() guard at
+  // the db-insert IPC boundary AND the read-time cleanup in db-query.
+  //
+  // We DROP-and-recreate (not "IF NOT EXISTS") so older installs that have
+  // the weaker original triggers get upgraded automatically on next launch.
   try {
     db.exec(`
-      CREATE TRIGGER IF NOT EXISTS trg_accounts_reject_empty_insert
+      DROP TRIGGER IF EXISTS trg_accounts_reject_empty_insert;
+      DROP TRIGGER IF EXISTS trg_accounts_reject_empty_update;
+
+      CREATE TRIGGER trg_accounts_reject_empty_insert
       BEFORE INSERT ON accounts
       FOR EACH ROW
       WHEN NEW.username IS NULL
-        OR TRIM(NEW.username) = ''
-        OR TRIM(NEW.username) = 'undefined'
-        OR TRIM(NEW.username) = 'null'
+        OR TRIM(NEW.username, ' ' || char(9) || char(10) || char(11) || char(12) || char(13) || char(160)) = ''
+        OR LOWER(TRIM(NEW.username)) = 'undefined'
+        OR LOWER(TRIM(NEW.username)) = 'null'
+        OR LOWER(TRIM(NEW.username)) = 'nan'
         OR NEW.platform IS NULL
-        OR TRIM(NEW.platform) = ''
+        OR TRIM(NEW.platform, ' ' || char(9) || char(10) || char(11) || char(12) || char(13) || char(160)) = ''
       BEGIN
         SELECT RAISE(ABORT, 'empty username/platform refused by trigger');
       END;
 
-      CREATE TRIGGER IF NOT EXISTS trg_accounts_reject_empty_update
+      CREATE TRIGGER trg_accounts_reject_empty_update
       BEFORE UPDATE OF username, platform ON accounts
       FOR EACH ROW
       WHEN NEW.username IS NULL
-        OR TRIM(NEW.username) = ''
-        OR TRIM(NEW.username) = 'undefined'
-        OR TRIM(NEW.username) = 'null'
+        OR TRIM(NEW.username, ' ' || char(9) || char(10) || char(11) || char(12) || char(13) || char(160)) = ''
+        OR LOWER(TRIM(NEW.username)) = 'undefined'
+        OR LOWER(TRIM(NEW.username)) = 'null'
+        OR LOWER(TRIM(NEW.username)) = 'nan'
         OR NEW.platform IS NULL
-        OR TRIM(NEW.platform) = ''
+        OR TRIM(NEW.platform, ' ' || char(9) || char(10) || char(11) || char(12) || char(13) || char(160)) = ''
       BEGIN
         SELECT RAISE(ABORT, 'empty username/platform refused by trigger');
       END;

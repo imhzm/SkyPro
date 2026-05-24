@@ -633,16 +633,15 @@ async function safeGoto(page, url, options = {}) {
 }
 
 
-function saveAccount(acc) {
-  if (globals.db) {
-    try {
-      const safePassword = acc.password ? encryptSecret(acc.password) : acc.password
-      globals.db.prepare("INSERT OR REPLACE INTO accounts (id, platform, username, password, status, cookies, proxy_id) VALUES (?, ?, ?, ?, ?, ?, ?)").run(acc.id, acc.platform, acc.username, safePassword, acc.status || 'active', acc.cookies || null, acc.proxy_id || null)
-    } catch(e) {
-      console.error('saveAccount error:', e.message)
-    }
-  }
-}
+// NOTE: a SECOND saveAccount(acc) used to live here and overrode the
+// real saveAccount(platform, username, password) at line 216 via JS
+// function-declaration hoisting. Every social.cjs login handler calls
+// saveAccount with POSITIONAL args (platform, username, password) — but
+// because the obj-arg version won, `acc` was a string, `acc.id/platform/
+// username` were all undefined, better-sqlite3 threw on the binding, and
+// the catch swallowed it silently. NO login was ever persisting an account
+// row to the DB. Removed entirely — the positional-args version at line
+// 216 is the only saveAccount now.
 
 
 // --- SOCIAL PLATFORMS LOADED VIA REQUIRE ---
@@ -839,7 +838,34 @@ ipcm('db-query', async (e, { table, where, filters, limit }) => {
       const safeLimit = Math.min(Math.max(Number(limit), 1), 5000)
       sql += ` LIMIT ${safeLimit}`
     }
-    const rows = globals.db.prepare(sql).all(...params) || []
+    let rows = globals.db.prepare(sql).all(...params) || []
+
+    // For accounts queries: also purge any garbage rows that the user might
+    // be looking at — invisible-char usernames, empty rows from old data,
+    // legacy rows. Done at READ time so the user never sees them, even if
+    // something snuck past the triggers + insert-time cleanup.
+    if (table === 'accounts' && rows.length > 0) {
+      const visibleRows = []
+      const garbageIds = []
+      for (const r of rows) {
+        if (isGarbageUsername(r.platform) || isGarbageUsername(r.username)) {
+          garbageIds.push(r.id)
+        } else {
+          visibleRows.push(r)
+        }
+      }
+      if (garbageIds.length > 0) {
+        try {
+          const ph = garbageIds.map(() => '?').join(',')
+          const cleaned = globals.db.prepare(`DELETE FROM accounts WHERE id IN (${ph})`).run(...garbageIds)
+          if (cleaned.changes > 0) console.log(`[db-query] read-time cleanup removed ${cleaned.changes} garbage account row(s)`)
+        } catch (err) {
+          console.warn('[db-query] read-time cleanup failed:', err.message)
+        }
+      }
+      rows = visibleRows
+    }
+
     return { success: true, data: unprotectRows(table, rows) }
   } catch (err) {
     return { success: false, error: 'فشل الاستعلام عن البيانات' }
@@ -851,6 +877,19 @@ ipcm('db-insert', async (e, { table, data }) => {
     if (!globals.db) return { success: false, error: 'قاعدة البيانات غير جاهزة' }
     validateTable(table)
     if (!data || typeof data !== 'object' || Array.isArray(data)) return { success: false, error: 'بيانات غير صالحة (المتوقع كائن)' }
+
+    // EXTRA GUARD for accounts: reject if platform or username is missing/junk.
+    // The DB triggers catch most of this but invisible-char usernames slip
+    // past TRIM(), so we run the JS-layer Unicode-safe check here too.
+    if (table === 'accounts') {
+      const u = String(data.username || '')
+      const p = String(data.platform || '')
+      if (isGarbageUsername(u) || isGarbageUsername(p)) {
+        console.warn(`[db-insert] rejected accounts row: platform=${JSON.stringify(p)} username=${JSON.stringify(u)}`)
+        return { success: false, error: 'المنصة واسم المستخدم مطلوبان (لا يمكن أن يكونا فارغين)' }
+      }
+    }
+
     const safeData = protectRow(table, data)
     const keys = Object.keys(safeData).filter((k) => safeData[k] !== undefined)
     if (keys.length === 0) return { success: false, error: 'لا توجد بيانات للإدخال' }
@@ -858,6 +897,26 @@ ipcm('db-insert', async (e, { table, data }) => {
     const placeholders = keys.map(() => '?').join(', ')
     const stmt = globals.db.prepare(`INSERT INTO ${table} (${keys.join(', ')}) VALUES (${placeholders})`)
     const result = stmt.run(...keys.map(k => safeData[k]))
+
+    // Opportunistic cleanup of any leaked-in garbage rows that bypassed
+    // the triggers (invisible-char usernames, legacy rows, etc.). Runs only
+    // for the accounts table so other inserts stay zero-overhead.
+    if (table === 'accounts') {
+      try {
+        const rows = globals.db.prepare('SELECT id, platform, username FROM accounts').all()
+        const garbageIds = rows
+          .filter((r) => isGarbageUsername(r.platform) || isGarbageUsername(r.username))
+          .map((r) => r.id)
+        if (garbageIds.length > 0) {
+          const ph = garbageIds.map(() => '?').join(',')
+          const cleaned = globals.db.prepare(`DELETE FROM accounts WHERE id IN (${ph})`).run(...garbageIds)
+          if (cleaned.changes > 0) console.log(`[db-insert] post-insert cleanup removed ${cleaned.changes} garbage row(s)`)
+        }
+      } catch (err) {
+        console.warn('[db-insert] post-insert cleanup failed:', err.message)
+      }
+    }
+
     return { success: true, id: result.lastInsertRowid }
   } catch (err) {
     // Surface the actual error so the renderer can show WHY the save failed
@@ -1004,6 +1063,19 @@ ipcm('db-update', async (e, { table, id, data }) => {
     validateTable(table)
     if (!Number.isInteger(id) || id < 1) return { success: false, error: 'معرّف غير صالح' }
     if (!data || typeof data !== 'object' || Array.isArray(data)) return { success: false, error: 'بيانات غير صالحة' }
+
+    // EXTRA GUARD for accounts: reject empties on update too (e.g. user
+    // clearing the username field). Triggers catch most but invisible-char
+    // bypasses still slip through TRIM().
+    if (table === 'accounts') {
+      if (data.username !== undefined && isGarbageUsername(String(data.username || ''))) {
+        return { success: false, error: 'اسم المستخدم لا يمكن أن يكون فارغاً' }
+      }
+      if (data.platform !== undefined && isGarbageUsername(String(data.platform || ''))) {
+        return { success: false, error: 'المنصة لا يمكن أن تكون فارغة' }
+      }
+    }
+
     const safeData = protectRow(table, data)
     const keys = Object.keys(safeData).filter((k) => safeData[k] !== undefined)
     if (keys.length === 0) return { success: false, error: 'لا توجد بيانات للتحديث' }
