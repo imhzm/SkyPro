@@ -250,18 +250,30 @@ export default function AccountsModule() {
     })
   }
 
-  // "ربط الحساب" — open the platform's module so user can complete login
-  // there. After successful login, the platform's login IPC fires
-  // saveAccount() which inserts a new full row. The placeholder row this
-  // came from can be deleted manually OR by the user via the trash icon.
-  const handleConnect = (acc: { id: number; platform: string; username: string }) => {
-    if (!acc.platform) {
-      showMsg('لا توجد منصة محددة لهذا الحساب', true)
+  // "ربط الحساب" — re-fetch the freshest row from DB (in case the React
+  // state went stale after auto-save from a platform login), then navigate
+  // to the platform module. The DB is the source of truth, not the
+  // React state — this fixes "no platform specified" errors when the
+  // store cache hadn't refreshed yet.
+  const handleConnect = async (acc: { id: number; platform: string; username: string }) => {
+    let platform = acc.platform
+    try {
+      // Fetch latest row from DB to avoid stale-state confusion.
+      const res = await window.electronAPI.dbDebugAccounts()
+      if (res?.success && Array.isArray(res.data)) {
+        const fresh = res.data.find((r) => r.id === acc.id)
+        if (fresh?.platform) platform = fresh.platform
+      }
+    } catch { /* fall through with React state */ }
+
+    if (!platform) {
+      showMsg('لا توجد منصة محددة لهذا الحساب — اضغط تعديل وحدد المنصة أولاً', true)
       return
     }
-    showMsg(`جاري الانتقال إلى ${acc.platform} — سجّل الدخول وسيُحفظ الحساب تلقائياً ✓`)
-    // Switch to the platform module — its first tab is usually Login.
-    setActivePlatform(acc.platform as PlatformId)
+    showMsg(`جاري الانتقال إلى ${platform} — سجّل الدخول وسيُحفظ الحساب تلقائياً ✓`)
+    // Refresh accounts state too so the table reflects DB.
+    await loadAccounts().catch(() => {})
+    setActivePlatform(platform as PlatformId)
   }
 
   // Load the raw DB dump for the diagnostic panel. ALSO refreshes the main
@@ -826,25 +838,25 @@ export default function AccountsModule() {
                       <td>
                         <div className="flex flex-col gap-0.5 max-w-[280px]">
                           {(() => {
-                            // Show EVERYTHING the row has — never hide data.
-                            // Three slots:
-                            //   1. Label (notes) — bold violet if present
-                            //   2. Username — small mono if present and not a synthetic [X]
-                            //   3. If both empty but proxy present → "proxy only"
-                            //   4. If genuinely all empty → show "ربط مطلوب" with action hint
+                            // BULLETPROOF rendering — always show the row's data.
+                            // Only show "ربط مطلوب" if EVERY display-relevant field
+                            // is empty (notes + username + proxy + ID-as-fallback).
                             const notesText = (acc.notes || '').trim()
                             const usernameText = (acc.username || '').trim()
                             const proxyText = (acc.proxy || '').trim()
-                            const isSyntheticUsername = /^\[[\s\S]+\]$/.test(usernameText)
+                            // Only hide username if it looks like our synthesized
+                            // placeholder. Real usernames are kept and shown.
+                            const isSyntheticUsername = /^\[connect-pending-/.test(usernameText)
                             const displayUsername = isSyntheticUsername ? '' : usernameText
 
-                            // Genuinely empty (no notes, no real username, no proxy)
-                            if (!notesText && !displayUsername && !proxyText) {
+                            // If we have ANY visible content, show it.
+                            const hasAnyContent = notesText || displayUsername || proxyText
+                            if (!hasAnyContent) {
                               return (
                                 <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-50 border border-amber-200">
                                   <AlertCircle size={11} className="text-amber-600 flex-shrink-0" />
                                   <span className="text-[11px] font-bold text-amber-700">
-                                    ربط مطلوب — اضغط زر "ربط الحساب" للدخول
+                                    ربط مطلوب — اضغط زر &quot;ربط الحساب&quot; للدخول
                                   </span>
                                 </div>
                               )
