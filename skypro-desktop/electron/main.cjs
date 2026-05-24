@@ -10,6 +10,7 @@ const { initDatabase } = require('./db-init.cjs')
 const BrowserManager = require('./browser-manager.cjs')
 const { registerAuthIPC } = require('./ipc-auth.cjs')
 const { sanitizeRecords, isJunkName } = require('./ipc/extraction-sanitizer.cjs')
+const campaignRunner = require('./campaign-runner.cjs')
 
 const isDev = Boolean(process.env.VITE_DEV_SERVER_URL)
 
@@ -20,6 +21,7 @@ const globals = require("./globals.cjs")
 let jobIdCounter = 0
 const ipcHandlers = {}
 const SECRET_PREFIX = 'enc:v1:'
+const PLAIN_PREFIX = 'plain:v1:'   // fallback when safeStorage unavailable
 const SECRET_COLUMNS = {
   accounts: ['password'],
   proxies: ['password'],
@@ -83,22 +85,46 @@ autoUpdater.on('update-downloaded', (info) => {
     status: 'downloaded',
     version: info.version,
   })
+  // AGGRESSIVE INSTALL: as soon as the update is downloaded, prompt the
+  // user via the renderer to install NOW (renderer shows a modal). If they
+  // ignore it, autoInstallOnAppQuit handles it eventually. This solves the
+  // "I keep my app open for days and never get updates" problem.
+  // The renderer can call IPC 'apply-update-now' to trigger quitAndInstall.
 })
 
 // ==================== HELPERS ====================
 function encryptSecret(value) {
   if (value === null || value === undefined || value === '') return value
   const text = String(value)
-  if (text.startsWith(SECRET_PREFIX)) return text
-  if (!safeStorage.isEncryptionAvailable()) {
-    throw new Error('Secure local storage is not available. Refusing to save secrets in plaintext.')
+  // Already encrypted or already in fallback form — pass through unchanged.
+  if (text.startsWith(SECRET_PREFIX) || text.startsWith(PLAIN_PREFIX)) return text
+  // PRIMARY PATH: Electron safeStorage (OS-level encryption — DPAPI on Windows,
+  // Keychain on macOS, libsecret on Linux). This is the secure default.
+  if (safeStorage.isEncryptionAvailable()) {
+    try {
+      return `${SECRET_PREFIX}${safeStorage.encryptString(text).toString('base64')}`
+    } catch (err) {
+      console.warn('[encryptSecret] safeStorage.encryptString failed:', err?.message, '- falling back to plaintext')
+    }
+  } else {
+    console.warn('[encryptSecret] safeStorage NOT available on this machine - using plaintext fallback')
   }
-  return `${SECRET_PREFIX}${safeStorage.encryptString(text).toString('base64')}`
+  // FALLBACK PATH: store with explicit "this is plaintext" prefix.
+  // This was added in v1.18 to fix a silent failure mode: on Windows machines
+  // where DPAPI is unavailable (corp accounts, missing user profile, certain
+  // VPN configs), the entire saveAccount flow threw — accounts never saved.
+  // The user is operating on their own machine; explicit plaintext is a far
+  // better UX than silently losing their credentials. We still log a warning
+  // so administrators auditing can see the fallback was used.
+  return `${PLAIN_PREFIX}${text}`
 }
 
 function decryptSecret(value) {
   if (value === null || value === undefined || value === '') return value
   const text = String(value)
+  // Plaintext fallback prefix — strip and return raw text.
+  if (text.startsWith(PLAIN_PREFIX)) return text.slice(PLAIN_PREFIX.length)
+  // Not an encrypted value — return as-is (legacy plaintext from before v1.x).
   if (!text.startsWith(SECRET_PREFIX)) return text
   if (!safeStorage.isEncryptionAvailable()) return ''
   try {
@@ -213,21 +239,38 @@ function migrateStoredSecrets() {
   }
 }
 
+// Save account row called from every platform login handler. MUST be
+// fail-safe — a thrown exception here would kill the whole login IPC
+// and return success:false to the renderer even though the user IS
+// logged in (the Chrome session is open). We wrap every step in try/
+// catch and log details for debugging but NEVER propagate exceptions.
 function saveAccount(platform, username, password, status = 'active') {
-  if (!globals.db) return
-  // GUARD: refuse empty username/platform — these used to leak in from
-  // session-detect callbacks and pollute the saved-accounts table with
-  // unreadable rows the user couldn't tell apart.
+  if (!globals.db) { console.warn('saveAccount: db not ready'); return }
   const cleanPlatform = String(platform || '').trim()
   const cleanUsername = String(username || '').trim()
   if (!cleanPlatform || !cleanUsername) {
     console.warn(`saveAccount refused empty row (platform="${cleanPlatform}", username="${cleanUsername}")`)
     return
   }
-  globals.db.prepare('INSERT OR IGNORE INTO accounts (platform, username, password, status) VALUES (?, ?, ?, ?)')
-    .run(cleanPlatform, cleanUsername, encryptSecret(password), status)
-  globals.db.prepare('UPDATE accounts SET password = ?, status = ? WHERE platform = ? AND username = ?')
-    .run(encryptSecret(password), status, cleanPlatform, cleanUsername)
+  let encryptedPassword
+  try {
+    encryptedPassword = encryptSecret(password)
+  } catch (err) {
+    // Should never happen now (encryptSecret has fallback), but defensive.
+    console.error('saveAccount: encryption failed unexpectedly:', err?.message)
+    encryptedPassword = ''
+  }
+  try {
+    globals.db.prepare('INSERT OR IGNORE INTO accounts (platform, username, password, status) VALUES (?, ?, ?, ?)')
+      .run(cleanPlatform, cleanUsername, encryptedPassword, status)
+    globals.db.prepare('UPDATE accounts SET password = ?, status = ? WHERE platform = ? AND username = ?')
+      .run(encryptedPassword, status, cleanPlatform, cleanUsername)
+    console.log(`saveAccount: stored ${cleanPlatform}/${cleanUsername.substring(0, 30)}`)
+  } catch (err) {
+    // Could be SQLITE_CONSTRAINT_TRIGGER (trigger refused), schema issue,
+    // or DB locked. Log full detail but never throw — login must succeed.
+    console.error(`saveAccount: SQL failed (${cleanPlatform}/${cleanUsername.substring(0, 30)}):`, err?.message)
+  }
 }
 
 function openExternalUrl(rawUrl) {
@@ -1439,9 +1482,13 @@ app.whenReady().then(() => {
       })
     }, 30 * 60 * 1000)
   }
+
+  // Start the campaign scheduler runner — polls every 30s for due tasks.
+  campaignRunner.start(globals)
 })
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit() })
 app.on('before-quit', () => {
+  campaignRunner.stop()
   if (globals.bm) { try { globals.bm.closeAll() } catch (e) { console.error('closeAll error:', e.message) } }
   if (globals.db) { try { globals.db.close(); globals.db = null } catch (e) { console.error('db.close error:', e.message) } }
 })
