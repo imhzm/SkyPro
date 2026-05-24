@@ -5,9 +5,10 @@ import {
   Users, Plus, Trash2, Edit3, Save, X, Search,
   Facebook, MessageCircle, Instagram, Twitter, Linkedin, Send,
   Globe, AtSign, Bookmark, Eye, EyeOff, CheckCircle, AlertCircle, Shield,
-  CheckSquare, Square as SquareIcon, Filter,
+  CheckSquare, Square as SquareIcon, Filter, AlertOctagon,
 } from 'lucide-react'
 import ModuleHeader from '../../components/common/ModuleHeader'
+import ConfirmDialog from '../../components/common/ConfirmDialog'
 
 const PLATFORMS = [
   { id: 'facebook', label: 'Facebook', icon: Facebook },
@@ -54,6 +55,21 @@ export default function AccountsModule() {
   const [error, setError] = useState('')
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [bulkBusy, setBulkBusy] = useState(false)
+  const [deletingId, setDeletingId] = useState<number | null>(null)
+  // Confirmation modal state — replaces window.confirm() which can hang
+  // the renderer thread in sandboxed Electron.
+  type ConfirmState =
+    | { open: false }
+    | {
+        open: true
+        title: string
+        message: string
+        confirmLabel?: string
+        danger?: boolean
+        onConfirm: () => void | Promise<void>
+      }
+  const [confirm, setConfirm] = useState<ConfirmState>({ open: false })
+  const [confirmBusy, setConfirmBusy] = useState(false)
 
   const showMsg = useCallback((msg: string, isError = false) => {
     if (isError) { setError(msg); setMessage('') }
@@ -61,7 +77,29 @@ export default function AccountsModule() {
     window.setTimeout(() => { setMessage(''); setError('') }, 5000)
   }, [])
 
-  useEffect(() => { loadAccounts() }, [loadAccounts])
+  // On mount: load accounts. The db-query handler now does read-time
+  // cleanup of garbage rows automatically, so any stuck empty row from
+  // before this fix gets silently purged on first open.
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        // First call triggers read-time cleanup AND returns the cleaned list.
+        await loadAccounts()
+        if (cancelled) return
+        // Belt + suspenders: also fire the explicit empty-row cleanup so
+        // users on older DBs get their leftover garbage rows wiped on first
+        // page open after upgrading.
+        try {
+          await window.electronAPI.dbDeleteEmptyAccounts()
+          if (!cancelled) await loadAccounts()
+        } catch { /* non-fatal — read-time cleanup already handled it */ }
+      } catch (err) {
+        console.error('[AccountsModule] initial load failed:', err)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [loadAccounts])
 
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase()
@@ -131,34 +169,68 @@ export default function AccountsModule() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const handleDelete = async (acc: { id: number; username: string }) => {
-    const label = acc.username || 'الصف الفارغ'
-    const ok = window.confirm(`تأكيد حذف "${label}"؟ لا يمكن التراجع.`)
-    if (!ok) return
-    try {
-      await deleteAccount(acc.id)
-      showMsg(`تم حذف "${label}" ✓`)
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'خطأ غير معروف'
-      showMsg(`فشل الحذف: ${msg}`, true)
-    }
+  // Wrap any async operation with a hard timeout so the UI can't hang
+  // forever if the IPC never responds. Returns the operation result or
+  // throws a clear timeout error the user can see.
+  const withTimeout = useCallback(async <T,>(p: Promise<T>, ms = 10000, label = 'العملية'): Promise<T> => {
+    return Promise.race([
+      p,
+      new Promise<T>((_, reject) => setTimeout(() => reject(new Error(`${label} تجاوزت ${ms}ms - حاول مرة أخرى`)), ms))
+    ])
+  }, [])
+
+  const handleDelete = (acc: { id: number; username: string; notes?: string }) => {
+    const label = acc.notes?.trim() || acc.username?.trim() || 'الصف الفارغ'
+    setConfirm({
+      open: true,
+      title: 'حذف الحساب',
+      message: `هل تريد فعلاً حذف "${label}"؟\nلا يمكن التراجع عن هذا الإجراء.`,
+      confirmLabel: 'نعم، احذف',
+      danger: true,
+      onConfirm: async () => {
+        setDeletingId(acc.id)
+        setConfirmBusy(true)
+        try {
+          await withTimeout(deleteAccount(acc.id), 15000, 'حذف الحساب')
+          showMsg(`تم حذف "${label}" ✓`)
+          setConfirm({ open: false })
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : 'خطأ غير معروف'
+          showMsg(`فشل الحذف: ${msg}`, true)
+          setConfirm({ open: false })
+        } finally {
+          setDeletingId(null)
+          setConfirmBusy(false)
+        }
+      },
+    })
   }
 
-  const handleDeleteAll = async () => {
-    const ok = window.confirm(`⚠️ تأكيد حذف جميع الـ ${accounts.length} حساب نهائياً؟ لا يمكن التراجع.`)
-    if (!ok) return
-    const ok2 = window.confirm(`تأكيد ثاني: هذا سيحذف كل حساباتك المحفوظة. تأكد؟`)
-    if (!ok2) return
-    setBulkBusy(true)
-    try {
-      const removed = await deleteAllAccounts()
-      showMsg(`تم حذف جميع الحسابات (${removed}) ✓`)
-      setSelectedIds(new Set())
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'خطأ غير معروف'
-      showMsg(`فشل الحذف: ${msg}`, true)
-    }
-    setBulkBusy(false)
+  const handleDeleteAll = () => {
+    setConfirm({
+      open: true,
+      title: 'حذف جميع الحسابات',
+      message: `⚠️ تأكيد نهائي: حذف الـ ${accounts.length} حساب جميعها؟\nسيتم مسح كل بيانات الحسابات المحفوظة. لا يمكن التراجع.`,
+      confirmLabel: 'حذف الكل نهائياً',
+      danger: true,
+      onConfirm: async () => {
+        setBulkBusy(true)
+        setConfirmBusy(true)
+        try {
+          const removed = await withTimeout(deleteAllAccounts(), 15000, 'حذف الكل')
+          showMsg(`تم حذف جميع الحسابات (${removed}) ✓`)
+          setSelectedIds(new Set())
+          setConfirm({ open: false })
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : 'خطأ غير معروف'
+          showMsg(`فشل الحذف: ${msg}`, true)
+          setConfirm({ open: false })
+        } finally {
+          setBulkBusy(false)
+          setConfirmBusy(false)
+        }
+      },
+    })
   }
 
   const toggleSelect = (id: number) => {
@@ -178,28 +250,40 @@ export default function AccountsModule() {
     }
   }
 
-  const handleBulkDelete = async () => {
+  const handleBulkDelete = () => {
     if (selectedIds.size === 0) { showMsg('لم يتم تحديد أي حسابات', true); return }
-    const ok = window.confirm(`تأكيد حذف ${selectedIds.size} حساب؟ لا يمكن التراجع.`)
-    if (!ok) return
-    setBulkBusy(true)
-    try {
-      const removed = await bulkDeleteAccounts(Array.from(selectedIds))
-      setSelectedIds(new Set())
-      showMsg(`تم حذف ${removed} حساب ✓`)
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'خطأ غير معروف'
-      showMsg(`فشل الحذف الجماعي: ${msg}`, true)
-    }
-    setBulkBusy(false)
+    setConfirm({
+      open: true,
+      title: 'حذف الحسابات المحددة',
+      message: `حذف ${selectedIds.size} حساب؟ لا يمكن التراجع.`,
+      confirmLabel: 'حذف',
+      danger: true,
+      onConfirm: async () => {
+        setBulkBusy(true)
+        setConfirmBusy(true)
+        try {
+          const removed = await withTimeout(bulkDeleteAccounts(Array.from(selectedIds)), 15000, 'الحذف الجماعي')
+          setSelectedIds(new Set())
+          showMsg(`تم حذف ${removed} حساب ✓`)
+          setConfirm({ open: false })
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : 'خطأ غير معروف'
+          showMsg(`فشل الحذف الجماعي: ${msg}`, true)
+          setConfirm({ open: false })
+        } finally {
+          setBulkBusy(false)
+          setConfirmBusy(false)
+        }
+      },
+    })
   }
 
   const handleDeleteEmpty = async () => {
-    const ok = window.confirm('حذف كل الحسابات بدون اسم مستخدم؟')
-    if (!ok) return
+    // No confirmation — this is a non-destructive "cleanup" action (only
+    // affects rows that are already empty/garbage from the user's POV).
     setBulkBusy(true)
     try {
-      const removed = await deleteEmptyAccounts()
+      const removed = await withTimeout(deleteEmptyAccounts(), 10000, 'حذف الفارغة')
       if (removed === 0) {
         // Nothing matched as "empty" but the user clearly sees rows with —.
         // Surface a debug view so we can tell what's actually in the DB.
@@ -677,7 +761,8 @@ export default function AccountsModule() {
                           <button
                             type="button"
                             onClick={() => handleDelete(acc)}
-                            className="p-1.5 rounded-lg transition-colors"
+                            disabled={deletingId === acc.id || bulkBusy}
+                            className="p-1.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             style={{
                               color: '#ef4444',
                               background: 'rgba(239, 68, 68, 0.08)',
@@ -698,6 +783,44 @@ export default function AccountsModule() {
           </>
         )}
       </div>
+
+      {/* Force-clean recovery: emergency button for the case where the
+          DB has unkillable garbage rows that don't respond to normal delete.
+          Calls db-delete-all-accounts as a last resort. */}
+      {accounts.length > 0 && (
+        <div className="flex items-center justify-end mt-2">
+          <button
+            type="button"
+            onClick={handleDeleteAll}
+            disabled={bulkBusy}
+            className="text-[11px] font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1.5"
+            style={{
+              background: 'rgba(239, 68, 68, 0.06)',
+              color: '#b91c1c',
+              border: '1px solid rgba(239, 68, 68, 0.20)',
+            }}
+            title="استخدم هذا إذا كانت هناك حسابات لا يمكن حذفها بالطريقة العادية"
+          >
+            <AlertOctagon size={12} />
+            إعادة تعيين قاعدة الحسابات
+          </button>
+        </div>
+      )}
+
+      {/* Confirmation modal — replaces window.confirm() to prevent renderer
+          freezes in sandboxed Electron. */}
+      {confirm.open && (
+        <ConfirmDialog
+          open={confirm.open}
+          title={confirm.title}
+          message={confirm.message}
+          confirmLabel={confirm.confirmLabel}
+          danger={confirm.danger}
+          busy={confirmBusy}
+          onConfirm={confirm.onConfirm}
+          onClose={() => { if (!confirmBusy) setConfirm({ open: false }) }}
+        />
+      )}
     </div>
   )
 }

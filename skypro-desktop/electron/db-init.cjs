@@ -1,32 +1,14 @@
-// Filter that catches every garbage username pattern — Unicode-safe,
-// no regex literals with embedded unprintables (which break lint parsers).
+// Aggressive garbage detector — must match the one in main.cjs.
+// A row is "real" only if its content has at least one Unicode letter
+// or digit (\p{L} or \p{N}). Everything else — whitespace, punctuation,
+// control chars, invisible Unicode — is garbage and gets cleaned up.
 function isGarbageUsername(s) {
   if (s === null || s === undefined) return true
-  const str = String(s)
-  let kept = ''
-  for (const ch of str) {
-    const cp = ch.codePointAt(0)
-    if (cp === 0x09 || cp === 0x0A || cp === 0x0B || cp === 0x0C || cp === 0x0D) continue
-    if (cp === 0x20 || cp === 0xA0) continue
-    if (cp >= 0x2000 && cp <= 0x200F) continue
-    if (cp === 0x202F || cp === 0x205F || cp === 0x3000) continue
-    if (cp >= 0x202A && cp <= 0x202E) continue
-    if (cp === 0x2028 || cp === 0x2029) continue
-    if (cp === 0x2060 || cp === 0xFEFF) continue
-    kept += ch
-  }
-  if (kept.length === 0) return true
-  const lower = kept.toLowerCase()
-  if (lower === 'undefined' || lower === 'null' || lower === 'nan') return true
-  let onlyDashes = true
-  for (const ch of kept) {
-    const cp = ch.codePointAt(0)
-    if (cp !== 0x2D && cp !== 0x2014 && cp !== 0x2013 && cp !== 0x5F && cp !== 0x2E) {
-      onlyDashes = false
-      break
-    }
-  }
-  return onlyDashes
+  const str = String(s).trim()
+  if (!str) return true
+  if (/^(undefined|null|nan|none|n\/a|-+|—+|_+|\.+)$/i.test(str)) return true
+  if (!/[\p{L}\p{N}]/u.test(str)) return true
+  return false
 }
 
 // ==================== DATABASE SCHEMA ====================
