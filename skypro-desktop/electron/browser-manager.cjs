@@ -14,17 +14,51 @@ class BrowserManager {
     return path.join(app.getPath('userData'), 'browser-profiles', base)
   }
 
+  /**
+   * Verify a session is still alive (browser window not closed by user,
+   * page not crashed). Without this check, launch() would happily return
+   * a stale session ID that points to a dead context — login then fails
+   * mysteriously and the user has to restart the whole app.
+   */
+  async isSessionAlive(session) {
+    if (!session || !session.context || !session.page) return false
+    try {
+      // context.pages() throws if the context was closed.
+      const pages = session.context.pages()
+      if (!pages || pages.length === 0) return false
+      // page.url() throws if the page was closed.
+      session.page.url()
+      return true
+    } catch {
+      return false
+    }
+  }
+
   async launch(options = {}) {
     const { headless = false, proxy, sessionId = `session-${Date.now()}`, antiBan = true, platform, profileId } = options
     try {
       // If profileId is provided, allow multiple sessions per platform (one per account)
       // Without profileId, reuse existing browser for this platform (legacy behavior)
       if (platform && !profileId) {
+        // Walk the map and skip-or-purge dead sessions before reusing.
+        // Previously this returned the first match unconditionally — if the
+        // user had closed the browser window manually, the session was dead
+        // and every subsequent IPC call failed until app restart.
+        const deadIds = []
         for (const [id, session] of this.browsers) {
-          if (session.platform === platform) {
+          if (session.platform !== platform) continue
+          const alive = await this.isSessionAlive(session)
+          if (alive) {
             console.log(`Reusing existing browser for ${platform}, sessionId=${id}`)
             return { success: true, sessionId: id, message: 'المتصفح مفتوح بالفعل' }
           }
+          // Dead session — schedule for purge and fall through to launch a fresh one.
+          deadIds.push(id)
+        }
+        for (const id of deadIds) {
+          console.log(`[BrowserManager] purging dead session ${id} for ${platform}`)
+          try { await this.browsers.get(id)?.context?.close().catch(() => {}) } catch { /* already dead */ }
+          this.browsers.delete(id)
         }
       }
       const dir = this.getProfileDir(platform, profileId)
@@ -107,6 +141,23 @@ class BrowserManager {
         page.setDefaultNavigationTimeout(60000)
       }
       this.browsers.set(sessionId, { context, page, antiBan, platform, profileId })
+
+      // Auto-purge the session map when the user manually closes the
+      // browser window (X button). Without this, the dead entry stays in
+      // the map until app restart and getPage()/launch() return stale refs.
+      context.on('close', () => {
+        console.log(`[BrowserManager] context closed for session=${sessionId}, removing from map`)
+        this.browsers.delete(sessionId)
+      })
+      page.on('close', () => {
+        // If the user closed only the tab but the context survives, keep
+        // the session but null out the page so callers detect it's gone.
+        const s = this.browsers.get(sessionId)
+        if (s && s.page === page) {
+          s.page = null
+        }
+      })
+
       return { success: true, sessionId, message: 'تم تشغيل المتصفح بنجاح' }
     } catch (error) {
       return { success: false, error: error.message }
@@ -134,7 +185,18 @@ class BrowserManager {
   }
 
   getPage(sessionId) {
-    return this.browsers.get(sessionId)?.page
+    const session = this.browsers.get(sessionId)
+    if (!session || !session.page) return undefined
+    // Quick liveness check — if the page was closed, drop the session and
+    // return undefined so callers get a clear "session gone" signal.
+    try {
+      session.page.url()
+      return session.page
+    } catch {
+      console.log(`[BrowserManager] getPage(${sessionId}) found dead page, purging`)
+      this.browsers.delete(sessionId)
+      return undefined
+    }
   }
 
   getBrowser(sessionId) {
