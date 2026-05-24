@@ -2,6 +2,9 @@
 // A row is "real" only if its content has at least one Unicode letter
 // or digit (\p{L} or \p{N}). Everything else — whitespace, punctuation,
 // control chars, invisible Unicode — is garbage and gets cleaned up.
+// EXCEPTION: a synthetic placeholder like "[المتجر الرئيسي]" or "[1.1.1.1]"
+// is a deliberate label-only account (user filled only label/proxy) — we
+// keep these because they still contain meaningful info inside the brackets.
 function isGarbageUsername(s) {
   if (s === null || s === undefined) return true
   const str = String(s).trim()

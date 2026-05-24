@@ -116,18 +116,26 @@ export default function AccountsModule() {
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault()
     const username = form.username.trim()
-    if (!username) {
-      showMsg('يرجى إدخال اسم المستخدم', true)
+    const notes = form.notes.trim()
+    const proxy = form.proxy.trim()
+    // Require at least ONE identifying piece of info. Username, label,
+    // and proxy are all optional individually — but we need *something*
+    // to distinguish this row from a completely empty placeholder.
+    if (!username && !notes && !proxy) {
+      showMsg('املأ على الأقل: اسم المستخدم، أو الاسم المميز، أو البروكسي', true)
       return
     }
     setSaving(true)
     try {
       const payload = {
         platform: form.platform,
-        username,
+        // Synthesize a placeholder username if user only filled the label.
+        // saveAccount triggers + sanitizer require non-empty platform/username,
+        // so we derive a stable internal ID from the label/proxy.
+        username: username || `[${notes || proxy.substring(0, 20)}]`,
         password: form.password,
-        proxy: form.proxy,
-        notes: form.notes,
+        proxy,
+        notes,
         status: form.status,
       }
       if (editingId) {
@@ -135,7 +143,8 @@ export default function AccountsModule() {
         showMsg('تم تحديث الحساب بنجاح ✓')
       } else {
         await addAccount(payload)
-        showMsg(`تم حفظ الحساب "${username}" بنجاح ✓`)
+        const displayLabel = notes || username || proxy
+        showMsg(`تم حفظ الحساب "${displayLabel}" بنجاح ✓`)
       }
       setForm(EMPTY_FORM)
       setEditingId(null)
@@ -452,7 +461,8 @@ export default function AccountsModule() {
             </div>
             <div>
               <label htmlFor="acc-username" className="label-field">
-                اسم المستخدم / البريد <span className="text-red-500">*</span>
+                اسم المستخدم / البريد
+                <span className="text-[10px] font-normal text-secondary-500 mr-2">(اختياري)</span>
               </label>
               <input
                 id="acc-username"
@@ -464,7 +474,6 @@ export default function AccountsModule() {
                 onChange={(e) => setForm((f) => ({ ...f, username: e.target.value }))}
                 placeholder="username أو email"
                 autoComplete="off"
-                required
               />
             </div>
             <div>
@@ -524,7 +533,7 @@ export default function AccountsModule() {
               </button>
               <button
                 type="submit"
-                disabled={saving || !form.username.trim()}
+                disabled={saving || (!form.username.trim() && !form.notes.trim() && !form.proxy.trim())}
                 className="btn-primary"
               >
                 <Save size={16} />
