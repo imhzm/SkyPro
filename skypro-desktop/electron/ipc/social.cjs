@@ -7589,41 +7589,247 @@ ipcm('reddit-publish-with-image', async (e, { sessionId, subreddit, title, conte
 })
 
 // ==================== IPC: GOOGLE / MAPS / OLX ====================
-ipcm('google-maps-extract', async (e, { searchQuery, location, limit = 50, headless = false, sessionId: existingSessionId }) => {
+//
+// Helper: extract businesses from the currently-loaded Google Maps results
+// panel. Scrolls the LEFT panel (the actual results list), not the window —
+// this is the key fix from v1.22's broken version that only window-scrolled.
+async function _gMapsExtractCurrentPanel(page, limit, onProgress) {
+  const businesses = []
+  const seenNames = new Set()
+  let stagnantCycles = 0
+  const MAX_STAGNANT = 6   // give up after 6 cycles of zero new results
+
+  // Wait for the results panel feed to appear
+  await page.waitForSelector('div[role="feed"], div[role="article"], a[href*="/maps/place/"]', { timeout: 15000 }).catch(() => {})
+
+  while (businesses.length < limit && stagnantCycles < MAX_STAGNANT) {
+    const beforeCount = businesses.length
+
+    // Scrape via DOM evaluation — much faster than per-card $eval
+    const cards = await page.evaluate(() => {
+      const results = []
+      // Multiple selector strategies — Google rotates these frequently.
+      const anchors = document.querySelectorAll('a[href*="/maps/place/"]')
+      const seenHref = new Set()
+      for (const a of anchors) {
+        const href = a.getAttribute('href')
+        if (!href || seenHref.has(href)) continue
+        seenHref.add(href)
+        // Walk up to find the card container with all the info
+        let card = a.closest('div[role="article"]') || a.closest('[jslog]') || a.parentElement?.parentElement
+        if (!card) continue
+        const text = (card.innerText || '').trim()
+        if (!text) continue
+        const lines = text.split('\n').map(s => s.trim()).filter(Boolean)
+        if (lines.length === 0) continue
+        const name = lines[0]
+        // Try to extract: rating (number + parentheses for reviewCount)
+        const ratingMatch = text.match(/(\d+[.,]\d)\s*(?:\((\d+)\))?/)
+        const rating = ratingMatch ? ratingMatch[1].replace(',', '.') : ''
+        const reviewCount = ratingMatch ? (ratingMatch[2] || '') : ''
+        // Phone is usually formatted like +20 1xxx... or 0xxx
+        const phoneMatch = text.match(/(\+?\d[\d\s()+-]{8,})/g)
+        const phone = phoneMatch && phoneMatch.length ? phoneMatch[phoneMatch.length - 1].trim() : ''
+        // Type/category — usually the second non-rating line
+        const type = lines.find(l => /^[؀-ۿa-zA-Z][^\d]+$/.test(l) && l !== name) || ''
+        // Address — line containing a digit but not phone-shaped
+        const address = lines.find(l => l !== name && l !== type && l.length > 5 && /\d/.test(l) && !l.match(/^\d+[.,]\d/)) || ''
+        const placeUrl = a.href
+        results.push({ name, rating, reviewCount, type, address, phone, profile: placeUrl })
+      }
+      return results
+    })
+
+    for (const c of cards) {
+      if (!c.name || seenNames.has(c.name)) continue
+      seenNames.add(c.name)
+      businesses.push(c)
+      if (businesses.length >= limit) break
+    }
+
+    if (onProgress) onProgress(businesses.length, limit)
+
+    if (businesses.length === beforeCount) {
+      stagnantCycles++
+    } else {
+      stagnantCycles = 0
+    }
+
+    if (businesses.length >= limit) break
+
+    // SCROLL THE RESULTS PANEL (left side), not the window. Google Maps
+    // uses a virtualized feed inside [role="feed"] — scrolling that element
+    // triggers lazy-load of more cards.
+    await page.evaluate(() => {
+      const feed = document.querySelector('div[role="feed"]') || document.querySelector('[aria-label*="Results"]')
+      if (feed) feed.scrollTop = feed.scrollHeight
+      else window.scrollTo(0, document.body.scrollHeight)
+    })
+    await page.waitForTimeout(1500 + Math.random() * 1500)
+  }
+
+  return businesses
+}
+
+ipcm('google-maps-extract', async (e, { searchQuery, location, limit = 50, headless = false, sessionId: existingSessionId, jobId }) => {
   let sessionId = existingSessionId || null
   let ownSession = !existingSessionId
+  if (!jobId) jobId = `gmaps-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
   try {
     if (!sessionId) {
-      const res = await globals.bm.launch({ headless: true, platform: 'google-maps' })
+      const res = await globals.bm.launch({ headless: false, platform: 'google-maps' })
       if (!res.success) return res
       sessionId = res.sessionId
     }
     const page = globals.bm.getPage(sessionId)
     if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
-    const query = encodeURIComponent(`${searchQuery} in ${location}`)
-    await page.goto(`https://www.google.com/maps/search/${query}`, { waitUntil: 'domcontentloaded', timeout: 30000 })
-    await page.waitForTimeout(randomDelay(4000, 6000))
-    const businesses = []
-    for (let i = 0; i < Math.min(limit / 5, 10); i++) {
-      const cards = await page.$$('[data-result-index]')
-      for (const card of cards) {
-        try {
-          const name = await card.$eval('div.fontHeadlineSmall', el => el.innerText).catch(() => '')
-          const rating = await card.$eval('span[role="img"]', el => el.getAttribute('aria-label')).catch(() => '')
-          const address = await card.$eval('.fontBodyMedium', el => el.innerText).catch(() => '')
-          const type = await card.$eval('.fontBodyMedium:first-child', el => el.innerText).catch(() => '')
-          if (name) businesses.push({ name, rating, address, type })
-        } catch (e) { console.error('Extract business card:', e.message) }
-      }
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
-      await page.waitForTimeout(randomDelay(1500, 3000))
-    }
-    saveLeads('google-maps', 'maps-extract', businesses)
+    const queryText = location ? `${searchQuery} in ${location}` : searchQuery
+    await page.goto(`https://www.google.com/maps/search/${encodeURIComponent(queryText)}`, { waitUntil: 'domcontentloaded', timeout: 60000 })
+    await page.waitForTimeout(randomDelay(3500, 6000))
+
+    const businesses = await _gMapsExtractCurrentPanel(page, limit, (count, max) => {
+      sendProgress(sender, jobId, { type: 'progress', count, total: max })
+    })
+
+    saveLeads('google-maps', 'maps-extract', businesses.map(b => ({
+      name: b.name, phone: b.phone, url: b.profile, source: queryText,
+      extra: `${b.type} | ${b.address} | rating: ${b.rating} (${b.reviewCount})`,
+    })))
     if (ownSession) await globals.bm.close(sessionId)
-    return { success: true, data: businesses.slice(0, limit), count: businesses.length }
+    return { success: true, data: businesses.slice(0, limit), count: businesses.length, jobId }
   } catch (err) {
     if (ownSession && sessionId) await safeClose(sessionId)
-    return { success: false, error: err.message }
+    return { success: false, error: err.message, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// NEW v1.23 — Bulk extraction from Google Maps using multiple keywords.
+// User-facing: enter a list of keywords (one per line), optionally a
+// location filter, and limit-per-keyword (up to 500). The handler iterates
+// each keyword sequentially, extracts up to N businesses per keyword,
+// reports progress, and deduplicates across keywords.
+ipcm('google-maps-bulk-extract', async (e, { keywords = [], location = '', limitPerKeyword = 500, jobId }) => {
+  if (!Array.isArray(keywords) || keywords.length === 0) {
+    return { success: false, error: 'يرجى إدخال قائمة كلمات مفتاحية' }
+  }
+  // Sanitize keywords + clamp limit
+  const cleanKeywords = keywords
+    .map((k) => String(k || '').trim())
+    .filter((k) => k.length > 0)
+    .slice(0, 50)  // hard cap at 50 keywords per job to avoid abuse
+  if (cleanKeywords.length === 0) {
+    return { success: false, error: 'قائمة الكلمات المفتاحية فارغة بعد التنظيف' }
+  }
+  const cleanLimit = Math.min(Math.max(parseInt(limitPerKeyword) || 50, 1), 500)
+  if (!jobId) jobId = `gmaps-bulk-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+
+  const allResults = []
+  const seenNames = new Set()
+  let sessionId = null
+  let pageRef = null
+
+  try {
+    const launchRes = await globals.bm.launch({ headless: false, platform: 'google-maps' })
+    if (!launchRes.success) return launchRes
+    sessionId = launchRes.sessionId
+    pageRef = globals.bm.getPage(sessionId)
+    if (!pageRef) return { success: false, error: 'تعذّر فتح المتصفح', sessionId }
+
+    for (let i = 0; i < cleanKeywords.length; i++) {
+      if (globals.cancelFlags.get(jobId)) break
+      const keyword = cleanKeywords[i]
+      const queryText = location ? `${keyword} in ${location}` : keyword
+
+      sendProgress(sender, jobId, {
+        type: 'keyword-start',
+        keywordIndex: i + 1,
+        totalKeywords: cleanKeywords.length,
+        keyword,
+        currentTotal: allResults.length,
+      })
+
+      try {
+        await pageRef.goto(`https://www.google.com/maps/search/${encodeURIComponent(queryText)}`, {
+          waitUntil: 'domcontentloaded',
+          timeout: 60000,
+        })
+        await pageRef.waitForTimeout(randomDelay(3500, 5500))
+
+        const businesses = await _gMapsExtractCurrentPanel(pageRef, cleanLimit, (cnt, tot) => {
+          sendProgress(sender, jobId, {
+            type: 'keyword-progress',
+            keywordIndex: i + 1,
+            totalKeywords: cleanKeywords.length,
+            keyword,
+            count: cnt,
+            target: tot,
+            grandTotal: allResults.length + cnt,
+          })
+        })
+
+        // Deduplicate by name (within session) before adding
+        let added = 0
+        for (const b of businesses) {
+          if (!b.name || seenNames.has(b.name.toLowerCase())) continue
+          seenNames.add(b.name.toLowerCase())
+          allResults.push({
+            ...b,
+            keyword,
+            source: queryText,
+          })
+          added++
+        }
+
+        sendProgress(sender, jobId, {
+          type: 'keyword-done',
+          keywordIndex: i + 1,
+          totalKeywords: cleanKeywords.length,
+          keyword,
+          extracted: businesses.length,
+          added,
+          grandTotal: allResults.length,
+        })
+
+        // Brief inter-keyword pause (anti-rate-limit)
+        await pageRef.waitForTimeout(randomDelay(2000, 4000))
+      } catch (kwErr) {
+        sendProgress(sender, jobId, {
+          type: 'keyword-error',
+          keywordIndex: i + 1,
+          keyword,
+          error: kwErr.message,
+        })
+        // Continue with next keyword instead of aborting the entire job
+      }
+    }
+
+    // Save everything (with sanitizer)
+    saveLeads('google-maps', 'maps-bulk-extract', allResults.map((b) => ({
+      name: b.name,
+      phone: b.phone,
+      url: b.profile,
+      source: b.source,
+      extra: `${b.type || ''} | ${b.address || ''} | rating: ${b.rating || ''} (${b.reviewCount || ''}) | keyword: ${b.keyword}`,
+    })))
+
+    return {
+      success: true,
+      data: allResults,
+      count: allResults.length,
+      keywordsProcessed: cleanKeywords.length,
+      jobId,
+      cancelled: globals.cancelFlags.get(jobId),
+    }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: allResults, jobId, sessionId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
   }
 })
 
