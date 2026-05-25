@@ -10,11 +10,23 @@ import ToolPanel from '../../components/tools/ToolPanel'
 import {
   MapPin, Globe, Star,
   AlertCircle, CheckCircle, Loader2, Trash2, FileSpreadsheet,
-  Download, Eye, EyeOff, ExternalLink, LogIn, LogOut, Search, Wrench,
+  Download, Eye, EyeOff, ExternalLink, LogIn, LogOut, Search, Wrench, Layers,
 } from 'lucide-react'
 
-type ActiveTool = 'maps' | 'olx' | 'rate' | null
-type ResultsOwner = 'maps' | 'olx' | null
+type ActiveTool = 'maps' | 'bulk-maps' | 'olx' | 'rate' | null
+type ResultsOwner = 'maps' | 'bulk-maps' | 'olx' | null
+
+interface BulkProgress {
+  type: string
+  keywordIndex?: number
+  totalKeywords?: number
+  keyword?: string
+  count?: number
+  target?: number
+  grandTotal?: number
+  added?: number
+  error?: string
+}
 
 const ACCENT = '#4285F4'
 const ACCENT_GRADIENT = 'linear-gradient(135deg, #4285F4, #1a73e8)'
@@ -37,6 +49,12 @@ export default function GoogleModule() {
   const [rateUrl, setRateUrl] = useState('')
   const [rateStars, setRateStars] = useState(5)
   const [rateReview, setRateReview] = useState('')
+  // Bulk-maps state
+  const [bulkKeywordsText, setBulkKeywordsText] = useState('')
+  const [bulkLocation, setBulkLocation] = useState('')
+  const [bulkLimit, setBulkLimit] = useState(100)
+  const [bulkResults, setBulkResults] = useState<any[]>([])
+  const [bulkProgress, setBulkProgress] = useState<BulkProgress | null>(null)
   const { accounts: allAccounts } = useAccountsStore()
   const [selectedAccountId, setSelectedAccountId] = useState('')
   const [loginForm, setLoginForm] = useState({ username: '', password: '', proxy: '' })
@@ -58,6 +76,64 @@ export default function GoogleModule() {
       else showMsg(res.error || 'فشل الاستخراج', true)
     } catch (err: any) { showMsg(err.message || 'خطأ', true) }
     setLoading(false)
+  }
+
+  const handleBulkMapsExtract = async () => {
+    const keywords = bulkKeywordsText
+      .split('\n')
+      .map((k) => k.trim())
+      .filter((k) => k.length > 0)
+    if (keywords.length === 0) {
+      showMsg('أدخل كلمة مفتاحية واحدة على الأقل (سطر منفصل لكل كلمة)', true)
+      return
+    }
+    if (keywords.length > 50) {
+      showMsg('الحد الأقصى 50 كلمة في المرة الواحدة', true)
+      return
+    }
+    setLoading(true)
+    setResultsOwner('bulk-maps')
+    setBulkResults([])
+    setBulkProgress({ type: 'starting', totalKeywords: keywords.length, keyword: keywords[0] })
+
+    const jobId = `gmaps-bulk-ui-${Date.now()}`
+    // Listen to progress events from main
+    let cleanupProgress: (() => void) | undefined
+    try {
+      // Adapter — onExtractionProgress typings expect `{ type, count, total }`
+      // but the bulk handler sends a richer payload. Cast through unknown to
+      // satisfy TS while preserving runtime behavior.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      cleanupProgress = (window.electronAPI as any).onExtractionProgress?.((progress: { jobId?: string; status?: BulkProgress }) => {
+        if (progress?.jobId !== jobId) return
+        if (progress.status) setBulkProgress(progress.status)
+      })
+    } catch { /* progress is optional */ }
+
+    try {
+      const res = await window.electronAPI.googleMapsBulkExtract({
+        keywords,
+        location: bulkLocation,
+        limitPerKeyword: bulkLimit,
+        jobId,
+      })
+      if (res.success && res.data) {
+        setBulkResults((res.data as any[]) || [])
+        showMsg(`تم استخراج ${res.count ?? 0} نشاط تجاري عبر ${res.keywordsProcessed ?? keywords.length} كلمة مفتاحية ✓`)
+      } else {
+        showMsg(res.error || 'فشل الاستخراج', true)
+      }
+    } catch (err: any) {
+      showMsg(err.message || 'خطأ غير معروف', true)
+    } finally {
+      try { cleanupProgress?.() } catch { /* defensive */ }
+      setLoading(false)
+      setBulkProgress(null)
+    }
+  }
+
+  const handleExportBulkMaps = () => {
+    handleExport(['الاسم', 'الهاتف', 'العنوان', 'النوع', 'التقييم', 'الرابط', 'المصدر', 'التاريخ'], 'google-maps-bulk', bulkResults)
   }
 
   const handleOlxExtract = async () => {
@@ -140,7 +216,8 @@ export default function GoogleModule() {
     accentGradient: string
     requiresSession: boolean
   }> = [
-    { id: 'maps', name: 'خرائط جوجل', description: 'استخراج بيانات الأنشطة التجارية', icon: MapPin, accent: '#4285F4', accentGradient: 'linear-gradient(135deg, #4285F4, #1a73e8)', requiresSession: false },
+    { id: 'maps', name: 'خرائط جوجل', description: 'استخراج بيانات الأنشطة التجارية (كلمة واحدة)', icon: MapPin, accent: '#4285F4', accentGradient: 'linear-gradient(135deg, #4285F4, #1a73e8)', requiresSession: false },
+    { id: 'bulk-maps', name: 'استخراج جماعي', description: 'كلمات مفتاحية متعددة × 500 نتيجة لكل كلمة', icon: Layers, accent: '#8B5CF6', accentGradient: 'linear-gradient(135deg, #8B5CF6, #6d28d9)', requiresSession: false },
     { id: 'olx', name: 'OLX', description: 'استخراج الإعلانات من OLX', icon: Globe, accent: '#10b981', accentGradient: 'linear-gradient(135deg, #10b981, #047857)', requiresSession: false },
     { id: 'rate', name: 'تقييم Google', description: 'إرسال تقييمات لأماكن Google Maps', icon: Star, accent: '#f59e0b', accentGradient: 'linear-gradient(135deg, #f59e0b, #d97706)', requiresSession: true },
   ]
@@ -364,6 +441,156 @@ export default function GoogleModule() {
     </button>
   )
 
+  const renderBulkMapsBody = () => (
+    <div className="space-y-5">
+      <div className="p-4 rounded-xl border" style={{ background: 'rgba(139,92,246,0.06)', borderColor: 'rgba(139,92,246,0.2)' }}>
+        <div className="flex items-start gap-3">
+          <Layers size={20} className="flex-shrink-0 mt-0.5" style={{ color: '#8B5CF6' }} />
+          <div className="text-xs leading-relaxed text-secondary-700">
+            <strong>استخراج جماعي:</strong> اكتب الكلمات المفتاحية في سطور منفصلة (كل سطر = كلمة).
+            البرنامج هيمر على كل كلمة بالترتيب ويسحب حتى <strong>500 نشاط</strong> لكل واحدة.
+            النتايج مدمجة وبدون تكرار. الحد الأقصى 50 كلمة في المرة.
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <label className="label-field">الكلمات المفتاحية (سطر لكل كلمة)</label>
+        <textarea
+          className="textarea-field min-h-[120px] font-mono text-sm"
+          placeholder={`مطاعم\nصالونات تجميل\nعيادات اسنان\nصيدليات\nمحلات ملابس`}
+          value={bulkKeywordsText}
+          onChange={(e) => setBulkKeywordsText(e.target.value)}
+          dir="auto"
+        />
+        <div className="flex items-center justify-between mt-1.5">
+          <p className="text-[10px] text-secondary-500">
+            عدد الكلمات: {bulkKeywordsText.split('\n').filter((k) => k.trim()).length} / 50
+          </p>
+          <p className="text-[10px] text-secondary-500">
+            ⏱ تقدير: ~{Math.max(1, Math.round((bulkKeywordsText.split('\n').filter((k) => k.trim()).length * bulkLimit * 0.3) / 60))} دقيقة
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="label-field">المدينة / المنطقة (اختياري)</label>
+          <input
+            type="text"
+            className="input-field"
+            placeholder="مثال: القاهرة، الرياض، دبي..."
+            value={bulkLocation}
+            onChange={(e) => setBulkLocation(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="label-field">الحد لكل كلمة: {bulkLimit}</label>
+          <input
+            type="range"
+            min="50"
+            max="500"
+            step="50"
+            value={bulkLimit}
+            onChange={(e) => setBulkLimit(parseInt(e.target.value))}
+            className="w-full"
+          />
+        </div>
+      </div>
+
+      {/* Progress display */}
+      {bulkProgress && (
+        <div className="p-4 rounded-xl border" style={{ background: 'rgba(139,92,246,0.06)', borderColor: 'rgba(139,92,246,0.2)' }}>
+          <div className="flex items-center gap-2 mb-2">
+            <Loader2 size={16} className="animate-spin" style={{ color: '#8B5CF6' }} />
+            <span className="text-sm font-bold text-secondary-900">جاري الاستخراج...</span>
+          </div>
+          {bulkProgress.keyword && (
+            <p className="text-xs text-secondary-600 mb-1">
+              الكلمة الحالية: <span className="font-semibold text-violet-700">{bulkProgress.keyword}</span>
+              {bulkProgress.keywordIndex && bulkProgress.totalKeywords && (
+                <span className="text-secondary-500"> ({bulkProgress.keywordIndex}/{bulkProgress.totalKeywords})</span>
+              )}
+            </p>
+          )}
+          {bulkProgress.count !== undefined && bulkProgress.target !== undefined && (
+            <p className="text-xs text-secondary-600">
+              النتايج للكلمة: {bulkProgress.count} / {bulkProgress.target}
+            </p>
+          )}
+          {bulkProgress.grandTotal !== undefined && (
+            <p className="text-xs text-secondary-600 font-semibold">
+              إجمالي النتايج المجمّعة: {bulkProgress.grandTotal}
+            </p>
+          )}
+          {bulkProgress.totalKeywords && bulkProgress.keywordIndex && (
+            <div className="mt-2">
+              <div className="h-1.5 rounded-full bg-secondary-100 overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{
+                    width: `${(bulkProgress.keywordIndex / bulkProgress.totalKeywords) * 100}%`,
+                    background: 'linear-gradient(90deg, #8B5CF6, #6d28d9)',
+                  }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Results */}
+      {resultsOwner === 'bulk-maps' && bulkResults.length > 0 && (
+        <div className="mt-5 rounded-xl border border-secondary-200 bg-white/60 overflow-hidden">
+          <div className="flex items-center justify-between p-3 border-b border-secondary-100 flex-wrap gap-2">
+            <h4 className="font-bold text-secondary-900 text-sm">النتائج ({bulkResults.length})</h4>
+            <div className="flex gap-2">
+              <button onClick={handleExportBulkMaps} className="btn-success text-xs"><FileSpreadsheet size={14} /> تصدير CSV</button>
+              <button onClick={() => { setBulkResults([]); setResultsOwner(null) }} className="btn-danger text-xs"><Trash2 size={14} /> مسح</button>
+            </div>
+          </div>
+          <div className="table-container" style={{ maxHeight: '380px', overflow: 'auto' }}>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>#</th><th>الاسم</th><th>الهاتف</th><th>العنوان</th><th>التقييم</th><th>الكلمة المفتاحية</th>
+                </tr>
+              </thead>
+              <tbody>
+                {bulkResults.slice(0, 200).map((b, i) => (
+                  <tr key={i}>
+                    <td className="text-secondary-500">{i + 1}</td>
+                    <td className="font-medium">{b.name || '-'}</td>
+                    <td className="text-xs font-mono">{b.phone || '-'}</td>
+                    <td className="text-xs">{b.address || '-'}</td>
+                    <td><span className="flex items-center gap-1"><Star size={12} className="text-warning-500" />{b.rating || '-'}</span></td>
+                    <td className="text-xs text-violet-700 font-semibold">{b.keyword || '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {bulkResults.length > 200 && (
+              <p className="text-[11px] text-center py-2 text-secondary-500 bg-secondary-50">
+                عرض أول 200 نتيجة فقط — استخدم زر التصدير CSV لتنزيل الكل ({bulkResults.length})
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+
+  const bulkMapsFooter = (
+    <button
+      onClick={handleBulkMapsExtract}
+      disabled={loading || bulkKeywordsText.split('\n').filter((k) => k.trim()).length === 0}
+      className="btn-primary w-full disabled:opacity-50"
+      style={{ background: 'linear-gradient(135deg, #8B5CF6, #6d28d9)' }}
+    >
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Layers size={18} /> بدء الاستخراج الجماعي</>}
+    </button>
+  )
+
   const renderOlxBody = () => (
     <div className="space-y-5">
       <div className="grid grid-cols-2 gap-4">
@@ -434,6 +661,7 @@ export default function GoogleModule() {
 
   const panelMap: Record<Exclude<ActiveTool, null>, { body: React.ReactNode; footer: React.ReactNode }> = {
     maps: { body: renderMapsBody(), footer: mapsFooter },
+    'bulk-maps': { body: renderBulkMapsBody(), footer: bulkMapsFooter },
     olx: { body: renderOlxBody(), footer: olxFooter },
     rate: { body: renderRateBody(), footer: rateFooter },
   }

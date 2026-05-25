@@ -417,6 +417,7 @@ declare global {
 
       // Google
       googleMapsExtract: (data: Record<string, unknown>) => Promise<ExtractionResult>
+      googleMapsBulkExtract: (data: { keywords: string[]; location?: string; limitPerKeyword?: number; jobId?: string }) => Promise<ExtractionResult & { keywordsProcessed?: number }>
       olxExtract: (data: Record<string, unknown>) => Promise<ExtractionResult>
       googleRate: (data: Record<string, unknown>) => Promise<IpcResult>
 

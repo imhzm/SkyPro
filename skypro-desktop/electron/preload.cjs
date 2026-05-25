@@ -214,6 +214,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Google
   googleMapsExtract: (data) => ipcRenderer.invoke('google-maps-extract', data),
+  googleMapsBulkExtract: (data) => ipcRenderer.invoke('google-maps-bulk-extract', data),
   olxExtract: (data) => ipcRenderer.invoke('olx-extract', data),
   googleRate: (data) => ipcRenderer.invoke('google-rate', data),
 
