@@ -37,9 +37,7 @@ export function TrustedBySection() {
 
       <div className="relative z-10">
         <motion.p
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
+          initial={{ opacity: 1 }}
           className="text-center text-sm text-slate-600 mb-8 tracking-wide"
         >
           يثق بنا أكثر من <span className="text-slate-400 font-semibold">500+</span> شركة ومسوّق

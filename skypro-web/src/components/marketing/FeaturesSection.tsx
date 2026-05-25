@@ -487,21 +487,32 @@ export function FeaturesSection() {
               </div>
 
               {/* Image side */}
-              <div className="lg:[direction:rtl] relative">
-                <div className="absolute -inset-4 rounded-3xl blur-[80px] opacity-20" style={{ background: showcase.accentLight }} />
-                <div className="relative gradient-border p-1">
+              <Link
+                href={`/platforms/${showcase.id}`}
+                className="lg:[direction:rtl] relative block group/img cursor-pointer"
+                aria-label={`افتح صفحة ${showcase.title}`}
+              >
+                <div className="absolute -inset-4 rounded-3xl blur-[80px] opacity-20 group-hover/img:opacity-30 transition-opacity" style={{ background: showcase.accentLight }} />
+                <div className="relative gradient-border p-1 transition-transform duration-300 group-hover/img:scale-[1.02]">
                   <div className="rounded-[18px] overflow-hidden">
                     <Image
                       src={showcase.image}
                       alt={`${showcase.title} — صورة حية من داخل تطبيق SkyPro`}
                       width={1200}
                       height={800}
-                      className="w-full h-auto"
+                      className="w-full h-auto transition-transform duration-500 group-hover/img:scale-105"
                       loading="lazy"
                     />
                   </div>
+                  {/* "Open" overlay on hover */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity rounded-[18px] bg-gradient-to-t from-black/60 to-transparent pointer-events-none">
+                    <span className="px-5 py-2.5 rounded-full text-sm font-bold text-white shadow-2xl"
+                      style={{ background: showcase.accentLight, boxShadow: `0 8px 24px ${showcase.accentLight}80` }}>
+                      افتح صفحة {showcase.title.split('—')[0].trim()}
+                    </span>
+                  </div>
                 </div>
-              </div>
+              </Link>
             </motion.div>
           ))}
         </div>

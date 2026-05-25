@@ -6,19 +6,37 @@ import { sweepExpiredAccess } from '@/lib/subscription-maintenance'
 
 export const dynamic = 'force-dynamic'
 
+// In-memory cache for sweep result. The dashboard polls every 15s but the
+// sweep involves DB scans + updates — we don't need to run it more than
+// once every 5 minutes. The endpoint still recomputes counts on every
+// request (fresh data), only the sweep itself is rate-limited.
+let lastSweepAt = 0
+let lastSweepResult: { expiredKeys: number; expiredSubscriptions: number; disabledDevices: number } = {
+  expiredKeys: 0,
+  expiredSubscriptions: 0,
+  disabledDevices: 0,
+}
+const SWEEP_THROTTLE_MS = 5 * 60 * 1000 // 5 min
+
 export async function GET() {
   try {
     const guard = await requireAdmin()
     if (guard.response) return guard.response
 
-    // Run the auto-expire sweep BEFORE collecting counts so the dashboard
-    // numbers reflect the latest state. Fire-and-forget logging — failures
-    // shouldn't block the stats response.
-    let sweepResult = { expiredKeys: 0, expiredSubscriptions: 0, disabledDevices: 0 }
-    try {
-      sweepResult = await sweepExpiredAccess()
-    } catch (e) {
-      console.error('[Stats] sweepExpiredAccess failed:', e)
+    // Throttle the auto-expire sweep — it's expensive (DB scans + transactional
+    // updates) and the same dashboard refresh fires every 15s. Once per 5 min
+    // is plenty for catching newly-expired keys; the subsequent stats counts
+    // are always fresh.
+    let sweepResult = lastSweepResult
+    const now = Date.now()
+    if (now - lastSweepAt >= SWEEP_THROTTLE_MS) {
+      try {
+        sweepResult = await sweepExpiredAccess()
+        lastSweepAt = now
+        lastSweepResult = sweepResult
+      } catch (e) {
+        console.error('[Stats] sweepExpiredAccess failed:', e)
+      }
     }
 
     const [

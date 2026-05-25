@@ -67,9 +67,15 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json(errorResponse('بيانات غير صالحة'), { status: 400 })
     }
 
+    // CRITICAL FIX: only mark THIS user's own notifications as read.
+    // Broadcast rows (userId=null) are shared — marking them read would
+    // hide the broadcast from EVERY user, not just this one. The user-side
+    // GET endpoint already shows broadcasts to all users via OR clause.
+    // Until we add per-user read receipts for broadcasts, we just skip
+    // them in mark-read so the broadcast stays visible to all users.
     const where: Record<string, unknown> = parsed.data.all
-      ? { OR: [{ userId }, { userId: null }], readAt: null }
-      : { id: { in: parsed.data.ids ?? [] }, OR: [{ userId }, { userId: null }] }
+      ? { userId, readAt: null }
+      : { id: { in: parsed.data.ids ?? [] }, userId }
 
     const result = await prisma.notification.updateMany({
       where,

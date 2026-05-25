@@ -11,12 +11,13 @@ const SITE_URL = 'https://skypro.skywaveads.com'
 export const metadata: Metadata = {
   title: 'المنصات المدعومة | SkyPro — 18+ منصة تسويق آلي بالذكاء الاصطناعي',
   description:
-    'اكتشف 18+ منصة مدعومة في SkyPro لأتمتة التسويق: فيسبوك، واتساب، انستغرام، تويتر، لينكد إن، تيليجرام، تيك توك وأكثر. أدِر كل قنواتك من لوحة تحكم واحدة.',
+    'اكتشف 18+ منصة مدعومة في SkyPro لأتمتة التسويق: فيسبوك، واتساب، انستغرام، تويتر، لينكد إن، تيليجرام، تيك توك وأكثر. أدِر كل قنواتك من لوحة تحكم واحدة بسعر 2,000 ج.م/سنة.',
   keywords: [
     'منصات تسويق آلي', 'تسويق فيسبوك', 'تسويق واتساب', 'تسويق انستغرام',
     'تسويق تويتر', 'تسويق لينكد إن', 'تسويق تيليجرام', 'تسويق تيك توك',
     'تسويق سناب شات', 'تسويق ريديت', 'تسويق بنترست', 'تسويق سوشيال ميديا',
     'SkyPro', 'Sky Wave', 'social media automation', 'multi-platform marketing',
+    'افضل برنامج تسويق سوشيال ميديا 2026', 'برنامج تسويق آلي عربي',
   ],
   alternates: { canonical: `${SITE_URL}/platforms` },
   openGraph: {
@@ -26,6 +27,25 @@ export const metadata: Metadata = {
     url: `${SITE_URL}/platforms`,
     siteName: 'SkyPro — Sky Wave',
     type: 'website',
+    images: [
+      {
+        url: '/images/app/skypro-multi-platform-dashboard.png',
+        width: 1920,
+        height: 1080,
+        alt: 'SkyPro — 18+ منصة تسويق في تطبيق واحد',
+      },
+    ],
+    locale: 'ar_EG',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    site: '@skywaveads',
+    title: 'المنصات المدعومة | SkyPro — 18+ منصة في تطبيق واحد',
+    description: 'فيسبوك، واتساب، انستغرام، تويتر، تيك توك وأكثر — كلها مدعومة في SkyPro.',
+    images: ['/images/app/skypro-multi-platform-dashboard.png'],
+  },
+  other: {
+    'article:modified_time': new Date().toISOString(),
   },
 }
 

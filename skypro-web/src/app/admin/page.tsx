@@ -33,7 +33,11 @@ interface Stats {
   generatedAt?: string
 }
 
-const REFRESH_INTERVAL_MS = 15_000
+// Auto-refresh interval bumped from 15s → 60s. With 19+ parallel Prisma
+// queries on every request, 15s was hammering the DB unnecessarily.
+// 60s is still real-time enough for an admin dashboard while reducing
+// load by 4×. Users can always click the manual refresh button.
+const REFRESH_INTERVAL_MS = 60_000
 
 const statusLabel: Record<string, string> = {
   active: 'نشط',
