@@ -1,11 +1,34 @@
 ﻿'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useState, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { Check, ArrowLeft, Shield, Zap, Clock, Headphones, Star, Search } from 'lucide-react'
 import { PlatformIcon } from '@/components/marketing/PlatformIcon'
 import type { PlatformPageData } from '@/data/platform-pages'
+
+// Real app screenshots per platform — used as card cover images.
+// Maps platform.id → an image filename in /public/images/app/.
+const PLATFORM_CARD_IMAGES: Record<string, string> = {
+  facebook: '/images/app/facebook-marketing-tools.png',
+  whatsapp: '/images/app/whatsapp-marketing-tools-grid.png',
+  instagram: '/images/app/instagram-marketing-tools.png',
+  twitter: '/images/app/twitter-x-marketing-tools.png',
+  linkedin: '/images/app/linkedin-b2b-tools-grid.png',
+  telegram: '/images/app/telegram-marketing-suite.png',
+  'telegram-premium': '/images/app/telegram-premium-exclusive-tools.png',
+  snapchat: '/images/app/snapchat-marketing-tools.png',
+  pinterest: '/images/app/pinterest-marketing-tools.png',
+  reddit: '/images/app/reddit-community-marketing.png',
+  threads: '/images/app/threads-marketing-tools.png',
+  tiktok: '/images/app/tiktok-marketing-automation.png',
+  'google-maps': '/images/app/google-maps-data-extraction.png',
+  google: '/images/app/google-maps-data-extraction.png',
+  'send-emails': '/images/app/skypro-send-emails-smtp-tools.png',
+  'auto-point': '/images/app/skypro-auto-point-automation.png',
+  olx: '/images/app/google-maps-data-extraction.png',
+}
 
 const trustBadges = [
   { icon: Shield, label: 'حماية متقدمة من الحظر' },
@@ -131,54 +154,70 @@ export function PlatformsListContent({ pages }: { pages: PlatformPageData[] }) {
 
           {/* Platform Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filtered.map((p, i) => (
-              <motion.div
-                key={p.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: Math.min(i * 0.04, 0.3), duration: 0.4 }}
-              >
-                <Link
-                  href={`/platforms/${p.id}`}
-                  className="glass-card p-6 group block"
+            {filtered.map((p, i) => {
+              const cardImage = PLATFORM_CARD_IMAGES[p.id] || '/images/app/skypro-multi-platform-dashboard.png'
+              return (
+                <motion.div
+                  key={p.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: Math.min(i * 0.04, 0.3), duration: 0.4 }}
                 >
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl shrink-0 group-hover:scale-110 transition-transform" style={{ background: `${p.color}15` }}>
-                      <PlatformIcon id={p.id} size={26} style={{ color: p.color }} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-bold text-white">{p.arabicName}</h3>
-                      <p className="text-sm text-slate-500 line-clamp-1">{p.tagline}</p>
-                    </div>
-                    <ArrowLeft className="h-4 w-4 text-slate-600 group-hover:text-sky-400 transition-all group-hover:-translate-x-1 rotate-180 shrink-0" />
-                  </div>
-
-                  <div className="flex flex-wrap gap-1.5 mb-4">
-                    {p.features.slice(0, 3).map((f) => (
-                      <span key={f.title} className="inline-flex items-center gap-1 rounded-lg bg-white/5 border border-white/8 px-2.5 py-1 text-[11px] font-medium text-slate-400">
-                        <Check className="h-2.5 w-2.5" style={{ color: p.color }} />
-                        {f.title}
-                      </span>
-                    ))}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 mb-4">
-                    {p.stats.slice(0, 2).map((s, si) => (
-                      <div key={si} className="text-center bg-white/[0.03] rounded-lg py-2">
-                        <div className="text-sm font-bold" style={{ color: p.color }}>{s.value}</div>
-                        <div className="text-[10px] text-slate-500">{s.label}</div>
+                  <Link href={`/platforms/${p.id}`} className="glass-card overflow-hidden group block transition-transform hover:-translate-y-1">
+                    {/* Image cover */}
+                    <div className="relative h-44 overflow-hidden">
+                      <Image
+                        src={cardImage}
+                        alt={`${p.arabicName} — صورة من داخل تطبيق SkyPro`}
+                        width={800}
+                        height={500}
+                        className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#060d1b] via-[#060d1b]/60 to-transparent" />
+                      {/* Platform icon badge floating on image */}
+                      <div
+                        className="absolute top-3 right-3 flex h-12 w-12 items-center justify-center rounded-2xl backdrop-blur-md shadow-lg"
+                        style={{ background: `${p.color}30`, border: `1px solid ${p.color}50` }}
+                      >
+                        <PlatformIcon id={p.id} size={24} style={{ color: p.color }} />
                       </div>
-                    ))}
-                  </div>
+                      {/* Title overlay on bottom of image */}
+                      <div className="absolute bottom-0 right-0 left-0 px-4 pb-3">
+                        <h3 className="text-lg font-bold text-white drop-shadow-md">{p.arabicName}</h3>
+                        <p className="text-xs text-slate-300 line-clamp-1 mt-0.5">{p.tagline}</p>
+                      </div>
+                    </div>
 
-                  <div className="flex items-center gap-2 text-sky-400 text-sm font-medium group-hover:gap-3 transition-all">
-                    <span>اكتشف المنصة</span>
-                    <ArrowLeft className="h-3.5 w-3.5 rotate-180" />
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
+                    <div className="p-5">
+                      <div className="flex flex-wrap gap-1.5 mb-4">
+                        {p.features.slice(0, 3).map((f) => (
+                          <span key={f.title} className="inline-flex items-center gap-1 rounded-lg bg-white/5 border border-white/8 px-2.5 py-1 text-[11px] font-medium text-slate-400">
+                            <Check className="h-2.5 w-2.5" style={{ color: p.color }} />
+                            {f.title}
+                          </span>
+                        ))}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 mb-4">
+                        {p.stats.slice(0, 2).map((s, si) => (
+                          <div key={si} className="text-center bg-white/[0.03] rounded-lg py-2">
+                            <div className="text-sm font-bold" style={{ color: p.color }}>{s.value}</div>
+                            <div className="text-[10px] text-slate-500">{s.label}</div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="flex items-center gap-2 text-sm font-medium group-hover:gap-3 transition-all" style={{ color: p.color }}>
+                        <span>اكتشف المنصة بالتفصيل</span>
+                        <ArrowLeft className="h-3.5 w-3.5 rotate-180" />
+                      </div>
+                    </div>
+                  </Link>
+                </motion.div>
+              )
+            })}
           </div>
 
           {filtered.length === 0 && (

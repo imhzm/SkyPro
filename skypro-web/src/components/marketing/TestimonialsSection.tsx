@@ -116,12 +116,10 @@ export function TestimonialsSection() {
           ))}
         </motion.div>
 
-        {/* Marquee testimonials */}
+        {/* Marquee testimonials — always visible (opacity:1 on mount) so users
+            don't see an empty section flash while waiting for whileInView to fire. */}
         <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.2, duration: 0.8 }}
+          initial={{ opacity: 1 }}
           className="marquee-container"
         >
           <div className="marquee-track" style={{ animationDuration: '50s' }}>
