@@ -54,8 +54,10 @@ const testimonials = [
   },
 ]
 
-// Duplicate for infinite marquee
-const marqueeItems = [...testimonials, ...testimonials]
+// Triple the items so the -33.333% keyframe wraps seamlessly with buffer.
+// Doubling + -50% was technically correct math but showed visible gaps on
+// slow paint cycles or near sub-pixel rounding boundaries.
+const marqueeItems = [...testimonials, ...testimonials, ...testimonials]
 
 const stats = [
   { value: '4.9', label: 'تقييم المستخدمين' },

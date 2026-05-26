@@ -15,7 +15,10 @@ const trustedCompanies = [
   { name: 'سمارت هب', initial: 'ه' },
 ]
 
-const marqueeItems = [...trustedCompanies, ...trustedCompanies]
+// Triple the items so the -33.333% keyframe wraps seamlessly with buffer.
+// Doubling + -50% was technically correct math but left visible empty space
+// on slow paint cycles or near sub-pixel rounding boundaries.
+const marqueeItems = [...trustedCompanies, ...trustedCompanies, ...trustedCompanies]
 
 const colors = [
   'from-sky-400 to-blue-600',
