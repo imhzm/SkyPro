@@ -198,6 +198,17 @@ body {
 
   /* Marquee for trusted-by and testimonials */
   .marquee-container {
+    /* The marquee math assumes LTR layout: translateX(-X%) scrolls the
+       track LEFT, exposing new items on the right edge of the viewport.
+       Our page is <html dir="rtl">, which by default lays the
+       max-content-wide track flush against the container's RIGHT edge —
+       so translating LEFT pulls the track off the viewport entirely and
+       leaves a visible empty area on the right. Forcing LTR here puts
+       the track flush against the LEFT edge with content extending right
+       off-screen, which is what the keyframe expects. Each item below
+       restores direction:rtl so Arabic text inside still aligns
+       naturally. */
+    direction: ltr;
     overflow: hidden;
     position: relative;
   }
@@ -226,13 +237,20 @@ body {
   .marquee-track {
     display: flex;
     gap: 2rem;
-    /* Padding-right (LTR base) leaves the trailing gap inside the track so
-       the -33.333% translate lands on the START of the second copy of the
-       tripled set — seamless wraparound with a full extra copy as buffer. */
-    padding-inline-end: 2rem;
+    /* Trailing right-padding sits inside the track so the -33.333%
+       translate lands on the START of the second copy of the tripled set
+       — seamless wraparound with a full extra copy as buffer. */
+    padding-right: 2rem;
     animation: marquee 30s linear infinite;
     width: max-content;
     will-change: transform;
+  }
+
+  /* Restore RTL on each direct child so Arabic text inside testimonial
+     paragraphs / company names still aligns to the right and reads
+     naturally. Only the marquee LAYOUT is LTR; the content is RTL. */
+  .marquee-track > * {
+    direction: rtl;
   }
 
   .marquee-track:hover {
