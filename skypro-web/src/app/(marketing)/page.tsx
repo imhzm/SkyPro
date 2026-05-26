@@ -8,8 +8,6 @@ import { TestimonialsSection } from '@/components/marketing/TestimonialsSection'
 import { PricingSection } from '@/components/marketing/PricingSection'
 import { FaqSection } from '@/components/marketing/FaqSection'
 import { CtaSection } from '@/components/marketing/CtaSection'
-import { SkyERPAdSection } from '@/components/marketing/SkyERPAdSection'
-import { SkyCRMAdSection } from '@/components/marketing/SkyCRMAdSection'
 import { Footer } from '@/components/marketing/Footer'
 import { WhatsAppButton } from '@/components/marketing/WhatsAppButton'
 import { CosmicBackground } from '@/components/marketing/CosmicBackground'
@@ -254,8 +252,11 @@ export default function HomePage() {
       <PricingSection />
       <FaqSection />
       <CtaSection />
-      <SkyERPAdSection />
-      <SkyCRMAdSection />
+      {/* SkyERPAdSection + SkyCRMAdSection removed v1.x — replaced by the
+          3-card Sky Wave ecosystem section inside Footer.tsx (Sky ERP +
+          SkyWave Pay + Sky CRM). Having the same content in two places
+          made the home page LONG and showed as huge empty sections while
+          the lazy-loaded content was rendering. */}
       <Footer />
       <WhatsAppButton />
     </main>

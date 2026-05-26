@@ -227,8 +227,8 @@ body {
     display: flex;
     gap: 2rem;
     /* Padding-right (LTR base) leaves the trailing gap inside the track so
-       the -50% translate lands on the START of the duplicated set rather
-       than skipping the gap — seamless wraparound. */
+       the -33.333% translate lands on the START of the second copy of the
+       tripled set — seamless wraparound with a full extra copy as buffer. */
     padding-inline-end: 2rem;
     animation: marquee 30s linear infinite;
     width: max-content;
@@ -317,10 +317,13 @@ body {
   }
 
   @keyframes marquee {
-    /* The track contains the items twice, so translating exactly -50% lands
-       the start of the second copy where the first one began — seamless. */
+    /* The track contains items THREE times. Translating exactly -33.333%
+       (one full copy width) lands the start of copy 2 where copy 1 began,
+       which is visually identical — seamless. The third copy is buffer
+       that guarantees viewport-right never hits empty space, even on slow
+       paint cycles or RTL sub-pixel rounding. */
     0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
+    100% { transform: translateX(-33.333%); }
   }
 
   /* ============== Cosmic Background animations ============== */
