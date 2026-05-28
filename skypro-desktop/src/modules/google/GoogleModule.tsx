@@ -13,14 +13,37 @@ import {
   Download, Eye, EyeOff, ExternalLink, LogIn, LogOut, Search, Wrench, Layers,
 } from 'lucide-react'
 
-type ActiveTool = 'maps' | 'bulk-maps' | 'olx' | 'rate' | null
-type ResultsOwner = 'maps' | 'bulk-maps' | 'olx' | null
+type ActiveTool = 'maps' | 'bulk-maps' | 'bulk-matrix' | 'olx' | 'rate' | 'reviews-extract' | null
+type ResultsOwner = 'maps' | 'bulk-maps' | 'bulk-matrix' | 'olx' | 'reviews-extract' | null
+type RateMode = 'single' | 'bulk'
+
+interface ReviewItem {
+  id: string
+  text: string
+  rating: number
+}
+
+interface RateBulkResult {
+  accountId: number
+  username?: string
+  rating?: number
+  reviewText?: string
+  success: boolean
+  error?: string
+}
 
 interface BulkProgress {
   type: string
+  // Keyword-bulk mode
   keywordIndex?: number
   totalKeywords?: number
   keyword?: string
+  // Matrix mode
+  comboIndex?: number
+  totalCombos?: number
+  totalCities?: number
+  city?: string
+  // Common
   count?: number
   target?: number
   grandTotal?: number
@@ -49,12 +72,31 @@ export default function GoogleModule() {
   const [rateUrl, setRateUrl] = useState('')
   const [rateStars, setRateStars] = useState(5)
   const [rateReview, setRateReview] = useState('')
+  const [rateMode, setRateMode] = useState<RateMode>('single')
+  const [rateReviewsList, setRateReviewsList] = useState<ReviewItem[]>([
+    { id: 'r1', text: '', rating: 5 },
+  ])
+  const [rateSelectedAccountIds, setRateSelectedAccountIds] = useState<number[]>([])
+  const [rateDelaySec, setRateDelaySec] = useState(20)
+  const [rateBulkResults, setRateBulkResults] = useState<RateBulkResult[]>([])
+  const [rateBulkProgress, setRateBulkProgress] = useState<{ index: number; total: number; username?: string; success?: boolean } | null>(null)
+  // Reviews extract
+  const [reviewsUrl, setReviewsUrl] = useState('')
+  const [reviewsLimit, setReviewsLimit] = useState(100)
+  const [reviewsSort, setReviewsSort] = useState<'newest' | 'highest' | 'lowest' | 'relevant'>('newest')
+  const [reviewsResults, setReviewsResults] = useState<any[]>([])
   // Bulk-maps state
   const [bulkKeywordsText, setBulkKeywordsText] = useState('')
   const [bulkLocation, setBulkLocation] = useState('')
-  const [bulkLimit, setBulkLimit] = useState(100)
+  const [bulkLimit, setBulkLimit] = useState(200)
   const [bulkResults, setBulkResults] = useState<any[]>([])
   const [bulkProgress, setBulkProgress] = useState<BulkProgress | null>(null)
+  // Matrix mode state (cities × keywords)
+  const [matrixKeywordsText, setMatrixKeywordsText] = useState('')
+  const [matrixCitiesText, setMatrixCitiesText] = useState('')
+  const [matrixLimit, setMatrixLimit] = useState(200)
+  const [matrixResults, setMatrixResults] = useState<any[]>([])
+  const [matrixProgress, setMatrixProgress] = useState<BulkProgress | null>(null)
   const { accounts: allAccounts } = useAccountsStore()
   const [selectedAccountId, setSelectedAccountId] = useState('')
   const [loginForm, setLoginForm] = useState({ username: '', password: '', proxy: '' })
@@ -132,8 +174,107 @@ export default function GoogleModule() {
     }
   }
 
-  const handleExportBulkMaps = () => {
-    handleExport(['الاسم', 'الهاتف', 'العنوان', 'النوع', 'التقييم', 'الرابط', 'المصدر', 'التاريخ'], 'google-maps-bulk', bulkResults)
+  // Build a properly-structured CSV row with the columns users actually want
+  // (name → phone → rating → reviewCount → category → address → city →
+  // keyword → URL). All values pre-stringified so the IPC layer just writes.
+  const sanitize = (v: unknown): string => {
+    if (v === undefined || v === null) return ''
+    const s = String(v)
+    // Defang Excel/Sheets formula injection at the start of a cell — leading
+    // = + - @ get prefixed with apostrophe. Matches what usePlatform does.
+    return /^[=+\-@]/.test(s) ? `'${s}` : s
+  }
+
+  const handleExportBulkMaps = async () => {
+    if (bulkResults.length === 0) { showMsg('لا توجد نتائج للتصدير', true); return }
+    const headers = ['الاسم', 'الكلمة المفتاحية', 'الهاتف', 'التقييم', 'عدد التقييمات', 'النوع', 'العنوان', 'الرابط', 'المصدر', 'تاريخ الاستخراج']
+    const today = new Date().toISOString().slice(0, 10)
+    const data = bulkResults.map((r) => ({
+      'الاسم': sanitize(r.name),
+      'الكلمة المفتاحية': sanitize(r.keyword),
+      'الهاتف': sanitize(r.phone),
+      'التقييم': sanitize(r.rating),
+      'عدد التقييمات': sanitize(r.reviewCount),
+      'النوع': sanitize(r.type),
+      'العنوان': sanitize(r.address),
+      'الرابط': sanitize(r.profile),
+      'المصدر': sanitize(r.source),
+      'تاريخ الاستخراج': today,
+    }))
+    const filename = `google-maps-bulk-${today}-${Date.now()}.csv`
+    const res = await window.electronAPI.exportToCSV({ filename, data, headers })
+    if (res.success) showMsg(`تم التصدير إلى: ${res.path}`)
+    else showMsg(res.error || 'فشل التصدير', true)
+  }
+
+  const handleExportMatrix = async () => {
+    if (matrixResults.length === 0) { showMsg('لا توجد نتائج للتصدير', true); return }
+    const headers = ['الاسم', 'المدينة', 'الكلمة المفتاحية', 'الهاتف', 'التقييم', 'عدد التقييمات', 'النوع', 'العنوان', 'الرابط', 'المصدر', 'تاريخ الاستخراج']
+    const today = new Date().toISOString().slice(0, 10)
+    const data = matrixResults.map((r) => ({
+      'الاسم': sanitize(r.name),
+      'المدينة': sanitize(r.city),
+      'الكلمة المفتاحية': sanitize(r.keyword),
+      'الهاتف': sanitize(r.phone),
+      'التقييم': sanitize(r.rating),
+      'عدد التقييمات': sanitize(r.reviewCount),
+      'النوع': sanitize(r.type),
+      'العنوان': sanitize(r.address),
+      'الرابط': sanitize(r.profile),
+      'المصدر': sanitize(r.source),
+      'تاريخ الاستخراج': today,
+    }))
+    const filename = `google-maps-matrix-${today}-${Date.now()}.csv`
+    const res = await window.electronAPI.exportToCSV({ filename, data, headers })
+    if (res.success) showMsg(`تم التصدير إلى: ${res.path}`)
+    else showMsg(res.error || 'فشل التصدير', true)
+  }
+
+  const handleMatrixExtract = async () => {
+    const keywords = matrixKeywordsText.split('\n').map((k) => k.trim()).filter(Boolean)
+    const cities = matrixCitiesText.split('\n').map((c) => c.trim()).filter(Boolean)
+    if (keywords.length === 0) { showMsg('أدخل كلمة مفتاحية واحدة على الأقل', true); return }
+    if (cities.length === 0) { showMsg('أدخل مدينة واحدة على الأقل', true); return }
+    const combos = keywords.length * cities.length
+    if (combos > 200) {
+      showMsg(`عدد التركيبات (${combos}) يتجاوز 200. قلّل المدن أو الكلمات.`, true)
+      return
+    }
+    setLoading(true)
+    setResultsOwner('bulk-matrix')
+    setMatrixResults([])
+    setMatrixProgress({ type: 'starting', totalCombos: combos, totalCities: cities.length, totalKeywords: keywords.length } as BulkProgress)
+
+    const jobId = `gmaps-matrix-ui-${Date.now()}`
+    let cleanupProgress: (() => void) | undefined
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      cleanupProgress = (window.electronAPI as any).onExtractionProgress?.((progress: { jobId?: string; status?: BulkProgress }) => {
+        if (progress?.jobId !== jobId) return
+        if (progress.status) setMatrixProgress(progress.status)
+      })
+    } catch { /* progress is optional */ }
+
+    try {
+      const res = await window.electronAPI.googleMapsBulkExtractMatrix({
+        keywords,
+        cities,
+        limitPerCombo: matrixLimit,
+        jobId,
+      })
+      if (res.success && res.data) {
+        setMatrixResults((res.data as any[]) || [])
+        showMsg(`تم استخراج ${res.count ?? 0} نشاط عبر ${res.combosProcessed ?? combos} تركيبة (${cities.length} مدن × ${keywords.length} كلمات) ✓`)
+      } else {
+        showMsg(res.error || 'فشل الاستخراج', true)
+      }
+    } catch (err: any) {
+      showMsg(err.message || 'خطأ غير معروف', true)
+    } finally {
+      try { cleanupProgress?.() } catch { /* defensive */ }
+      setLoading(false)
+      setMatrixProgress(null)
+    }
   }
 
   const handleOlxExtract = async () => {
@@ -157,6 +298,118 @@ export default function GoogleModule() {
       else showMsg(res.error || 'فشل التقييم', true)
     } catch (err: any) { showMsg(err.message || 'خطأ', true) }
     setLoading(false)
+  }
+
+  const handleRateBulk = async () => {
+    if (!rateUrl.trim()) { showMsg('أدخل رابط المكان', true); return }
+    const reviews = rateReviewsList
+      .map((r) => ({ text: r.text.trim(), rating: Math.min(5, Math.max(1, r.rating)) }))
+      .filter((r) => r.text.length > 0)
+    if (reviews.length === 0) { showMsg('أضف تقييماً واحداً على الأقل (مع نص)', true); return }
+    if (rateSelectedAccountIds.length === 0) { showMsg('اختر حساباً واحداً على الأقل', true); return }
+
+    setLoading(true)
+    setRateBulkResults([])
+    setRateBulkProgress({ index: 0, total: rateSelectedAccountIds.length })
+
+    const jobId = `gmaps-rate-bulk-ui-${Date.now()}`
+    let cleanupProgress: (() => void) | undefined
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      cleanupProgress = (window.electronAPI as any).onExtractionProgress?.((progress: { jobId?: string; status?: any }) => {
+        if (progress?.jobId !== jobId) return
+        const s = progress.status
+        if (!s) return
+        if (s.type === 'account-start' || s.type === 'account-done' || s.type === 'account-error') {
+          setRateBulkProgress({
+            index: s.accountIndex || 0,
+            total: s.totalAccounts || rateSelectedAccountIds.length,
+            username: s.username,
+            success: s.success,
+          })
+        }
+      })
+    } catch { /* progress is optional */ }
+
+    try {
+      const res = await window.electronAPI.googleRateBulk({
+        placeUrl: rateUrl,
+        reviews,
+        accountIds: rateSelectedAccountIds,
+        delayBetweenSec: rateDelaySec,
+        jobId,
+      })
+      if (res.success) {
+        setRateBulkResults((res.results as RateBulkResult[]) || [])
+        showMsg(`تم: ${res.totalSucceeded ?? 0}/${res.totalAttempted ?? 0} تقييم ✓`)
+      } else {
+        showMsg(res.error || 'فشل التقييم الجماعي', true)
+      }
+    } catch (err: any) {
+      showMsg(err.message || 'خطأ غير معروف', true)
+    } finally {
+      try { cleanupProgress?.() } catch { /* defensive */ }
+      setLoading(false)
+      setRateBulkProgress(null)
+    }
+  }
+
+  const handleReviewsExtract = async () => {
+    if (!reviewsUrl.trim()) { showMsg('أدخل رابط المكان', true); return }
+    setLoading(true)
+    setResultsOwner('reviews-extract')
+    setReviewsResults([])
+    try {
+      const res = await window.electronAPI.googleReviewsExtract({
+        placeUrl: reviewsUrl,
+        limit: reviewsLimit,
+        sortBy: reviewsSort,
+      })
+      if (res.success && res.data) {
+        setReviewsResults((res.data as any[]) || [])
+        showMsg(`تم استخراج ${res.count ?? res.data?.length ?? 0} تقييم`)
+      } else {
+        showMsg(res.error || 'فشل الاستخراج', true)
+      }
+    } catch (err: any) {
+      showMsg(err.message || 'خطأ', true)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleExportReviews = async () => {
+    if (reviewsResults.length === 0) { showMsg('لا توجد نتائج للتصدير', true); return }
+    const headers = ['الكاتب', 'التقييم', 'التاريخ', 'النص', 'الرابط', 'المكان', 'تاريخ الاستخراج']
+    const today = new Date().toISOString().slice(0, 10)
+    const data = reviewsResults.map((r) => ({
+      'الكاتب': sanitize(r.author),
+      'التقييم': sanitize(r.rating),
+      'التاريخ': sanitize(r.date),
+      'النص': sanitize(r.text),
+      'الرابط': sanitize(r.profileUrl),
+      'المكان': sanitize(reviewsUrl),
+      'تاريخ الاستخراج': today,
+    }))
+    const filename = `google-reviews-${today}-${Date.now()}.csv`
+    const res = await window.electronAPI.exportToCSV({ filename, data, headers })
+    if (res.success) showMsg(`تم التصدير إلى: ${res.path}`)
+    else showMsg(res.error || 'فشل التصدير', true)
+  }
+
+  const addReviewItem = () => {
+    if (rateReviewsList.length >= 30) { showMsg('الحد الأقصى 30 تقييم', true); return }
+    setRateReviewsList([...rateReviewsList, { id: `r${Date.now()}`, text: '', rating: 5 }])
+  }
+  const removeReviewItem = (id: string) => {
+    if (rateReviewsList.length <= 1) return
+    setRateReviewsList(rateReviewsList.filter((r) => r.id !== id))
+  }
+  const updateReviewItem = (id: string, patch: Partial<ReviewItem>) => {
+    setRateReviewsList(rateReviewsList.map((r) => (r.id === id ? { ...r, ...patch } : r)))
+  }
+  const toggleAccountSelection = (id: number) => {
+    setRateSelectedAccountIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
   }
 
   const handleLaunchBrowser = async () => {
@@ -188,23 +441,39 @@ export default function GoogleModule() {
     handleExport(['الاسم', 'التقييم', 'العنوان', 'النوع', 'الهاتف', 'المصدر', 'التاريخ'], 'google-maps', mapsResults)
   }
 
-  const handleExportOlx = () => {
-    handleExport(['العنوان', 'السعر', 'الموقع', 'الرابط', 'المصدر', 'التاريخ'], 'olx', olxResults)
+  const handleExportOlx = async () => {
+    if (olxResults.length === 0) { showMsg('لا توجد نتائج للتصدير', true); return }
+    const headers = ['العنوان', 'السعر', 'الموقع', 'تاريخ النشر', 'الرابط', 'الصورة', 'المصدر', 'تاريخ الاستخراج']
+    const today = new Date().toISOString().slice(0, 10)
+    const data = olxResults.map((r) => ({
+      'العنوان': sanitize(r.title),
+      'السعر': sanitize(r.price),
+      'الموقع': sanitize(r.location),
+      'تاريخ النشر': sanitize(r.postedDate),
+      'الرابط': sanitize(r.link),
+      'الصورة': sanitize(r.image),
+      'المصدر': sanitize(r.source || (r.link ? new URL(r.link).hostname : '')),
+      'تاريخ الاستخراج': today,
+    }))
+    const filename = `dubizzle-${olxCountry}-${olxCategory}-${today}-${Date.now()}.csv`
+    const res = await window.electronAPI.exportToCSV({ filename, data, headers })
+    if (res.success) showMsg(`تم التصدير إلى: ${res.path}`)
+    else showMsg(res.error || 'فشل التصدير', true)
   }
 
   const countries = [
-    { value: 'egypt', label: 'مصر' },
-    { value: 'saudi', label: 'السعودية' },
-    { value: 'uae', label: 'الإمارات' },
-    { value: 'qatar', label: 'قطر' },
-    { value: 'kuwait', label: 'الكويت' },
+    { value: 'egypt',  label: 'مصر (Dubizzle)' },
+    { value: 'saudi',  label: 'السعودية (Dubizzle)' },
+    { value: 'uae',    label: 'الإمارات (Dubizzle)' },
+    { value: 'qatar',  label: 'قطر (OLX)' },
+    { value: 'kuwait', label: 'الكويت (OLX)' },
   ]
 
   const categories = [
-    { value: 'properties', label: 'عقارات' },
-    { value: 'vehicles', label: 'سيارات' },
+    { value: 'properties',  label: 'عقارات' },
+    { value: 'vehicles',    label: 'سيارات' },
     { value: 'electronics', label: 'إلكترونيات' },
-    { value: 'furniture', label: 'أثاث' },
+    { value: 'furniture',   label: 'أثاث' },
   ]
 
   const tools: Array<{
@@ -217,9 +486,11 @@ export default function GoogleModule() {
     requiresSession: boolean
   }> = [
     { id: 'maps', name: 'خرائط جوجل', description: 'استخراج بيانات الأنشطة التجارية (كلمة واحدة)', icon: MapPin, accent: '#4285F4', accentGradient: 'linear-gradient(135deg, #4285F4, #1a73e8)', requiresSession: false },
-    { id: 'bulk-maps', name: 'استخراج جماعي', description: 'كلمات مفتاحية متعددة × 500 نتيجة لكل كلمة', icon: Layers, accent: '#8B5CF6', accentGradient: 'linear-gradient(135deg, #8B5CF6, #6d28d9)', requiresSession: false },
-    { id: 'olx', name: 'OLX', description: 'استخراج الإعلانات من OLX', icon: Globe, accent: '#10b981', accentGradient: 'linear-gradient(135deg, #10b981, #047857)', requiresSession: false },
-    { id: 'rate', name: 'تقييم Google', description: 'إرسال تقييمات لأماكن Google Maps', icon: Star, accent: '#f59e0b', accentGradient: 'linear-gradient(135deg, #f59e0b, #d97706)', requiresSession: true },
+    { id: 'bulk-maps', name: 'استخراج جماعي', description: 'كلمات مفتاحية متعددة × حتى 2000 نتيجة لكل كلمة', icon: Layers, accent: '#8B5CF6', accentGradient: 'linear-gradient(135deg, #8B5CF6, #6d28d9)', requiresSession: false },
+    { id: 'bulk-matrix', name: 'مصفوفة (مدن × كلمات)', description: 'استخراج كل كلمة في كل مدينة + ملف منسّق', icon: Layers, accent: '#EC4899', accentGradient: 'linear-gradient(135deg, #EC4899, #be185d)', requiresSession: false },
+    { id: 'olx', name: 'دوبيزل / OLX', description: 'استخراج إعلانات Dubizzle (OLX سابقاً)', icon: Globe, accent: '#10b981', accentGradient: 'linear-gradient(135deg, #10b981, #047857)', requiresSession: false },
+    { id: 'rate', name: 'تقييم Google', description: 'تقييم منفرد أو جماعي بتدوير الحسابات', icon: Star, accent: '#f59e0b', accentGradient: 'linear-gradient(135deg, #f59e0b, #d97706)', requiresSession: false },
+    { id: 'reviews-extract', name: 'استخراج التقييمات', description: 'قراءة تقييمات أي مكان على خرائط جوجل', icon: Download, accent: '#06b6d4', accentGradient: 'linear-gradient(135deg, #06b6d4, #0891b2)', requiresSession: false },
   ]
 
   const currentTool = tools.find(t => t.id === activeTool) ?? null
@@ -448,8 +719,8 @@ export default function GoogleModule() {
           <Layers size={20} className="flex-shrink-0 mt-0.5" style={{ color: '#8B5CF6' }} />
           <div className="text-xs leading-relaxed text-secondary-700">
             <strong>استخراج جماعي:</strong> اكتب الكلمات المفتاحية في سطور منفصلة (كل سطر = كلمة).
-            البرنامج هيمر على كل كلمة بالترتيب ويسحب حتى <strong>500 نشاط</strong> لكل واحدة.
-            النتايج مدمجة وبدون تكرار. الحد الأقصى 50 كلمة في المرة.
+            البرنامج هيمر على كل كلمة بالترتيب ويسحب حتى <strong>2000 نشاط</strong> لكل واحدة.
+            النتايج مدمجة وبدون تكرار، والملف المُصدّر منسّق بأعمدة عربية واضحة. الحد الأقصى 50 كلمة في المرة.
           </div>
         </div>
       </div>
@@ -468,7 +739,7 @@ export default function GoogleModule() {
             عدد الكلمات: {bulkKeywordsText.split('\n').filter((k) => k.trim()).length} / 50
           </p>
           <p className="text-[10px] text-secondary-500">
-            ⏱ تقدير: ~{Math.max(1, Math.round((bulkKeywordsText.split('\n').filter((k) => k.trim()).length * bulkLimit * 0.3) / 60))} دقيقة
+            ⏱ تقدير: ~{Math.max(1, Math.round((bulkKeywordsText.split('\n').filter((k) => k.trim()).length * bulkLimit * 0.25) / 60))} دقيقة
           </p>
         </div>
       </div>
@@ -489,12 +760,15 @@ export default function GoogleModule() {
           <input
             type="range"
             min="50"
-            max="500"
+            max="2000"
             step="50"
             value={bulkLimit}
             onChange={(e) => setBulkLimit(parseInt(e.target.value))}
             className="w-full"
           />
+          <div className="flex justify-between text-[10px] text-secondary-400 mt-1">
+            <span>50</span><span>500</span><span>1000</span><span>2000</span>
+          </div>
         </div>
       </div>
 
@@ -591,13 +865,196 @@ export default function GoogleModule() {
     </button>
   )
 
+  // ----- Matrix (cities × keywords) -----
+  const renderMatrixBody = () => {
+    const keywords = matrixKeywordsText.split('\n').map((k) => k.trim()).filter(Boolean)
+    const cities = matrixCitiesText.split('\n').map((c) => c.trim()).filter(Boolean)
+    const combos = keywords.length * cities.length
+    const overLimit = combos > 200
+    const estimateMin = Math.max(1, Math.round((combos * matrixLimit * 0.25) / 60))
+
+    return (
+      <div className="space-y-5">
+        <div className="p-4 rounded-xl border" style={{ background: 'rgba(236,72,153,0.06)', borderColor: 'rgba(236,72,153,0.2)' }}>
+          <div className="flex items-start gap-3">
+            <Layers size={20} className="flex-shrink-0 mt-0.5" style={{ color: '#EC4899' }} />
+            <div className="text-xs leading-relaxed text-secondary-700">
+              <strong>وضع المصفوفة:</strong> اكتب قائمة كلمات مفتاحية + قائمة مدن.
+              البرنامج يبحث كل كلمة في كل مدينة (مثال: 5 كلمات × 4 مدن = 20 بحث) ويدمج النتائج بدون تكرار.
+              كل نتيجة مُعلَّمة بمدينتها وكلمتها. الحد الأقصى <strong>200 تركيبة</strong>.
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="label-field">الكلمات المفتاحية (سطر لكل كلمة)</label>
+            <textarea
+              className="textarea-field min-h-[140px] font-mono text-sm"
+              placeholder={`مطاعم\nصيدليات\nعيادات اسنان\nمحلات ملابس`}
+              value={matrixKeywordsText}
+              onChange={(e) => setMatrixKeywordsText(e.target.value)}
+              dir="auto"
+            />
+            <p className="text-[10px] text-secondary-500 mt-1">عدد الكلمات: {keywords.length} / 30</p>
+          </div>
+          <div>
+            <label className="label-field">المدن (سطر لكل مدينة)</label>
+            <textarea
+              className="textarea-field min-h-[140px] font-mono text-sm"
+              placeholder={`القاهرة\nالاسكندرية\nالجيزة\nالمنصورة`}
+              value={matrixCitiesText}
+              onChange={(e) => setMatrixCitiesText(e.target.value)}
+              dir="auto"
+            />
+            <p className="text-[10px] text-secondary-500 mt-1">عدد المدن: {cities.length} / 20</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="label-field">الحد لكل تركيبة: {matrixLimit}</label>
+            <input
+              type="range"
+              min="50"
+              max="2000"
+              step="50"
+              value={matrixLimit}
+              onChange={(e) => setMatrixLimit(parseInt(e.target.value))}
+              className="w-full"
+            />
+            <div className="flex justify-between text-[10px] text-secondary-400 mt-1">
+              <span>50</span><span>500</span><span>1000</span><span>2000</span>
+            </div>
+          </div>
+          <div className="rounded-xl p-3" style={{ background: overLimit ? 'rgba(239,68,68,0.08)' : 'rgba(236,72,153,0.06)', border: `1px solid ${overLimit ? 'rgba(239,68,68,0.25)' : 'rgba(236,72,153,0.15)'}` }}>
+            <p className="text-[11px] text-secondary-600 leading-relaxed">
+              عدد التركيبات: <strong className={overLimit ? 'text-red-600' : 'text-pink-700'}>{combos}</strong> {overLimit && '(يتجاوز الحد!)'}
+              <br />⏱ تقدير الوقت: ~{estimateMin} دقيقة
+              <br />📊 أقصى نتائج محتملة: {combos * matrixLimit}
+            </p>
+          </div>
+        </div>
+
+        {matrixProgress && (
+          <div className="p-4 rounded-xl border" style={{ background: 'rgba(236,72,153,0.06)', borderColor: 'rgba(236,72,153,0.2)' }}>
+            <div className="flex items-center gap-2 mb-2">
+              <Loader2 size={16} className="animate-spin" style={{ color: '#EC4899' }} />
+              <span className="text-sm font-bold text-secondary-900">جاري الاستخراج...</span>
+            </div>
+            {matrixProgress.city && matrixProgress.keyword && (
+              <p className="text-xs text-secondary-600 mb-1">
+                التركيبة الحالية: <span className="font-semibold text-pink-700">{matrixProgress.keyword}</span>
+                {' في '}
+                <span className="font-semibold text-pink-700">{matrixProgress.city}</span>
+                {matrixProgress.comboIndex && matrixProgress.totalCombos && (
+                  <span className="text-secondary-500"> ({matrixProgress.comboIndex}/{matrixProgress.totalCombos})</span>
+                )}
+              </p>
+            )}
+            {matrixProgress.count !== undefined && matrixProgress.target !== undefined && (
+              <p className="text-xs text-secondary-600">
+                نتائج التركيبة: {matrixProgress.count} / {matrixProgress.target}
+              </p>
+            )}
+            {matrixProgress.grandTotal !== undefined && (
+              <p className="text-xs text-secondary-600 font-semibold">
+                إجمالي النتايج المجمّعة: {matrixProgress.grandTotal}
+              </p>
+            )}
+            {matrixProgress.totalCombos && matrixProgress.comboIndex && (
+              <div className="mt-2">
+                <div className="h-1.5 rounded-full bg-secondary-100 overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{
+                      width: `${(matrixProgress.comboIndex / matrixProgress.totalCombos) * 100}%`,
+                      background: 'linear-gradient(90deg, #EC4899, #be185d)',
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {resultsOwner === 'bulk-matrix' && matrixResults.length > 0 && (
+          <div className="mt-5 rounded-xl border border-secondary-200 bg-white/60 overflow-hidden">
+            <div className="flex items-center justify-between p-3 border-b border-secondary-100 flex-wrap gap-2">
+              <h4 className="font-bold text-secondary-900 text-sm">النتائج ({matrixResults.length})</h4>
+              <div className="flex gap-2">
+                <button onClick={handleExportMatrix} className="btn-success text-xs"><FileSpreadsheet size={14} /> تصدير CSV منسّق</button>
+                <button onClick={() => { setMatrixResults([]); setResultsOwner(null) }} className="btn-danger text-xs"><Trash2 size={14} /> مسح</button>
+              </div>
+            </div>
+            <div className="table-container" style={{ maxHeight: '380px', overflow: 'auto' }}>
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>#</th><th>الاسم</th><th>المدينة</th><th>الكلمة</th><th>الهاتف</th><th>التقييم</th><th>العنوان</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {matrixResults.slice(0, 200).map((b, i) => (
+                    <tr key={i}>
+                      <td className="text-secondary-500">{i + 1}</td>
+                      <td className="font-medium">{b.name || '-'}</td>
+                      <td className="text-xs font-semibold text-pink-700">{b.city || '-'}</td>
+                      <td className="text-xs text-violet-700">{b.keyword || '-'}</td>
+                      <td className="text-xs font-mono">{b.phone || '-'}</td>
+                      <td><span className="flex items-center gap-1"><Star size={12} className="text-warning-500" />{b.rating || '-'}</span></td>
+                      <td className="text-xs">{b.address || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {matrixResults.length > 200 && (
+                <p className="text-[11px] text-center py-2 text-secondary-500 bg-secondary-50">
+                  عرض أول 200 نتيجة فقط — استخدم زر التصدير CSV لتنزيل الكل ({matrixResults.length})
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  const matrixFooter = (
+    <button
+      onClick={handleMatrixExtract}
+      disabled={
+        loading ||
+        matrixKeywordsText.split('\n').filter((k) => k.trim()).length === 0 ||
+        matrixCitiesText.split('\n').filter((c) => c.trim()).length === 0
+      }
+      className="btn-primary w-full disabled:opacity-50"
+      style={{ background: 'linear-gradient(135deg, #EC4899, #be185d)' }}
+    >
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Layers size={18} /> بدء استخراج المصفوفة</>}
+    </button>
+  )
+
   const renderOlxBody = () => (
     <div className="space-y-5">
       <div className="grid grid-cols-2 gap-4">
         <div><label className="label-field">الدولة</label><select className="select-field" value={olxCountry} onChange={e => setOlxCountry(e.target.value)}>{countries.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}</select></div>
         <div><label className="label-field">الفئة</label><select className="select-field" value={olxCategory} onChange={e => setOlxCategory(e.target.value)}>{categories.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}</select></div>
       </div>
-      <div><label className="label-field">الحد الأقصى: {olxLimit}</label><input type="range" min="10" max="200" value={olxLimit} onChange={e => setOlxLimit(parseInt(e.target.value))} className="w-full" /></div>
+      <div>
+        <label className="label-field">الحد الأقصى: {olxLimit}</label>
+        <input type="range" min="20" max="500" step="20" value={olxLimit} onChange={e => setOlxLimit(parseInt(e.target.value))} className="w-full" />
+        <div className="flex justify-between text-[10px] text-secondary-400 mt-1">
+          <span>20</span><span>100</span><span>250</span><span>500</span>
+        </div>
+      </div>
+
+      <div className="p-3 rounded-xl border" style={{ background: 'rgba(16,185,129,0.06)', borderColor: 'rgba(16,185,129,0.2)' }}>
+        <p className="text-[11px] leading-relaxed text-secondary-700">
+          ℹ️ تم تحديث الأداة لدعم اسم <strong>Dubizzle</strong> الجديد (OLX سابقاً) في مصر/السعودية/الإمارات،
+          مع الحفاظ على OLX في قطر/الكويت. يتم التمرير التلقائي لتحميل المزيد من الإعلانات.
+        </p>
+      </div>
 
       {resultsOwner === 'olx' && olxResults.length > 0 && (
         <div className="mt-5 rounded-xl border border-secondary-200 bg-white/60 overflow-hidden">
@@ -610,19 +1067,25 @@ export default function GoogleModule() {
           </div>
           <div className="table-container" style={{ maxHeight: '380px', overflow: 'auto' }}>
             <table className="data-table">
-              <thead><tr><th>#</th><th>العنوان</th><th>السعر</th><th>الموقع</th><th>الرابط</th></tr></thead>
+              <thead><tr><th>#</th><th>العنوان</th><th>السعر</th><th>الموقع</th><th>التاريخ</th><th>الرابط</th></tr></thead>
               <tbody>
-                {olxResults.map((l, i) => (
+                {olxResults.slice(0, 200).map((l, i) => (
                   <tr key={i}>
                     <td className="text-secondary-500">{i + 1}</td>
                     <td className="font-medium">{l.title || '-'}</td>
                     <td className="font-bold" style={{ color: '#16a34a' }}>{l.price || '-'}</td>
                     <td className="text-sm flex items-center gap-1"><MapPin size={14} />{l.location || '-'}</td>
+                    <td className="text-xs text-secondary-500">{l.postedDate || '-'}</td>
                     <td>{l.link ? <a href={l.link} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline text-sm">عرض</a> : '-'}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            {olxResults.length > 200 && (
+              <p className="text-[11px] text-center py-2 text-secondary-500 bg-secondary-50">
+                عرض أول 200 — صدّر CSV لتنزيل الكل ({olxResults.length})
+              </p>
+            )}
           </div>
         </div>
       )}
@@ -640,15 +1103,261 @@ export default function GoogleModule() {
     </button>
   )
 
-  const renderRateBody = () => (
-    <div className="space-y-5">
-      <div><label className="label-field">رابط المكان على Google Maps</label><input type="url" className="input-field" placeholder="https://maps.google.com/..." value={rateUrl} onChange={e => setRateUrl(e.target.value)} /></div>
-      <div><label className="label-field">التقييم: {rateStars} نجوم</label><input type="range" min="1" max="5" value={rateStars} onChange={e => setRateStars(parseInt(e.target.value))} className="w-full" /></div>
-      <div><label className="label-field">نص المراجعة</label><textarea className="textarea-field" rows={3} value={rateReview} onChange={e => setRateReview(e.target.value)} placeholder="اكتب مراجعتك هنا..." /></div>
-    </div>
-  )
+  const renderRateBody = () => {
+    const reviewsReady = rateReviewsList.filter((r) => r.text.trim()).length
+    const estimateMin = rateSelectedAccountIds.length > 0
+      ? Math.max(1, Math.round((rateSelectedAccountIds.length * (rateDelaySec + 25)) / 60))
+      : 0
+    return (
+      <div className="space-y-5">
+        {/* Mode switcher */}
+        <div className="flex rounded-xl p-1 gap-1" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}>
+          <button
+            type="button"
+            onClick={() => setRateMode('single')}
+            className="flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all"
+            style={{
+              background: rateMode === 'single' ? 'linear-gradient(135deg, #f59e0b, #d97706)' : 'transparent',
+              color: rateMode === 'single' ? '#fff' : '#92400e',
+              boxShadow: rateMode === 'single' ? '0 2px 8px rgba(245,158,11,0.3)' : 'none',
+            }}
+          >
+            تقييم منفرد (الجلسة الحالية)
+          </button>
+          <button
+            type="button"
+            onClick={() => setRateMode('bulk')}
+            className="flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all"
+            style={{
+              background: rateMode === 'bulk' ? 'linear-gradient(135deg, #f59e0b, #d97706)' : 'transparent',
+              color: rateMode === 'bulk' ? '#fff' : '#92400e',
+              boxShadow: rateMode === 'bulk' ? '0 2px 8px rgba(245,158,11,0.3)' : 'none',
+            }}
+          >
+            جماعي بتدوير الحسابات
+          </button>
+        </div>
 
-  const rateFooter = (
+        <div>
+          <label className="label-field">رابط المكان على Google Maps</label>
+          <input
+            type="url"
+            className="input-field"
+            placeholder="https://maps.google.com/..."
+            value={rateUrl}
+            onChange={(e) => setRateUrl(e.target.value)}
+            dir="ltr"
+          />
+        </div>
+
+        {rateMode === 'single' ? (
+          <>
+            {!sessionId && (
+              <div className="p-3 rounded-xl border" style={{ background: 'rgba(239,68,68,0.06)', borderColor: 'rgba(239,68,68,0.2)' }}>
+                <p className="text-xs text-red-700 font-semibold flex items-center gap-2">
+                  <AlertCircle size={14} /> النمط المنفرد يحتاج جلسة نشطة — سجّل دخول أولاً
+                </p>
+              </div>
+            )}
+            <div>
+              <label className="label-field">التقييم: {rateStars} نجوم</label>
+              <input type="range" min="1" max="5" value={rateStars} onChange={(e) => setRateStars(parseInt(e.target.value))} className="w-full" />
+            </div>
+            <div>
+              <label className="label-field">نص المراجعة</label>
+              <textarea className="textarea-field" rows={4} value={rateReview} onChange={(e) => setRateReview(e.target.value)} placeholder="اكتب مراجعتك هنا..." />
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Bulk mode: reviews list + account selector + delay */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="label-field !mb-0">قائمة التقييمات ({reviewsReady} جاهز / {rateReviewsList.length})</label>
+                <button
+                  type="button"
+                  onClick={addReviewItem}
+                  className="btn-secondary text-xs"
+                  disabled={rateReviewsList.length >= 30}
+                >
+                  + إضافة تقييم
+                </button>
+              </div>
+              <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                {rateReviewsList.map((r, idx) => (
+                  <div key={r.id} className="p-3 rounded-xl border" style={{ background: 'rgba(245,158,11,0.04)', borderColor: 'rgba(245,158,11,0.15)' }}>
+                    <div className="flex items-center justify-between mb-2 gap-2">
+                      <span className="text-[11px] font-bold text-amber-800">تقييم #{idx + 1}</span>
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
+                          {[1, 2, 3, 4, 5].map((n) => (
+                            <button
+                              key={n}
+                              type="button"
+                              onClick={() => updateReviewItem(r.id, { rating: n })}
+                              className="hover:scale-110 transition-transform"
+                              title={`${n} نجوم`}
+                            >
+                              <Star
+                                size={16}
+                                className={n <= r.rating ? 'fill-amber-500 text-amber-500' : 'text-amber-200'}
+                              />
+                            </button>
+                          ))}
+                        </div>
+                        {rateReviewsList.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeReviewItem(r.id)}
+                            className="text-red-500 hover:text-red-700"
+                            title="حذف"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <textarea
+                      className="textarea-field text-sm"
+                      rows={2}
+                      placeholder="نص التقييم..."
+                      value={r.text}
+                      onChange={(e) => updateReviewItem(r.id, { text: e.target.value })}
+                    />
+                  </div>
+                ))}
+              </div>
+              <p className="text-[10px] text-secondary-500 mt-1">
+                ℹ️ التقييمات تدور على الحسابات: لو عدد الحسابات &gt; عدد التقييمات، يُعاد استخدام التقييمات بالترتيب.
+              </p>
+            </div>
+
+            {/* Account multi-selector */}
+            <div>
+              <label className="label-field">الحسابات ({rateSelectedAccountIds.length} / {googleAccounts.length} محدد)</label>
+              {googleAccounts.length === 0 ? (
+                <div className="p-3 rounded-xl border text-xs text-secondary-500" style={{ background: 'rgba(0,0,0,0.03)' }}>
+                  لا توجد حسابات Google محفوظة. أضف حسابات من قسم الحسابات أولاً.
+                </div>
+              ) : (
+                <div className="space-y-1 max-h-[180px] overflow-y-auto rounded-xl border p-2" style={{ borderColor: 'rgba(245,158,11,0.2)' }}>
+                  <div className="flex gap-2 pb-2 border-b border-amber-100">
+                    <button
+                      type="button"
+                      onClick={() => setRateSelectedAccountIds(googleAccounts.map((a) => a.id as number))}
+                      className="text-[10px] text-amber-700 hover:underline"
+                    >
+                      تحديد الكل
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRateSelectedAccountIds([])}
+                      className="text-[10px] text-red-600 hover:underline"
+                    >
+                      إلغاء الكل
+                    </button>
+                  </div>
+                  {googleAccounts.map((acc) => (
+                    <label
+                      key={acc.id}
+                      className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-amber-50 cursor-pointer text-xs"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={rateSelectedAccountIds.includes(acc.id as number)}
+                        onChange={() => toggleAccountSelection(acc.id as number)}
+                        className="accent-amber-600"
+                      />
+                      <span className="font-mono text-secondary-700">{acc.username}</span>
+                      {acc.proxy && <span className="text-[9px] text-secondary-400 mr-auto">{String(acc.proxy).split('@').pop()}</span>}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="label-field">فاصل بين الحسابات (ثانية): {rateDelaySec}</label>
+                <input
+                  type="range"
+                  min="5"
+                  max="120"
+                  step="5"
+                  value={rateDelaySec}
+                  onChange={(e) => setRateDelaySec(parseInt(e.target.value))}
+                  className="w-full"
+                />
+              </div>
+              <div className="rounded-xl p-3" style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.15)' }}>
+                <p className="text-[11px] text-secondary-700">
+                  ⏱ تقدير الوقت: ~{estimateMin} دقيقة
+                  <br />🔄 سيتم فتح جلسة لكل حساب على حدة
+                </p>
+              </div>
+            </div>
+
+            {/* Progress */}
+            {rateBulkProgress && (
+              <div className="p-3 rounded-xl border" style={{ background: 'rgba(245,158,11,0.06)', borderColor: 'rgba(245,158,11,0.2)' }}>
+                <div className="flex items-center gap-2 mb-1">
+                  <Loader2 size={14} className="animate-spin text-amber-600" />
+                  <span className="text-xs font-bold">
+                    جاري التقييم ({rateBulkProgress.index}/{rateBulkProgress.total})
+                    {rateBulkProgress.username && <span className="text-amber-700"> — {rateBulkProgress.username}</span>}
+                  </span>
+                </div>
+                <div className="h-1.5 rounded-full bg-secondary-100 overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{
+                      width: `${(rateBulkProgress.index / Math.max(1, rateBulkProgress.total)) * 100}%`,
+                      background: 'linear-gradient(90deg, #f59e0b, #d97706)',
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Results table */}
+            {rateBulkResults.length > 0 && (
+              <div className="rounded-xl border border-secondary-200 bg-white/60 overflow-hidden">
+                <div className="px-3 py-2 border-b border-secondary-100">
+                  <h4 className="font-bold text-secondary-900 text-xs">
+                    النتائج: {rateBulkResults.filter((r) => r.success).length} ناجح / {rateBulkResults.length} حساب
+                  </h4>
+                </div>
+                <div className="max-h-[200px] overflow-y-auto">
+                  <table className="data-table text-xs">
+                    <thead><tr><th>#</th><th>الحساب</th><th>النجوم</th><th>الحالة</th><th>التفاصيل</th></tr></thead>
+                    <tbody>
+                      {rateBulkResults.map((r, i) => (
+                        <tr key={i}>
+                          <td className="text-secondary-500">{i + 1}</td>
+                          <td className="font-mono">{r.username || r.accountId}</td>
+                          <td><span className="inline-flex items-center gap-0.5">{Array.from({ length: r.rating || 0 }).map((_, j) => <Star key={j} size={10} className="fill-amber-500 text-amber-500" />)}</span></td>
+                          <td>
+                            {r.success ? (
+                              <span className="text-emerald-700 font-semibold flex items-center gap-1"><CheckCircle size={12} /> نجح</span>
+                            ) : (
+                              <span className="text-red-700 font-semibold flex items-center gap-1"><AlertCircle size={12} /> فشل</span>
+                            )}
+                          </td>
+                          <td className="text-[10px] text-secondary-500">{r.error || (r.reviewText ? r.reviewText.slice(0, 40) + (r.reviewText.length > 40 ? '...' : '') : '-')}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    )
+  }
+
+  const rateFooter = rateMode === 'single' ? (
     <button
       onClick={handleRate}
       disabled={loading || !sessionId || !rateUrl.trim()}
@@ -657,13 +1366,103 @@ export default function GoogleModule() {
     >
       {loading ? <Loader2 size={18} className="animate-spin" /> : <><Star size={18} /> تقييم</>}
     </button>
+  ) : (
+    <button
+      onClick={handleRateBulk}
+      disabled={loading || !rateUrl.trim() || rateSelectedAccountIds.length === 0 || rateReviewsList.filter((r) => r.text.trim()).length === 0}
+      className="btn-primary w-full disabled:opacity-50"
+      style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}
+    >
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Star size={18} /> بدء التقييم الجماعي ({rateSelectedAccountIds.length} حساب)</>}
+    </button>
+  )
+
+  // ----- Reviews Extract -----
+  const renderReviewsExtractBody = () => (
+    <div className="space-y-5">
+      <div className="p-3 rounded-xl border" style={{ background: 'rgba(6,182,212,0.06)', borderColor: 'rgba(6,182,212,0.2)' }}>
+        <p className="text-xs leading-relaxed text-secondary-700">
+          <strong>استخراج تقييمات Google:</strong> اكتب رابط أي مكان على خرائط جوجل،
+          وستحصل على كل التقييمات (الكاتب، النجوم، التاريخ، النص) مع إمكانية ترتيبها وتصديرها لـ CSV.
+        </p>
+      </div>
+      <div>
+        <label className="label-field">رابط المكان</label>
+        <input type="url" className="input-field" placeholder="https://maps.google.com/..." value={reviewsUrl} onChange={(e) => setReviewsUrl(e.target.value)} dir="ltr" />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="label-field">الحد الأقصى: {reviewsLimit}</label>
+          <input type="range" min="20" max="500" step="20" value={reviewsLimit} onChange={(e) => setReviewsLimit(parseInt(e.target.value))} className="w-full" />
+        </div>
+        <div>
+          <label className="label-field">الترتيب</label>
+          <select className="select-field" value={reviewsSort} onChange={(e) => setReviewsSort(e.target.value as 'newest' | 'highest' | 'lowest' | 'relevant')}>
+            <option value="newest">الأحدث أولاً</option>
+            <option value="relevant">الأكثر صلة</option>
+            <option value="highest">الأعلى تقييماً</option>
+            <option value="lowest">الأقل تقييماً</option>
+          </select>
+        </div>
+      </div>
+
+      {resultsOwner === 'reviews-extract' && reviewsResults.length > 0 && (
+        <div className="mt-5 rounded-xl border border-secondary-200 bg-white/60 overflow-hidden">
+          <div className="flex items-center justify-between p-3 border-b border-secondary-100 flex-wrap gap-2">
+            <h4 className="font-bold text-secondary-900 text-sm">التقييمات ({reviewsResults.length})</h4>
+            <div className="flex gap-2">
+              <button onClick={handleExportReviews} className="btn-success text-xs"><FileSpreadsheet size={14} /> تصدير CSV</button>
+              <button onClick={() => { setReviewsResults([]); setResultsOwner(null) }} className="btn-danger text-xs"><Trash2 size={14} /> مسح</button>
+            </div>
+          </div>
+          <div className="table-container" style={{ maxHeight: '380px', overflow: 'auto' }}>
+            <table className="data-table">
+              <thead><tr><th>#</th><th>الكاتب</th><th>التقييم</th><th>التاريخ</th><th>النص</th></tr></thead>
+              <tbody>
+                {reviewsResults.slice(0, 200).map((r, i) => (
+                  <tr key={i}>
+                    <td className="text-secondary-500">{i + 1}</td>
+                    <td className="font-medium text-xs">{r.author || '-'}</td>
+                    <td>
+                      <span className="inline-flex items-center gap-0.5">
+                        {Array.from({ length: r.rating || 0 }).map((_, j) => <Star key={j} size={11} className="fill-amber-500 text-amber-500" />)}
+                      </span>
+                    </td>
+                    <td className="text-[11px] text-secondary-500">{r.date || '-'}</td>
+                    <td className="text-xs" style={{ maxWidth: '400px' }}>{r.text || '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {reviewsResults.length > 200 && (
+              <p className="text-[11px] text-center py-2 text-secondary-500 bg-secondary-50">
+                عرض أول 200 — صدّر CSV لتنزيل الكل ({reviewsResults.length})
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+
+  const reviewsExtractFooter = (
+    <button
+      onClick={handleReviewsExtract}
+      disabled={loading || !reviewsUrl.trim()}
+      className="btn-primary w-full disabled:opacity-50"
+      style={{ background: 'linear-gradient(135deg, #06b6d4, #0891b2)' }}
+    >
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <><Download size={18} /> بدء الاستخراج</>}
+    </button>
   )
 
   const panelMap: Record<Exclude<ActiveTool, null>, { body: React.ReactNode; footer: React.ReactNode }> = {
     maps: { body: renderMapsBody(), footer: mapsFooter },
     'bulk-maps': { body: renderBulkMapsBody(), footer: bulkMapsFooter },
+    'bulk-matrix': { body: renderMatrixBody(), footer: matrixFooter },
     olx: { body: renderOlxBody(), footer: olxFooter },
     rate: { body: renderRateBody(), footer: rateFooter },
+    'reviews-extract': { body: renderReviewsExtractBody(), footer: reviewsExtractFooter },
   }
 
   return (
@@ -691,7 +1490,7 @@ export default function GoogleModule() {
         subtitle="اختر أداة لفتح إعداداتها"
         icon={Wrench}
         accent={ACCENT}
-        cols={4}
+        cols={6}
       >
         {tools.map(tool => (
           <ToolCard

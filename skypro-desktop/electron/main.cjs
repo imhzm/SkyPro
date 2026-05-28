@@ -1549,7 +1549,12 @@ app.whenReady().then(() => {
           "script-src 'self'; " +
           "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
           "font-src 'self' https://fonts.gstatic.com; " +
-          "img-src 'self' data: blob:; " +
+          // Allow https: so admin-uploaded offer banners (any external CDN
+          // — top4top.io, imgur, cloudflare-images, etc.) render in the
+          // OffersSection. Without 'https:' the image is silently blocked
+          // by CSP and only the gradient fallback shows even though the
+          // imageUrl field is correctly populated from /api/offers.
+          "img-src 'self' data: blob: https:; " +
           "connect-src 'self' https://skypro.skywaveads.com; " +
           "frame-ancestors 'none'; " +
           "base-uri 'self'; " +

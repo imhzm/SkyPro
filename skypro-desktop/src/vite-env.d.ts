@@ -418,8 +418,11 @@ declare global {
       // Google
       googleMapsExtract: (data: Record<string, unknown>) => Promise<ExtractionResult>
       googleMapsBulkExtract: (data: { keywords: string[]; location?: string; limitPerKeyword?: number; jobId?: string }) => Promise<ExtractionResult & { keywordsProcessed?: number }>
+      googleMapsBulkExtractMatrix: (data: { keywords: string[]; cities: string[]; limitPerCombo?: number; jobId?: string }) => Promise<ExtractionResult & { combosProcessed?: number; totalCombos?: number }>
       olxExtract: (data: Record<string, unknown>) => Promise<ExtractionResult>
       googleRate: (data: Record<string, unknown>) => Promise<IpcResult>
+      googleRateBulk: (data: { placeUrl: string; reviews: Array<{ text: string; rating: number }>; accountIds: number[]; headless?: boolean; delayBetweenSec?: number; jobId?: string }) => Promise<IpcResult & { totalAttempted?: number; totalSucceeded?: number; results?: Array<{ accountId: number; username?: string; success: boolean; error?: string; rating?: number; reviewText?: string }> }>
+      googleReviewsExtract: (data: { placeUrl: string; limit?: number; sortBy?: string; jobId?: string }) => Promise<ExtractionResult>
 
       // Email
       sendEmail: (data: Record<string, unknown>) => Promise<IpcResult>

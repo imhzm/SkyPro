@@ -70,7 +70,7 @@ if (typeof window !== 'undefined' && !window.electronAPI) {
 
     redditLogin: noop, redditSearch: noop, redditPublish: noop,
 
-    googleMapsExtract: noop, olxExtract: noop, googleRate: noop,
+    googleMapsExtract: noop, googleMapsBulkExtract: noop, googleMapsBulkExtractMatrix: noop, olxExtract: noop, googleRate: noop, googleRateBulk: noop, googleReviewsExtract: noop,
 
     sendEmail: noop,
     autoPointRun: noop,

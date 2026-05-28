@@ -215,8 +215,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Google
   googleMapsExtract: (data) => ipcRenderer.invoke('google-maps-extract', data),
   googleMapsBulkExtract: (data) => ipcRenderer.invoke('google-maps-bulk-extract', data),
+  googleMapsBulkExtractMatrix: (data) => ipcRenderer.invoke('google-maps-bulk-extract-matrix', data),
   olxExtract: (data) => ipcRenderer.invoke('olx-extract', data),
   googleRate: (data) => ipcRenderer.invoke('google-rate', data),
+  googleRateBulk: (data) => ipcRenderer.invoke('google-rate-bulk', data),
+  googleReviewsExtract: (data) => ipcRenderer.invoke('google-reviews-extract', data),
 
   // Email
   sendEmail: (data) => ipcRenderer.invoke('send-email', data),

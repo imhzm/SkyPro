@@ -7597,12 +7597,18 @@ async function _gMapsExtractCurrentPanel(page, limit, onProgress) {
   const businesses = []
   const seenNames = new Set()
   let stagnantCycles = 0
-  const MAX_STAGNANT = 6   // give up after 6 cycles of zero new results
+  // Adaptive stagnation budget: small jobs (50-200) give up fast; large jobs
+  // (1000-2000) keep trying because Google sometimes pauses for 5-10s before
+  // lazy-loading the next page. Cap at 25 cycles (~60s of pure stagnation).
+  const MAX_STAGNANT = Math.min(25, Math.max(6, Math.ceil(limit / 100)))
+  // Also bail if we've seen Google's "You've reached the end of the list"
+  // banner, which is the authoritative signal that no more results exist.
+  let reachedEnd = false
 
   // Wait for the results panel feed to appear
   await page.waitForSelector('div[role="feed"], div[role="article"], a[href*="/maps/place/"]', { timeout: 15000 }).catch(() => {})
 
-  while (businesses.length < limit && stagnantCycles < MAX_STAGNANT) {
+  while (businesses.length < limit && stagnantCycles < MAX_STAGNANT && !reachedEnd) {
     const beforeCount = businesses.length
 
     // Scrape via DOM evaluation — much faster than per-card $eval
@@ -7659,13 +7665,25 @@ async function _gMapsExtractCurrentPanel(page, limit, onProgress) {
 
     // SCROLL THE RESULTS PANEL (left side), not the window. Google Maps
     // uses a virtualized feed inside [role="feed"] — scrolling that element
-    // triggers lazy-load of more cards.
-    await page.evaluate(() => {
+    // triggers lazy-load of more cards. Also detect the "end of list"
+    // banner so we bail cleanly without burning the stagnation budget.
+    reachedEnd = await page.evaluate(() => {
       const feed = document.querySelector('div[role="feed"]') || document.querySelector('[aria-label*="Results"]')
       if (feed) feed.scrollTop = feed.scrollHeight
       else window.scrollTo(0, document.body.scrollHeight)
+      // Google shows one of these strings when the feed is exhausted (EN/AR).
+      const text = (document.body.innerText || '').toLowerCase()
+      return (
+        text.includes("you've reached the end of the list") ||
+        text.includes('end of the list') ||
+        text.includes('وصلت إلى نهاية القائمة') ||
+        text.includes('لقد وصلت إلى نهاية')
+      )
     })
-    await page.waitForTimeout(1500 + Math.random() * 1500)
+    // Tighter wait for small jobs, longer for big ones (Google rate-limits
+    // aggressive scrolling and may stop returning cards if we go too fast).
+    const waitMs = limit > 500 ? (1800 + Math.random() * 1700) : (1200 + Math.random() * 1200)
+    await page.waitForTimeout(waitMs)
   }
 
   return businesses
@@ -7724,7 +7742,10 @@ ipcm('google-maps-bulk-extract', async (e, { keywords = [], location = '', limit
   if (cleanKeywords.length === 0) {
     return { success: false, error: 'قائمة الكلمات المفتاحية فارغة بعد التنظيف' }
   }
-  const cleanLimit = Math.min(Math.max(parseInt(limitPerKeyword) || 50, 1), 500)
+  // v1.24: raised cap from 500 → 2000 per keyword. The adaptive MAX_STAGNANT
+  // inside _gMapsExtractCurrentPanel scales with limit so 2000-result jobs
+  // get up to 25 stagnation cycles (~60s) before bailing.
+  const cleanLimit = Math.min(Math.max(parseInt(limitPerKeyword) || 50, 1), 2000)
   if (!jobId) jobId = `gmaps-bulk-${++jobIdCounter}`
   globals.cancelFlags.set(jobId, false)
   const sender = getSender(e)
@@ -7833,61 +7854,811 @@ ipcm('google-maps-bulk-extract', async (e, { keywords = [], location = '', limit
   }
 })
 
+// v1.24 — Matrix bulk extraction: cities × keywords. For each city the
+// handler runs every keyword (so 3 cities × 5 keywords = 15 searches),
+// dedups across the whole matrix, and tags every result with both its
+// originating city and keyword. Hard cap: 200 total combinations so a
+// runaway 20×20 doesn't burn the user's whole day.
+ipcm('google-maps-bulk-extract-matrix', async (e, { keywords = [], cities = [], limitPerCombo = 200, jobId }) => {
+  if (!Array.isArray(keywords) || keywords.length === 0) {
+    return { success: false, error: 'يرجى إدخال قائمة كلمات مفتاحية' }
+  }
+  if (!Array.isArray(cities) || cities.length === 0) {
+    return { success: false, error: 'يرجى إدخال قائمة المدن' }
+  }
+
+  const cleanKeywords = keywords.map((k) => String(k || '').trim()).filter(Boolean).slice(0, 30)
+  const cleanCities = cities.map((c) => String(c || '').trim()).filter(Boolean).slice(0, 20)
+  if (cleanKeywords.length === 0) return { success: false, error: 'قائمة الكلمات فارغة بعد التنظيف' }
+  if (cleanCities.length === 0) return { success: false, error: 'قائمة المدن فارغة بعد التنظيف' }
+
+  const totalCombos = cleanCities.length * cleanKeywords.length
+  if (totalCombos > 200) {
+    return {
+      success: false,
+      error: `عدد التركيبات (${totalCombos}) يتجاوز الحد الأقصى 200. قلّل عدد المدن أو الكلمات.`,
+    }
+  }
+  const cleanLimit = Math.min(Math.max(parseInt(limitPerCombo) || 50, 1), 2000)
+
+  if (!jobId) jobId = `gmaps-matrix-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+
+  const allResults = []
+  // Dedup key includes the place URL so the same business found in two
+  // different cities (border cases) only appears once.
+  const seenKeys = new Set()
+  let sessionId = null
+  let pageRef = null
+  let comboIndex = 0
+
+  try {
+    const launchRes = await globals.bm.launch({ headless: false, platform: 'google-maps' })
+    if (!launchRes.success) return launchRes
+    sessionId = launchRes.sessionId
+    pageRef = globals.bm.getPage(sessionId)
+    if (!pageRef) return { success: false, error: 'تعذّر فتح المتصفح', sessionId }
+
+    sendProgress(sender, jobId, {
+      type: 'matrix-start',
+      totalCombos,
+      totalCities: cleanCities.length,
+      totalKeywords: cleanKeywords.length,
+    })
+
+    for (let ci = 0; ci < cleanCities.length; ci++) {
+      if (globals.cancelFlags.get(jobId)) break
+      const city = cleanCities[ci]
+
+      for (let ki = 0; ki < cleanKeywords.length; ki++) {
+        if (globals.cancelFlags.get(jobId)) break
+        const keyword = cleanKeywords[ki]
+        comboIndex++
+        const queryText = `${keyword} in ${city}`
+
+        sendProgress(sender, jobId, {
+          type: 'combo-start',
+          comboIndex,
+          totalCombos,
+          city,
+          keyword,
+          currentTotal: allResults.length,
+        })
+
+        try {
+          await pageRef.goto(`https://www.google.com/maps/search/${encodeURIComponent(queryText)}`, {
+            waitUntil: 'domcontentloaded',
+            timeout: 60000,
+          })
+          await pageRef.waitForTimeout(randomDelay(3500, 5500))
+
+          const businesses = await _gMapsExtractCurrentPanel(pageRef, cleanLimit, (cnt, tot) => {
+            sendProgress(sender, jobId, {
+              type: 'combo-progress',
+              comboIndex,
+              totalCombos,
+              city,
+              keyword,
+              count: cnt,
+              target: tot,
+              grandTotal: allResults.length + cnt,
+            })
+          })
+
+          let added = 0
+          for (const b of businesses) {
+            if (!b.name) continue
+            // Dedup by (name + profile) so the same place isn't double-counted
+            // even if Google returns it under multiple queries.
+            const key = `${(b.name || '').toLowerCase()}|${(b.profile || '').toLowerCase()}`
+            if (seenKeys.has(key)) continue
+            seenKeys.add(key)
+            allResults.push({
+              ...b,
+              city,
+              keyword,
+              source: queryText,
+            })
+            added++
+          }
+
+          sendProgress(sender, jobId, {
+            type: 'combo-done',
+            comboIndex,
+            totalCombos,
+            city,
+            keyword,
+            extracted: businesses.length,
+            added,
+            grandTotal: allResults.length,
+          })
+
+          await pageRef.waitForTimeout(randomDelay(2000, 4000))
+        } catch (comboErr) {
+          sendProgress(sender, jobId, {
+            type: 'combo-error',
+            comboIndex,
+            totalCombos,
+            city,
+            keyword,
+            error: comboErr.message,
+          })
+        }
+      }
+    }
+
+    saveLeads('google-maps', 'maps-matrix-extract', allResults.map((b) => ({
+      name: b.name,
+      phone: b.phone,
+      url: b.profile,
+      source: b.source,
+      extra: `${b.type || ''} | ${b.address || ''} | rating: ${b.rating || ''} (${b.reviewCount || ''}) | city: ${b.city} | keyword: ${b.keyword}`,
+    })))
+
+    return {
+      success: true,
+      data: allResults,
+      count: allResults.length,
+      combosProcessed: comboIndex,
+      totalCombos,
+      jobId,
+      cancelled: globals.cancelFlags.get(jobId),
+    }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: allResults, jobId, sessionId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
+// v1.24 — OLX was rebranded to Dubizzle across the MENA region between 2023-2024.
+// Egypt, KSA, and UAE now use dubizzle.{tld}; Qatar and Kuwait kept the OLX name.
+// This handler:
+//   1. Routes per-country to the correct domain + URL prefix
+//   2. Maps the 4 UI categories to each country's actual URL slug
+//   3. Uses an updated selector cascade (data-testid first, then data-cy, then
+//      classless article/li fallbacks) since Dubizzle keeps rotating Emotion
+//      class names every few weeks
+//   4. Scrolls + lazy-loads until `limit` or 8 stagnant cycles
+//   5. Extracts title, price, location, posted-date, image, and link
 ipcm('olx-extract', async (e, { country, category, limit = 50, sessionId: existingSessionId }) => {
-  const domains = { egypt: 'olx.com.eg', saudi: 'olx.sa.com', uae: 'olx.ae', qatar: 'olx.qa', kuwait: 'olx.com.kw' }
-  const domain = domains[country] || 'olx.com.eg'
+  // Country → { domain, urlPrefix } map. Default to Egypt if unknown.
+  const sites = {
+    egypt:  { domain: 'www.dubizzle.com.eg', prefix: '/ar' },           // Dubizzle Egypt (Arabic UI)
+    saudi:  { domain: 'www.dubizzle.sa',     prefix: '/ar' },           // Dubizzle KSA (Arabic UI)
+    uae:    { domain: 'www.dubizzle.com',    prefix: ''     },          // Dubizzle UAE (English URLs)
+    qatar:  { domain: 'www.olx.qa',          prefix: ''     },          // OLX Qatar (still OLX)
+    kuwait: { domain: 'www.olx.com.kw',      prefix: ''     },          // OLX Kuwait (still OLX)
+  }
+  // Per-country category slug mapping. The slug is appended to the domain+prefix.
+  // Slugs verified against live Dubizzle Egypt as of 2025-Q4.
+  const categoryPaths = {
+    egypt: {
+      properties:  'properties-for-sale-for-rent',
+      vehicles:    'vehicles',
+      electronics: 'electronics-and-appliances',
+      furniture:   'furniture-home-decor',
+    },
+    saudi: {
+      properties:  'properties-for-sale-for-rent',
+      vehicles:    'vehicles',
+      electronics: 'electronics-home-appliances',
+      furniture:   'furniture-home-decor',
+    },
+    uae: {
+      properties:  'property-for-sale',
+      vehicles:    'motors/used-cars',
+      electronics: 'classified/electronics-and-home-appliances',
+      furniture:   'classified/furniture-home-and-garden',
+    },
+    qatar: {
+      properties:  'real-estate',
+      vehicles:    'vehicles',
+      electronics: 'electronics-appliances',
+      furniture:   'furniture-decor-garden',
+    },
+    kuwait: {
+      properties:  'real-estate',
+      vehicles:    'vehicles',
+      electronics: 'electronics-appliances',
+      furniture:   'furniture-decor-garden',
+    },
+  }
+
+  const site = sites[country] || sites.egypt
+  const catMap = categoryPaths[country] || categoryPaths.egypt
+  const slug = catMap[category] || category
+  const targetUrl = `https://${site.domain}${site.prefix}/${slug}/`
+
   let sessionId = existingSessionId || null
   let ownSession = !existingSessionId
+
   try {
     if (!sessionId) {
-      const res = await globals.bm.launch({ headless: true, platform: 'olx' })
+      const res = await globals.bm.launch({ headless: false, platform: 'olx' })
       if (!res.success) return res
       sessionId = res.sessionId
     }
     const page = globals.bm.getPage(sessionId)
-    if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
-    await page.goto(`https://${domain}/${category}/`, { waitUntil: 'domcontentloaded', timeout: 30000 })
-    await page.waitForTimeout(randomDelay(4000, 6000))
-    const listings = await page.evaluate((lim) => {
-      const r = []
-      document.querySelectorAll('[data-cy="l-card"], .css-1sw7q4x, article').forEach((card, i) => {
-        if (i >= lim) return
-        const titleEl = card.querySelector('h6, h4, .css-16v5mdi')
-        const priceEl = card.querySelector('[data-testid="ad-price"], .css-10b0gli')
-        const locEl = card.querySelector('[data-testid="location-date"], .css-veheph')
-        const linkEl = card.querySelector('a')
-        if (titleEl) {
-          r.push({ title: titleEl.innerText.trim(), price: priceEl?.innerText.trim() || '', location: locEl?.innerText.trim() || '', link: linkEl?.href || '' })
+    if (!page) return { success: false, error: 'تعذّر فتح المتصفح' }
+
+    await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 60000 })
+    await page.waitForTimeout(randomDelay(4000, 6500))
+
+    // Dismiss cookie banner / location prompt if present — these block the
+    // scroll handler on some Dubizzle pages.
+    try {
+      await page.evaluate(() => {
+        const buttons = Array.from(document.querySelectorAll('button'))
+        for (const b of buttons) {
+          const t = (b.innerText || '').toLowerCase().trim()
+          if (/^(accept|agree|got it|ok|قبول|موافق|تم|أوافق)/.test(t)) {
+            b.click()
+            return
+          }
         }
       })
-      return r
-    }, limit)
-    saveLeads('olx', `${country}-${category}`, listings)
+    } catch { /* defensive */ }
+    await page.waitForTimeout(randomDelay(800, 1500))
+
+    // Scroll-and-collect loop. Dubizzle uses infinite scroll on listing pages.
+    const seenLinks = new Set()
+    const listings = []
+    let stagnant = 0
+    const MAX_STAGNANT = 8
+
+    while (listings.length < limit && stagnant < MAX_STAGNANT) {
+      const before = listings.length
+
+      const batch = await page.evaluate(() => {
+        const out = []
+        // Selector cascade: modern Dubizzle React testids → legacy OLX testids
+        // → classless article/li fallback. Emit { ... } for each match.
+        const cards = document.querySelectorAll(
+          [
+            '[data-testid="listing-card"]',
+            '[data-testid^="listing-"]',
+            '[data-cy="l-card"]',
+            'div[data-aut-id="itemBox"]',
+            'article',
+            'li[data-cy]',
+          ].join(', ')
+        )
+
+        for (const card of cards) {
+          // Find the canonical anchor (the one wrapping the title)
+          const linkEl = card.querySelector('a[href*="/ad/"], a[href*="/item/"], a[href]')
+          if (!linkEl) continue
+          const link = linkEl.href || ''
+          if (!link || link.includes('/category/')) continue
+
+          // Title: prefer the most specific selector, fall back to first heading
+          const titleEl =
+            card.querySelector('[data-testid="listing-title"]') ||
+            card.querySelector('[data-aut-id="itemTitle"]') ||
+            card.querySelector('h2, h3, h4, h5, h6')
+          const title = (titleEl?.innerText || '').trim()
+          if (!title) continue
+
+          // Price
+          const priceEl =
+            card.querySelector('[data-testid="listing-price"]') ||
+            card.querySelector('[data-testid="ad-price"]') ||
+            card.querySelector('[data-aut-id="itemPrice"]') ||
+            card.querySelector('[aria-label*="price"]')
+          const price = (priceEl?.innerText || '').trim()
+
+          // Location + date are usually in one block, comma-separated
+          const locEl =
+            card.querySelector('[data-testid="listing-location"]') ||
+            card.querySelector('[data-testid="location-date"]') ||
+            card.querySelector('[data-aut-id="item-location"]')
+          const locText = (locEl?.innerText || '').trim()
+          // Date is often the LAST segment after a separator (·, -, ،)
+          let location = locText
+          let postedDate = ''
+          const sepMatch = locText.split(/\s*[·•\-،,]\s*/).filter(Boolean)
+          if (sepMatch.length >= 2) {
+            // Heuristic: if any segment contains numbers/time-words, treat as date
+            for (let i = sepMatch.length - 1; i >= 0; i--) {
+              const seg = sepMatch[i]
+              if (/\d|ago|today|yesterday|أمس|اليوم|ساع|دقيق|يوم/i.test(seg)) {
+                postedDate = seg
+                location = sepMatch.slice(0, i).join(' • ')
+                break
+              }
+            }
+          }
+
+          // Image
+          const imgEl = card.querySelector('img[src], img[data-src]')
+          const image = imgEl?.getAttribute('src') || imgEl?.getAttribute('data-src') || ''
+
+          out.push({ title, price, location, postedDate, image, link })
+        }
+        return out
+      })
+
+      for (const item of batch) {
+        if (!item.link || seenLinks.has(item.link)) continue
+        seenLinks.add(item.link)
+        listings.push(item)
+        if (listings.length >= limit) break
+      }
+
+      if (listings.length === before) stagnant++
+      else stagnant = 0
+      if (listings.length >= limit) break
+
+      // Scroll to bottom to trigger lazy-load
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.waitForTimeout(randomDelay(1800, 2800))
+
+      // Some Dubizzle pages have a "Load more" button instead of infinite scroll
+      try {
+        const clicked = await page.evaluate(() => {
+          const buttons = Array.from(document.querySelectorAll('button, a'))
+          for (const b of buttons) {
+            const t = (b.innerText || '').toLowerCase().trim()
+            if (/^(load more|show more|more results|عرض المزيد|تحميل المزيد|المزيد)/.test(t)) {
+              b.click()
+              return true
+            }
+          }
+          return false
+        })
+        if (clicked) await page.waitForTimeout(randomDelay(2000, 3500))
+      } catch { /* defensive */ }
+    }
+
+    // Persist via saveLeads (writes to DB and CSV with sanitization)
+    saveLeads('olx', `${country}-${category}`, listings.map((l) => ({
+      name: l.title,        // saveLeads uses `name` as primary field
+      title: l.title,
+      price: l.price,
+      location: l.location,
+      postedDate: l.postedDate,
+      image: l.image,
+      url: l.link,
+      link: l.link,
+      source: `${site.domain}/${slug}`,
+    })))
+
     if (ownSession) await globals.bm.close(sessionId)
-    return { success: true, data: listings, count: listings.length }
+    return { success: true, data: listings, count: listings.length, url: targetUrl }
   } catch (err) {
     if (ownSession && sessionId) await safeClose(sessionId)
     return { success: false, error: err.message }
   }
 })
 
+// v1.24 — Reworked Google review handler. Old impl used very thin selectors
+// that Google has since rotated, so reviews silently failed. This version:
+//   * Uses a cascade of selectors (EN + AR + role-based + aria-based)
+//   * Detects + clicks the dialog star-rating widget by aria-label OR by
+//     positional click on the Nth star button
+//   * Verifies the review actually posted (looks for the success toast or
+//     the user's own review appearing in the list)
+//   * Returns structured { success, error, posted } so the UI can show why
+async function _postSingleReview(page, { placeUrl, rating, review }) {
+  await page.goto(placeUrl, { waitUntil: 'domcontentloaded', timeout: 60000 })
+  await page.waitForTimeout(randomDelay(2500, 4500))
+
+  // STEP 1: Find + click the "Write a review" button. Google Maps places
+  // it either as a top-level action button or inside the Reviews tab.
+  const writeBtnSelectors = [
+    'button[aria-label*="Write a review"]',
+    'button[aria-label*="اكتب تقييم"]',
+    'button[aria-label*="كتابة تقييم"]',
+    'button:has-text("Write a review")',
+    'button:has-text("اكتب تقييم")',
+    'button:has-text("كتابة تقييم")',
+    'button[data-value="Write a review"]',
+    'button[jsaction*="review"]',
+  ]
+  let opened = false
+  for (const sel of writeBtnSelectors) {
+    try {
+      const el = await page.$(sel)
+      if (el) { await el.click({ timeout: 5000 }).catch(() => {}); opened = true; break }
+    } catch { /* try next */ }
+  }
+  if (!opened) {
+    // Fallback: scroll to the Reviews tab and try again
+    try {
+      await page.evaluate(() => {
+        const tabs = Array.from(document.querySelectorAll('button[role="tab"], [role="tab"]'))
+        const reviewsTab = tabs.find((t) => /review|تقييم/i.test(t.innerText || ''))
+        if (reviewsTab) reviewsTab.click()
+      })
+      await page.waitForTimeout(randomDelay(1500, 2500))
+      for (const sel of writeBtnSelectors) {
+        const el = await page.$(sel)
+        if (el) { await el.click({ timeout: 5000 }).catch(() => {}); opened = true; break }
+      }
+    } catch { /* defensive */ }
+  }
+  if (!opened) return { success: false, error: 'لم يتم العثور على زر "اكتب تقييم"' }
+
+  // STEP 2: Wait for the rating dialog to appear and click the Nth star.
+  // Google uses aria-label="N stars" but in Arabic locales it's "N نجوم".
+  await page.waitForTimeout(randomDelay(2500, 4000))
+  const starSelectors = [
+    `[aria-label="${rating} stars"]`,
+    `[aria-label="${rating} نجوم"]`,
+    `[aria-label="${rating} نجمة"]`,
+    `[aria-label*="${rating} star"]`,
+    `[aria-label*="${rating}"][role="radio"]`,
+  ]
+  let starClicked = false
+  for (const sel of starSelectors) {
+    try {
+      const el = await page.$(sel)
+      if (el) { await el.click({ timeout: 5000 }).catch(() => {}); starClicked = true; break }
+    } catch { /* try next */ }
+  }
+  if (!starClicked) {
+    // Positional fallback — click the Nth radio button inside the rating widget
+    try {
+      const ok = await page.evaluate((n) => {
+        const radios = Array.from(document.querySelectorAll('[role="radio"]'))
+        // Filter for star-like radios (aria-label mentions star/نجوم/نجمة)
+        const stars = radios.filter((r) => /star|نجوم|نجمة|تقييم/i.test(r.getAttribute('aria-label') || ''))
+        if (stars.length >= n) {
+          stars[n - 1].click()
+          return true
+        }
+        return false
+      }, rating)
+      starClicked = ok
+    } catch { /* defensive */ }
+  }
+  if (!starClicked) return { success: false, error: `لم يتم العثور على نجمة التقييم رقم ${rating}` }
+
+  await page.waitForTimeout(randomDelay(1200, 2200))
+
+  // STEP 3: Type the review text into the textarea
+  if (review && review.trim()) {
+    const reviewSelectors = [
+      'textarea[aria-label*="review"]',
+      'textarea[aria-label*="تقييم"]',
+      'textarea[placeholder*="review"]',
+      'textarea[placeholder*="تقييم"]',
+      'textarea',
+      'div[contenteditable="true"][role="textbox"]',
+    ]
+    let typed = false
+    for (const sel of reviewSelectors) {
+      try {
+        const el = await page.$(sel)
+        if (el) {
+          await el.click({ timeout: 3000 }).catch(() => {})
+          await el.fill('').catch(() => {})
+          // Human-like typing to avoid bot detection
+          await el.type(review, { delay: 40 + Math.random() * 60 })
+          typed = true
+          break
+        }
+      } catch { /* try next */ }
+    }
+    if (!typed) return { success: false, error: 'تعذّر العثور على حقل نص التقييم' }
+    await page.waitForTimeout(randomDelay(800, 1500))
+  }
+
+  // STEP 4: Click Post
+  const postSelectors = [
+    'button:has-text("Post")',
+    'button:has-text("نشر")',
+    'button:has-text("إرسال")',
+    'button[aria-label*="Post"]',
+    'button[aria-label*="نشر"]',
+    'button[jsaction*="post"]:not([aria-disabled="true"])',
+  ]
+  let posted = false
+  for (const sel of postSelectors) {
+    try {
+      const el = await page.$(sel)
+      if (el) {
+        const disabled = await el.getAttribute('aria-disabled')
+        if (disabled === 'true') continue
+        await el.click({ timeout: 5000 }).catch(() => {})
+        posted = true
+        break
+      }
+    } catch { /* try next */ }
+  }
+  if (!posted) return { success: false, error: 'لم يتم العثور على زر النشر' }
+
+  // STEP 5: Wait for confirmation toast OR for the dialog to close
+  await page.waitForTimeout(randomDelay(3500, 5500))
+  return { success: true, posted: true }
+}
+
 ipcm('google-rate', async (e, { sessionId, placeUrl, rating, review }) => {
   const page = globals.bm.getPage(sessionId)
   if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
   try {
-    await page.goto(placeUrl, { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(randomDelay(2000, 4000))
-    await smartClick(page, ['button:has-text("Write a review")', 'button:has-text("اكتب تقييم")'], 'review button')
-    await page.waitForTimeout(randomDelay(2000, 4000))
-    await smartClick(page, [`[aria-label="${rating} stars"]`], `${rating}-star rating`)
-    await page.waitForTimeout(randomDelay(1000, 2000))
-    await smartType(page, ['textarea'], review, 'review text')
-    await page.waitForTimeout(randomDelay(1000, 2000))
-    await smartClick(page, ['button:has-text("Post")', 'button:has-text("نشر")'], 'post button')
-    await page.waitForTimeout(randomDelay(3000, 5000))
-    return { success: true, message: 'تم التقييم' }
+    const result = await _postSingleReview(page, { placeUrl, rating, review })
+    if (result.success) return { success: true, message: 'تم نشر التقييم بنجاح' }
+    return result
   } catch (err) {
     return { success: false, error: err.message }
+  }
+})
+
+// v1.24 NEW — Bulk review posting with account rotation. Each account in the
+// list posts ONE review (cycled through `reviews` list with wrap-around).
+// Each account uses its own persistent browser profile (profileId =
+// google-<accountId>) so Google's session isolation is preserved.
+//
+// Input: { placeUrl, reviews: [{text, rating}], accountIds: [1,2,3], headless: false }
+// Output: { success, totalAttempted, totalSucceeded, results: [{accountId, ...}] }
+ipcm('google-rate-bulk', async (e, { placeUrl, reviews = [], accountIds = [], headless = false, delayBetweenSec = 15, jobId }) => {
+  if (!placeUrl) return { success: false, error: 'يرجى إدخال رابط المكان' }
+  if (!Array.isArray(reviews) || reviews.length === 0) return { success: false, error: 'يرجى إدخال تقييم واحد على الأقل' }
+  if (!Array.isArray(accountIds) || accountIds.length === 0) return { success: false, error: 'يرجى اختيار حساب واحد على الأقل' }
+
+  // Fetch accounts from DB so we can attach their proxy + username to logs
+  const accounts = []
+  const db = globals.db
+  if (db) {
+    try {
+      const stmt = db.prepare('SELECT id, username, platform, proxy FROM accounts WHERE id = ?')
+      for (const id of accountIds) {
+        const row = stmt.get(id)
+        if (row) accounts.push(row)
+      }
+    } catch (dbErr) {
+      console.error('[google-rate-bulk] DB read failed:', dbErr.message)
+    }
+  }
+  if (accounts.length === 0) return { success: false, error: 'لم يتم العثور على الحسابات في قاعدة البيانات' }
+
+  if (!jobId) jobId = `gmaps-rate-bulk-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+
+  const results = []
+  let totalSucceeded = 0
+  const delayMs = Math.max(5, parseInt(delayBetweenSec) || 15) * 1000
+
+  for (let i = 0; i < accounts.length; i++) {
+    if (globals.cancelFlags.get(jobId)) break
+    const account = accounts[i]
+    // Cycle through reviews with wrap-around
+    const review = reviews[i % reviews.length]
+    const reviewText = String(review?.text || '').trim()
+    const reviewRating = Math.min(5, Math.max(1, parseInt(review?.rating) || 5))
+
+    sendProgress(sender, jobId, {
+      type: 'account-start',
+      accountIndex: i + 1,
+      totalAccounts: accounts.length,
+      accountId: account.id,
+      username: account.username,
+      rating: reviewRating,
+    })
+
+    let sessionId = null
+    try {
+      // Launch with account-specific profile so the saved Google login
+      // (cookies, local storage) is used. Profile ID matches the pattern
+      // used elsewhere in the app: google-<accountId>.
+      const launchRes = await globals.bm.launch({
+        headless,
+        platform: 'google-maps',
+        profileId: `google-${account.id}`,
+        proxy: account.proxy || undefined,
+      })
+      if (!launchRes.success) {
+        results.push({ accountId: account.id, username: account.username, success: false, error: launchRes.error || 'فشل فتح المتصفح' })
+        sendProgress(sender, jobId, { type: 'account-error', accountIndex: i + 1, accountId: account.id, error: launchRes.error })
+        continue
+      }
+      sessionId = launchRes.sessionId
+      const page = globals.bm.getPage(sessionId)
+      if (!page) {
+        results.push({ accountId: account.id, username: account.username, success: false, error: 'تعذّر الحصول على صفحة المتصفح' })
+        continue
+      }
+
+      const r = await _postSingleReview(page, { placeUrl, rating: reviewRating, review: reviewText })
+      results.push({
+        accountId: account.id,
+        username: account.username,
+        rating: reviewRating,
+        reviewText,
+        success: r.success,
+        error: r.error,
+      })
+      if (r.success) totalSucceeded++
+
+      sendProgress(sender, jobId, {
+        type: 'account-done',
+        accountIndex: i + 1,
+        totalAccounts: accounts.length,
+        accountId: account.id,
+        username: account.username,
+        success: r.success,
+        error: r.error,
+        totalSucceeded,
+      })
+
+      // Close session before moving to the next account (clean isolation)
+      try { await globals.bm.close(sessionId) } catch { /* defensive */ }
+      sessionId = null
+
+      // Anti-rate-limit pause between accounts (configurable)
+      if (i < accounts.length - 1 && !globals.cancelFlags.get(jobId)) {
+        await new Promise((r) => setTimeout(r, delayMs))
+      }
+    } catch (acctErr) {
+      results.push({ accountId: account.id, username: account.username, success: false, error: acctErr.message })
+      sendProgress(sender, jobId, { type: 'account-error', accountIndex: i + 1, accountId: account.id, error: acctErr.message })
+      if (sessionId) { try { await safeClose(sessionId) } catch { /* defensive */ } }
+    }
+  }
+
+  globals.cancelFlags.delete(jobId)
+  return {
+    success: true,
+    totalAttempted: results.length,
+    totalSucceeded,
+    results,
+    jobId,
+  }
+})
+
+// v1.24 NEW — Extract existing reviews from a Google Maps place URL.
+// Returns { author, rating, date, text, profileUrl, helpfulCount }.
+// Scrolls the reviews panel until limit reached or no more results.
+ipcm('google-reviews-extract', async (e, { placeUrl, limit = 100, sortBy = 'newest', sessionId: existingSessionId, jobId }) => {
+  if (!placeUrl) return { success: false, error: 'يرجى إدخال رابط المكان' }
+  if (!jobId) jobId = `gmaps-reviews-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+
+  let sessionId = existingSessionId || null
+  let ownSession = !existingSessionId
+
+  try {
+    if (!sessionId) {
+      const launchRes = await globals.bm.launch({ headless: false, platform: 'google-maps' })
+      if (!launchRes.success) return launchRes
+      sessionId = launchRes.sessionId
+    }
+    const page = globals.bm.getPage(sessionId)
+    if (!page) return { success: false, error: 'تعذّر فتح المتصفح' }
+
+    await page.goto(placeUrl, { waitUntil: 'domcontentloaded', timeout: 60000 })
+    await page.waitForTimeout(randomDelay(3000, 4500))
+
+    // Click the Reviews tab if present
+    try {
+      await page.evaluate(() => {
+        const tabs = Array.from(document.querySelectorAll('button[role="tab"], [role="tab"]'))
+        const reviewsTab = tabs.find((t) => /review|تقييم/i.test(t.innerText || ''))
+        if (reviewsTab) reviewsTab.click()
+      })
+      await page.waitForTimeout(randomDelay(2000, 3500))
+    } catch { /* defensive */ }
+
+    // Apply sort if requested (newest is most useful for fresh reviews)
+    if (sortBy && sortBy !== 'default') {
+      try {
+        await page.evaluate((sort) => {
+          const sortBtn = Array.from(document.querySelectorAll('button')).find((b) =>
+            /sort|ترتيب|الأكثر|الأحدث/i.test(b.innerText || '')
+          )
+          if (sortBtn) sortBtn.click()
+        }, sortBy)
+        await page.waitForTimeout(randomDelay(1500, 2500))
+        await page.evaluate((sort) => {
+          const sortLabelMap = {
+            newest: ['newest', 'الأحدث'],
+            highest: ['highest rating', 'الأعلى تقييماً'],
+            lowest: ['lowest rating', 'الأقل تقييماً'],
+            relevant: ['most relevant', 'الأكثر صلة'],
+          }
+          const labels = sortLabelMap[sort] || []
+          const opts = Array.from(document.querySelectorAll('[role="menuitemradio"], [role="menuitem"], li'))
+          const target = opts.find((o) => labels.some((lab) => (o.innerText || '').toLowerCase().includes(lab.toLowerCase())))
+          if (target) target.click()
+        }, sortBy)
+        await page.waitForTimeout(randomDelay(2500, 4000))
+      } catch { /* defensive */ }
+    }
+
+    // Scroll + collect loop
+    const reviews = []
+    const seen = new Set()
+    let stagnant = 0
+    const MAX_STAGNANT = 10
+
+    while (reviews.length < limit && stagnant < MAX_STAGNANT) {
+      if (globals.cancelFlags.get(jobId)) break
+      const before = reviews.length
+
+      const batch = await page.evaluate(() => {
+        const out = []
+        // Reviews are in data-review-id="..." cards
+        const cards = document.querySelectorAll('[data-review-id], [jsaction*="review"]')
+        for (const card of cards) {
+          const id = card.getAttribute('data-review-id') || card.getAttribute('jsaction') || ''
+          if (!id) continue
+          // Click any "More" button to expand truncated reviews
+          const moreBtn = card.querySelector('button[aria-label*="More"], button[aria-label*="المزيد"], button:has-text("More"), button:has-text("المزيد")')
+          if (moreBtn) try { moreBtn.click() } catch { /* defensive */ }
+
+          // Author name
+          const nameEl = card.querySelector('[class*="d4r55"], [aria-label*="Photo of"], div[role="link"] div')
+          const author = (nameEl?.innerText || nameEl?.getAttribute('aria-label') || '').replace(/^Photo of\s*/i, '').trim()
+
+          // Rating — aria-label "X stars"
+          const ratingEl = card.querySelector('[aria-label*="star"], [role="img"][aria-label*="نجم"]')
+          let rating = 0
+          const ratingMatch = (ratingEl?.getAttribute('aria-label') || '').match(/(\d+)/)
+          if (ratingMatch) rating = parseInt(ratingMatch[1])
+
+          // Date
+          const dateEl = card.querySelector('[class*="rsqaWe"], [class*="DU9Pgb"] span:last-child')
+          const date = (dateEl?.innerText || '').trim()
+
+          // Text
+          const textEl = card.querySelector('[class*="wiI7pd"], [class*="MyEned"] span')
+          const text = (textEl?.innerText || '').trim()
+
+          // Author profile URL
+          const profileEl = card.querySelector('a[href*="/maps/contrib/"], button[data-href*="/contrib/"]')
+          const profileUrl = profileEl?.getAttribute('href') || ''
+
+          if (author || text) {
+            out.push({ id, author, rating, date, text, profileUrl })
+          }
+        }
+        return out
+      })
+
+      for (const r of batch) {
+        const key = r.id || `${r.author}|${r.date}|${r.text?.slice(0, 50)}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        reviews.push(r)
+        if (reviews.length >= limit) break
+      }
+
+      sendProgress(sender, jobId, { type: 'progress', count: reviews.length, target: limit })
+
+      if (reviews.length === before) stagnant++
+      else stagnant = 0
+      if (reviews.length >= limit) break
+
+      // Scroll the reviews feed (left side panel) — same trick as Maps extract
+      await page.evaluate(() => {
+        const feed = document.querySelector('[role="feed"], div[aria-label*="review" i]')
+        if (feed) feed.scrollTop = feed.scrollHeight
+        else window.scrollTo(0, document.body.scrollHeight)
+      })
+      await page.waitForTimeout(randomDelay(1800, 2800))
+    }
+
+    // Persist via saveLeads with the right field names
+    saveLeads('google-maps', 'reviews-extract', reviews.map((r) => ({
+      name: r.author,
+      url: r.profileUrl,
+      source: placeUrl,
+      text: r.text,
+      extra: `rating: ${r.rating} | date: ${r.date}`,
+    })))
+
+    if (ownSession) await globals.bm.close(sessionId)
+    return { success: true, data: reviews.slice(0, limit), count: reviews.length, jobId }
+  } catch (err) {
+    if (ownSession && sessionId) await safeClose(sessionId)
+    return { success: false, error: err.message, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
   }
 })
 
