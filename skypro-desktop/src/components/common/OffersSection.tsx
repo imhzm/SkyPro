@@ -179,23 +179,32 @@ export default function OffersSection({ hideWhenEmpty = false }: OffersSectionPr
         />
 
         <div className="relative flex items-center gap-5 p-5">
-          {/* Image / Visual */}
+          {/* Image / Visual — gradient + sparkle are ALWAYS rendered as the
+              base layer; the <img> overlays them when it actually loads.
+              If the image 404s, the network fails, or CSP blocks it, the
+              onError hides the <img> and the gradient remains visible. */}
           <div
             className="relative w-24 h-24 rounded-2xl overflow-hidden flex-shrink-0"
             style={{
               background:
-                current.imageUrl
-                  ? `url(${current.imageUrl}) center/cover no-repeat`
-                  : 'linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%)',
+                'linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%)',
               border: '1px solid rgba(255, 255, 255, 0.20)',
               backdropFilter: 'blur(8px)',
               boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.15), 0 6px 18px rgba(0,0,0,0.25)',
             }}
           >
-            {!current.imageUrl && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Sparkles size={32} className="text-white/50" />
-              </div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Sparkles size={32} className="text-white/50" />
+            </div>
+            {current.imageUrl && (
+              <img
+                src={current.imageUrl}
+                alt=""
+                loading="lazy"
+                referrerPolicy="no-referrer"
+                className="absolute inset-0 w-full h-full object-cover"
+                onError={(e) => { e.currentTarget.style.display = 'none' }}
+              />
             )}
           </div>
 

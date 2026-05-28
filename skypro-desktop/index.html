@@ -4,7 +4,10 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/skypro.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://skypro.skywaveads.com https://www.skywaveads.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';" />
+    <!-- img-src includes https: so admin-uploaded offer banners (any external
+         CDN URL) render in OffersSection. Without this they were silently
+         blocked by CSP and only the gradient fallback showed. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://skypro.skywaveads.com https://www.skywaveads.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';" />
     <title>SkyPro</title>
   </head>
   <body>
