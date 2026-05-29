@@ -7593,6 +7593,93 @@ ipcm('reddit-publish-with-image', async (e, { sessionId, subreddit, title, conte
 // Helper: extract businesses from the currently-loaded Google Maps results
 // panel. Scrolls the LEFT panel (the actual results list), not the window —
 // this is the key fix from v1.22's broken version that only window-scrolled.
+// ============================================================================
+// v1.25 — Google Maps place resolution + consent handling.
+// Users frequently paste a Google *web search* URL (google.com/search?…) or a
+// bare maps URL (google.com/maps?vet=…) instead of a /maps/place/ URL. Going
+// straight there lands on a page with NO review feed and NO "write a review"
+// button, so every rate/extract silently failed. resolveMapsPlace accepts a
+// place NAME or ANY Google URL and always ends up on a real /maps/place/ panel
+// (searching + opening the first result when needed). dismissGoogleConsent
+// clears the consent.google.com interstitial a fresh ar-SA profile can hit.
+// ============================================================================
+async function dismissGoogleConsent(page) {
+  try {
+    const onConsent = /consent\.google\.|\/consent/i.test(page.url() || '')
+    const clicked = await page.evaluate(() => {
+      const norm = (b) => ((b.innerText || b.value || '') + ' ' + (b.getAttribute('aria-label') || '')).trim().toLowerCase()
+      const btns = Array.from(document.querySelectorAll('button, [role="button"], input[type="submit"]'))
+      const acceptAll = btns.find((b) => /accept all|قبول الكل|الموافقة على الكل|أوافق على الكل/i.test(norm(b)))
+      const accept = acceptAll || btns.find((b) => /^(accept|i agree|agree|قبول|أوافق|موافق|الموافقة)/i.test(norm(b)))
+      if (accept) { accept.click(); return true }
+      return false
+    }).catch(() => false)
+    if (clicked || onConsent) {
+      await page.waitForLoadState('domcontentloaded', { timeout: 8000 }).catch(() => {})
+      await page.waitForTimeout(800)
+    }
+    return clicked
+  } catch { return false }
+}
+
+async function resolveMapsPlace(page, placeInput) {
+  const raw = String(placeInput || '').trim()
+  if (!raw) return { ok: false, error: 'يرجى إدخال رابط المكان أو اسمه' }
+
+  const settle = async () => {
+    await dismissGoogleConsent(page)
+    await page.waitForTimeout(randomDelay(1800, 3200))
+  }
+  const openFirstResult = async () => {
+    await page.waitForSelector('a[href*="/maps/place/"]', { timeout: 12000 }).catch(() => {})
+    const href = await page.evaluate(() => {
+      const a = document.querySelector('a[href*="/maps/place/"]')
+      return a ? a.href : null
+    }).catch(() => null)
+    if (!href) return false
+    await page.goto(href, { waitUntil: 'domcontentloaded', timeout: 60000 })
+    await settle()
+    return true
+  }
+
+  // Already a /maps/place/ URL → use directly.
+  if (/\/maps\/place\//i.test(raw)) {
+    await page.goto(raw, { waitUntil: 'domcontentloaded', timeout: 60000 })
+    await settle()
+    return /\/maps\/place\//i.test(page.url()) ? { ok: true } : { ok: false, error: 'تعذّر فتح صفحة المكان' }
+  }
+
+  // Derive a search query from the input.
+  let query = raw
+  if (/^https?:\/\//i.test(raw)) {
+    try {
+      const u = new URL(raw)
+      const q = u.searchParams.get('q') || u.searchParams.get('query')
+      const fromSearchPath = decodeURIComponent((u.pathname.split('/maps/search/')[1] || '').split('/')[0] || '').replace(/\+/g, ' ').trim()
+      if (q) query = q
+      else if (fromSearchPath) query = fromSearchPath
+      else if (/\/maps\b/i.test(u.pathname) || /\/maps\b/i.test(u.href)) {
+        // A maps URL with no obvious query (e.g. ?vet=…): navigate, then grab the first result.
+        await page.goto(raw, { waitUntil: 'domcontentloaded', timeout: 60000 })
+        await settle()
+        if (/\/maps\/place\//i.test(page.url())) return { ok: true }
+        if (await openFirstResult()) return { ok: true }
+        return { ok: false, error: 'لم يتم العثور على مكان في هذا الرابط — الصق رابط مكان أو اكتب اسمه' }
+      }
+    } catch { /* unparseable — treat as plain text */ }
+  }
+  if (!query || /^https?:/i.test(query)) {
+    return { ok: false, error: 'تعذّر تحديد المكان — الصق رابط مكان من خرائط جوجل أو اكتب اسم المكان' }
+  }
+
+  // Search Maps for the query, then open the first result.
+  await page.goto(`https://www.google.com/maps/search/${encodeURIComponent(query)}`, { waitUntil: 'domcontentloaded', timeout: 60000 })
+  await settle()
+  if (/\/maps\/place\//i.test(page.url())) return { ok: true }
+  if (await openFirstResult()) return { ok: true }
+  return { ok: false, error: 'لم يتم العثور على المكان — تأكد من الاسم أو الرابط' }
+}
+
 async function _gMapsExtractCurrentPanel(page, limit, onProgress) {
   const businesses = []
   const seenNames = new Set()
@@ -8022,57 +8109,46 @@ ipcm('google-maps-bulk-extract-matrix', async (e, { keywords = [], cities = [], 
 //      class names every few weeks
 //   4. Scrolls + lazy-loads until `limit` or 8 stagnant cycles
 //   5. Extracts title, price, location, posted-date, image, and link
-ipcm('olx-extract', async (e, { country, category, limit = 50, sessionId: existingSessionId }) => {
-  // Country → { domain, urlPrefix } map. Default to Egypt if unknown.
+ipcm('olx-extract', async (e, { country, keyword, category, limit = 50, jobId, sessionId: existingSessionId }) => {
+  // v1.25 — Reworked for KEYWORD search. The old impl navigated to fixed
+  // category landing pages and used testid card selectors (listing-card / l-card
+  // / itemBox) that Dubizzle's React frontend no longer emits — every selector
+  // returned 0, so extraction silently produced nothing. This version drives the
+  // unified keyword search and reads cards by their STABLE aria-labels.
+  //
+  // Verified live (Dubizzle Egypt, 2026-Q2):
+  //   • Search URL ....... https://www.dubizzle.com.eg/ads/q-<keyword>/?page=N
+  //   • Listing card ..... <li aria-label="Listing">
+  //   • Field elements ... [aria-label="Title" | "Price" | "Location" | "Creation date"]
+  //     (class names are hashed and rotate, so we never rely on them)
   const sites = {
-    egypt:  { domain: 'www.dubizzle.com.eg', prefix: '/ar' },           // Dubizzle Egypt (Arabic UI)
-    saudi:  { domain: 'www.dubizzle.sa',     prefix: '/ar' },           // Dubizzle KSA (Arabic UI)
-    uae:    { domain: 'www.dubizzle.com',    prefix: ''     },          // Dubizzle UAE (English URLs)
-    qatar:  { domain: 'www.olx.qa',          prefix: ''     },          // OLX Qatar (still OLX)
-    kuwait: { domain: 'www.olx.com.kw',      prefix: ''     },          // OLX Kuwait (still OLX)
+    egypt:  { domain: 'www.dubizzle.com.eg', engine: 'dubizzle' }, // Dubizzle Egypt
+    saudi:  { domain: 'www.dubizzle.sa',     engine: 'dubizzle' }, // Dubizzle KSA
+    uae:    { domain: 'www.dubizzle.com',    engine: 'dubizzle' }, // Dubizzle UAE
+    qatar:  { domain: 'www.olx.qa',          engine: 'olx'      }, // OLX Qatar
+    kuwait: { domain: 'www.olx.com.kw',      engine: 'olx'      }, // OLX Kuwait
   }
-  // Per-country category slug mapping. The slug is appended to the domain+prefix.
-  // Slugs verified against live Dubizzle Egypt as of 2025-Q4.
-  const categoryPaths = {
-    egypt: {
-      properties:  'properties-for-sale-for-rent',
-      vehicles:    'vehicles',
-      electronics: 'electronics-and-appliances',
-      furniture:   'furniture-home-decor',
-    },
-    saudi: {
-      properties:  'properties-for-sale-for-rent',
-      vehicles:    'vehicles',
-      electronics: 'electronics-home-appliances',
-      furniture:   'furniture-home-decor',
-    },
-    uae: {
-      properties:  'property-for-sale',
-      vehicles:    'motors/used-cars',
-      electronics: 'classified/electronics-and-home-appliances',
-      furniture:   'classified/furniture-home-and-garden',
-    },
-    qatar: {
-      properties:  'real-estate',
-      vehicles:    'vehicles',
-      electronics: 'electronics-appliances',
-      furniture:   'furniture-decor-garden',
-    },
-    kuwait: {
-      properties:  'real-estate',
-      vehicles:    'vehicles',
-      electronics: 'electronics-appliances',
-      furniture:   'furniture-decor-garden',
-    },
+  const site = sites[country] || sites.egypt
+
+  // Keyword is the primary input. `category` is accepted only as a fallback so an
+  // older renderer build (which still sends `category`) keeps working.
+  const rawKw = (keyword != null && String(keyword).trim()) || (category != null && String(category).trim()) || ''
+  if (!rawKw) return { success: false, error: 'أدخل كلمة مفتاحية للبحث (مثال: شقق للإيجار، سيارات مستعملة)' }
+
+  // Spaces → dashes; Arabic kept as UTF-8 (encodeURIComponent leaves "-" intact).
+  const kwSlug = rawKw.replace(/\s+/g, '-')
+  const searchPath = site.engine === 'olx' ? 'items' : 'ads'
+  const buildUrl = (pageN) => {
+    const base = `https://${site.domain}/${searchPath}/q-${encodeURIComponent(kwSlug)}/`
+    return pageN > 1 ? `${base}?page=${pageN}` : base
   }
 
-  const site = sites[country] || sites.egypt
-  const catMap = categoryPaths[country] || categoryPaths.egypt
-  const slug = catMap[category] || category
-  const targetUrl = `https://${site.domain}${site.prefix}/${slug}/`
+  const sender = getSender(e)
+  if (!jobId) jobId = `olx-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
 
   let sessionId = existingSessionId || null
-  let ownSession = !existingSessionId
+  const ownSession = !existingSessionId
 
   try {
     if (!sessionId) {
@@ -8083,138 +8159,112 @@ ipcm('olx-extract', async (e, { country, category, limit = 50, sessionId: existi
     const page = globals.bm.getPage(sessionId)
     if (!page) return { success: false, error: 'تعذّر فتح المتصفح' }
 
-    await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 60000 })
-    await page.waitForTimeout(randomDelay(4000, 6500))
-
-    // Dismiss cookie banner / location prompt if present — these block the
-    // scroll handler on some Dubizzle pages.
-    try {
-      await page.evaluate(() => {
-        const buttons = Array.from(document.querySelectorAll('button'))
-        for (const b of buttons) {
-          const t = (b.innerText || '').toLowerCase().trim()
-          if (/^(accept|agree|got it|ok|قبول|موافق|تم|أوافق)/.test(t)) {
-            b.click()
-            return
-          }
-        }
-      })
-    } catch { /* defensive */ }
-    await page.waitForTimeout(randomDelay(800, 1500))
-
-    // Scroll-and-collect loop. Dubizzle uses infinite scroll on listing pages.
     const seenLinks = new Set()
     const listings = []
-    let stagnant = 0
-    const MAX_STAGNANT = 8
+    let pageNum = 1
+    let emptyPages = 0
+    // ~20-30 cards/page on Dubizzle; cap pages generously but bound the loop.
+    const MAX_PAGES = Math.min(60, Math.ceil(limit / 20) + 4)
 
-    while (listings.length < limit && stagnant < MAX_STAGNANT) {
-      const before = listings.length
+    while (listings.length < limit && pageNum <= MAX_PAGES && emptyPages < 2) {
+      if (globals.cancelFlags.get(jobId)) break
+
+      try {
+        await page.goto(buildUrl(pageNum), { waitUntil: 'domcontentloaded', timeout: 60000 })
+      } catch {
+        emptyPages++
+        pageNum++
+        continue
+      }
+      await page.waitForTimeout(randomDelay(3500, 5500))
+
+      // Dismiss cookie / location prompts that otherwise block lazy-load.
+      try {
+        await page.evaluate(() => {
+          const buttons = Array.from(document.querySelectorAll('button'))
+          for (const b of buttons) {
+            const t = (b.innerText || '').toLowerCase().trim()
+            if (/^(accept|agree|got it|ok|قبول|موافق|تم|أوافق)/.test(t)) { b.click(); return }
+          }
+        })
+      } catch { /* defensive */ }
+
+      // Step the page down to trigger lazy image loading, then settle at bottom.
+      for (let s = 0; s < 4; s++) {
+        if (globals.cancelFlags.get(jobId)) break
+        await page.evaluate(() => window.scrollBy(0, Math.ceil(document.body.scrollHeight / 4)))
+        await page.waitForTimeout(randomDelay(600, 1100))
+      }
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.waitForTimeout(randomDelay(1000, 1800))
 
       const batch = await page.evaluate(() => {
         const out = []
-        // Selector cascade: modern Dubizzle React testids → legacy OLX testids
-        // → classless article/li fallback. Emit { ... } for each match.
-        const cards = document.querySelectorAll(
-          [
-            '[data-testid="listing-card"]',
-            '[data-testid^="listing-"]',
-            '[data-cy="l-card"]',
-            'div[data-aut-id="itemBox"]',
-            'article',
-            'li[data-cy]',
-          ].join(', ')
-        )
+        // Primary (verified): Dubizzle listing cards are <li aria-label="Listing">.
+        let cards = Array.from(document.querySelectorAll('li[aria-label="Listing"]'))
+        // Fallback for OLX (olx.qa / olx.com.kw) which use a different frontend.
+        if (cards.length === 0) {
+          cards = Array.from(document.querySelectorAll(
+            '[data-testid="listing-card"], [data-aut-id="itemBox"], [data-cy="l-card"], article'
+          ))
+        }
 
+        const txt = (el) => (el && el.innerText ? el.innerText.trim() : '')
         for (const card of cards) {
-          // Find the canonical anchor (the one wrapping the title)
           const linkEl = card.querySelector('a[href*="/ad/"], a[href*="/item/"], a[href]')
           if (!linkEl) continue
-          const link = linkEl.href || ''
+          let link = linkEl.getAttribute('href') || ''
           if (!link || link.includes('/category/')) continue
+          if (link.startsWith('/')) link = location.origin + link
 
-          // Title: prefer the most specific selector, fall back to first heading
-          const titleEl =
-            card.querySelector('[data-testid="listing-title"]') ||
-            card.querySelector('[data-aut-id="itemTitle"]') ||
-            card.querySelector('h2, h3, h4, h5, h6')
-          const title = (titleEl?.innerText || '').trim()
-          if (!title) continue
+          // Stable aria-labelled fields first, then testid/heading fallbacks.
+          const byAria = (label) => card.querySelector(`[aria-label="${label}"]`)
+          const titleEl = byAria('Title')
+            || card.querySelector('[data-testid="listing-title"], [data-aut-id="itemTitle"], h2, h3, h4')
+          let title = txt(titleEl) || (linkEl.getAttribute('aria-label') || '').trim()
 
-          // Price
-          const priceEl =
-            card.querySelector('[data-testid="listing-price"]') ||
-            card.querySelector('[data-testid="ad-price"]') ||
-            card.querySelector('[data-aut-id="itemPrice"]') ||
-            card.querySelector('[aria-label*="price"]')
-          const price = (priceEl?.innerText || '').trim()
+          const priceEl = byAria('Price')
+            || card.querySelector('[data-testid="listing-price"], [data-aut-id="itemPrice"]')
+          const price = txt(priceEl)
 
-          // Location + date are usually in one block, comma-separated
-          const locEl =
-            card.querySelector('[data-testid="listing-location"]') ||
-            card.querySelector('[data-testid="location-date"]') ||
-            card.querySelector('[data-aut-id="item-location"]')
-          const locText = (locEl?.innerText || '').trim()
-          // Date is often the LAST segment after a separator (·, -, ،)
-          let location = locText
-          let postedDate = ''
-          const sepMatch = locText.split(/\s*[·•\-،,]\s*/).filter(Boolean)
-          if (sepMatch.length >= 2) {
-            // Heuristic: if any segment contains numbers/time-words, treat as date
-            for (let i = sepMatch.length - 1; i >= 0; i--) {
-              const seg = sepMatch[i]
-              if (/\d|ago|today|yesterday|أمس|اليوم|ساع|دقيق|يوم/i.test(seg)) {
-                postedDate = seg
-                location = sepMatch.slice(0, i).join(' • ')
-                break
-              }
-            }
-          }
+          const locEl = byAria('Location')
+            || card.querySelector('[data-testid="listing-location"], [data-aut-id="item-location"]')
+          const location_ = txt(locEl)
 
-          // Image
+          const dateEl = byAria('Creation date')
+            || card.querySelector('[data-testid="listing-date"], [data-aut-id="item-time"]')
+          const postedDate = txt(dateEl)
+
           const imgEl = card.querySelector('img[src], img[data-src]')
-          const image = imgEl?.getAttribute('src') || imgEl?.getAttribute('data-src') || ''
+          const image = (imgEl && (imgEl.getAttribute('src') || imgEl.getAttribute('data-src'))) || ''
+          // Use the listing image alt as a title backup (Dubizzle sets alt = title).
+          if (!title && imgEl) title = (imgEl.getAttribute('alt') || '').trim()
 
-          out.push({ title, price, location, postedDate, image, link })
+          if (title || link) out.push({ title, price, location: location_, postedDate, image, link })
         }
         return out
       })
 
+      let added = 0
       for (const item of batch) {
         if (!item.link || seenLinks.has(item.link)) continue
         seenLinks.add(item.link)
         listings.push(item)
+        added++
         if (listings.length >= limit) break
       }
 
-      if (listings.length === before) stagnant++
-      else stagnant = 0
-      if (listings.length >= limit) break
+      // A page that yields nothing new means we've hit the end of results.
+      if (added === 0) emptyPages++
+      else emptyPages = 0
 
-      // Scroll to bottom to trigger lazy-load
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
-      await page.waitForTimeout(randomDelay(1800, 2800))
-
-      // Some Dubizzle pages have a "Load more" button instead of infinite scroll
-      try {
-        const clicked = await page.evaluate(() => {
-          const buttons = Array.from(document.querySelectorAll('button, a'))
-          for (const b of buttons) {
-            const t = (b.innerText || '').toLowerCase().trim()
-            if (/^(load more|show more|more results|عرض المزيد|تحميل المزيد|المزيد)/.test(t)) {
-              b.click()
-              return true
-            }
-          }
-          return false
-        })
-        if (clicked) await page.waitForTimeout(randomDelay(2000, 3500))
-      } catch { /* defensive */ }
+      sendProgress(sender, jobId, { type: 'progress', count: listings.length, target: limit, page: pageNum })
+      pageNum++
     }
 
-    // Persist via saveLeads (writes to DB and CSV with sanitization)
-    saveLeads('olx', `${country}-${category}`, listings.map((l) => ({
-      name: l.title,        // saveLeads uses `name` as primary field
+    // Persist via saveLeads (writes to DB + CSV with sanitization).
+    saveLeads('olx', `${country || 'egypt'}-${kwSlug}`, listings.map((l) => ({
+      name: l.title,        // saveLeads uses `name` as the primary field
       title: l.title,
       price: l.price,
       location: l.location,
@@ -8222,14 +8272,16 @@ ipcm('olx-extract', async (e, { country, category, limit = 50, sessionId: existi
       image: l.image,
       url: l.link,
       link: l.link,
-      source: `${site.domain}/${slug}`,
+      source: `${site.domain} • ${rawKw}`,
     })))
 
     if (ownSession) await globals.bm.close(sessionId)
-    return { success: true, data: listings, count: listings.length, url: targetUrl }
+    return { success: true, data: listings, count: listings.length, url: buildUrl(1), keyword: rawKw, jobId }
   } catch (err) {
     if (ownSession && sessionId) await safeClose(sessionId)
-    return { success: false, error: err.message }
+    return { success: false, error: err.message, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
   }
 })
 
@@ -8242,135 +8294,109 @@ ipcm('olx-extract', async (e, { country, category, limit = 50, sessionId: existi
 //     the user's own review appearing in the list)
 //   * Returns structured { success, error, posted } so the UI can show why
 async function _postSingleReview(page, { placeUrl, rating, review }) {
-  await page.goto(placeUrl, { waitUntil: 'domcontentloaded', timeout: 60000 })
-  await page.waitForTimeout(randomDelay(2500, 4500))
+  // Resolve whatever the user pasted (place URL, web-search URL, or a name)
+  // into a real /maps/place/ panel before we look for the review controls.
+  const resolved = await resolveMapsPlace(page, placeUrl)
+  if (!resolved.ok) return { success: false, error: resolved.error }
+  await page.waitForTimeout(randomDelay(1500, 2800))
 
-  // STEP 1: Find + click the "Write a review" button. Google Maps places
-  // it either as a top-level action button or inside the Reviews tab.
+  // STEP 1: Open the review composer. In the ar-SA locale Google labels this
+  // "كتابة مراجعة" (مراجعة, NOT تقييم) — verified against the live DOM. The old
+  // selector set used "تقييم" and never matched, so posting always failed.
   const writeBtnSelectors = [
+    'button[aria-label*="كتابة مراجعة"]',
+    'button[data-value*="مراجعة"]',
+    'button[aria-label*="اكتب مراجعة"]',
+    'button[aria-label*="أضف مراجعة"]',
     'button[aria-label*="Write a review"]',
-    'button[aria-label*="اكتب تقييم"]',
-    'button[aria-label*="كتابة تقييم"]',
-    'button:has-text("Write a review")',
-    'button:has-text("اكتب تقييم")',
-    'button:has-text("كتابة تقييم")',
-    'button[data-value="Write a review"]',
+    'button[data-value*="Write a review"]',
     'button[jsaction*="review"]',
   ]
-  let opened = false
-  for (const sel of writeBtnSelectors) {
-    try {
-      const el = await page.$(sel)
-      if (el) { await el.click({ timeout: 5000 }).catch(() => {}); opened = true; break }
-    } catch { /* try next */ }
+  const clickWrite = async () => {
+    for (const sel of writeBtnSelectors) {
+      const el = await page.$(sel).catch(() => null)
+      if (el) { await el.click({ timeout: 5000 }).catch(() => {}); return true }
+    }
+    // Text-based fallback (covers EN + AR wording drift).
+    return await page.evaluate(() => {
+      const btns = Array.from(document.querySelectorAll('button, [role="button"]'))
+      const b = btns.find((x) => /كتابة مراجعة|اكتب مراجعة|أضف مراجعة|write a review/i.test(((x.innerText || '') + ' ' + (x.getAttribute('aria-label') || '') + ' ' + (x.getAttribute('data-value') || '')).trim()))
+      if (b) { b.click(); return true }
+      return false
+    }).catch(() => false)
   }
+  let opened = await clickWrite()
   if (!opened) {
-    // Fallback: scroll to the Reviews tab and try again
-    try {
-      await page.evaluate(() => {
-        const tabs = Array.from(document.querySelectorAll('button[role="tab"], [role="tab"]'))
-        const reviewsTab = tabs.find((t) => /review|تقييم/i.test(t.innerText || ''))
-        if (reviewsTab) reviewsTab.click()
-      })
-      await page.waitForTimeout(randomDelay(1500, 2500))
-      for (const sel of writeBtnSelectors) {
-        const el = await page.$(sel)
-        if (el) { await el.click({ timeout: 5000 }).catch(() => {}); opened = true; break }
-      }
-    } catch { /* defensive */ }
+    // Make sure we're on the Reviews tab ("المراجعات"), then retry.
+    await page.evaluate(() => {
+      const tabs = Array.from(document.querySelectorAll('[role="tab"], button[role="tab"]'))
+      const t = tabs.find((x) => /review|مراجع|تقييم/i.test((x.innerText || '') + ' ' + (x.getAttribute('aria-label') || '')))
+      if (t) t.click()
+    }).catch(() => {})
+    await page.waitForTimeout(randomDelay(1500, 2500))
+    opened = await clickWrite()
   }
-  if (!opened) return { success: false, error: 'لم يتم العثور على زر "اكتب تقييم"' }
+  if (!opened) return { success: false, error: 'لم يتم العثور على زر "كتابة مراجعة" — تأكد من تسجيل الدخول إلى جوجل في هذا المتصفح' }
 
-  // STEP 2: Wait for the rating dialog to appear and click the Nth star.
-  // Google uses aria-label="N stars" but in Arabic locales it's "N نجوم".
+  // The composer opens as a dialog when logged in. Wait + scope to it.
   await page.waitForTimeout(randomDelay(2500, 4000))
-  const starSelectors = [
-    `[aria-label="${rating} stars"]`,
-    `[aria-label="${rating} نجوم"]`,
-    `[aria-label="${rating} نجمة"]`,
-    `[aria-label*="${rating} star"]`,
-    `[aria-label*="${rating}"][role="radio"]`,
-  ]
-  let starClicked = false
-  for (const sel of starSelectors) {
-    try {
-      const el = await page.$(sel)
-      if (el) { await el.click({ timeout: 5000 }).catch(() => {}); starClicked = true; break }
-    } catch { /* try next */ }
-  }
-  if (!starClicked) {
-    // Positional fallback — click the Nth radio button inside the rating widget
-    try {
-      const ok = await page.evaluate((n) => {
-        const radios = Array.from(document.querySelectorAll('[role="radio"]'))
-        // Filter for star-like radios (aria-label mentions star/نجوم/نجمة)
-        const stars = radios.filter((r) => /star|نجوم|نجمة|تقييم/i.test(r.getAttribute('aria-label') || ''))
-        if (stars.length >= n) {
-          stars[n - 1].click()
-          return true
-        }
-        return false
-      }, rating)
-      starClicked = ok
-    } catch { /* defensive */ }
-  }
-  if (!starClicked) return { success: false, error: `لم يتم العثور على نجمة التقييم رقم ${rating}` }
+  const dialog = await page.$('div[role="dialog"]').catch(() => null)
+  const dialogScoped = !!dialog
 
+  // STEP 2: Set the star rating. Arabic labels vary ("5 نجوم", "نجمة واحدة",
+  // "نجمتان"…) so the locale-proof path is to click the Nth star radio
+  // positionally inside the composer's radiogroup.
+  const starClicked = await page.evaluate(({ n, scoped }) => {
+    const root = (scoped && document.querySelector('div[role="dialog"]')) || document
+    let stars = Array.from(root.querySelectorAll('[role="radiogroup"] [role="radio"]'))
+    if (stars.length < 5) {
+      stars = Array.from(root.querySelectorAll('[role="radio"]'))
+        .filter((r) => /نجو|نجم|star|قيّم|قيم|rate/i.test(r.getAttribute('aria-label') || ''))
+    }
+    if (stars.length < 5) {
+      stars = Array.from(root.querySelectorAll('[aria-label*="نجو"],[aria-label*="نجم"],[aria-label*="star" i]'))
+    }
+    if (n >= 1 && stars.length >= n) { stars[n - 1].click(); return true }
+    return false
+  }, { n: rating, scoped: dialogScoped }).catch(() => false)
+  if (!starClicked) return { success: false, error: `تعذّر ضبط تقييم ${rating} نجوم` }
   await page.waitForTimeout(randomDelay(1200, 2200))
 
-  // STEP 3: Type the review text into the textarea
+  // STEP 3: Type the review text.
   if (review && review.trim()) {
-    const reviewSelectors = [
-      'textarea[aria-label*="review"]',
-      'textarea[aria-label*="تقييم"]',
-      'textarea[placeholder*="review"]',
-      'textarea[placeholder*="تقييم"]',
-      'textarea',
-      'div[contenteditable="true"][role="textbox"]',
-    ]
+    const reviewSelectors = dialogScoped
+      ? ['div[role="dialog"] textarea', 'div[role="dialog"] div[contenteditable="true"]', 'textarea']
+      : ['textarea[aria-label*="مراجع"]', 'textarea[aria-label*="review" i]', 'textarea', 'div[contenteditable="true"][role="textbox"]']
     let typed = false
     for (const sel of reviewSelectors) {
-      try {
-        const el = await page.$(sel)
-        if (el) {
-          await el.click({ timeout: 3000 }).catch(() => {})
-          await el.fill('').catch(() => {})
-          // Human-like typing to avoid bot detection
-          await el.type(review, { delay: 40 + Math.random() * 60 })
-          typed = true
-          break
-        }
-      } catch { /* try next */ }
+      const el = await page.$(sel).catch(() => null)
+      if (el) {
+        await el.click({ timeout: 3000 }).catch(() => {})
+        await el.fill('').catch(() => {})
+        await el.type(review, { delay: 40 + Math.random() * 60 }).catch(() => {})
+        typed = true
+        break
+      }
     }
-    if (!typed) return { success: false, error: 'تعذّر العثور على حقل نص التقييم' }
+    if (!typed) return { success: false, error: 'تعذّر العثور على حقل نص المراجعة' }
     await page.waitForTimeout(randomDelay(800, 1500))
   }
 
-  // STEP 4: Click Post
-  const postSelectors = [
-    'button:has-text("Post")',
-    'button:has-text("نشر")',
-    'button:has-text("إرسال")',
-    'button[aria-label*="Post"]',
-    'button[aria-label*="نشر"]',
-    'button[jsaction*="post"]:not([aria-disabled="true"])',
-  ]
-  let posted = false
-  for (const sel of postSelectors) {
-    try {
-      const el = await page.$(sel)
-      if (el) {
-        const disabled = await el.getAttribute('aria-disabled')
-        if (disabled === 'true') continue
-        await el.click({ timeout: 5000 }).catch(() => {})
-        posted = true
-        break
-      }
-    } catch { /* try next */ }
-  }
+  // STEP 4: Submit ("نشر" / "انشر" / "إرسال" / "Post"). Skip disabled buttons.
+  const posted = await page.evaluate((scoped) => {
+    const root = (scoped && document.querySelector('div[role="dialog"]')) || document
+    const btns = Array.from(root.querySelectorAll('button, [role="button"]'))
+    const b = btns.find((x) => {
+      if (x.getAttribute('aria-disabled') === 'true' || x.disabled) return false
+      const s = ((x.innerText || '') + ' ' + (x.getAttribute('aria-label') || '')).trim()
+      return /\bpost\b|^نشر$|^انشر$|^إرسال$|نشر المراجعة|publish/i.test(s)
+    })
+    if (b) { b.click(); return true }
+    return false
+  }, dialogScoped).catch(() => false)
   if (!posted) return { success: false, error: 'لم يتم العثور على زر النشر' }
 
-  // STEP 5: Wait for confirmation toast OR for the dialog to close
+  // STEP 5: Let the post settle (toast / dialog close).
   await page.waitForTimeout(randomDelay(3500, 5500))
   return { success: true, posted: true }
 }
@@ -8531,14 +8557,19 @@ ipcm('google-reviews-extract', async (e, { placeUrl, limit = 100, sortBy = 'newe
     const page = globals.bm.getPage(sessionId)
     if (!page) return { success: false, error: 'تعذّر فتح المتصفح' }
 
-    await page.goto(placeUrl, { waitUntil: 'domcontentloaded', timeout: 60000 })
-    await page.waitForTimeout(randomDelay(3000, 4500))
+    // Resolve a place name / web-search URL / maps URL into a real place panel.
+    const resolved = await resolveMapsPlace(page, placeUrl)
+    if (!resolved.ok) {
+      if (ownSession && sessionId) await safeClose(sessionId)
+      return { success: false, error: resolved.error, jobId }
+    }
 
-    // Click the Reviews tab if present
+    // Open the Reviews tab — "المراجعات" in ar-SA (the old /review|تقييم/ match
+    // never hit it because the Arabic word is مراجعات, not تقييم).
     try {
       await page.evaluate(() => {
         const tabs = Array.from(document.querySelectorAll('button[role="tab"], [role="tab"]'))
-        const reviewsTab = tabs.find((t) => /review|تقييم/i.test(t.innerText || ''))
+        const reviewsTab = tabs.find((t) => /review|مراجع|تقييم/i.test((t.innerText || '') + ' ' + (t.getAttribute('aria-label') || '')))
         if (reviewsTab) reviewsTab.click()
       })
       await page.waitForTimeout(randomDelay(2000, 3500))
@@ -8587,19 +8618,25 @@ ipcm('google-reviews-extract', async (e, { placeUrl, limit = 100, sortBy = 'newe
         for (const card of cards) {
           const id = card.getAttribute('data-review-id') || card.getAttribute('jsaction') || ''
           if (!id) continue
-          // Click any "More" button to expand truncated reviews
-          const moreBtn = card.querySelector('button[aria-label*="More"], button[aria-label*="المزيد"], button:has-text("More"), button:has-text("المزيد")')
-          if (moreBtn) try { moreBtn.click() } catch { /* defensive */ }
+          // Click any "More"/"المزيد" button to expand truncated reviews.
+          // NOTE: :has-text() is a Playwright-only selector and throws inside
+          // document.querySelector — using it here previously crashed the whole
+          // scrape (returning 0 reviews). Match by aria-label / text instead.
+          const moreBtn = card.querySelector('button[aria-label*="More"], button[aria-label*="المزيد"], button[jsaction*="expand"]')
+            || Array.from(card.querySelectorAll('button')).find((b) => /^(more|المزيد|عرض المزيد)$/i.test((b.innerText || '').trim()))
+          if (moreBtn) { try { moreBtn.click() } catch { /* defensive */ } }
 
           // Author name
           const nameEl = card.querySelector('[class*="d4r55"], [aria-label*="Photo of"], div[role="link"] div')
           const author = (nameEl?.innerText || nameEl?.getAttribute('aria-label') || '').replace(/^Photo of\s*/i, '').trim()
 
-          // Rating — aria-label "X stars"
-          const ratingEl = card.querySelector('[aria-label*="star"], [role="img"][aria-label*="نجم"]')
+          // Rating — live ar-SA aria-label is "5 نجوم" (plural) or "نجمة واحدة" (single).
+          // NOTE: [aria-label*="نجم"] does NOT match "نجوم" because the و breaks the
+          // substring. Match "نجو" + "نجم" + "star" and the verified kvMYJc class.
+          const ratingEl = card.querySelector('span.kvMYJc[aria-label], [aria-label*="نجو"], [aria-label*="نجم"], [aria-label*="star" i], [role="img"][aria-label]')
           let rating = 0
-          const ratingMatch = (ratingEl?.getAttribute('aria-label') || '').match(/(\d+)/)
-          if (ratingMatch) rating = parseInt(ratingMatch[1])
+          const ratingMatch = (ratingEl?.getAttribute('aria-label') || '').match(/(\d+([.,]\d)?)/)
+          if (ratingMatch) rating = parseFloat(ratingMatch[1].replace(',', '.'))
 
           // Date
           const dateEl = card.querySelector('[class*="rsqaWe"], [class*="DU9Pgb"] span:last-child')

@@ -66,7 +66,7 @@ export default function GoogleModule() {
   const [mapsLimit, setMapsLimit] = useState(50)
   const [mapsResults, setMapsResults] = useState<any[]>([])
   const [olxCountry, setOlxCountry] = useState('egypt')
-  const [olxCategory, setOlxCategory] = useState('properties')
+  const [olxKeyword, setOlxKeyword] = useState('')
   const [olxLimit, setOlxLimit] = useState(50)
   const [olxResults, setOlxResults] = useState<any[]>([])
   const [rateUrl, setRateUrl] = useState('')
@@ -278,10 +278,11 @@ export default function GoogleModule() {
   }
 
   const handleOlxExtract = async () => {
+    if (!olxKeyword.trim()) { showMsg('أدخل كلمة مفتاحية للبحث (مثال: شقق للإيجار، سيارات مستعملة)', true); return }
     setLoading(true)
     setResultsOwner('olx')
     try {
-      const res = await window.electronAPI.olxExtract({ country: olxCountry, category: olxCategory, limit: olxLimit })
+      const res = await window.electronAPI.olxExtract({ country: olxCountry, keyword: olxKeyword.trim(), limit: olxLimit })
       if (res.success && res.data) { setOlxResults((res.data as any[]) || []); showMsg(`تم استخراج ${res.count ?? res.data?.length ?? 0}`) }
       else showMsg(res.error || 'فشل الاستخراج', true)
     } catch (err: any) { showMsg(err.message || 'خطأ', true) }
@@ -364,6 +365,7 @@ export default function GoogleModule() {
         placeUrl: reviewsUrl,
         limit: reviewsLimit,
         sortBy: reviewsSort,
+        sessionId: sessionId || undefined,
       })
       if (res.success && res.data) {
         setReviewsResults((res.data as any[]) || [])
@@ -430,7 +432,7 @@ export default function GoogleModule() {
     setLoginForm({ ...loginForm, username: account.username, password: account.password || '' })
     if (!account.password?.trim()) { showMsg('هذا الحساب ليس لديه كلمة مرور محفوظة.', true); setLoading(false); return }
     try {
-      const res = await window.electronAPI.launchBrowser({ platform: 'google', headless: false, proxy: proxyToUse })
+      const res = await window.electronAPI.launchBrowser({ platform: 'google', headless: false, proxy: proxyToUse, profileId: `google-${account.id}` })
       if (res.success) { setSessionId(res.sessionId || ''); showMsg(`تم فتح المتصفح - سجل الدخول بحساب ${account.username}`) }
       else showMsg(res.error || 'فشل فتح المتصفح', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
@@ -455,7 +457,7 @@ export default function GoogleModule() {
       'المصدر': sanitize(r.source || (r.link ? new URL(r.link).hostname : '')),
       'تاريخ الاستخراج': today,
     }))
-    const filename = `dubizzle-${olxCountry}-${olxCategory}-${today}-${Date.now()}.csv`
+    const filename = `dubizzle-${olxCountry}-${(olxKeyword || 'search').trim().replace(/\s+/g, '-')}-${today}-${Date.now()}.csv`
     const res = await window.electronAPI.exportToCSV({ filename, data, headers })
     if (res.success) showMsg(`تم التصدير إلى: ${res.path}`)
     else showMsg(res.error || 'فشل التصدير', true)
@@ -469,11 +471,13 @@ export default function GoogleModule() {
     { value: 'kuwait', label: 'الكويت (OLX)' },
   ]
 
+  // Quick-fill presets for the keyword search. Clicking a chip drops a common
+  // Arabic search term into the keyword box — the user can still type anything.
   const categories = [
-    { value: 'properties',  label: 'عقارات' },
-    { value: 'vehicles',    label: 'سيارات' },
-    { value: 'electronics', label: 'إلكترونيات' },
-    { value: 'furniture',   label: 'أثاث' },
+    { value: 'properties',  label: 'عقارات',      keyword: 'شقق للإيجار' },
+    { value: 'vehicles',    label: 'سيارات',      keyword: 'سيارات مستعملة' },
+    { value: 'electronics', label: 'إلكترونيات',  keyword: 'موبايلات' },
+    { value: 'furniture',   label: 'أثاث',        keyword: 'أثاث منزلي' },
   ]
 
   const tools: Array<{
@@ -669,7 +673,7 @@ export default function GoogleModule() {
         <div><label className="label-field">نوع النشاط التجاري</label><input type="text" className="input-field" placeholder="مثال: مطاعم، عيادات، محلات..." value={mapsQuery} onChange={e => setMapsQuery(e.target.value)} /></div>
         <div><label className="label-field">المدينة / المنطقة</label><input type="text" className="input-field" placeholder="مثال: القاهرة، جدة، دبي..." value={mapsLocation} onChange={e => setMapsLocation(e.target.value)} /></div>
       </div>
-      <div><label className="label-field">الحد الأقصى: {mapsLimit}</label><input type="range" min="10" max="200" value={mapsLimit} onChange={e => setMapsLimit(parseInt(e.target.value))} className="w-full" /></div>
+      <div><label className="label-field">الحد الأقصى: {mapsLimit}</label><input type="range" min="10" max="500" value={mapsLimit} onChange={e => setMapsLimit(parseInt(e.target.value))} className="w-full" /></div>
 
       {resultsOwner === 'maps' && mapsResults.length > 0 && (
         <div className="mt-5 rounded-xl border border-secondary-200 bg-white/60 overflow-hidden">
@@ -1037,9 +1041,34 @@ export default function GoogleModule() {
 
   const renderOlxBody = () => (
     <div className="space-y-5">
-      <div className="grid grid-cols-2 gap-4">
-        <div><label className="label-field">الدولة</label><select className="select-field" value={olxCountry} onChange={e => setOlxCountry(e.target.value)}>{countries.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}</select></div>
-        <div><label className="label-field">الفئة</label><select className="select-field" value={olxCategory} onChange={e => setOlxCategory(e.target.value)}>{categories.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}</select></div>
+      <div>
+        <label className="label-field">كلمة البحث</label>
+        <input
+          type="text"
+          className="input-field"
+          placeholder="مثال: شقق للإيجار، سيارات مستعملة، آيفون 15..."
+          value={olxKeyword}
+          onChange={e => setOlxKeyword(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter' && !loading && olxKeyword.trim()) handleOlxExtract() }}
+          dir="rtl"
+        />
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {categories.map(c => (
+            <button
+              key={c.value}
+              type="button"
+              onClick={() => setOlxKeyword(c.keyword)}
+              className="px-2.5 py-1 rounded-lg text-[11px] border transition-colors hover:bg-emerald-100"
+              style={{ background: 'rgba(16,185,129,0.06)', borderColor: 'rgba(16,185,129,0.25)', color: '#047857' }}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div>
+        <label className="label-field">الدولة / المنصة</label>
+        <select className="select-field" value={olxCountry} onChange={e => setOlxCountry(e.target.value)}>{countries.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}</select>
       </div>
       <div>
         <label className="label-field">الحد الأقصى: {olxLimit}</label>
@@ -1051,8 +1080,8 @@ export default function GoogleModule() {
 
       <div className="p-3 rounded-xl border" style={{ background: 'rgba(16,185,129,0.06)', borderColor: 'rgba(16,185,129,0.2)' }}>
         <p className="text-[11px] leading-relaxed text-secondary-700">
-          ℹ️ تم تحديث الأداة لدعم اسم <strong>Dubizzle</strong> الجديد (OLX سابقاً) في مصر/السعودية/الإمارات،
-          مع الحفاظ على OLX في قطر/الكويت. يتم التمرير التلقائي لتحميل المزيد من الإعلانات.
+          ℹ️ البحث الآن <strong>بالكلمات المفتاحية</strong> على <strong>Dubizzle</strong> (مصر/السعودية/الإمارات)
+          و <strong>OLX</strong> (قطر/الكويت). اكتب أي كلمة بحث ويتم التنقل تلقائياً بين الصفحات لجمع الإعلانات.
         </p>
       </div>
 
