@@ -37,26 +37,35 @@ class BrowserManager {
   async launch(options = {}) {
     const { headless = false, proxy, sessionId = `session-${Date.now()}`, antiBan = true, platform, profileId } = options
     try {
-      // If profileId is provided, allow multiple sessions per platform (one per account)
-      // Without profileId, reuse existing browser for this platform (legacy behavior)
-      if (platform && !profileId) {
+      // Reuse an alive session whenever we safely can, then purge dead ones:
+      //   • profileId given → reuse the session bound to that EXACT profileId.
+      //     This is critical: launchPersistentContext() takes an OS lock on the
+      //     profile dir (SingletonLock). A second launch on the same per-account
+      //     dir (e.g. a logged-in "google-<id>" window) would throw. Reusing the
+      //     already-open window is what makes bulk-rate work against a session
+      //     the user logged into manually.
+      //   • only platform → reuse the first alive platform session (legacy).
+      if (platform || profileId) {
         // Walk the map and skip-or-purge dead sessions before reusing.
         // Previously this returned the first match unconditionally — if the
         // user had closed the browser window manually, the session was dead
         // and every subsequent IPC call failed until app restart.
         const deadIds = []
         for (const [id, session] of this.browsers) {
-          if (session.platform !== platform) continue
+          const matches = profileId
+            ? session.profileId === profileId
+            : (session.platform === platform && !session.profileId)
+          if (!matches) continue
           const alive = await this.isSessionAlive(session)
           if (alive) {
-            console.log(`Reusing existing browser for ${platform}, sessionId=${id}`)
+            console.log(`Reusing existing browser for ${profileId || platform}, sessionId=${id}`)
             return { success: true, sessionId: id, message: 'المتصفح مفتوح بالفعل' }
           }
           // Dead session — schedule for purge and fall through to launch a fresh one.
           deadIds.push(id)
         }
         for (const id of deadIds) {
-          console.log(`[BrowserManager] purging dead session ${id} for ${platform}`)
+          console.log(`[BrowserManager] purging dead session ${id} for ${profileId || platform}`)
           try { await this.browsers.get(id)?.context?.close().catch(() => {}) } catch { /* already dead */ }
           this.browsers.delete(id)
         }

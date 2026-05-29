@@ -422,7 +422,7 @@ declare global {
       olxExtract: (data: Record<string, unknown>) => Promise<ExtractionResult>
       googleRate: (data: Record<string, unknown>) => Promise<IpcResult>
       googleRateBulk: (data: { placeUrl: string; reviews: Array<{ text: string; rating: number }>; accountIds: number[]; headless?: boolean; delayBetweenSec?: number; jobId?: string }) => Promise<IpcResult & { totalAttempted?: number; totalSucceeded?: number; results?: Array<{ accountId: number; username?: string; success: boolean; error?: string; rating?: number; reviewText?: string }> }>
-      googleReviewsExtract: (data: { placeUrl: string; limit?: number; sortBy?: string; jobId?: string }) => Promise<ExtractionResult>
+      googleReviewsExtract: (data: { placeUrl: string; limit?: number; sortBy?: string; sessionId?: string; jobId?: string }) => Promise<ExtractionResult>
 
       // Email
       sendEmail: (data: Record<string, unknown>) => Promise<IpcResult>
