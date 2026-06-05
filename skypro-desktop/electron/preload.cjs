@@ -213,6 +213,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   snapchatLogin: (data) => ipcRenderer.invoke('snapchat-login', data),
 
   // Google
+  googleLogin: (data) => ipcRenderer.invoke('google-login', data),
   googleMapsExtract: (data) => ipcRenderer.invoke('google-maps-extract', data),
   googleMapsBulkExtract: (data) => ipcRenderer.invoke('google-maps-bulk-extract', data),
   googleMapsBulkExtractMatrix: (data) => ipcRenderer.invoke('google-maps-bulk-extract-matrix', data),

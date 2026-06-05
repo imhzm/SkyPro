@@ -187,17 +187,20 @@ export default function GoogleModule() {
 
   const handleExportBulkMaps = async () => {
     if (bulkResults.length === 0) { showMsg('لا توجد نتائج للتصدير', true); return }
-    const headers = ['الاسم', 'الكلمة المفتاحية', 'الهاتف', 'التقييم', 'عدد التقييمات', 'النوع', 'العنوان', 'الرابط', 'المصدر', 'تاريخ الاستخراج']
+    const headers = ['الاسم', 'الكلمة المفتاحية', 'الهاتف', 'البريد', 'الموقع', 'التقييم', 'عدد التقييمات', 'النوع', 'العنوان', 'الرابط', 'الصورة', 'المصدر', 'تاريخ الاستخراج']
     const today = new Date().toISOString().slice(0, 10)
     const data = bulkResults.map((r) => ({
       'الاسم': sanitize(r.name),
       'الكلمة المفتاحية': sanitize(r.keyword),
       'الهاتف': sanitize(r.phone),
+      'البريد': sanitize(r.email),
+      'الموقع': sanitize(r.website),
       'التقييم': sanitize(r.rating),
       'عدد التقييمات': sanitize(r.reviewCount),
       'النوع': sanitize(r.type),
       'العنوان': sanitize(r.address),
-      'الرابط': sanitize(r.profile),
+      'الرابط': sanitize(r.profile || r.url),
+      'الصورة': sanitize(r.image),
       'المصدر': sanitize(r.source),
       'تاريخ الاستخراج': today,
     }))
@@ -209,18 +212,21 @@ export default function GoogleModule() {
 
   const handleExportMatrix = async () => {
     if (matrixResults.length === 0) { showMsg('لا توجد نتائج للتصدير', true); return }
-    const headers = ['الاسم', 'المدينة', 'الكلمة المفتاحية', 'الهاتف', 'التقييم', 'عدد التقييمات', 'النوع', 'العنوان', 'الرابط', 'المصدر', 'تاريخ الاستخراج']
+    const headers = ['الاسم', 'المدينة', 'الكلمة المفتاحية', 'الهاتف', 'البريد', 'الموقع', 'التقييم', 'عدد التقييمات', 'النوع', 'العنوان', 'الرابط', 'الصورة', 'المصدر', 'تاريخ الاستخراج']
     const today = new Date().toISOString().slice(0, 10)
     const data = matrixResults.map((r) => ({
       'الاسم': sanitize(r.name),
       'المدينة': sanitize(r.city),
       'الكلمة المفتاحية': sanitize(r.keyword),
       'الهاتف': sanitize(r.phone),
+      'البريد': sanitize(r.email),
+      'الموقع': sanitize(r.website),
       'التقييم': sanitize(r.rating),
       'عدد التقييمات': sanitize(r.reviewCount),
       'النوع': sanitize(r.type),
       'العنوان': sanitize(r.address),
-      'الرابط': sanitize(r.profile),
+      'الرابط': sanitize(r.profile || r.url),
+      'الصورة': sanitize(r.image),
       'المصدر': sanitize(r.source),
       'تاريخ الاستخراج': today,
     }))
@@ -417,10 +423,26 @@ export default function GoogleModule() {
   const handleLaunchBrowser = async () => {
     setLoading(true)
     try {
-      const res = await window.electronAPI.launchBrowser({ platform: 'google', headless: false, proxy: loginForm.proxy || undefined })
-      if (res.success) { setSessionId(res.sessionId || ''); showMsg('تم فتح المتصفح - سجل الدخول بحساب Google'); setShowLoginPanel(false) }
-      else showMsg(res.error || 'فشل فتح المتصفح', true)
+      if (loginForm.username && loginForm.password) {
+        const res = await (window.electronAPI as any).googleLogin({
+          username: loginForm.username,
+          password: loginForm.password,
+          proxy: loginForm.proxy || undefined
+        })
+        if (res.success) {
+          setSessionId(res.sessionId || '')
+          showMsg(res.message || 'تم فتح المتصفح وتعبئة البيانات تلقائياً')
+          setShowLoginPanel(false)
+        } else {
+          showMsg(res.error || 'فشل فتح المتصفح', true)
+        }
+      } else {
+        const res = await window.electronAPI.launchBrowser({ platform: 'google', headless: false, proxy: loginForm.proxy || undefined })
+        if (res.success) { setSessionId(res.sessionId || ''); showMsg('تم فتح المتصفح - سجل الدخول بحساب Google'); setShowLoginPanel(false) }
+        else showMsg(res.error || 'فشل فتح المتصفح', true)
+      }
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
+    setLoginForm({ username: '', password: '', proxy: '' })
     setLoading(false)
   }
 
@@ -432,23 +454,52 @@ export default function GoogleModule() {
     setLoginForm({ ...loginForm, username: account.username, password: account.password || '' })
     if (!account.password?.trim()) { showMsg('هذا الحساب ليس لديه كلمة مرور محفوظة.', true); setLoading(false); return }
     try {
-      const res = await window.electronAPI.launchBrowser({ platform: 'google', headless: false, proxy: proxyToUse, profileId: `google-${account.id}` })
-      if (res.success) { setSessionId(res.sessionId || ''); showMsg(`تم فتح المتصفح - سجل الدخول بحساب ${account.username}`) }
-      else showMsg(res.error || 'فشل فتح المتصفح', true)
+      const res = await (window.electronAPI as any).googleLogin({
+        username: account.username,
+        password: account.password,
+        proxy: proxyToUse,
+        accountId: account.id
+      })
+      if (res.success) {
+        setSessionId(res.sessionId || '')
+        showMsg(res.message || `تم تشغيل متصفح تسجيل الدخول التلقائي لحساب ${account.username}`)
+      } else {
+        showMsg(res.error || 'فشل فتح المتصفح', true)
+      }
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
   }
 
-  const handleExportMaps = () => {
-    handleExport(['الاسم', 'التقييم', 'العنوان', 'النوع', 'الهاتف', 'المصدر', 'التاريخ'], 'google-maps', mapsResults)
+  const handleExportMaps = async () => {
+    if (mapsResults.length === 0) { showMsg('لا توجد نتائج للتصدير', true); return }
+    const headers = ['الاسم', 'الهاتف', 'البريد', 'الموقع', 'التقييم', 'العنوان', 'النوع', 'الرابط', 'الصورة', 'المصدر', 'تاريخ الاستخراج']
+    const today = new Date().toISOString().slice(0, 10)
+    const data = mapsResults.map((r) => ({
+      'الاسم': sanitize(r.name),
+      'الهاتف': sanitize(r.phone),
+      'البريد': sanitize(r.email),
+      'الموقع': sanitize(r.website),
+      'التقييم': sanitize(r.rating),
+      'العنوان': sanitize(r.address),
+      'النوع': sanitize(r.type),
+      'الرابط': sanitize(r.profile || r.url),
+      'الصورة': sanitize(r.image),
+      'المصدر': sanitize(mapsLocation ? `${mapsQuery} in ${mapsLocation}` : mapsQuery),
+      'تاريخ الاستخراج': today,
+    }))
+    const filename = `google-maps-single-${today}-${Date.now()}.csv`
+    const res = await window.electronAPI.exportToCSV({ filename, data, headers })
+    if (res.success) showMsg(`تم التصدير إلى: ${res.path}`)
+    else showMsg(res.error || 'فشل التصدير', true)
   }
 
   const handleExportOlx = async () => {
     if (olxResults.length === 0) { showMsg('لا توجد نتائج للتصدير', true); return }
-    const headers = ['العنوان', 'السعر', 'الموقع', 'تاريخ النشر', 'الرابط', 'الصورة', 'المصدر', 'تاريخ الاستخراج']
+    const headers = ['العنوان', 'الهاتف', 'السعر', 'الموقع', 'تاريخ النشر', 'الرابط', 'الصورة', 'المصدر', 'تاريخ الاستخراج']
     const today = new Date().toISOString().slice(0, 10)
     const data = olxResults.map((r) => ({
       'العنوان': sanitize(r.title),
+      'الهاتف': sanitize(r.phone),
       'السعر': sanitize(r.price),
       'الموقع': sanitize(r.location),
       'تاريخ النشر': sanitize(r.postedDate),
@@ -685,16 +736,33 @@ export default function GoogleModule() {
             </div>
           </div>
           <div className="table-container" style={{ maxHeight: '380px', overflow: 'auto' }}>
-            <table className="data-table">
-              <thead><tr><th>#</th><th>الاسم</th><th>التقييم</th><th>العنوان</th><th>النوع</th></tr></thead>
+            <table className="data-table text-xs">
+              <thead>
+                <tr>
+                  <th>#</th><th>الصورة</th><th>الاسم</th><th>الهاتف</th><th>البريد</th><th>الموقع</th><th>التقييم</th><th>العنوان</th><th>النوع</th><th>الرابط</th>
+                </tr>
+              </thead>
               <tbody>
                 {mapsResults.map((b, i) => (
                   <tr key={i}>
                     <td className="text-secondary-500">{i + 1}</td>
+                    <td>
+                      {b.image ? (
+                        <img src={b.image} alt={b.name} className="w-8 h-8 rounded object-cover" />
+                      ) : (
+                        <span className="text-secondary-300">-</span>
+                      )}
+                    </td>
                     <td className="font-medium">{b.name || '-'}</td>
-                    <td><span className="flex items-center gap-1"><Star size={14} className="text-warning-500" />{b.rating || '-'}</span></td>
-                    <td className="text-sm">{b.address || '-'}</td>
-                    <td className="text-sm">{b.type || '-'}</td>
+                    <td className="text-xs font-mono">{b.phone || '-'}</td>
+                    <td className="text-xs">{b.email || '-'}</td>
+                    <td className="text-xs truncate max-w-[150px]">
+                      {b.website ? <a href={b.website} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">{b.website.replace(/^https?:\/\/(www\.)?/, '')}</a> : '-'}
+                    </td>
+                    <td><span className="flex items-center gap-1"><Star size={12} className="text-warning-500" />{b.rating || '-'}</span></td>
+                    <td className="text-[11px]">{b.address || '-'}</td>
+                    <td className="text-[11px]">{b.type || '-'}</td>
+                    <td>{b.profile || b.url ? <a href={b.profile || b.url} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline text-xs">خرائط</a> : '-'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -831,18 +899,30 @@ export default function GoogleModule() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>#</th><th>الاسم</th><th>الهاتف</th><th>العنوان</th><th>التقييم</th><th>الكلمة المفتاحية</th>
+                  <th>#</th><th>الصورة</th><th>الاسم</th><th>الهاتف</th><th>البريد</th><th>الموقع</th><th>العنوان</th><th>التقييم</th><th>الكلمة</th><th>الرابط</th>
                 </tr>
               </thead>
               <tbody>
                 {bulkResults.slice(0, 200).map((b, i) => (
                   <tr key={i}>
                     <td className="text-secondary-500">{i + 1}</td>
+                    <td>
+                      {b.image ? (
+                        <img src={b.image} alt={b.name} className="w-8 h-8 rounded object-cover" />
+                      ) : (
+                        <span className="text-secondary-300">-</span>
+                      )}
+                    </td>
                     <td className="font-medium">{b.name || '-'}</td>
                     <td className="text-xs font-mono">{b.phone || '-'}</td>
+                    <td className="text-xs">{b.email || '-'}</td>
+                    <td className="text-xs truncate max-w-[150px]">
+                      {b.website ? <a href={b.website} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">{b.website.replace(/^https?:\/\/(www\.)?/, '')}</a> : '-'}
+                    </td>
                     <td className="text-xs">{b.address || '-'}</td>
-                    <td><span className="flex items-center gap-1"><Star size={12} className="text-warning-500" />{b.rating || '-'}</span></td>
+                    <td><span className="flex items-center gap-1"><Star size={11} className="text-warning-500" />{b.rating || '-'}</span></td>
                     <td className="text-xs text-violet-700 font-semibold">{b.keyword || '-'}</td>
+                    <td>{b.profile || b.url ? <a href={b.profile || b.url} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline text-xs">خرائط</a> : '-'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -995,19 +1075,31 @@ export default function GoogleModule() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>#</th><th>الاسم</th><th>المدينة</th><th>الكلمة</th><th>الهاتف</th><th>التقييم</th><th>العنوان</th>
+                    <th>#</th><th>الصورة</th><th>الاسم</th><th>المدينة</th><th>الكلمة</th><th>الهاتف</th><th>البريد</th><th>الموقع</th><th>التقييم</th><th>العنوان</th><th>الرابط</th>
                   </tr>
                 </thead>
                 <tbody>
                   {matrixResults.slice(0, 200).map((b, i) => (
                     <tr key={i}>
                       <td className="text-secondary-500">{i + 1}</td>
+                      <td>
+                        {b.image ? (
+                          <img src={b.image} alt={b.name} className="w-8 h-8 rounded object-cover" />
+                        ) : (
+                          <span className="text-secondary-300">-</span>
+                        )}
+                      </td>
                       <td className="font-medium">{b.name || '-'}</td>
                       <td className="text-xs font-semibold text-pink-700">{b.city || '-'}</td>
                       <td className="text-xs text-violet-700">{b.keyword || '-'}</td>
                       <td className="text-xs font-mono">{b.phone || '-'}</td>
-                      <td><span className="flex items-center gap-1"><Star size={12} className="text-warning-500" />{b.rating || '-'}</span></td>
+                      <td className="text-xs">{b.email || '-'}</td>
+                      <td className="text-xs truncate max-w-[150px]">
+                        {b.website ? <a href={b.website} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">{b.website.replace(/^https?:\/\/(www\.)?/, '')}</a> : '-'}
+                      </td>
+                      <td><span className="flex items-center gap-1"><Star size={11} className="text-warning-500" />{b.rating || '-'}</span></td>
                       <td className="text-xs">{b.address || '-'}</td>
+                      <td>{b.profile || b.url ? <a href={b.profile || b.url} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline text-xs">خرائط</a> : '-'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1096,12 +1188,20 @@ export default function GoogleModule() {
           </div>
           <div className="table-container" style={{ maxHeight: '380px', overflow: 'auto' }}>
             <table className="data-table">
-              <thead><tr><th>#</th><th>العنوان</th><th>السعر</th><th>الموقع</th><th>التاريخ</th><th>الرابط</th></tr></thead>
+              <thead><tr><th>#</th><th>الصورة</th><th>العنوان</th><th>الهاتف</th><th>السعر</th><th>الموقع</th><th>التاريخ</th><th>الرابط</th></tr></thead>
               <tbody>
                 {olxResults.slice(0, 200).map((l, i) => (
                   <tr key={i}>
                     <td className="text-secondary-500">{i + 1}</td>
+                    <td>
+                      {l.image ? (
+                        <img src={l.image} alt={l.title} className="w-8 h-8 rounded object-cover" />
+                      ) : (
+                        <span className="text-secondary-300">-</span>
+                      )}
+                    </td>
                     <td className="font-medium">{l.title || '-'}</td>
+                    <td className="text-xs font-mono font-bold text-emerald-600">{l.phone || 'جاري السحب...'}</td>
                     <td className="font-bold" style={{ color: '#16a34a' }}>{l.price || '-'}</td>
                     <td className="text-sm flex items-center gap-1"><MapPin size={14} />{l.location || '-'}</td>
                     <td className="text-xs text-secondary-500">{l.postedDate || '-'}</td>

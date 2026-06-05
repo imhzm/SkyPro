@@ -7680,7 +7680,103 @@ async function resolveMapsPlace(page, placeInput) {
   return { ok: false, error: 'لم يتم العثور على المكان — تأكد من الاسم أو الرابط' }
 }
 
-async function _gMapsExtractCurrentPanel(page, limit, onProgress) {
+async function enrichBusinessDetails(context, business, jobId) {
+  if (jobId && globals.cancelFlags.get(jobId)) return
+  let detailPage = null
+  try {
+    detailPage = await context.newPage()
+    await detailPage.goto(business.profile, { waitUntil: 'domcontentloaded', timeout: 20000 }).catch(() => {})
+    await detailPage.waitForTimeout(1000)
+
+    // Scrape details
+    const details = await detailPage.evaluate(() => {
+      const getText = (el) => el ? (el.innerText || el.textContent || '').trim() : ''
+
+      // Website
+      let website = ''
+      const webEl = document.querySelector('a[data-item-id="authority"]') ||
+                    document.querySelector('a[aria-label*="Website"]') ||
+                    document.querySelector('a[aria-label*="الموقع الإلكتروني"]') ||
+                    document.querySelector('a[aria-label*="موقع"]')
+      if (webEl) {
+        website = webEl.href || ''
+      } else {
+        const links = Array.from(document.querySelectorAll('a[href^="http"]'))
+        for (const link of links) {
+          const href = link.href
+          if (href && !href.includes('google.com') && !href.includes('gstatic.com')) {
+            website = href
+            break
+          }
+        }
+      }
+
+      // Phone
+      let phone = ''
+      const phoneEl = document.querySelector('button[data-item-id^="phone:tel:"]') ||
+                      document.querySelector('button[aria-label*="Phone"]') ||
+                      document.querySelector('button[aria-label*="هاتف"]')
+      if (phoneEl) {
+        phone = phoneEl.getAttribute('data-item-id')?.replace('phone:tel:', '').trim() || getText(phoneEl)
+      }
+
+      // Image
+      let image = ''
+      const imgEl = document.querySelector('img[src*="googleusercontent.com/p/"]') ||
+                    document.querySelector('button[class*="hero"] img') ||
+                    document.querySelector('div[role="region"] img[src*="lh5.googleusercontent"]')
+      if (imgEl) {
+        image = imgEl.src || ''
+      }
+
+      // Address fallback
+      let address = ''
+      const addrEl = document.querySelector('button[data-item-id="address"]') ||
+                     document.querySelector('button[aria-label*="Address"]') ||
+                     document.querySelector('button[aria-label*="عنوان"]')
+      if (addrEl) {
+        address = getText(addrEl)
+      }
+
+      return { website, phone, image, address }
+    }).catch(() => null)
+
+    if (details) {
+      if (details.website) business.website = details.website
+      if (details.phone) business.phone = details.phone
+      if (details.image) business.image = details.image
+      if (details.address && !business.address) business.address = details.address
+    }
+
+    // Scrape email from website
+    if (business.website) {
+      try {
+        const response = await context.request.get(business.website, { timeout: 6000 }).catch(() => null)
+        if (response) {
+          const html = await response.text().catch(() => '')
+          const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g
+          const matches = html.match(emailRegex)
+          if (matches && matches.length > 0) {
+            const validEmails = matches.filter(e => !/\.(png|jpg|jpeg|gif|webp|svg|css|js)$/i.test(e))
+            if (validEmails.length > 0) {
+              business.email = validEmails[0].toLowerCase()
+            }
+          }
+        }
+      } catch (e) {
+        console.error(`Error scraping email from ${business.website}:`, e.message)
+      }
+    }
+  } catch (err) {
+    console.error('enrichBusinessDetails error:', err.message)
+  } finally {
+    if (detailPage) {
+      await detailPage.close().catch(() => {})
+    }
+  }
+}
+
+async function _gMapsExtractCurrentPanel(page, limit, onProgress, jobId) {
   const businesses = []
   const seenNames = new Set()
   let stagnantCycles = 0
@@ -7773,6 +7869,14 @@ async function _gMapsExtractCurrentPanel(page, limit, onProgress) {
     await page.waitForTimeout(waitMs)
   }
 
+  // Enrich businesses sequentially using a new tab
+  const context = page.context()
+  for (let i = 0; i < businesses.length; i++) {
+    if (jobId && globals.cancelFlags.get(jobId)) break
+    if (onProgress) onProgress(i, businesses.length)
+    await enrichBusinessDetails(context, businesses[i], jobId)
+  }
+
   return businesses
 }
 
@@ -7796,10 +7900,16 @@ ipcm('google-maps-extract', async (e, { searchQuery, location, limit = 50, headl
 
     const businesses = await _gMapsExtractCurrentPanel(page, limit, (count, max) => {
       sendProgress(sender, jobId, { type: 'progress', count, total: max })
-    })
+    }, jobId)
 
     saveLeads('google-maps', 'maps-extract', businesses.map(b => ({
-      name: b.name, phone: b.phone, url: b.profile, source: queryText,
+      name: b.name,
+      phone: b.phone,
+      email: b.email,
+      website: b.website,
+      image: b.image,
+      url: b.profile,
+      source: queryText,
       extra: `${b.type} | ${b.address} | rating: ${b.rating} (${b.reviewCount})`,
     })))
     if (ownSession) await globals.bm.close(sessionId)
@@ -7879,7 +7989,7 @@ ipcm('google-maps-bulk-extract', async (e, { keywords = [], location = '', limit
             target: tot,
             grandTotal: allResults.length + cnt,
           })
-        })
+        }, jobId)
 
         // Deduplicate by name (within session) before adding
         let added = 0
@@ -7921,6 +8031,9 @@ ipcm('google-maps-bulk-extract', async (e, { keywords = [], location = '', limit
     saveLeads('google-maps', 'maps-bulk-extract', allResults.map((b) => ({
       name: b.name,
       phone: b.phone,
+      email: b.email,
+      website: b.website,
+      image: b.image,
       url: b.profile,
       source: b.source,
       extra: `${b.type || ''} | ${b.address || ''} | rating: ${b.rating || ''} (${b.reviewCount || ''}) | keyword: ${b.keyword}`,
@@ -8031,7 +8144,7 @@ ipcm('google-maps-bulk-extract-matrix', async (e, { keywords = [], cities = [], 
               target: tot,
               grandTotal: allResults.length + cnt,
             })
-          })
+          }, jobId)
 
           let added = 0
           for (const b of businesses) {
@@ -8078,6 +8191,9 @@ ipcm('google-maps-bulk-extract-matrix', async (e, { keywords = [], cities = [], 
     saveLeads('google-maps', 'maps-matrix-extract', allResults.map((b) => ({
       name: b.name,
       phone: b.phone,
+      email: b.email,
+      website: b.website,
+      image: b.image,
       url: b.profile,
       source: b.source,
       extra: `${b.type || ''} | ${b.address || ''} | rating: ${b.rating || ''} (${b.reviewCount || ''}) | city: ${b.city} | keyword: ${b.keyword}`,
@@ -8262,6 +8378,74 @@ ipcm('olx-extract', async (e, { country, keyword, category, limit = 50, jobId, s
       pageNum++
     }
 
+    // Visit detail pages to extract phone numbers
+    const detailPage = await page.context().newPage()
+    for (let i = 0; i < listings.length; i++) {
+      if (globals.cancelFlags.get(jobId)) break
+      const item = listings[i]
+      if (item.link) {
+        try {
+          sendProgress(sender, jobId, { 
+            type: 'progress', 
+            count: i, 
+            target: listings.length, 
+            message: `جاري استخراج رقم الهاتف للإعلان ${i + 1}/${listings.length}` 
+          })
+
+          await detailPage.goto(item.link, { waitUntil: 'domcontentloaded', timeout: 20000 }).catch(() => {})
+          await detailPage.waitForTimeout(1000 + Math.random() * 1000)
+
+          const phoneButtonSelectors = [
+            'button[data-testid="phone-button"]',
+            'button:has-text("Show phone number")',
+            'button:has-text("اظهار رقم الهاتف")',
+            'button:has-text("إظهار رقم الهاتف")',
+            'button:has-text("اتصل")',
+            '[data-testid="communication-call-button"]',
+            'a[href^="tel:"]',
+            'button[aria-label="Call"]',
+            'button[aria-label="اتصال"]'
+          ]
+
+          let clicked = false
+          for (const sel of phoneButtonSelectors) {
+            const btn = await detailPage.$(sel).catch(() => null)
+            if (btn) {
+              await btn.scrollIntoViewIfNeeded().catch(() => {})
+              await btn.click({ force: true }).catch(() => {})
+              clicked = true
+              break
+            }
+          }
+          if (clicked) {
+            await detailPage.waitForTimeout(1500)
+          }
+
+          const phone = await detailPage.evaluate(() => {
+            const telLink = document.querySelector('a[href^="tel:"]')
+            if (telLink) {
+              return telLink.href.replace('tel:', '').trim()
+            }
+            const text = document.body.innerText || ''
+            const phoneRegex = /(\+?\d[\d\s-]{7,}\d)/g
+            const matches = text.match(phoneRegex)
+            if (matches) {
+              const clean = matches.map(p => p.replace(/[\s-]/g, '')).filter(p => p.length >= 8 && p.length <= 15)
+              if (clean.length > 0) return clean[0]
+            }
+            return ''
+          }).catch(() => '')
+
+          if (phone) {
+            item.phone = phone
+          }
+        } catch (err) {
+          console.error(`Error loading Dubizzle details for ${item.link}:`, err.message)
+        }
+      }
+    }
+    await detailPage.close().catch(() => {})
+
     // Persist via saveLeads (writes to DB + CSV with sanitization).
     saveLeads('olx', `${country || 'egypt'}-${kwSlug}`, listings.map((l) => ({
       name: l.title,        // saveLeads uses `name` as the primary field
@@ -8270,6 +8454,7 @@ ipcm('olx-extract', async (e, { country, keyword, category, limit = 50, jobId, s
       location: l.location,
       postedDate: l.postedDate,
       image: l.image,
+      phone: l.phone || '',
       url: l.link,
       link: l.link,
       source: `${site.domain} • ${rawKw}`,
@@ -8300,6 +8485,16 @@ async function _postSingleReview(page, { placeUrl, rating, review }) {
   if (!resolved.ok) return { success: false, error: resolved.error }
   await page.waitForTimeout(randomDelay(1500, 2800))
 
+  // Find the target frame that has the reviews button or dialog
+  let targetFrame = page
+  for (const frame of page.frames()) {
+    const writeBtn = await frame.$('button[aria-label*="كتابة مراجعة"], button[aria-label*="Write a review"]').catch(() => null)
+    if (writeBtn) {
+      targetFrame = frame
+      break
+    }
+  }
+
   // STEP 1: Open the review composer. In the ar-SA locale Google labels this
   // "كتابة مراجعة" (مراجعة, NOT تقييم) — verified against the live DOM. The old
   // selector set used "تقييم" and never matched, so posting always failed.
@@ -8312,20 +8507,24 @@ async function _postSingleReview(page, { placeUrl, rating, review }) {
     'button[data-value*="Write a review"]',
     'button[jsaction*="review"]',
   ]
-  const clickWrite = async () => {
+  const clickWrite = async (frame) => {
     for (const sel of writeBtnSelectors) {
-      const el = await page.$(sel).catch(() => null)
+      const el = await frame.$(sel).catch(() => null)
       if (el) { await el.click({ timeout: 5000 }).catch(() => {}); return true }
     }
     // Text-based fallback (covers EN + AR wording drift).
-    return await page.evaluate(() => {
+    return await frame.evaluate(() => {
       const btns = Array.from(document.querySelectorAll('button, [role="button"]'))
       const b = btns.find((x) => /كتابة مراجعة|اكتب مراجعة|أضف مراجعة|write a review/i.test(((x.innerText || '') + ' ' + (x.getAttribute('aria-label') || '') + ' ' + (x.getAttribute('data-value') || '')).trim()))
       if (b) { b.click(); return true }
       return false
     }).catch(() => false)
   }
-  let opened = await clickWrite()
+  let opened = await clickWrite(targetFrame)
+  if (!opened && targetFrame !== page) {
+    opened = await clickWrite(page)
+    if (opened) targetFrame = page
+  }
   if (!opened) {
     // Make sure we're on the Reviews tab ("المراجعات"), then retry.
     await page.evaluate(() => {
@@ -8334,19 +8533,28 @@ async function _postSingleReview(page, { placeUrl, rating, review }) {
       if (t) t.click()
     }).catch(() => {})
     await page.waitForTimeout(randomDelay(1500, 2500))
-    opened = await clickWrite()
+    opened = await clickWrite(page)
+    if (opened) targetFrame = page
   }
   if (!opened) return { success: false, error: 'لم يتم العثور على زر "كتابة مراجعة" — تأكد من تسجيل الدخول إلى جوجل في هذا المتصفح' }
 
   // The composer opens as a dialog when logged in. Wait + scope to it.
   await page.waitForTimeout(randomDelay(2500, 4000))
-  const dialog = await page.$('div[role="dialog"]').catch(() => null)
+  
+  // Re-detect the target frame containing the dialog
+  for (const frame of page.frames()) {
+    const hasDialog = await frame.$('div[role="dialog"]').catch(() => null)
+    const hasStars = await frame.$('[role="radiogroup"] [role="radio"]').catch(() => null)
+    if (hasDialog || hasStars) {
+      targetFrame = frame
+      break
+    }
+  }
+
+  const dialog = await targetFrame.$('div[role="dialog"]').catch(() => null)
   const dialogScoped = !!dialog
 
-  // STEP 2: Set the star rating. Arabic labels vary ("5 نجوم", "نجمة واحدة",
-  // "نجمتان"…) so the locale-proof path is to click the Nth star radio
-  // positionally inside the composer's radiogroup.
-  const starClicked = await page.evaluate(({ n, scoped }) => {
+  const starClicked = await targetFrame.evaluate(({ n, scoped }) => {
     const root = (scoped && document.querySelector('div[role="dialog"]')) || document
     let stars = Array.from(root.querySelectorAll('[role="radiogroup"] [role="radio"]'))
     if (stars.length < 5) {
@@ -8356,7 +8564,31 @@ async function _postSingleReview(page, { placeUrl, rating, review }) {
     if (stars.length < 5) {
       stars = Array.from(root.querySelectorAll('[aria-label*="نجو"],[aria-label*="نجم"],[aria-label*="star" i]'))
     }
-    if (n >= 1 && stars.length >= n) { stars[n - 1].click(); return true }
+    
+    let star = stars.find(s => {
+      const label = (s.getAttribute('aria-label') || '').toLowerCase()
+      if (n === 1 && (label.includes('1') || label.includes('١') || label.includes('واحد') || label.includes('one'))) return true
+      if (n === 2 && (label.includes('2') || label.includes('٢') || label.includes('نجمتان') || label.includes('two'))) return true
+      if (n === 3 && (label.includes('3') || label.includes('٣') || label.includes('three'))) return true
+      if (n === 4 && (label.includes('4') || label.includes('٤') || label.includes('four'))) return true
+      if (n === 5 && (label.includes('5') || label.includes('٥') || label.includes('five'))) return true
+      return false
+    })
+    if (!star && stars[n - 1]) {
+      star = stars[n - 1]
+    }
+    
+    if (star) {
+      const clickElement = (el) => {
+        const events = ['focus', 'pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click']
+        for (const ev of events) {
+          el.dispatchEvent(new Event(ev, { bubbles: true }))
+          el.dispatchEvent(new MouseEvent(ev, { bubbles: true, cancelable: true, view: window }))
+        }
+      }
+      clickElement(star)
+      return true
+    }
     return false
   }, { n: rating, scoped: dialogScoped }).catch(() => false)
   if (!starClicked) return { success: false, error: `تعذّر ضبط تقييم ${rating} نجوم` }
@@ -8369,7 +8601,7 @@ async function _postSingleReview(page, { placeUrl, rating, review }) {
       : ['textarea[aria-label*="مراجع"]', 'textarea[aria-label*="review" i]', 'textarea', 'div[contenteditable="true"][role="textbox"]']
     let typed = false
     for (const sel of reviewSelectors) {
-      const el = await page.$(sel).catch(() => null)
+      const el = await targetFrame.$(sel).catch(() => null)
       if (el) {
         await el.click({ timeout: 3000 }).catch(() => {})
         await el.fill('').catch(() => {})
@@ -8383,7 +8615,7 @@ async function _postSingleReview(page, { placeUrl, rating, review }) {
   }
 
   // STEP 4: Submit ("نشر" / "انشر" / "إرسال" / "Post"). Skip disabled buttons.
-  const posted = await page.evaluate((scoped) => {
+  const posted = await targetFrame.evaluate((scoped) => {
     const root = (scoped && document.querySelector('div[role="dialog"]')) || document
     const btns = Array.from(root.querySelectorAll('button, [role="button"]'))
     const b = btns.find((x) => {
@@ -8400,6 +8632,71 @@ async function _postSingleReview(page, { placeUrl, rating, review }) {
   await page.waitForTimeout(randomDelay(3500, 5500))
   return { success: true, posted: true }
 }
+
+ipcm('google-login', async (e, { username, password, headless = false, proxy, accountId }) => {
+  let sessionId = null
+  try {
+    const profileId = accountId ? `google-${accountId}` : `google-${username}`
+    const res = await globals.bm.launch({ headless, platform: 'google-maps', profileId, proxy: proxy || undefined })
+    if (!res.success) return res
+    sessionId = res.sessionId
+    const page = globals.bm.getPage(sessionId)
+
+    // Check if already logged in by going to myaccount.google.com
+    await page.goto('https://myaccount.google.com/', { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
+    let loggedIn = await page.evaluate(() => {
+      return window.location.href.includes('myaccount.google.com') && !window.location.href.includes('signin')
+    }).catch(() => false)
+
+    if (loggedIn) {
+      if (accountId) {
+        saveAccount('google', username, password)
+      }
+      return { success: true, message: 'تم تسجيل الدخول بنجاح - الجلسة محفوظة', sessionId }
+    }
+
+    // Otherwise navigate to signin
+    await page.goto('https://accounts.google.com/signin', { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
+    await page.waitForTimeout(randomDelay(1500, 2500))
+
+    // 1. Enter email
+    const emailTyped = await smartType(page, [
+      'input[type="email"]', 'input[name="identifier"]', '#identifierId'
+    ], username, 'email')
+
+    if (emailTyped) {
+      await page.keyboard.press('Enter')
+      await page.waitForTimeout(randomDelay(2500, 4000))
+
+      // 2. Enter password
+      const passTyped = await smartType(page, [
+        'input[type="password"]', 'input[name="password"]', 'input[name="passwd"]'
+      ], password, 'password')
+
+      if (passTyped) {
+        await page.keyboard.press('Enter')
+        await page.waitForTimeout(randomDelay(4000, 6000))
+      }
+    }
+
+    // Check if logged in now
+    await page.goto('https://myaccount.google.com/', { waitUntil: 'domcontentloaded', timeout: 20000 }).catch(() => {})
+    loggedIn = await page.evaluate(() => {
+      return window.location.href.includes('myaccount.google.com') && !window.location.href.includes('signin')
+    }).catch(() => false)
+
+    if (loggedIn) {
+      if (accountId) {
+        saveAccount('google', username, password)
+      }
+      return { success: true, message: 'تم تسجيل الدخول بنجاح', sessionId }
+    }
+
+    return { success: true, message: 'يرجى إكمال تسجيل الدخول يدوياً في المتصفح إذا ظهر اختبار أمني أو تفعيل ثنائي', sessionId }
+  } catch (err) {
+    return { success: false, error: err.message, sessionId }
+  }
+})
 
 ipcm('google-rate', async (e, { sessionId, placeUrl, rating, review }) => {
   const page = globals.bm.getPage(sessionId)
