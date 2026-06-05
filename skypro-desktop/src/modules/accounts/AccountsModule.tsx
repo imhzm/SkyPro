@@ -32,6 +32,7 @@ interface DebugRow {
 }
 
 const PLATFORMS = [
+  { id: 'google', label: 'Google / Gmail', icon: Globe },
   { id: 'facebook', label: 'Facebook', icon: Facebook },
   { id: 'whatsapp', label: 'WhatsApp', icon: MessageCircle },
   { id: 'instagram', label: 'Instagram', icon: Instagram },
@@ -55,7 +56,7 @@ interface FormState {
 }
 
 const EMPTY_FORM: FormState = {
-  platform: 'facebook',
+  platform: 'google',
   username: '',
   password: '',
   proxy: '',
@@ -75,6 +76,8 @@ export default function AccountsModule() {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [importMode, setImportMode] = useState<'single' | 'bulk'>('single')
+  const [bulkText, setBulkText] = useState('')
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [bulkBusy, setBulkBusy] = useState(false)
   const [deletingId, setDeletingId] = useState<number | null>(null)
@@ -148,6 +151,61 @@ export default function AccountsModule() {
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault()
+    if (importMode === 'bulk' && !editingId) {
+      const lines = bulkText.split('\n').map((l) => l.trim()).filter(Boolean)
+      if (lines.length === 0) {
+        showMsg('يرجى إدخال حساب واحد على الأقل', true)
+        return
+      }
+      setSaving(true)
+      let addedCount = 0
+      let errorCount = 0
+      for (const line of lines) {
+        const parts = line.split(':')
+        if (parts.length >= 2) {
+          const username = parts[0].trim()
+          const password = parts[1].trim()
+          const proxy = parts[2] ? parts[2].trim() : ''
+          const notes = parts[3] ? parts[3].trim() : ''
+          try {
+            await addAccount({
+              platform: form.platform,
+              username,
+              password,
+              proxy,
+              notes: notes || 'مستورد جماعياً',
+              status: 'active',
+            })
+            addedCount++
+          } catch (err) {
+            errorCount++
+          }
+        } else if (parts.length === 1 && parts[0].trim().length > 0) {
+          try {
+            await addAccount({
+              platform: form.platform,
+              username: parts[0].trim(),
+              password: '',
+              proxy: '',
+              notes: 'مستورد جماعياً',
+              status: 'active',
+            })
+            addedCount++
+          } catch (err) {
+            errorCount++
+          }
+        } else {
+          errorCount++
+        }
+      }
+      showMsg(`تم استيراد ${addedCount} حساب بنجاح. فشل ${errorCount} حساب.`)
+      setBulkText('')
+      setForm(EMPTY_FORM)
+      setShowForm(false)
+      setSaving(false)
+      return
+    }
+
     const username = form.username.trim()
     const notes = form.notes.trim()
     const proxy = form.proxy.trim()
@@ -552,97 +610,164 @@ export default function AccountsModule() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* Custom label — shown FIRST and full-width for visibility. */}
-            <div className="sm:col-span-2 lg:col-span-3">
-              <label htmlFor="acc-notes" className="label-field flex items-center gap-1.5">
-                <span className="inline-block w-2 h-2 rounded-full bg-violet-500"></span>
-                اسم مميز للحساب
-                <span className="text-[10px] font-normal text-secondary-500 mr-2">
-                  (تسمية خاصة بك لتمييز هذا الحساب — مثل: حساب المتاجر، حساب رئيسي، إلخ)
-                </span>
-              </label>
-              <input
-                id="acc-notes"
-                name="notes"
-                type="text"
-                className="input-field text-base font-medium"
-                value={form.notes}
-                onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-                placeholder="مثال: حساب صفحات المتاجر • حساب التسويق الرئيسي • حساب احتياطي ..."
-                maxLength={100}
-              />
-            </div>
-            <div>
-              <label htmlFor="acc-platform" className="label-field">المنصة</label>
-              <select
-                id="acc-platform"
-                name="platform"
-                className="select-field"
-                value={form.platform}
-                onChange={(e) => setForm((f) => ({ ...f, platform: e.target.value }))}
+          {!editingId && (
+            <div className="flex gap-2 p-1 rounded-xl bg-secondary-100/80 mb-5 max-w-xs">
+              <button
+                type="button"
+                onClick={() => setImportMode('single')}
+                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                  importMode === 'single'
+                    ? 'bg-white text-secondary-900 shadow-sm'
+                    : 'text-secondary-600 hover:text-secondary-900'
+                }`}
               >
-                {PLATFORMS.map((p) => (
-                  <option key={p.id} value={p.id}>{p.label}</option>
-                ))}
-              </select>
+                إضافة فردية
+              </button>
+              <button
+                type="button"
+                onClick={() => setImportMode('bulk')}
+                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                  importMode === 'bulk'
+                    ? 'bg-white text-secondary-900 shadow-sm'
+                    : 'text-secondary-600 hover:text-secondary-900'
+                }`}
+              >
+                استيراد جماعي
+              </button>
             </div>
-            <div>
-              <label htmlFor="acc-username" className="label-field">
-                اسم المستخدم / البريد
-                <span className="text-[10px] font-normal text-secondary-500 mr-2">(اختياري)</span>
-              </label>
-              <input
-                id="acc-username"
-                name="username"
-                type="text"
-                className="input-field"
-                dir="ltr"
-                value={form.username}
-                onChange={(e) => setForm((f) => ({ ...f, username: e.target.value }))}
-                placeholder="username أو email"
-                autoComplete="off"
-              />
-            </div>
-            <div>
-              <label htmlFor="acc-password" className="label-field">كلمة المرور</label>
-              <div className="relative">
-                <input
-                  id="acc-password"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  className="input-field pl-10"
-                  dir="ltr"
-                  value={form.password}
-                  onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-                  placeholder={editingId ? '••• (اتركه فارغاً للإبقاء)' : '••••••••'}
-                  autoComplete="new-password"
-                />
-                <button
-                  type="button"
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400 hover:text-brand-700 transition-colors"
-                  onClick={() => setShowPassword(!showPassword)}
-                  title={showPassword ? 'إخفاء' : 'إظهار'}
-                  tabIndex={-1}
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-            </div>
-            <div className="sm:col-span-2 lg:col-span-3">
-              <label htmlFor="acc-proxy" className="label-field">بروكسي (اختياري)</label>
-              <input
-                id="acc-proxy"
-                name="proxy"
-                type="text"
-                className="input-field font-mono text-sm"
-                dir="ltr"
-                value={form.proxy}
-                onChange={(e) => setForm((f) => ({ ...f, proxy: e.target.value }))}
-                placeholder="user:pass@host:port"
-                autoComplete="off"
-              />
-            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {importMode === 'single' || editingId ? (
+              <>
+                {/* Custom label — shown FIRST and full-width for visibility. */}
+                <div className="sm:col-span-2 lg:col-span-3">
+                  <label htmlFor="acc-notes" className="label-field flex items-center gap-1.5">
+                    <span className="inline-block w-2 h-2 rounded-full bg-violet-500"></span>
+                    اسم مميز للحساب
+                    <span className="text-[10px] font-normal text-secondary-500 mr-2">
+                      (تسمية خاصة بك لتمييز هذا الحساب — مثل: حساب المتاجر، حساب رئيسي، إلخ)
+                    </span>
+                  </label>
+                  <input
+                    id="acc-notes"
+                    name="notes"
+                    type="text"
+                    className="input-field text-base font-medium"
+                    value={form.notes}
+                    onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+                    placeholder="مثال: حساب صفحات المتاجر • حساب التسويق الرئيسي • حساب احتياطي ..."
+                    maxLength={100}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="acc-platform" className="label-field">المنصة</label>
+                  <select
+                    id="acc-platform"
+                    name="platform"
+                    className="select-field"
+                    value={form.platform}
+                    onChange={(e) => setForm((f) => ({ ...f, platform: e.target.value }))}
+                  >
+                    {PLATFORMS.map((p) => (
+                      <option key={p.id} value={p.id}>{p.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="acc-username" className="label-field">
+                    اسم المستخدم / البريد
+                    <span className="text-[10px] font-normal text-secondary-500 mr-2">(اختياري)</span>
+                  </label>
+                  <input
+                    id="acc-username"
+                    name="username"
+                    type="text"
+                    className="input-field"
+                    dir="ltr"
+                    value={form.username}
+                    onChange={(e) => setForm((f) => ({ ...f, username: e.target.value }))}
+                    placeholder="username أو email"
+                    autoComplete="off"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="acc-password" className="label-field">كلمة المرور</label>
+                  <div className="relative">
+                    <input
+                      id="acc-password"
+                      name="password"
+                      type={showPassword ? 'text' : 'password'}
+                      className="input-field pl-10"
+                      dir="ltr"
+                      value={form.password}
+                      onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                      placeholder={editingId ? '••• (اتركه فارغاً للإبقاء)' : '••••••••'}
+                      autoComplete="new-password"
+                    />
+                    <button
+                      type="button"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400 hover:text-brand-700 transition-colors"
+                      onClick={() => setShowPassword(!showPassword)}
+                      title={showPassword ? 'إخفاء' : 'إظهار'}
+                      tabIndex={-1}
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+                <div className="sm:col-span-2 lg:col-span-3">
+                  <label htmlFor="acc-proxy" className="label-field">بروكسي (اختياري)</label>
+                  <input
+                    id="acc-proxy"
+                    name="proxy"
+                    type="text"
+                    className="input-field font-mono text-sm"
+                    dir="ltr"
+                    value={form.proxy}
+                    onChange={(e) => setForm((f) => ({ ...f, proxy: e.target.value }))}
+                    placeholder="user:pass@host:port"
+                    autoComplete="off"
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="sm:col-span-2 lg:col-span-3">
+                  <label htmlFor="acc-platform" className="label-field">المنصة المستهدفة للاستيراد</label>
+                  <select
+                    id="acc-platform"
+                    name="platform"
+                    className="select-field"
+                    value={form.platform}
+                    onChange={(e) => setForm((f) => ({ ...f, platform: e.target.value }))}
+                  >
+                    {PLATFORMS.map((p) => (
+                      <option key={p.id} value={p.id}>{p.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="sm:col-span-2 lg:col-span-3">
+                  <label htmlFor="acc-bulk-text" className="label-field flex items-center gap-1.5">
+                    <span className="inline-block w-2 h-2 rounded-full bg-violet-500"></span>
+                    قائمة الحسابات (حساب واحد في كل سطر)
+                    <span className="text-[10px] font-normal text-secondary-500 mr-2">
+                      (التنسيق: email:password أو email:password:proxy أو email:password:proxy:notes)
+                    </span>
+                  </label>
+                  <textarea
+                    id="acc-bulk-text"
+                    name="bulkText"
+                    className="input-field font-mono text-sm h-40 resize-y p-3"
+                    dir="ltr"
+                    value={bulkText}
+                    onChange={(e) => setBulkText(e.target.value)}
+                    placeholder={`email@gmail.com:password123\nemail@gmail.com:password123:user:pass@host:port\nemail@gmail.com:password123:user:pass@host:port:ملاحظة مميزة للحساب`}
+                    autoComplete="off"
+                  />
+                </div>
+              </>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3 mt-5 pt-4" style={{ borderTop: '1px solid rgba(226, 232, 240, 0.6)' }}>
