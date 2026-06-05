@@ -55,7 +55,7 @@ const ACCENT = '#4285F4'
 const ACCENT_GRADIENT = 'linear-gradient(135deg, #4285F4, #1a73e8)'
 
 export default function GoogleModule() {
-  const { loading, setLoading, message, error, showMsg, sessionId, setSessionId, checkSession, clearSession, cycleActive, cycleProgress, startCycle, stopCycle, handleExport } = usePlatform('google')
+  const { loading, setLoading, message, error, showMsg, sessionId, setSessionId, checkSession, clearSession, cycleActive, cycleProgress, startCycle, stopCycle } = usePlatform('google')
 
   const [activeTool, setActiveTool] = useState<ActiveTool>(null)
   const [showLoginPanel, setShowLoginPanel] = useState(false)
