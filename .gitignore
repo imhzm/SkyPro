@@ -37,6 +37,10 @@ skypro-desktop/runtime-data/
 .vite/
 .vite-temp/
 
-# Release artifacts downloaded from CI (large, regenerable)
+# Release artifacts (large, regenerable — must never be committed to GitHub)
+skypro-release/
 skypro-release-*/
+dist/release/
+*.exe
+*.blockmap
 *temp_build_log*

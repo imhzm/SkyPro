@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { usePlatform } from '../../hooks/usePlatform'
+import { getBackgroundMode } from '../../lib/backgroundMode'
+import { makeJobId } from '../../lib/jobId'
 import { useAccountsStore } from '../../stores/accountsStore'
 import AccountSelector from '../../components/common/AccountSelector'
 import AccountCycleBanner from '../../components/common/AccountCycleBanner'
@@ -33,6 +35,7 @@ export default function TelegramModule() {
     loading, setLoading, message, error, showMsg, sessionId, setSessionId,
     accounts, results, loadAccounts, loadResults, handleExport, clearResults,
     deleteResult, clearSession, cycleActive, cycleProgress, startCycle, stopCycle,
+    liveRows, beginLiveJob, endLiveJob,
   } = usePlatform('telegram')
   const { accounts: allAccounts } = useAccountsStore()
 
@@ -86,7 +89,7 @@ export default function TelegramModule() {
     if (!phoneNumber) { showMsg('أدخل رقم الهاتف', true); return }
     setLoading(true)
     try {
-      const res = await window.electronAPI.telegramLogin({ phoneNumber, headless: false, proxy })
+      const res = await window.electronAPI.telegramLogin({ phoneNumber, headless: getBackgroundMode('telegram'), proxy })
       if (res.success) {
         setSessionId(res.sessionId || '')
         if (res.needsCode) { setNeedsCode(true); showMsg('أدخل كود التحقق المرسل لهاتفك') }
@@ -128,12 +131,15 @@ export default function TelegramModule() {
     if (!broadcastMessage || recipients.length === 0) { showMsg('أدخل المستلمين والرسالة', true); return }
     setLoading(true)
     setResultsOwner('broadcast')
+    setToolResults([])
+    const jobId = makeJobId('tg-send')
+    beginLiveJob(jobId)
     try {
-      const res = await window.electronAPI.telegramSendMessages({ sessionId, recipients, message: broadcastMessage })
+      const res = await window.electronAPI.telegramSendMessages({ sessionId, recipients, message: broadcastMessage, jobId })
       if (res.success) { const ok = ((res.data as any[]) || []).filter((x: any) => x.status === 'sent').length; showMsg(`تم إرسال ${ok} من ${recipients.length} رسالة`); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
-    setLoading(false)
+    finally { endLiveJob(); setLoading(false) }
   }
 
   const handleAddUsers = async () => {
@@ -142,12 +148,15 @@ export default function TelegramModule() {
     if (!addGroup || users.length === 0) { showMsg('أدخل معرف المجموعة وقائمة المستخدمين', true); return }
     setLoading(true)
     setResultsOwner('add')
+    setToolResults([])
+    const jobId = makeJobId('tg-add')
+    beginLiveJob(jobId)
     try {
-      const res = await window.electronAPI.telegramAddUsers({ sessionId, groupUsername: addGroup, users })
+      const res = await window.electronAPI.telegramAddUsers({ sessionId, groupUsername: addGroup, users, jobId })
       if (res.success) { const ok = ((res.data as any[]) || []).filter((x: any) => x.status === 'added').length; showMsg(`تم إضافة ${ok} من ${users.length} مستخدم`); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
-    setLoading(false)
+    finally { endLiveJob(); setLoading(false) }
   }
 
   const handleClearResults = () => {
@@ -472,7 +481,7 @@ export default function TelegramModule() {
 
   const renderResultsTable = (owner: ResultsOwner, columns: string[], exportKey: string, showActions = false) => {
     if (resultsOwner !== owner) return null
-    const displayResults = toolResults.length > 0 ? toolResults : results
+    const displayResults = toolResults.length > 0 ? toolResults : (liveRows.length > 0 ? liveRows : results)
     const list = displayResults
     if (list.length === 0) return null
     return (

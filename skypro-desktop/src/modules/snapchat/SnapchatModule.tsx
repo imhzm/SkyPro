@@ -1,5 +1,7 @@
 import { useState, useRef } from 'react'
 import { usePlatform } from '../../hooks/usePlatform'
+import { getBackgroundMode } from '../../lib/backgroundMode'
+import { makeJobId } from '../../lib/jobId'
 import { useAccountsStore } from '../../stores/accountsStore'
 import type { Account } from '../../stores/accountsStore'
 import AccountSelector from '../../components/common/AccountSelector'
@@ -22,7 +24,7 @@ const ACCENT_GRADIENT = 'linear-gradient(135deg, #FFD400, #f5c800)'
 const ACCENT_DARK = '#a17800'
 
 export default function SnapchatModule() {
-  const { loading, setLoading, message, error, showMsg, sessionId, setSessionId, accounts, handleExport, clearResults, clearSession, checkSession, cycleActive, cycleProgress, startCycle, stopCycle } = usePlatform('snapchat')
+  const { loading, setLoading, message, error, showMsg, sessionId, setSessionId, accounts, handleExport, clearResults, clearSession, checkSession, cycleActive, cycleProgress, startCycle, stopCycle, liveRows, beginLiveJob } = usePlatform('snapchat')
 
   const [activeTool, setActiveTool] = useState<ActiveTool>(null)
   const [showLoginPanel, setShowLoginPanel] = useState(false)
@@ -52,7 +54,7 @@ export default function SnapchatModule() {
     if (!loginForm.username || !loginForm.password) { showMsg('يرجى إدخال البيانات', true); return }
     setLoading(true)
     try {
-      const res = await window.electronAPI.snapchatLogin({ username: loginForm.username, password: loginForm.password, headless: false, proxy: loginForm.proxy || undefined })
+      const res = await window.electronAPI.snapchatLogin({ username: loginForm.username, password: loginForm.password, headless: getBackgroundMode('snapchat'), proxy: loginForm.proxy || undefined })
       if (res.success) { setSessionId(res.sessionId || ''); showMsg(res.message || 'تم تسجيل الدخول بنجاح!'); await loadAllAccounts(); setShowLoginPanel(false) }
       else showMsg(res.error || 'فشل تسجيل الدخول', true)
     } catch (err: any) { showMsg(err.message || 'خطأ في الاتصال', true) }
@@ -67,7 +69,7 @@ export default function SnapchatModule() {
     if (!hasPass) { setLoginForm({ ...loginForm, username: account.username, password: '' }); setShowLoginPanel(true); setTimeout(() => passwordRef.current?.focus(), 200); showMsg('هذا الحساب ليس لديه كلمة مرور محفوظة. يرجى إدخال كلمة المرور يدوياً.', true); setLoading(false); return }
     setLoginForm({ ...loginForm, username: account.username, password: account.password || '' })
     try {
-      const res = await window.electronAPI.snapchatLogin({ accountId: account.id, username: account.username, password: account.password, headless: false, proxy: account.proxy || loginForm.proxy || undefined })
+      const res = await window.electronAPI.snapchatLogin({ accountId: account.id, username: account.username, password: account.password, headless: getBackgroundMode('snapchat'), proxy: account.proxy || loginForm.proxy || undefined })
       if (res.success) { setSessionId(res.sessionId || 'snapchat-session'); showMsg(`تم تسجيل الدخول بحساب ${account.username}!`); await loadAllAccounts() }
       else showMsg(res.error || 'فشل تسجيل الدخول', true)
     } catch (err: any) { showMsg(err.message || 'خطأ في الاتصال', true) }
@@ -77,7 +79,7 @@ export default function SnapchatModule() {
   const handleLaunchBrowser = async () => {
     setLoading(true)
     try {
-      const res = await window.electronAPI.launchBrowser({ platform: 'snapchat', headless: false })
+      const res = await window.electronAPI.launchBrowser({ platform: 'snapchat', headless: getBackgroundMode('snapchat') })
       if (res.success) { setSessionId(res.sessionId || ''); showMsg('تم فتح المتصفح - سجل دخول يدوياً'); setShowLoginPanel(false) }
       else showMsg(res.error || 'فشل فتح المتصفح', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
@@ -101,8 +103,10 @@ export default function SnapchatModule() {
     setLoading(true)
     setResultsOwner('broadcast')
     setToolResults([])
+    const jobId = makeJobId('snap-send')
+    beginLiveJob(jobId)
     try {
-      const res = await window.electronAPI.snapchatBroadcast({ sessionId, usernames: recipients, message: broadcastMessage, imagePath: broadcastImagePath || undefined, delayMs: Math.max(3, broadcastDelay) * 1000 })
+      const res = await window.electronAPI.snapchatBroadcast({ sessionId, usernames: recipients, message: broadcastMessage, imagePath: broadcastImagePath || undefined, delayMs: Math.max(3, broadcastDelay) * 1000, jobId })
       if (res.success) {
         const items = (res.data as any[]) || []
         setToolResults(items)
@@ -121,8 +125,10 @@ export default function SnapchatModule() {
     setLoading(true)
     setResultsOwner('extract-friends')
     setToolResults([])
+    const jobId = makeJobId('snap-friends')
+    beginLiveJob(jobId)
     try {
-      const res = await window.electronAPI.snapchatExtractFriends({ sessionId, limit: extractFriendsLimit })
+      const res = await window.electronAPI.snapchatExtractFriends({ sessionId, limit: extractFriendsLimit, jobId })
       if (res.success) {
         const items = (res.data as any[]) || []
         setToolResults(items)
@@ -329,11 +335,12 @@ export default function SnapchatModule() {
   // ----- Results table -----
   const renderResultsTable = (owner: ResultsOwner, columns: string[], exportKey: string) => {
     if (resultsOwner !== owner) return null
-    if (toolResults.length === 0) return null
+    const displayResults = toolResults.length > 0 ? toolResults : liveRows
+    if (displayResults.length === 0) return null
     return (
       <div className="mt-5 rounded-xl border border-secondary-200 bg-white/60 overflow-hidden">
         <div className="flex items-center justify-between p-3 border-b border-secondary-100 flex-wrap gap-2">
-          <h4 className="font-bold text-secondary-900 text-sm">النتائج ({toolResults.length})</h4>
+          <h4 className="font-bold text-secondary-900 text-sm">النتائج ({displayResults.length}){loading && <span className="text-emerald-600 animate-pulse"> • مباشر ⚡</span>}</h4>
           <div className="flex gap-2">
             <button onClick={() => handleExport(columns, exportKey, toolResults)} className="btn-success text-xs">
               <FileSpreadsheet size={14} /> تصدير
@@ -347,7 +354,7 @@ export default function SnapchatModule() {
           <table className="data-table">
             <thead><tr>{columns.map((c, i) => <th key={i}>{c}</th>)}</tr></thead>
             <tbody>
-              {toolResults.map((r: any, i: number) => {
+              {displayResults.map((r: any, i: number) => {
                 if (owner === 'extract-friends') {
                   return (
                     <tr key={i}>

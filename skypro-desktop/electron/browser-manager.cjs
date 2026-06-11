@@ -34,6 +34,23 @@ class BrowserManager {
     }
   }
 
+  /**
+   * Return an ALREADY-OPEN, alive session for a platform/profile WITHOUT
+   * launching anything. Used by check-platform-session so that merely opening
+   * a platform tab never spawns a browser — the window only appears when the
+   * user explicitly logs in.
+   */
+  async findAliveSession(platform, profileId) {
+    for (const [id, session] of this.browsers) {
+      const matches = profileId
+        ? session.profileId === profileId
+        : (session.platform === platform && !session.profileId)
+      if (!matches) continue
+      if (await this.isSessionAlive(session)) return { id, session }
+    }
+    return null
+  }
+
   async launch(options = {}) {
     const { headless = false, proxy, sessionId = `session-${Date.now()}`, antiBan = true, platform, profileId } = options
     try {

@@ -177,7 +177,7 @@ export default function AccountsModule() {
               status: 'active',
             })
             addedCount++
-          } catch (err) {
+          } catch {
             errorCount++
           }
         } else if (parts.length === 1 && parts[0].trim().length > 0) {
@@ -191,7 +191,7 @@ export default function AccountsModule() {
               status: 'active',
             })
             addedCount++
-          } catch (err) {
+          } catch {
             errorCount++
           }
         } else {

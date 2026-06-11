@@ -57,10 +57,14 @@ interface ExtractionResult {
 }
 
 interface ExtractionProgress {
+  jobId?: string
   type: string
   count: number
   total: number
   data?: Record<string, unknown>[]
+  last?: Record<string, unknown>
+  status?: Record<string, unknown>
+  message?: string
 }
 
 interface RememberedLogin {
@@ -189,6 +193,8 @@ interface PlatformSearchParams {
   query: string
   type?: string
   limit?: number
+  jobId?: string
+  delayMs?: number
 }
 
 interface ExtractionParams {

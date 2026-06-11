@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { usePlatform } from '../../hooks/usePlatform'
+import { getBackgroundMode } from '../../lib/backgroundMode'
 import { useAccountsStore } from '../../stores/accountsStore'
 import type { Account } from '../../stores/accountsStore'
 import AccountSelector from '../../components/common/AccountSelector'
@@ -54,8 +55,14 @@ interface BulkProgress {
 const ACCENT = '#4285F4'
 const ACCENT_GRADIENT = 'linear-gradient(135deg, #4285F4, #1a73e8)'
 
+// Monotonic per-session job id used to route live-stream events to the tool
+// that started them. A counter (not Date.now/Math.random) keeps it pure from
+// React's render-purity analysis while staying unique within the session.
+let __gJobSeq = 0
+const makeJobId = (prefix: string): string => `${prefix}-${++__gJobSeq}`
+
 export default function GoogleModule() {
-  const { loading, setLoading, message, error, showMsg, sessionId, setSessionId, checkSession, clearSession, cycleActive, cycleProgress, startCycle, stopCycle } = usePlatform('google')
+  const { loading, setLoading, message, error, showMsg, sessionId, setSessionId, checkSession, clearSession, cycleActive, cycleProgress, startCycle, stopCycle, liveRows, beginLiveJob, endLiveJob } = usePlatform('google')
 
   const [activeTool, setActiveTool] = useState<ActiveTool>(null)
   const [showLoginPanel, setShowLoginPanel] = useState(false)
@@ -102,6 +109,15 @@ export default function GoogleModule() {
   const [loginForm, setLoginForm] = useState({ username: '', password: '', proxy: '' })
   const [showPassword, setShowPassword] = useState(false)
 
+  // Live-or-final display rows: while a job streams, the final results array is
+  // empty and `liveRows` fills in real time; once the run finishes the enriched
+  // final results take over. Only the active tool (resultsOwner) shows liveRows.
+  const mapsDisplay = mapsResults.length ? mapsResults : (resultsOwner === 'maps' ? liveRows : mapsResults)
+  const olxDisplay = olxResults.length ? olxResults : (resultsOwner === 'olx' ? liveRows : olxResults)
+  const reviewsDisplay = reviewsResults.length ? reviewsResults : (resultsOwner === 'reviews-extract' ? liveRows : reviewsResults)
+  const bulkDisplay = bulkResults.length ? bulkResults : (resultsOwner === 'bulk-maps' ? liveRows : bulkResults)
+  const matrixDisplay = matrixResults.length ? matrixResults : (resultsOwner === 'bulk-matrix' ? liveRows : matrixResults)
+
   const googleAccounts = allAccounts.filter(a => a.platform === 'google')
   const ensureSession = () => {
     if (!sessionId) { showMsg('يرجى تسجيل الدخول أولاً', true); return false }
@@ -112,12 +128,15 @@ export default function GoogleModule() {
     if (!mapsQuery || !mapsLocation) { showMsg('أدخل نوع النشاط والمدينة', true); return }
     setLoading(true)
     setResultsOwner('maps')
+    setMapsResults([])
+    const jobId = makeJobId('gmaps-ui')
+    beginLiveJob(jobId)
     try {
-      const res = await window.electronAPI.googleMapsExtract({ searchQuery: mapsQuery, location: mapsLocation, limit: mapsLimit })
+      const res = await window.electronAPI.googleMapsExtract({ searchQuery: mapsQuery, location: mapsLocation, limit: mapsLimit, jobId })
       if (res.success && res.data) { setMapsResults((res.data as any[]) || []); showMsg(`تم استخراج ${res.count ?? res.data?.length ?? 0}`) }
       else showMsg(res.error || 'فشل الاستخراج', true)
     } catch (err: any) { showMsg(err.message || 'خطأ', true) }
-    setLoading(false)
+    finally { endLiveJob(); setLoading(false) }
   }
 
   const handleBulkMapsExtract = async () => {
@@ -138,7 +157,8 @@ export default function GoogleModule() {
     setBulkResults([])
     setBulkProgress({ type: 'starting', totalKeywords: keywords.length, keyword: keywords[0] })
 
-    const jobId = `gmaps-bulk-ui-${Date.now()}`
+    const jobId = makeJobId('gmaps-bulk-ui')
+    beginLiveJob(jobId)
     // Listen to progress events from main
     let cleanupProgress: (() => void) | undefined
     try {
@@ -169,6 +189,7 @@ export default function GoogleModule() {
       showMsg(err.message || 'خطأ غير معروف', true)
     } finally {
       try { cleanupProgress?.() } catch { /* defensive */ }
+      endLiveJob()
       setLoading(false)
       setBulkProgress(null)
     }
@@ -251,7 +272,8 @@ export default function GoogleModule() {
     setMatrixResults([])
     setMatrixProgress({ type: 'starting', totalCombos: combos, totalCities: cities.length, totalKeywords: keywords.length } as BulkProgress)
 
-    const jobId = `gmaps-matrix-ui-${Date.now()}`
+    const jobId = makeJobId('gmaps-matrix-ui')
+    beginLiveJob(jobId)
     let cleanupProgress: (() => void) | undefined
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -278,6 +300,7 @@ export default function GoogleModule() {
       showMsg(err.message || 'خطأ غير معروف', true)
     } finally {
       try { cleanupProgress?.() } catch { /* defensive */ }
+      endLiveJob()
       setLoading(false)
       setMatrixProgress(null)
     }
@@ -287,12 +310,15 @@ export default function GoogleModule() {
     if (!olxKeyword.trim()) { showMsg('أدخل كلمة مفتاحية للبحث (مثال: شقق للإيجار، سيارات مستعملة)', true); return }
     setLoading(true)
     setResultsOwner('olx')
+    setOlxResults([])
+    const jobId = makeJobId('olx-ui')
+    beginLiveJob(jobId)
     try {
-      const res = await window.electronAPI.olxExtract({ country: olxCountry, keyword: olxKeyword.trim(), limit: olxLimit })
+      const res = await window.electronAPI.olxExtract({ country: olxCountry, keyword: olxKeyword.trim(), limit: olxLimit, jobId })
       if (res.success && res.data) { setOlxResults((res.data as any[]) || []); showMsg(`تم استخراج ${res.count ?? res.data?.length ?? 0}`) }
       else showMsg(res.error || 'فشل الاستخراج', true)
     } catch (err: any) { showMsg(err.message || 'خطأ', true) }
-    setLoading(false)
+    finally { endLiveJob(); setLoading(false) }
   }
 
   const handleRate = async () => {
@@ -319,7 +345,7 @@ export default function GoogleModule() {
     setRateBulkResults([])
     setRateBulkProgress({ index: 0, total: rateSelectedAccountIds.length })
 
-    const jobId = `gmaps-rate-bulk-ui-${Date.now()}`
+    const jobId = makeJobId('gmaps-rate-bulk-ui')
     let cleanupProgress: (() => void) | undefined
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -366,12 +392,15 @@ export default function GoogleModule() {
     setLoading(true)
     setResultsOwner('reviews-extract')
     setReviewsResults([])
+    const jobId = makeJobId('gmaps-reviews-ui')
+    beginLiveJob(jobId)
     try {
       const res = await window.electronAPI.googleReviewsExtract({
         placeUrl: reviewsUrl,
         limit: reviewsLimit,
         sortBy: reviewsSort,
         sessionId: sessionId || undefined,
+        jobId,
       })
       if (res.success && res.data) {
         setReviewsResults((res.data as any[]) || [])
@@ -382,6 +411,7 @@ export default function GoogleModule() {
     } catch (err: any) {
       showMsg(err.message || 'خطأ', true)
     } finally {
+      endLiveJob()
       setLoading(false)
     }
   }
@@ -437,7 +467,7 @@ export default function GoogleModule() {
           showMsg(res.error || 'فشل فتح المتصفح', true)
         }
       } else {
-        const res = await window.electronAPI.launchBrowser({ platform: 'google', headless: false, proxy: loginForm.proxy || undefined })
+        const res = await window.electronAPI.launchBrowser({ platform: 'google', headless: getBackgroundMode('google'), proxy: loginForm.proxy || undefined })
         if (res.success) { setSessionId(res.sessionId || ''); showMsg('تم فتح المتصفح - سجل الدخول بحساب Google'); setShowLoginPanel(false) }
         else showMsg(res.error || 'فشل فتح المتصفح', true)
       }
@@ -726,10 +756,10 @@ export default function GoogleModule() {
       </div>
       <div><label className="label-field">الحد الأقصى: {mapsLimit}</label><input type="range" min="10" max="500" value={mapsLimit} onChange={e => setMapsLimit(parseInt(e.target.value))} className="w-full" /></div>
 
-      {resultsOwner === 'maps' && mapsResults.length > 0 && (
+      {resultsOwner === 'maps' && mapsDisplay.length > 0 && (
         <div className="mt-5 rounded-xl border border-secondary-200 bg-white/60 overflow-hidden">
           <div className="flex items-center justify-between p-3 border-b border-secondary-100 flex-wrap gap-2">
-            <h4 className="font-bold text-secondary-900 text-sm">النتائج ({mapsResults.length})</h4>
+            <h4 className="font-bold text-secondary-900 text-sm">النتائج ({mapsDisplay.length}){loading && resultsOwner === 'maps' && <span className="text-emerald-600 animate-pulse"> • مباشر ⚡</span>}</h4>
             <div className="flex gap-2">
               <button onClick={handleExportMaps} className="btn-success text-xs"><FileSpreadsheet size={14} /> تصدير CSV</button>
               <button onClick={() => { setMapsResults([]); setResultsOwner(null) }} className="btn-danger text-xs"><Trash2 size={14} /> مسح</button>
@@ -743,7 +773,7 @@ export default function GoogleModule() {
                 </tr>
               </thead>
               <tbody>
-                {mapsResults.map((b, i) => (
+                {mapsDisplay.map((b, i) => (
                   <tr key={i}>
                     <td className="text-secondary-500">{i + 1}</td>
                     <td>
@@ -886,10 +916,10 @@ export default function GoogleModule() {
       )}
 
       {/* Results */}
-      {resultsOwner === 'bulk-maps' && bulkResults.length > 0 && (
+      {resultsOwner === 'bulk-maps' && bulkDisplay.length > 0 && (
         <div className="mt-5 rounded-xl border border-secondary-200 bg-white/60 overflow-hidden">
           <div className="flex items-center justify-between p-3 border-b border-secondary-100 flex-wrap gap-2">
-            <h4 className="font-bold text-secondary-900 text-sm">النتائج ({bulkResults.length})</h4>
+            <h4 className="font-bold text-secondary-900 text-sm">النتائج ({bulkDisplay.length}){loading && resultsOwner === 'bulk-maps' && <span className="text-emerald-600 animate-pulse"> • مباشر ⚡</span>}</h4>
             <div className="flex gap-2">
               <button onClick={handleExportBulkMaps} className="btn-success text-xs"><FileSpreadsheet size={14} /> تصدير CSV</button>
               <button onClick={() => { setBulkResults([]); setResultsOwner(null) }} className="btn-danger text-xs"><Trash2 size={14} /> مسح</button>
@@ -903,7 +933,7 @@ export default function GoogleModule() {
                 </tr>
               </thead>
               <tbody>
-                {bulkResults.slice(0, 200).map((b, i) => (
+                {bulkDisplay.slice(0, 200).map((b, i) => (
                   <tr key={i}>
                     <td className="text-secondary-500">{i + 1}</td>
                     <td>
@@ -1062,10 +1092,10 @@ export default function GoogleModule() {
           </div>
         )}
 
-        {resultsOwner === 'bulk-matrix' && matrixResults.length > 0 && (
+        {resultsOwner === 'bulk-matrix' && matrixDisplay.length > 0 && (
           <div className="mt-5 rounded-xl border border-secondary-200 bg-white/60 overflow-hidden">
             <div className="flex items-center justify-between p-3 border-b border-secondary-100 flex-wrap gap-2">
-              <h4 className="font-bold text-secondary-900 text-sm">النتائج ({matrixResults.length})</h4>
+              <h4 className="font-bold text-secondary-900 text-sm">النتائج ({matrixDisplay.length}){loading && resultsOwner === 'bulk-matrix' && <span className="text-emerald-600 animate-pulse"> • مباشر ⚡</span>}</h4>
               <div className="flex gap-2">
                 <button onClick={handleExportMatrix} className="btn-success text-xs"><FileSpreadsheet size={14} /> تصدير CSV منسّق</button>
                 <button onClick={() => { setMatrixResults([]); setResultsOwner(null) }} className="btn-danger text-xs"><Trash2 size={14} /> مسح</button>
@@ -1079,7 +1109,7 @@ export default function GoogleModule() {
                   </tr>
                 </thead>
                 <tbody>
-                  {matrixResults.slice(0, 200).map((b, i) => (
+                  {matrixDisplay.slice(0, 200).map((b, i) => (
                     <tr key={i}>
                       <td className="text-secondary-500">{i + 1}</td>
                       <td>
@@ -1177,10 +1207,10 @@ export default function GoogleModule() {
         </p>
       </div>
 
-      {resultsOwner === 'olx' && olxResults.length > 0 && (
+      {resultsOwner === 'olx' && olxDisplay.length > 0 && (
         <div className="mt-5 rounded-xl border border-secondary-200 bg-white/60 overflow-hidden">
           <div className="flex items-center justify-between p-3 border-b border-secondary-100 flex-wrap gap-2">
-            <h4 className="font-bold text-secondary-900 text-sm">الإعلانات ({olxResults.length})</h4>
+            <h4 className="font-bold text-secondary-900 text-sm">الإعلانات ({olxDisplay.length}){loading && resultsOwner === 'olx' && <span className="text-emerald-600 animate-pulse"> • مباشر ⚡</span>}</h4>
             <div className="flex gap-2">
               <button onClick={handleExportOlx} className="btn-success text-xs"><FileSpreadsheet size={14} /> تصدير CSV</button>
               <button onClick={() => { setOlxResults([]); setResultsOwner(null) }} className="btn-danger text-xs"><Trash2 size={14} /> مسح</button>
@@ -1190,7 +1220,7 @@ export default function GoogleModule() {
             <table className="data-table">
               <thead><tr><th>#</th><th>الصورة</th><th>العنوان</th><th>الهاتف</th><th>السعر</th><th>الموقع</th><th>التاريخ</th><th>الرابط</th></tr></thead>
               <tbody>
-                {olxResults.slice(0, 200).map((l, i) => (
+                {olxDisplay.slice(0, 200).map((l, i) => (
                   <tr key={i}>
                     <td className="text-secondary-500">{i + 1}</td>
                     <td>
@@ -1535,10 +1565,10 @@ export default function GoogleModule() {
         </div>
       </div>
 
-      {resultsOwner === 'reviews-extract' && reviewsResults.length > 0 && (
+      {resultsOwner === 'reviews-extract' && reviewsDisplay.length > 0 && (
         <div className="mt-5 rounded-xl border border-secondary-200 bg-white/60 overflow-hidden">
           <div className="flex items-center justify-between p-3 border-b border-secondary-100 flex-wrap gap-2">
-            <h4 className="font-bold text-secondary-900 text-sm">التقييمات ({reviewsResults.length})</h4>
+            <h4 className="font-bold text-secondary-900 text-sm">التقييمات ({reviewsDisplay.length}){loading && resultsOwner === 'reviews-extract' && <span className="text-emerald-600 animate-pulse"> • مباشر ⚡</span>}</h4>
             <div className="flex gap-2">
               <button onClick={handleExportReviews} className="btn-success text-xs"><FileSpreadsheet size={14} /> تصدير CSV</button>
               <button onClick={() => { setReviewsResults([]); setResultsOwner(null) }} className="btn-danger text-xs"><Trash2 size={14} /> مسح</button>
@@ -1548,7 +1578,7 @@ export default function GoogleModule() {
             <table className="data-table">
               <thead><tr><th>#</th><th>الكاتب</th><th>التقييم</th><th>التاريخ</th><th>النص</th></tr></thead>
               <tbody>
-                {reviewsResults.slice(0, 200).map((r, i) => (
+                {reviewsDisplay.slice(0, 200).map((r, i) => (
                   <tr key={i}>
                     <td className="text-secondary-500">{i + 1}</td>
                     <td className="font-medium text-xs">{r.author || '-'}</td>

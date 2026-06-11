@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { usePlatform } from '../../hooks/usePlatform'
+import { makeJobId } from '../../lib/jobId'
 import { useAccountsStore } from '../../stores/accountsStore'
 import AccountSelector from '../../components/common/AccountSelector'
 import AccountCycleBanner from '../../components/common/AccountCycleBanner'
@@ -38,6 +39,7 @@ export default function WhatsappModule() {
     loading, setLoading, message, error, showMsg, sessionId, setSessionId,
     accounts, results, loadAccounts, loadResults, handleExport, clearResults,
     deleteResult, clearSession, cycleActive, cycleProgress, startCycle, stopCycle,
+    liveRows, beginLiveJob, endLiveJob,
   } = usePlatform('whatsapp')
   const { accounts: allAccounts } = useAccountsStore()
 
@@ -114,16 +116,19 @@ export default function WhatsappModule() {
     if (!recipientsText || !broadcastMessage) { showMsg('يرجى إدخال الأرقام والرسالة', true); return }
     setLoading(true)
     setResultsOwner('broadcast')
+    setToolResults([])
     const recipients = recipientsText.split('\n').map(r => r.trim()).filter(Boolean)
+    const jobId = makeJobId('wa-send')
+    beginLiveJob(jobId)
     try {
-      const res = await window.electronAPI.whatsappSendMessages({ sessionId, recipients, message: broadcastMessage })
+      const res = await window.electronAPI.whatsappSendMessages({ sessionId, recipients, message: broadcastMessage, jobId })
       if (res.success) {
         const sent = ((res.data as any[]) || []).filter((r: any) => r.status === 'sent').length
         showMsg(`تم إرسال ${sent} من ${recipients.length} رسالة`)
         setToolResults((res.data as any[]) || [])
       } else showMsg(res.error || 'فشل الإرسال', true)
     } catch (err: any) { showMsg(err.message || 'خطأ في الإرسال', true) }
-    setLoading(false)
+    finally { endLiveJob(); setLoading(false) }
   }
 
   const handleFilter = async () => {
@@ -570,7 +575,7 @@ export default function WhatsappModule() {
   const renderResultsTable = (owner: ResultsOwner, columns: string[], exportKey: string, showActions = false) => {
     if (resultsOwner !== owner) return null
     const isFilter = owner === 'filter'
-    const displayResults = toolResults.length > 0 ? toolResults : (isFilter ? results : [])
+    const displayResults = toolResults.length > 0 ? toolResults : (liveRows.length > 0 ? liveRows : (isFilter ? results : []))
     const list = displayResults as any[]
     if (list.length === 0) return null
     return (

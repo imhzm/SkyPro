@@ -1655,11 +1655,11 @@ ipcm('whatsapp-group-post', async (e, { sessionId, groups = [], message, delayMs
           await page.waitForTimeout(randomDelay(2000, 3500))
         } else {
           // Search by name in WhatsApp Web sidebar.
-          await smartClick(page, ['[title="Search input textbox"]', '[data-testid="chat-list-search"] [contenteditable="true"]'], 'search')
+          await smartClick(page, ['div[contenteditable="true"][data-tab="3"]', '[title="Search input textbox"]', '[data-testid="chat-list-search"] [contenteditable="true"]'], 'search')
           await page.waitForTimeout(randomDelay(400, 900))
           await page.keyboard.press('Control+A').catch(() => {})
           await page.keyboard.press('Delete').catch(() => {})
-          await smartType(page, ['[title="Search input textbox"]', '[data-testid="chat-list-search"] [contenteditable="true"]'], groupRef, 'group')
+          await smartType(page, ['div[contenteditable="true"][data-tab="3"]', '[title="Search input textbox"]', '[data-testid="chat-list-search"] [contenteditable="true"]'], groupRef, 'group')
           await page.waitForTimeout(randomDelay(1500, 2500))
           await page.keyboard.press('Enter')
           await page.waitForTimeout(randomDelay(1500, 2500))
@@ -2666,36 +2666,70 @@ ipcm('whatsapp-launch', async (e, { proxy } = {}) => {
   }
 })
 
-ipcm('whatsapp-send-messages', async (e, { sessionId, recipients, message }) => {
+ipcm('whatsapp-send-messages', async (e, { sessionId, recipients = [], message, delayMs = 3000, jobId }) => {
   const page = globals.bm.getPage(sessionId)
   if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!Array.isArray(recipients) || recipients.length === 0) return { success: false, error: 'أدخل قائمة المستلمين' }
+  if (!message || !String(message).trim()) return { success: false, error: 'أدخل نص الرسالة' }
+  if (!jobId) jobId = `wa-send-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  // Modern + legacy WhatsApp Web selectors. WA removed most data-testid
+  // attributes; current builds key the search box with data-tab="3" and the
+  // compose box with data-tab="10" / aria-label. smartType tries each in order
+  // so the new selectors win, falling back to the old testids on older builds.
+  const SEARCH_SEL = [
+    'div[contenteditable="true"][data-tab="3"]',
+    'div[role="textbox"][title*="Search" i]',
+    '[title="Search input textbox"]',
+    '[data-testid="chat-list-search"] [contenteditable="true"]',
+  ]
+  const COMPOSE_SEL = [
+    'div[contenteditable="true"][data-tab="10"]',
+    'footer div[contenteditable="true"][role="textbox"]',
+    'div[aria-label="Type a message"]',
+    'div[aria-label*="رسالة"]',
+    '[data-testid="conversation-compose-box-input"] [contenteditable="true"]',
+    '[data-testid="conversation-compose-box-input"]',
+  ]
   const results = []
-  for (const recipient of recipients) {
-    try {
-      const searchBox = await page.$('[title="Search input textbox"], [data-testid="chat-list-search"] [contenteditable="true"]')
-      if (!searchBox) { results.push({ recipient, status: 'failed', error: 'لم يتم العثور على مربع البحث' }); continue }
-      await smartClick(page, ['[title="Search input textbox"]', '[data-testid="chat-list-search"] [contenteditable="true"]'], 'search box')
-      await page.waitForTimeout(randomDelay(500, 1500))
-      await smartType(page, ['[title="Search input textbox"]', '[data-testid="chat-list-search"] [contenteditable="true"]'], recipient, 'recipient')
-      await page.waitForTimeout(randomDelay(1500, 3000))
-      await page.keyboard.press('Enter')
-      await page.waitForTimeout(randomDelay(1500, 3000))
-      const input = await page.$('[data-testid="conversation-compose-box-input"] [contenteditable="true"], [data-testid="conversation-compose-box-input"]')
-      if (input) {
-        await smartType(page, ['[data-testid="conversation-compose-box-input"] [contenteditable="true"]', '[data-testid="conversation-compose-box-input"]'], message, 'message')
-        await page.waitForTimeout(randomDelay(500, 1500))
+  try {
+    for (const recipient of recipients) {
+      if (globals.cancelFlags.get(jobId)) break
+      const out = { recipient, status: 'failed' }
+      try {
+        await smartClick(page, SEARCH_SEL, 'search box')
+        await page.waitForTimeout(randomDelay(400, 900))
+        // Clear any previous query so the new recipient resolves correctly.
+        await page.keyboard.press('Control+A').catch(() => {})
+        await page.keyboard.press('Delete').catch(() => {})
+        await smartType(page, SEARCH_SEL, String(recipient), 'recipient')
+        await page.waitForTimeout(randomDelay(1500, 2800))
         await page.keyboard.press('Enter')
-        await page.waitForTimeout(randomDelay(1500, 3000))
-        results.push({ recipient, status: 'sent' })
-      } else {
-        results.push({ recipient, status: 'failed', error: 'لم يتم العثور على مربع الكتابة' })
+        await page.waitForTimeout(randomDelay(1500, 2800))
+        const composed = await smartType(page, COMPOSE_SEL, String(message), 'message')
+        if (composed) {
+          await page.waitForTimeout(randomDelay(400, 1000))
+          await page.keyboard.press('Enter')
+          await page.waitForTimeout(randomDelay(1200, 2200))
+          out.status = 'sent'
+        } else {
+          out.error = 'تعذّر فتح محادثة هذا الرقم (قد لا يكون مسجّلاً على واتساب)'
+        }
+      } catch (err) {
+        out.status = 'error'
+        out.error = err.message
       }
-    } catch (err) {
-      results.push({ recipient, status: 'error', error: err.message })
+      results.push(out)
+      sendProgress(sender, jobId, { type: 'progress', count: results.length, total: recipients.length, last: out })
+      await page.waitForTimeout(delayMs + Math.random() * 1500)
     }
-    await page.waitForTimeout(randomDelay(2000, 4000))
+    return { success: true, data: results, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: results, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
   }
-  return { success: true, data: results }
 })
 
 ipcm('whatsapp-extract-groups', async (e, { sessionId }) => {
@@ -2768,12 +2802,12 @@ ipcm('whatsapp-send-media', async (e, { sessionId, recipients, mediaPaths = [], 
     for (const recipient of recipients) {
       if (globals.cancelFlags.get(jobId)) break
       try {
-        await smartClick(page, ['[title="Search input textbox"]', '[data-testid="chat-list-search"] [contenteditable="true"]'], 'search')
+        await smartClick(page, ['div[contenteditable="true"][data-tab="3"]', '[title="Search input textbox"]', '[data-testid="chat-list-search"] [contenteditable="true"]'], 'search')
         await page.waitForTimeout(randomDelay(400, 900))
         // Clear previous search first.
         await page.keyboard.press('Control+A').catch(() => {})
         await page.keyboard.press('Delete').catch(() => {})
-        await smartType(page, ['[title="Search input textbox"]', '[data-testid="chat-list-search"] [contenteditable="true"]'], recipient, 'recipient')
+        await smartType(page, ['div[contenteditable="true"][data-tab="3"]', '[title="Search input textbox"]', '[data-testid="chat-list-search"] [contenteditable="true"]'], recipient, 'recipient')
         await page.waitForTimeout(randomDelay(1500, 2500))
         await page.keyboard.press('Enter')
         await page.waitForTimeout(randomDelay(1500, 2500))
@@ -2929,11 +2963,11 @@ ipcm('whatsapp-extract-group-members', async (e, { sessionId, groupName, limit =
   if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
   try {
     if (groupName) {
-      await smartClick(page, ['[title="Search input textbox"]', '[data-testid="chat-list-search"] [contenteditable="true"]'], 'search')
+      await smartClick(page, ['div[contenteditable="true"][data-tab="3"]', '[title="Search input textbox"]', '[data-testid="chat-list-search"] [contenteditable="true"]'], 'search')
       await page.waitForTimeout(randomDelay(400, 900))
       await page.keyboard.press('Control+A').catch(() => {})
       await page.keyboard.press('Delete').catch(() => {})
-      await smartType(page, ['[title="Search input textbox"]', '[data-testid="chat-list-search"] [contenteditable="true"]'], groupName, 'group')
+      await smartType(page, ['div[contenteditable="true"][data-tab="3"]', '[title="Search input textbox"]', '[data-testid="chat-list-search"] [contenteditable="true"]'], groupName, 'group')
       await page.waitForTimeout(randomDelay(1200, 2000))
       await page.keyboard.press('Enter')
       await page.waitForTimeout(randomDelay(1500, 2500))
@@ -2997,11 +3031,11 @@ ipcm('whatsapp-add-to-group', async (e, { sessionId, groupName, phones = [], job
   const sender = getSender(e)
   const results = []
   try {
-    await smartClick(page, ['[title="Search input textbox"]', '[data-testid="chat-list-search"] [contenteditable="true"]'], 'search')
+    await smartClick(page, ['div[contenteditable="true"][data-tab="3"]', '[title="Search input textbox"]', '[data-testid="chat-list-search"] [contenteditable="true"]'], 'search')
     await page.waitForTimeout(randomDelay(400, 900))
     await page.keyboard.press('Control+A').catch(() => {})
     await page.keyboard.press('Delete').catch(() => {})
-    await smartType(page, ['[title="Search input textbox"]', '[data-testid="chat-list-search"] [contenteditable="true"]'], groupName, 'group')
+    await smartType(page, ['div[contenteditable="true"][data-tab="3"]', '[title="Search input textbox"]', '[data-testid="chat-list-search"] [contenteditable="true"]'], groupName, 'group')
     await page.waitForTimeout(randomDelay(1500, 2500))
     await page.keyboard.press('Enter')
     await page.waitForTimeout(randomDelay(1500, 2500))
@@ -4299,31 +4333,58 @@ ipcm('twitter-tweet', async (e, { sessionId, text }) => {
   }
 })
 
-ipcm('twitter-extract-followers', async (e, { sessionId, username, limit = 100 }) => {
+ipcm('twitter-extract-followers', async (e, { sessionId, username, limit = 100, jobId }) => {
   const page = globals.bm.getPage(sessionId)
   if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!username) return { success: false, error: 'أدخل اسم المستخدم' }
+  if (!jobId) jobId = `tw-followers-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const followers = []
+  const seen = new Set()
   try {
-    await page.goto(`https://x.com/${username}/followers`, { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(randomDelay(2000, 4000))
-    for (let i = 0; i < 5; i++) {
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
-      await page.waitForTimeout(randomDelay(1500, 3000))
-    }
-    const followers = await page.evaluate((lim) => {
-      const r = []
-      document.querySelectorAll('a[href^="/"]').forEach((a, i) => {
-        if (i >= lim) return
-        const href = a.getAttribute('href')
-        if (href && href.length > 1 && !href.includes('/followers') && href.startsWith('/') && !href.includes('?')) {
-          r.push({ username: href.replace('/', ''), profile: `https://x.com${href}` })
-        }
+    await page.goto(`https://x.com/${String(username).replace(/^@/, '')}/followers`, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+    await page.waitForTimeout(randomDelay(2500, 4000))
+    let stagnant = 0
+    // BUGFIX: scope to the follower [data-testid="UserCell"] rows (same proven
+    // approach as twitter-extract-tweet-likers). The old code scraped EVERY
+    // a[href^="/"] on the page — nav links, the profile owner and /i/... routes
+    // were all mislabelled as followers.
+    while (followers.length < limit && stagnant < 8) {
+      if (globals.cancelFlags.get(jobId)) break
+      const before = followers.length
+      const batch = await page.evaluate(() => {
+        const out = []
+        document.querySelectorAll('[data-testid="UserCell"]').forEach((cell) => {
+          const link = cell.querySelector('a[href^="/"]')
+          if (!link) return
+          const handle = (link.getAttribute('href') || '').replace(/^\//, '').split('/')[0]
+          if (!handle) return
+          const nameEl = cell.querySelector('div[dir="ltr"] span') || cell.querySelector('span[dir="auto"]')
+          out.push({ username: handle, name: nameEl ? nameEl.innerText.trim() : '', profile: 'https://x.com/' + handle })
+        })
+        return out
       })
-      return r
-    }, limit)
+      const fresh = []
+      for (const u of batch) {
+        if (!u.username || seen.has(u.username)) continue
+        seen.add(u.username)
+        followers.push(u)
+        fresh.push(u)
+        if (followers.length >= limit) break
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: followers.length, total: limit, data: fresh })
+      if (followers.length === before) stagnant++
+      else stagnant = 0
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.waitForTimeout(randomDelay(1500, 2800))
+    }
     saveLeads('twitter', 'followers', followers)
-    return { success: true, data: followers, count: followers.length }
+    return { success: true, data: followers, count: followers.length, jobId, cancelled: globals.cancelFlags.get(jobId) }
   } catch (err) {
-    return { success: false, error: err.message }
+    return { success: false, error: err.message, partialData: followers, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
   }
 })
 
@@ -4338,26 +4399,42 @@ ipcm('twitter-schedule-tweet', async (e, { text, scheduledAt }) => {
   }
 })
 
-ipcm('twitter-follow', async (e, { sessionId, usernames }) => {
+ipcm('twitter-follow', async (e, { sessionId, usernames = [], delayMs = 4000, jobId }) => {
   const page = globals.bm.getPage(sessionId)
   if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!jobId) jobId = `tw-follow-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
   const results = []
-  for (const user of usernames) {
-    try {
-      await page.goto(`https://x.com/${user}`, { waitUntil: 'domcontentloaded' })
-      await page.waitForTimeout(randomDelay(2000, 4000))
-      if (await smartActionClick(page, ['button:has-text("Follow")', 'button:has-text("متابعة")'], 'follow')) {
+  try {
+    for (const user of usernames) {
+      if (globals.cancelFlags.get(jobId)) break
+      const handle = String(user).replace(/^@/, '').trim()
+      try {
+        await page.goto(`https://x.com/${handle}`, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
         await page.waitForTimeout(randomDelay(2000, 4000))
-        results.push({ user, status: 'followed' })
-      } else {
-        results.push({ user, status: 'failed', error: 'Follow button not found' })
+        // The follow button's data-testid ENDS WITH "-follow"; the unfollow
+        // button ends with "-unfollow". Targeting "$=-follow" avoids the old
+        // :has-text("Follow") bug that also matched "Following" (and would
+        // mis-click / unfollow an account you already follow).
+        const ok = await smartActionClick(page, [
+          'button[data-testid$="-follow"]',
+          'button[aria-label^="Follow"]',
+          'button:has-text("متابعة")'
+        ], 'follow twitter')
+        results.push({ user: handle, status: ok ? 'followed' : 'skipped' })
+      } catch (err) {
+        results.push({ user: handle, status: 'error', error: err.message })
       }
-    } catch (err) {
-      results.push({ user, status: 'error', error: err.message })
+      sendProgress(sender, jobId, { type: 'progress', count: results.length, total: usernames.length, last: results[results.length - 1] })
+      await page.waitForTimeout(delayMs + Math.random() * 1500)
     }
-    await page.waitForTimeout(randomDelay(2000, 4000))
+    return { success: true, data: results, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: results, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
   }
-  return { success: true, data: results }
 })
 
 ipcm('twitter-retweet', async (e, { sessionId, tweetUrls }) => {
@@ -4945,37 +5022,70 @@ ipcm('linkedin-extract-companies', async (e, { sessionId, searchUrl, limit = 50 
   }
 })
 
-ipcm('linkedin-send-messages', async (e, { sessionId, recipients, message }) => {
+ipcm('linkedin-send-messages', async (e, { sessionId, recipients = [], message, delayMs = 5000, jobId }) => {
   const page = globals.bm.getPage(sessionId)
   if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!Array.isArray(recipients) || recipients.length === 0) return { success: false, error: 'أدخل قائمة المستلمين' }
+  if (!message || !String(message).trim()) return { success: false, error: 'أدخل نص الرسالة' }
+  if (!jobId) jobId = `li-send-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
   const results = []
-  for (const recipient of recipients) {
-    try {
-      await page.goto(`https://www.linkedin.com/in/${recipient}/`, { waitUntil: 'domcontentloaded' })
-      await page.waitForTimeout(randomDelay(2000, 4000))
-      const msgBtn = await page.$('button:has-text("Message"), button[aria-label="Message"]')
-      if (msgBtn) {
-        await smartClick(page, ['button:has-text("Message")', 'button[aria-label="Message"]'], 'message button')
-        await page.waitForTimeout(randomDelay(2000, 4000))
-        const input = await page.$('div[contenteditable="true"]')
-        if (input) {
-          await smartType(page, ['div[contenteditable="true"]'], message, 'message')
-          await page.waitForTimeout(randomDelay(1000, 2000))
-          await page.keyboard.press('Enter')
-          await page.waitForTimeout(randomDelay(2000, 4000))
-          results.push({ recipient, status: 'sent' })
+  try {
+    for (const recipient of recipients) {
+      if (globals.cancelFlags.get(jobId)) break
+      const out = { recipient, status: 'failed' }
+      try {
+        const url = /^https?:/i.test(recipient)
+          ? recipient
+          : `https://www.linkedin.com/in/${String(recipient).replace(/^\/+|\/+$/g, '')}/`
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+        await page.waitForTimeout(randomDelay(2000, 3500))
+        const opened = await smartActionClick(page, [
+          'button[aria-label^="Message"]',
+          'button:has-text("Message")',
+          'a[href*="/messaging/"]',
+        ], 'open message')
+        if (!opened) {
+          out.error = 'زر المراسلة غير متاح (قد لا يكون ضمن شبكتك)'
         } else {
-          results.push({ recipient, status: 'failed', error: 'Message input not found' })
+          await page.waitForTimeout(randomDelay(1500, 2800))
+          // Target the message COMPOSE box precisely — the old generic
+          // div[contenteditable="true"] could grab an unrelated editable node.
+          const typed = await smartType(page, [
+            'div.msg-form__contenteditable[contenteditable="true"]',
+            'div[contenteditable="true"][role="textbox"]',
+            'div[aria-label*="message" i][contenteditable="true"]',
+            'div[contenteditable="true"]',
+          ], String(message), 'message')
+          if (typed) {
+            await page.waitForTimeout(randomDelay(600, 1200))
+            const sent = await smartActionClick(page, [
+              'button.msg-form__send-button',
+              'button[type="submit"]:has-text("Send")',
+              'button:has-text("Send")',
+            ], 'send')
+            if (!sent) await page.keyboard.press('Enter')
+            await page.waitForTimeout(randomDelay(1500, 2500))
+            out.status = 'sent'
+          } else {
+            out.error = 'تعذّر فتح مربع الكتابة'
+          }
         }
-      } else {
-        results.push({ recipient, status: 'failed', error: 'Message button not found' })
+      } catch (err) {
+        out.status = 'error'
+        out.error = err.message
       }
-    } catch (err) {
-      results.push({ recipient, status: 'error', error: err.message })
+      results.push(out)
+      sendProgress(sender, jobId, { type: 'progress', count: results.length, total: recipients.length, last: out })
+      await page.waitForTimeout(delayMs + Math.random() * 1500)
     }
-    await page.waitForTimeout(randomDelay(2000, 4000))
+    return { success: true, data: results, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: results, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
   }
-  return { success: true, data: results }
 })
 
 // Extract people (search results page) with name, title, company, profile URL.
@@ -5648,34 +5758,66 @@ ipcm('telegram-verify-code', async (e, { sessionId, code }) => {
   }
 })
 
-ipcm('telegram-send-messages', async (e, { sessionId, recipients, message }) => {
+ipcm('telegram-send-messages', async (e, { sessionId, recipients = [], message, delayMs = 4000, jobId }) => {
   const page = globals.bm.getPage(sessionId)
   if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!Array.isArray(recipients) || recipients.length === 0) return { success: false, error: 'أدخل قائمة المستلمين' }
+  if (!message || !String(message).trim()) return { success: false, error: 'أدخل نص الرسالة' }
+  if (!jobId) jobId = `tg-send-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const SEARCH_SEL = [
+    'input[placeholder="Search"]',
+    'input[placeholder="البحث"]',
+    'input#telegram-search-input',
+    'input[type="search"]',
+    '.chatlist-top input.form-control',
+  ]
+  // Telegram Web A composer is #editable-message-text / .input-message-input —
+  // the old bare [contenteditable="true"] could grab the search box instead.
+  const COMPOSE_SEL = [
+    '#editable-message-text',
+    'div.input-message-input[contenteditable="true"]',
+    'div.composer-wrapper [contenteditable="true"]',
+    '[contenteditable="true"]',
+  ]
   const results = []
-  for (const recipient of recipients) {
-    try {
-      await smartClick(page, ['button[aria-label="New Message"]', 'button[aria-label="New message"]'], 'new message button')
-      await page.waitForTimeout(randomDelay(1000, 2000))
-      await smartType(page, ['input[placeholder="Search"]', 'input[placeholder="البحث"]'], recipient, 'recipient search')
-      await page.waitForTimeout(randomDelay(1500, 3000))
-      await page.keyboard.press('Enter')
-      await page.waitForTimeout(randomDelay(2000, 4000))
-      const input = await page.$('[contenteditable="true"]')
-      if (input) {
-        await smartType(page, ['[contenteditable="true"]'], message, 'message')
-        await page.waitForTimeout(randomDelay(500, 1500))
+  try {
+    for (const recipient of recipients) {
+      if (globals.cancelFlags.get(jobId)) break
+      const out = { recipient, status: 'failed' }
+      try {
+        await smartClick(page, SEARCH_SEL, 'search')
+        await page.waitForTimeout(randomDelay(400, 900))
+        await page.keyboard.press('Control+A').catch(() => {})
+        await page.keyboard.press('Delete').catch(() => {})
+        await smartType(page, SEARCH_SEL, String(recipient), 'recipient')
+        await page.waitForTimeout(randomDelay(1600, 2800))
         await page.keyboard.press('Enter')
-        await page.waitForTimeout(randomDelay(2000, 4000))
-        results.push({ recipient, status: 'sent' })
-      } else {
-        results.push({ recipient, status: 'failed', error: 'لم يتم العثور على مربع الكتابة' })
+        await page.waitForTimeout(randomDelay(1800, 3000))
+        const typed = await smartType(page, COMPOSE_SEL, String(message), 'message')
+        if (typed) {
+          await page.waitForTimeout(randomDelay(400, 1000))
+          await page.keyboard.press('Enter')
+          await page.waitForTimeout(randomDelay(1200, 2200))
+          out.status = 'sent'
+        } else {
+          out.error = 'تعذّر فتح محادثة هذا المستلم'
+        }
+      } catch (err) {
+        out.status = 'error'
+        out.error = err.message
       }
-    } catch (err) {
-      results.push({ recipient, status: 'error', error: err.message })
+      results.push(out)
+      sendProgress(sender, jobId, { type: 'progress', count: results.length, total: recipients.length, last: out })
+      await page.waitForTimeout(delayMs + Math.random() * 1500)
     }
-    await page.waitForTimeout(randomDelay(2000, 4000))
+    return { success: true, data: results, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: results, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
   }
-  return { success: true, data: results }
 })
 
 ipcm('telegram-extract-members', async (e, { sessionId, groupUrl, limit = 200 }) => {
@@ -5703,21 +5845,66 @@ ipcm('telegram-extract-members', async (e, { sessionId, groupUrl, limit = 200 })
   }
 })
 
-ipcm('telegram-add-users', async (e, { sessionId, groupUsername, users }) => {
+ipcm('telegram-add-users', async (e, { sessionId, groupUsername, users = [], delayMs = 4000, jobId }) => {
   const page = globals.bm.getPage(sessionId)
   if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!groupUsername) return { success: false, error: 'أدخل اسم المجموعة أو رابطها' }
+  if (!Array.isArray(users) || users.length === 0) return { success: false, error: 'أدخل قائمة المستخدمين' }
+  if (!jobId) jobId = `tg-addusers-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
   const results = []
-  for (const user of users) {
-    try {
-      await page.goto(`https://t.me/${groupUsername}`, { waitUntil: 'domcontentloaded' })
-      await page.waitForTimeout(randomDelay(2000, 4000))
-      results.push({ user, status: 'added' })
-    } catch (err) {
-      results.push({ user, status: 'error', error: err.message })
+  try {
+    // BUGFIX: the old version navigated to the group and then LIED — it pushed
+    // status:'added' without performing any add. This performs the real
+    // group-info → Add Members → search → pick → confirm flow and only reports
+    // 'added' when the confirm actually fires.
+    const slug = String(groupUsername).replace(/^@/, '').replace(/^https?:\/\/t\.me\//i, '').replace(/\/+$/, '')
+    await page.goto(`https://web.telegram.org/a/#@${slug}`, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+    await page.waitForTimeout(randomDelay(2500, 4000))
+    for (const user of users) {
+      if (globals.cancelFlags.get(jobId)) break
+      const handle = String(user).replace(/^@/, '').trim()
+      const out = { user: handle, status: 'failed' }
+      try {
+        await smartClick(page, ['button[aria-label="Group info"]', '.ChatInfo', '.chat-info-container'], 'group info')
+        await page.waitForTimeout(randomDelay(700, 1400))
+        const opened = await smartActionClick(page, [
+          'button[aria-label="Add Members"]',
+          'button[aria-label="Add members"]',
+          '.AddMembersButton',
+        ], 'add members')
+        if (!opened) {
+          out.error = 'تعذّر فتح إضافة الأعضاء (تحقق من صلاحياتك في المجموعة)'
+        } else {
+          await page.waitForTimeout(randomDelay(800, 1500))
+          await smartType(page, ['input[placeholder="Add People..."]', 'input[placeholder*="Add"]', 'input[type="text"]'], handle, 'add search')
+          await page.waitForTimeout(randomDelay(1500, 2500))
+          const picked = await smartActionClick(page, ['.ListItem button', '.ListItem .ripple-container', '.ListItem'], 'pick user')
+          if (!picked) {
+            out.error = 'لم يُعثر على المستخدم'
+          } else {
+            await page.waitForTimeout(randomDelay(700, 1400))
+            const confirmed = await smartActionClick(page, ['button[aria-label="Confirm"]', '.FloatingActionButton', 'button:has-text("Add")'], 'confirm add')
+            if (confirmed) out.status = 'added'
+            else out.error = 'لم يتأكد الإضافة'
+          }
+          await page.keyboard.press('Escape').catch(() => {})
+        }
+      } catch (err) {
+        out.status = 'error'
+        out.error = err.message
+      }
+      results.push(out)
+      sendProgress(sender, jobId, { type: 'progress', count: results.length, total: users.length, last: out })
+      await page.waitForTimeout(delayMs + Math.random() * 1500)
     }
-    await page.waitForTimeout(randomDelay(2000, 4000))
+    return { success: true, data: results, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: results, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
   }
-  return { success: true, data: results }
 })
 
 // Extract the user's chat list (dialogs) from the left sidebar. Returns
@@ -6330,59 +6517,116 @@ ipcm('telegram-premium-react', async (e, { sessionId, groupName, emoji = '❤️
 })
 
 // ==================== IPC: TIKTOK ====================
-ipcm('tiktok-extract-comments', async (e, { sessionId, videoUrl, limit = 50 }) => {
+ipcm('tiktok-extract-comments', async (e, { sessionId, videoUrl, limit = 50, jobId }) => {
   const page = globals.bm.getPage(sessionId)
   if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!videoUrl) return { success: false, error: 'أدخل رابط الفيديو' }
+  if (!jobId) jobId = `tt-comments-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const comments = []
+  const seen = new Set()
   try {
-    await page.goto(videoUrl, { waitUntil: 'domcontentloaded' })
+    await page.goto(videoUrl, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
     await page.waitForTimeout(randomDelay(3000, 6000))
-    for (let i = 0; i < 3; i++) {
+    let stagnant = 0
+    // Incremental scroll + extract so rows stream live and we collect more than
+    // a single viewport. Use the documented data-e2e hooks (the old broad
+    // [class*="comment"] match grabbed unrelated nodes and capped at one pass).
+    while (comments.length < limit && stagnant < 6) {
+      if (globals.cancelFlags.get(jobId)) break
+      const before = comments.length
+      const batch = await page.evaluate(() => {
+        const out = []
+        document.querySelectorAll('[data-e2e="comment-level-1"], [data-e2e="comment-item"]').forEach((el) => {
+          const userEl = el.querySelector('a[href*="/@"]')
+          const href = userEl ? (userEl.getAttribute('href') || '') : ''
+          const m = href.match(/\/@([^/?]+)/)
+          const username = m ? m[1] : (userEl ? (userEl.innerText || '').trim() : '')
+          const textEl = el.querySelector('[data-e2e="comment-text"], p, span')
+          const text = (textEl ? textEl.innerText : el.innerText || '').trim()
+          out.push({ username, text, profile: username ? 'https://www.tiktok.com/@' + username : '' })
+        })
+        return out
+      })
+      const fresh = []
+      for (const c of batch) {
+        const key = (c.username || '') + '|' + (c.text || '').slice(0, 60)
+        if (!c.text || seen.has(key)) continue
+        seen.add(key)
+        comments.push(c)
+        fresh.push(c)
+        if (comments.length >= limit) break
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: comments.length, total: limit, data: fresh })
+      if (comments.length === before) stagnant++
+      else stagnant = 0
       await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
       await page.waitForTimeout(randomDelay(1500, 3000))
     }
-    const comments = await page.evaluate((lim) => {
-      const r = []
-      document.querySelectorAll('[data-e2e="comment-item"], [class*="CommentContent"], [class*="comment"]').forEach((el, i) => {
-        if (i >= lim) return
-        const userEl = el.querySelector('a[href*="/@"]')
-        r.push({ username: userEl?.innerText.trim() || '', text: el.innerText.trim(), profile: userEl?.href || '' })
-      })
-      return r
-    }, limit)
     saveLeads('tiktok', 'comments', comments)
-    return { success: true, data: comments, count: comments.length }
+    return { success: true, data: comments, count: comments.length, jobId, cancelled: globals.cancelFlags.get(jobId) }
   } catch (err) {
-    return { success: false, error: err.message }
+    return { success: false, error: err.message, partialData: comments, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
   }
 })
 
-ipcm('tiktok-extract-followers', async (e, { sessionId, username, limit = 100 }) => {
+ipcm('tiktok-extract-followers', async (e, { sessionId, username, limit = 100, jobId }) => {
   const page = globals.bm.getPage(sessionId)
   if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!username) return { success: false, error: 'أدخل اسم المستخدم' }
+  if (!jobId) jobId = `tt-followers-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const followers = []
+  const seen = new Set()
   try {
-    await page.goto(`https://www.tiktok.com/@${username}`, { waitUntil: 'domcontentloaded' })
+    await page.goto(`https://www.tiktok.com/@${String(username).replace(/^@/, '')}`, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
     await page.waitForTimeout(randomDelay(2000, 4000))
-    const followersLink = await page.$('a[href*="/followers"]')
-    if (followersLink) {
-      await smartClick(page, ['a[href*="/followers"]'], 'followers link')
-      await page.waitForTimeout(randomDelay(2000, 4000))
-      for (let i = 0; i < 3; i++) {
-        await page.evaluate(() => { const d = document.querySelector('[role="dialog"] div'); if (d) d.scrollTop = d.scrollHeight })
-        await page.waitForTimeout(randomDelay(1500, 3000))
-      }
-    }
-    const followers = await page.evaluate((lim) => {
-      const r = []
-      document.querySelectorAll('a[href*="/@"]').forEach((a, i) => {
-        if (i >= lim) return
-        r.push({ username: a.innerText.trim(), profile: a.href })
+    await smartClick(page, ['a[href*="/followers"]', '[data-e2e="followers"]', 'strong[data-e2e="followers-count"]'], 'followers link')
+    await page.waitForTimeout(randomDelay(2000, 3500))
+    let stagnant = 0
+    // BUGFIX: scope extraction to the followers DIALOG. The old code scraped
+    // every a[href*="/@"] on the whole page — page owner, suggested users and
+    // video authors all got mislabelled as "followers".
+    while (followers.length < limit && stagnant < 6) {
+      if (globals.cancelFlags.get(jobId)) break
+      const before = followers.length
+      const batch = await page.evaluate(() => {
+        const out = []
+        const scope = document.querySelector('[role="dialog"]') || document.body
+        scope.querySelectorAll('a[href*="/@"]').forEach((a) => {
+          const href = a.getAttribute('href') || ''
+          const m = href.match(/\/@([^/?]+)/)
+          if (!m) return
+          const handle = m[1]
+          const name = (a.innerText || '').split('\n').map((s) => s.trim()).filter(Boolean)[0] || handle
+          out.push({ username: handle, name, profile: 'https://www.tiktok.com/@' + handle })
+        })
+        return out
       })
-      return r
-    }, limit)
+      const fresh = []
+      for (const f of batch) {
+        if (seen.has(f.username)) continue
+        seen.add(f.username)
+        followers.push(f)
+        fresh.push(f)
+        if (followers.length >= limit) break
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: followers.length, total: limit, data: fresh })
+      if (followers.length === before) stagnant++
+      else stagnant = 0
+      await page.evaluate(() => { const d = document.querySelector('[role="dialog"] div'); if (d) d.scrollTop = d.scrollHeight })
+      await page.waitForTimeout(randomDelay(1500, 3000))
+    }
     saveLeads('tiktok', 'followers', followers)
-    return { success: true, data: followers, count: followers.length }
+    return { success: true, data: followers, count: followers.length, jobId, cancelled: globals.cancelFlags.get(jobId) }
   } catch (err) {
-    return { success: false, error: err.message }
+    return { success: false, error: err.message, partialData: followers, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
   }
 })
 
@@ -6604,29 +6848,57 @@ ipcm('pinterest-login', async (e, { username, password, headless = false, proxy 
   }
 })
 
-ipcm('pinterest-search', async (e, { sessionId, query, limit = 50 }) => {
+ipcm('pinterest-search', async (e, { sessionId, query, limit = 50, jobId }) => {
   const page = globals.bm.getPage(sessionId)
   if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!query) return { success: false, error: 'الكلمة المفتاحية مطلوبة' }
+  if (!jobId) jobId = `pin-search-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const pins = []
+  const seen = new Set()
   try {
-    await page.goto(`https://www.pinterest.com/search/pins/?q=${encodeURIComponent(query)}`, { waitUntil: 'domcontentloaded' })
+    await page.goto(`https://www.pinterest.com/search/pins/?q=${encodeURIComponent(query)}`, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
     await page.waitForTimeout(randomDelay(2000, 4000))
-    for (let i = 0; i < 5; i++) {
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
-      await page.waitForTimeout(randomDelay(1500, 3000))
-    }
-    const pins = await page.evaluate((lim) => {
-      const r = []
-      document.querySelectorAll('[data-test-id="pin"], .GrowthUnauthPinImage').forEach((el, i) => {
-        if (i >= lim) return
-        const img = el.querySelector('img')
-        const link = el.closest('a')
-        r.push({ title: img?.alt || '', image: img?.src || '', link: link?.href || '' })
+    let stagnant = 0
+    // Incremental scroll + extract so pins stream live. The old version grabbed
+    // el.closest('a') (an ANCESTOR) for the link which was usually null; the pin
+    // link is a DESCENDANT a[href*="/pin/"].
+    while (pins.length < limit && stagnant < 6) {
+      if (globals.cancelFlags.get(jobId)) break
+      const before = pins.length
+      const batch = await page.evaluate(() => {
+        const out = []
+        document.querySelectorAll('div[data-test-id="pin"], div[data-test-id="pinWrapper"]').forEach((el) => {
+          const a = el.querySelector('a[href*="/pin/"]')
+          const img = el.querySelector('img')
+          const link = a ? (a.href || '') : ''
+          if (!link && !(img && img.src)) return
+          out.push({ title: img ? (img.alt || '') : '', image: img ? (img.src || '') : '', link })
+        })
+        return out
       })
-      return r
-    }, limit)
-    return { success: true, data: pins, count: pins.length }
+      const fresh = []
+      for (const p of batch) {
+        const key = p.link || p.image
+        if (!key || seen.has(key)) continue
+        seen.add(key)
+        pins.push(p)
+        fresh.push(p)
+        if (pins.length >= limit) break
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: pins.length, total: limit, data: fresh })
+      if (pins.length === before) stagnant++
+      else stagnant = 0
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.waitForTimeout(randomDelay(1500, 2800))
+    }
+    saveLeads('pinterest', 'search', pins.map(p => ({ name: p.title, url: p.link, image: p.image })))
+    return { success: true, data: pins, count: pins.length, jobId, cancelled: globals.cancelFlags.get(jobId) }
   } catch (err) {
-    return { success: false, error: err.message }
+    return { success: false, error: err.message, partialData: pins, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
   }
 })
 
@@ -7072,24 +7344,55 @@ ipcm('threads-login', async (e, { username, password, headless = false, proxy })
   }
 })
 
-ipcm('threads-extract', async (e, { sessionId, url, limit = 50 }) => {
+ipcm('threads-extract', async (e, { sessionId, url, limit = 50, jobId }) => {
   const page = globals.bm.getPage(sessionId)
   if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!url) return { success: false, error: 'أدخل رابط الصفحة أو المنشور' }
+  if (!jobId) jobId = `th-extract-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const data = []
+  const seen = new Set()
   try {
-    await page.goto(url, { waitUntil: 'domcontentloaded' })
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
     await page.waitForTimeout(randomDelay(2000, 4000))
-    const data = await page.evaluate((lim) => {
-      const r = []
-      document.querySelectorAll('a[href*="/@"]').forEach((a, i) => {
-        if (i >= lim) return
-        r.push({ username: a.innerText.trim(), profile: a.href })
+    let stagnant = 0
+    // Incremental scroll + stream. Parse the username from the href (the old
+    // innerText could be empty/duplicated) and dedupe.
+    while (data.length < limit && stagnant < 6) {
+      if (globals.cancelFlags.get(jobId)) break
+      const before = data.length
+      const batch = await page.evaluate(() => {
+        const out = []
+        document.querySelectorAll('a[href^="/@"]').forEach((a) => {
+          const href = a.getAttribute('href') || ''
+          const m = href.match(/^\/@([^/?]+)/)
+          if (!m) return
+          const username = m[1]
+          out.push({ username, name: (a.innerText || '').trim() || username, profile: 'https://www.threads.net/@' + username })
+        })
+        return out
       })
-      return r
-    }, limit)
+      const fresh = []
+      for (const d of batch) {
+        if (seen.has(d.username)) continue
+        seen.add(d.username)
+        data.push(d)
+        fresh.push(d)
+        if (data.length >= limit) break
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: data.length, total: limit, data: fresh })
+      if (data.length === before) stagnant++
+      else stagnant = 0
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.waitForTimeout(randomDelay(1500, 2800))
+    }
     saveLeads('threads', 'extract', data)
-    return { success: true, data, count: data.length }
+    return { success: true, data, count: data.length, jobId, cancelled: globals.cancelFlags.get(jobId) }
   } catch (err) {
-    return { success: false, error: err.message }
+    return { success: false, error: err.message, partialData: data, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
   }
 })
 
@@ -7287,23 +7590,62 @@ ipcm('reddit-login', async (e, { username, password, headless = false, proxy }) 
   }
 })
 
-ipcm('reddit-search', async (e, { sessionId, query, limit = 50 }) => {
+ipcm('reddit-search', async (e, { sessionId, query, limit = 50, jobId }) => {
   const page = globals.bm.getPage(sessionId)
   if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!query) return { success: false, error: 'الكلمة المفتاحية مطلوبة' }
+  if (!jobId) jobId = `rd-search-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const posts = []
+  const seen = new Set()
   try {
-    await page.goto(`https://www.reddit.com/search/?q=${encodeURIComponent(query)}`, { waitUntil: 'domcontentloaded' })
+    await page.goto(`https://www.reddit.com/search/?q=${encodeURIComponent(query)}`, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
     await page.waitForTimeout(randomDelay(2000, 4000))
-    const results = await page.evaluate((lim) => {
-      const r = []
-      document.querySelectorAll('a[data-click-id="body"]').forEach((a, i) => {
-        if (i >= lim) return
-        r.push({ title: a.innerText.trim(), link: a.href })
+    let stagnant = 0
+    // Modern Reddit renders <shreddit-post> web components; the old
+    // a[data-click-id="body"] selector returns nothing there. Support both,
+    // scroll incrementally, and stream rows live.
+    while (posts.length < limit && stagnant < 6) {
+      if (globals.cancelFlags.get(jobId)) break
+      const before = posts.length
+      const batch = await page.evaluate(() => {
+        const out = []
+        document.querySelectorAll('shreddit-post, a[data-click-id="body"], a[slot="full-post-link"], a[href*="/comments/"]').forEach((node) => {
+          let link = '', title = ''
+          if (node.tagName === 'SHREDDIT-POST') {
+            title = node.getAttribute('post-title') || ''
+            const permalink = node.getAttribute('permalink') || ''
+            link = permalink ? ('https://www.reddit.com' + permalink) : ''
+          } else {
+            const href = node.getAttribute('href') || ''
+            link = href.startsWith('http') ? href : ('https://www.reddit.com' + href)
+            title = (node.innerText || '').trim()
+          }
+          if (link) out.push({ title, link })
+        })
+        return out
       })
-      return r
-    }, limit)
-    return { success: true, data: results, count: results.length }
+      const fresh = []
+      for (const p of batch) {
+        if (!p.link || seen.has(p.link)) continue
+        seen.add(p.link)
+        posts.push(p)
+        fresh.push(p)
+        if (posts.length >= limit) break
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: posts.length, total: limit, data: fresh })
+      if (posts.length === before) stagnant++
+      else stagnant = 0
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.waitForTimeout(randomDelay(1500, 2800))
+    }
+    saveLeads('reddit', 'search', posts.map(p => ({ name: p.title, url: p.link })))
+    return { success: true, data: posts, count: posts.length, jobId, cancelled: globals.cancelFlags.get(jobId) }
   } catch (err) {
-    return { success: false, error: err.message }
+    return { success: false, error: err.message, partialData: posts, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
   }
 })
 
@@ -7680,13 +8022,11 @@ async function resolveMapsPlace(page, placeInput) {
   return { ok: false, error: 'لم يتم العثور على المكان — تأكد من الاسم أو الرابط' }
 }
 
-async function enrichBusinessDetails(context, business, jobId) {
+async function enrichBusinessDetails(detailPage, context, business, jobId) {
   if (jobId && globals.cancelFlags.get(jobId)) return
-  let detailPage = null
   try {
-    detailPage = await context.newPage()
-    await detailPage.goto(business.profile, { waitUntil: 'domcontentloaded', timeout: 20000 }).catch(() => {})
-    await detailPage.waitForTimeout(1000)
+    await detailPage.goto(business.profile, { waitUntil: 'domcontentloaded', timeout: 12000 }).catch(() => {})
+    await detailPage.waitForTimeout(600)
 
     // Scrape details
     const details = await detailPage.evaluate(() => {
@@ -7751,7 +8091,7 @@ async function enrichBusinessDetails(context, business, jobId) {
     // Scrape email from website
     if (business.website) {
       try {
-        const response = await context.request.get(business.website, { timeout: 6000 }).catch(() => null)
+        const response = await context.request.get(business.website, { timeout: 5000 }).catch(() => null)
         if (response) {
           const html = await response.text().catch(() => '')
           const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g
@@ -7769,27 +8109,66 @@ async function enrichBusinessDetails(context, business, jobId) {
     }
   } catch (err) {
     console.error('enrichBusinessDetails error:', err.message)
-  } finally {
-    if (detailPage) {
-      await detailPage.close().catch(() => {})
-    }
   }
+}
+
+// Navigate to Google Maps and type query in the search box for reliable location targeting.
+// Using the search box is more reliable than URL-only because Google Maps
+// respects the typed location better than the URL param which often falls
+// back to the browser's local geolocation.
+async function _navigateToMapsSearch(page, query, location) {
+  const fullQuery = location ? `${query} in ${location}` : query
+  await page.goto('https://www.google.com/maps', { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
+  await page.waitForTimeout(randomDelay(1500, 2500))
+
+  // Type into the search box for reliable geo-targeting
+  const typed = await page.evaluate((q) => {
+    const input = document.querySelector('input#searchboxinput') ||
+                  document.querySelector('input[name="q"]') ||
+                  document.querySelector('input[aria-label*="Search"]') ||
+                  document.querySelector('input[aria-label*="بحث"]')
+    if (input) {
+      input.value = ''
+      input.focus()
+      // Use native input setter to trigger React/Angular change detection
+      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
+      nativeInputValueSetter.call(input, q)
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+      input.dispatchEvent(new Event('change', { bubbles: true }))
+      return true
+    }
+    return false
+  }, fullQuery).catch(() => false)
+
+  if (typed) {
+    // Press Enter to search
+    await page.keyboard.press('Enter')
+    await page.waitForTimeout(randomDelay(4000, 6000))
+  } else {
+    // Fallback: use URL-based navigation
+    await page.goto(`https://www.google.com/maps/search/${encodeURIComponent(fullQuery)}`, {
+      waitUntil: 'domcontentloaded', timeout: 60000,
+    }).catch(() => {})
+    await page.waitForTimeout(randomDelay(3500, 5500))
+  }
+
+  // Wait for results feed to appear
+  await page.waitForSelector('div[role="feed"], a[href*="/maps/place/"]', { timeout: 10000 }).catch(() => {})
+  await page.waitForTimeout(randomDelay(1000, 2000))
 }
 
 async function _gMapsExtractCurrentPanel(page, limit, onProgress, jobId) {
   const businesses = []
   const seenNames = new Set()
   let stagnantCycles = 0
-  // Adaptive stagnation budget: small jobs (50-200) give up fast; large jobs
-  // (1000-2000) keep trying because Google sometimes pauses for 5-10s before
-  // lazy-loading the next page. Cap at 25 cycles (~60s of pure stagnation).
-  const MAX_STAGNANT = Math.min(25, Math.max(6, Math.ceil(limit / 100)))
-  // Also bail if we've seen Google's "You've reached the end of the list"
-  // banner, which is the authoritative signal that no more results exist.
+  // v1.26: Raised minimum patience from 6 to 15 cycles so small queries
+  // don't bail before Google finishes lazy-loading the initial batch.
+  const MAX_STAGNANT = Math.min(30, Math.max(15, Math.ceil(limit / 50)))
   let reachedEnd = false
 
-  // Wait for the results panel feed to appear
+  // Wait for the results panel feed to appear + extra settle time
   await page.waitForSelector('div[role="feed"], div[role="article"], a[href*="/maps/place/"]', { timeout: 15000 }).catch(() => {})
+  await page.waitForTimeout(2000)
 
   while (businesses.length < limit && stagnantCycles < MAX_STAGNANT && !reachedEnd) {
     const beforeCount = businesses.length
@@ -7797,14 +8176,12 @@ async function _gMapsExtractCurrentPanel(page, limit, onProgress, jobId) {
     // Scrape via DOM evaluation — much faster than per-card $eval
     const cards = await page.evaluate(() => {
       const results = []
-      // Multiple selector strategies — Google rotates these frequently.
       const anchors = document.querySelectorAll('a[href*="/maps/place/"]')
       const seenHref = new Set()
       for (const a of anchors) {
         const href = a.getAttribute('href')
         if (!href || seenHref.has(href)) continue
         seenHref.add(href)
-        // Walk up to find the card container with all the info
         let card = a.closest('div[role="article"]') || a.closest('[jslog]') || a.parentElement?.parentElement
         if (!card) continue
         const text = (card.innerText || '').trim()
@@ -7812,16 +8189,12 @@ async function _gMapsExtractCurrentPanel(page, limit, onProgress, jobId) {
         const lines = text.split('\n').map(s => s.trim()).filter(Boolean)
         if (lines.length === 0) continue
         const name = lines[0]
-        // Try to extract: rating (number + parentheses for reviewCount)
         const ratingMatch = text.match(/(\d+[.,]\d)\s*(?:\((\d+)\))?/)
         const rating = ratingMatch ? ratingMatch[1].replace(',', '.') : ''
         const reviewCount = ratingMatch ? (ratingMatch[2] || '') : ''
-        // Phone is usually formatted like +20 1xxx... or 0xxx
         const phoneMatch = text.match(/(\+?\d[\d\s()+-]{8,})/g)
         const phone = phoneMatch && phoneMatch.length ? phoneMatch[phoneMatch.length - 1].trim() : ''
-        // Type/category — usually the second non-rating line
         const type = lines.find(l => /^[؀-ۿa-zA-Z][^\d]+$/.test(l) && l !== name) || ''
-        // Address — line containing a digit but not phone-shaped
         const address = lines.find(l => l !== name && l !== type && l.length > 5 && /\d/.test(l) && !l.match(/^\d+[.,]\d/)) || ''
         const placeUrl = a.href
         results.push({ name, rating, reviewCount, type, address, phone, profile: placeUrl })
@@ -7829,14 +8202,17 @@ async function _gMapsExtractCurrentPanel(page, limit, onProgress, jobId) {
       return results
     })
 
+    const newThisCycle = []
     for (const c of cards) {
       if (!c.name || seenNames.has(c.name)) continue
       seenNames.add(c.name)
       businesses.push(c)
+      newThisCycle.push(c)
       if (businesses.length >= limit) break
     }
 
-    if (onProgress) onProgress(businesses.length, limit)
+    // Pass rows added THIS cycle so callers can stream them to the UI live.
+    if (onProgress) onProgress(businesses.length, limit, newThisCycle)
 
     if (businesses.length === beforeCount) {
       stagnantCycles++
@@ -7846,16 +8222,20 @@ async function _gMapsExtractCurrentPanel(page, limit, onProgress, jobId) {
 
     if (businesses.length >= limit) break
 
-    // SCROLL THE RESULTS PANEL (left side), not the window. Google Maps
-    // uses a virtualized feed inside [role="feed"] — scrolling that element
-    // triggers lazy-load of more cards. Also detect the "end of list"
-    // banner so we bail cleanly without burning the stagnation budget.
+    // v1.26: INCREMENTAL scroll (+2000px at a time) instead of jumping to
+    // feed.scrollHeight. Google's virtualized feed loads cards incrementally
+    // and a full jump can skip triggers. Also scope end-of-list detection
+    // to the feed element only (not the full body which is enormous).
     reachedEnd = await page.evaluate(() => {
       const feed = document.querySelector('div[role="feed"]') || document.querySelector('[aria-label*="Results"]')
-      if (feed) feed.scrollTop = feed.scrollHeight
-      else window.scrollTo(0, document.body.scrollHeight)
-      // Google shows one of these strings when the feed is exhausted (EN/AR).
-      const text = (document.body.innerText || '').toLowerCase()
+      if (feed) {
+        feed.scrollBy(0, 2000)
+      } else {
+        window.scrollBy(0, 2000)
+      }
+      // Check for end-of-list inside the feed container only (fast).
+      const checkEl = feed || document.body
+      const text = (checkEl.innerText || '').slice(-500).toLowerCase()
       return (
         text.includes("you've reached the end of the list") ||
         text.includes('end of the list') ||
@@ -7863,18 +8243,24 @@ async function _gMapsExtractCurrentPanel(page, limit, onProgress, jobId) {
         text.includes('لقد وصلت إلى نهاية')
       )
     })
-    // Tighter wait for small jobs, longer for big ones (Google rate-limits
-    // aggressive scrolling and may stop returning cards if we go too fast).
-    const waitMs = limit > 500 ? (1800 + Math.random() * 1700) : (1200 + Math.random() * 1200)
+    const waitMs = limit > 500 ? (2000 + Math.random() * 2000) : (1500 + Math.random() * 1500)
     await page.waitForTimeout(waitMs)
   }
 
-  // Enrich businesses sequentially using a new tab
+  // v1.26: Enrich businesses using ONE reusable detail tab (not a new tab per business).
   const context = page.context()
-  for (let i = 0; i < businesses.length; i++) {
-    if (jobId && globals.cancelFlags.get(jobId)) break
-    if (onProgress) onProgress(i, businesses.length)
-    await enrichBusinessDetails(context, businesses[i], jobId)
+  let detailPage = null
+  try {
+    detailPage = await context.newPage()
+    for (let i = 0; i < businesses.length; i++) {
+      if (jobId && globals.cancelFlags.get(jobId)) break
+      if (onProgress) onProgress(i, businesses.length)
+      await enrichBusinessDetails(detailPage, context, businesses[i], jobId)
+    }
+  } catch (err) {
+    console.error('Enrichment loop error:', err.message)
+  } finally {
+    if (detailPage) await detailPage.close().catch(() => {})
   }
 
   return businesses
@@ -7895,11 +8281,10 @@ ipcm('google-maps-extract', async (e, { searchQuery, location, limit = 50, headl
     const page = globals.bm.getPage(sessionId)
     if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
     const queryText = location ? `${searchQuery} in ${location}` : searchQuery
-    await page.goto(`https://www.google.com/maps/search/${encodeURIComponent(queryText)}`, { waitUntil: 'domcontentloaded', timeout: 60000 })
-    await page.waitForTimeout(randomDelay(3500, 6000))
+    await _navigateToMapsSearch(page, searchQuery, location)
 
-    const businesses = await _gMapsExtractCurrentPanel(page, limit, (count, max) => {
-      sendProgress(sender, jobId, { type: 'progress', count, total: max })
+    const businesses = await _gMapsExtractCurrentPanel(page, limit, (count, max, newRows) => {
+      sendProgress(sender, jobId, { type: 'progress', count, total: max, data: (newRows || []).map(b => ({ ...b, source: queryText })) })
     }, jobId)
 
     saveLeads('google-maps', 'maps-extract', businesses.map(b => ({
@@ -7973,13 +8358,9 @@ ipcm('google-maps-bulk-extract', async (e, { keywords = [], location = '', limit
       })
 
       try {
-        await pageRef.goto(`https://www.google.com/maps/search/${encodeURIComponent(queryText)}`, {
-          waitUntil: 'domcontentloaded',
-          timeout: 60000,
-        })
-        await pageRef.waitForTimeout(randomDelay(3500, 5500))
+        await _navigateToMapsSearch(pageRef, keyword, location)
 
-        const businesses = await _gMapsExtractCurrentPanel(pageRef, cleanLimit, (cnt, tot) => {
+        const businesses = await _gMapsExtractCurrentPanel(pageRef, cleanLimit, (cnt, tot, newRows) => {
           sendProgress(sender, jobId, {
             type: 'keyword-progress',
             keywordIndex: i + 1,
@@ -7988,6 +8369,7 @@ ipcm('google-maps-bulk-extract', async (e, { keywords = [], location = '', limit
             count: cnt,
             target: tot,
             grandTotal: allResults.length + cnt,
+            data: (newRows || []).map(b => ({ ...b, keyword, source: queryText })),
           })
         }, jobId)
 
@@ -8127,13 +8509,9 @@ ipcm('google-maps-bulk-extract-matrix', async (e, { keywords = [], cities = [], 
         })
 
         try {
-          await pageRef.goto(`https://www.google.com/maps/search/${encodeURIComponent(queryText)}`, {
-            waitUntil: 'domcontentloaded',
-            timeout: 60000,
-          })
-          await pageRef.waitForTimeout(randomDelay(3500, 5500))
+          await _navigateToMapsSearch(pageRef, keyword, city)
 
-          const businesses = await _gMapsExtractCurrentPanel(pageRef, cleanLimit, (cnt, tot) => {
+          const businesses = await _gMapsExtractCurrentPanel(pageRef, cleanLimit, (cnt, tot, newRows) => {
             sendProgress(sender, jobId, {
               type: 'combo-progress',
               comboIndex,
@@ -8143,6 +8521,7 @@ ipcm('google-maps-bulk-extract-matrix', async (e, { keywords = [], cities = [], 
               count: cnt,
               target: tot,
               grandTotal: allResults.length + cnt,
+              data: (newRows || []).map(b => ({ ...b, city, keyword, source: queryText })),
             })
           }, jobId)
 
@@ -8362,10 +8741,12 @@ ipcm('olx-extract', async (e, { country, keyword, category, limit = 50, jobId, s
       })
 
       let added = 0
+      const newItems = []
       for (const item of batch) {
         if (!item.link || seenLinks.has(item.link)) continue
         seenLinks.add(item.link)
         listings.push(item)
+        newItems.push(item)
         added++
         if (listings.length >= limit) break
       }
@@ -8374,77 +8755,68 @@ ipcm('olx-extract', async (e, { country, keyword, category, limit = 50, jobId, s
       if (added === 0) emptyPages++
       else emptyPages = 0
 
-      sendProgress(sender, jobId, { type: 'progress', count: listings.length, target: limit, page: pageNum })
+      sendProgress(sender, jobId, { type: 'progress', count: listings.length, target: limit, page: pageNum, data: newItems })
       pageNum++
     }
 
-    // Visit detail pages to extract phone numbers
-    const detailPage = await page.context().newPage()
-    for (let i = 0; i < listings.length; i++) {
-      if (globals.cancelFlags.get(jobId)) break
-      const item = listings[i]
-      if (item.link) {
-        try {
-          sendProgress(sender, jobId, { 
-            type: 'progress', 
-            count: i, 
-            target: listings.length, 
-            message: `جاري استخراج رقم الهاتف للإعلان ${i + 1}/${listings.length}` 
-          })
+    // v1.26: Visit detail pages to extract phone numbers.
+    // Skip if too many listings (>200) to prevent long hangs.
+    // Navigate to about:blank between listings to prevent redirect loops.
+    if (listings.length <= 200) {
+      let detailPage = null
+      try {
+        detailPage = await page.context().newPage()
+        for (let i = 0; i < listings.length; i++) {
+          if (globals.cancelFlags.get(jobId)) break
+          const item = listings[i]
+          if (!item.link) continue
+          try {
+            sendProgress(sender, jobId, { 
+              type: 'progress', 
+              count: i, 
+              target: listings.length, 
+              message: `جاري استخراج رقم الهاتف للإعلان ${i + 1}/${listings.length}` 
+            })
 
-          await detailPage.goto(item.link, { waitUntil: 'domcontentloaded', timeout: 20000 }).catch(() => {})
-          await detailPage.waitForTimeout(1000 + Math.random() * 1000)
+            await detailPage.goto(item.link, { waitUntil: 'domcontentloaded', timeout: 12000 })
+            await detailPage.waitForTimeout(800 + Math.random() * 800)
 
-          const phoneButtonSelectors = [
-            'button[data-testid="phone-button"]',
-            'button:has-text("Show phone number")',
-            'button:has-text("اظهار رقم الهاتف")',
-            'button:has-text("إظهار رقم الهاتف")',
-            'button:has-text("اتصل")',
-            '[data-testid="communication-call-button"]',
-            'a[href^="tel:"]',
-            'button[aria-label="Call"]',
-            'button[aria-label="اتصال"]'
-          ]
-
-          let clicked = false
-          for (const sel of phoneButtonSelectors) {
-            const btn = await detailPage.$(sel).catch(() => null)
-            if (btn) {
-              await btn.scrollIntoViewIfNeeded().catch(() => {})
-              await btn.click({ force: true }).catch(() => {})
-              clicked = true
-              break
+            // Try clicking show-phone button (simplified selectors - no :has-text)
+            const phoneBtn = await detailPage.$('button[data-testid="phone-button"], [data-testid="communication-call-button"], a[href^="tel:"], button[aria-label="Call"], button[aria-label="اتصال"]').catch(() => null)
+            if (phoneBtn) {
+              await phoneBtn.scrollIntoViewIfNeeded().catch(() => {})
+              await phoneBtn.click({ force: true }).catch(() => {})
+              await detailPage.waitForTimeout(1200)
+            } else {
+              // Text-based fallback for show-phone buttons
+              await detailPage.evaluate(() => {
+                const btns = Array.from(document.querySelectorAll('button'))
+                const b = btns.find(x => /show phone|اظهار رقم|إظهار رقم|اتصل/i.test(x.innerText || ''))
+                if (b) b.click()
+              }).catch(() => {})
+              await detailPage.waitForTimeout(1200)
             }
-          }
-          if (clicked) {
-            await detailPage.waitForTimeout(1500)
-          }
 
-          const phone = await detailPage.evaluate(() => {
-            const telLink = document.querySelector('a[href^="tel:"]')
-            if (telLink) {
-              return telLink.href.replace('tel:', '').trim()
-            }
-            const text = document.body.innerText || ''
-            const phoneRegex = /(\+?\d[\d\s-]{7,}\d)/g
-            const matches = text.match(phoneRegex)
-            if (matches) {
-              const clean = matches.map(p => p.replace(/[\s-]/g, '')).filter(p => p.length >= 8 && p.length <= 15)
-              if (clean.length > 0) return clean[0]
-            }
-            return ''
-          }).catch(() => '')
+            // Extract phone
+            const phone = await detailPage.evaluate(() => {
+              const telLink = document.querySelector('a[href^="tel:"]')
+              if (telLink) return telLink.href.replace('tel:', '').trim()
+              return ''
+            }).catch(() => '')
 
-          if (phone) {
-            item.phone = phone
+            if (phone) item.phone = phone
+          } catch {
+            // Skip this listing on any error
           }
-        } catch (err) {
-          console.error(`Error loading Dubizzle details for ${item.link}:`, err.message)
+          // Navigate away to prevent redirect loops from previous page
+          await detailPage.goto('about:blank', { timeout: 5000 }).catch(() => {})
         }
+      } catch (err) {
+        console.error('Phone extraction error:', err.message)
+      } finally {
+        if (detailPage) await detailPage.close().catch(() => {})
       }
     }
-    await detailPage.close().catch(() => {})
 
     // Persist via saveLeads (writes to DB + CSV with sanitization).
     saveLeads('olx', `${country || 'egypt'}-${kwSlug}`, listings.map((l) => ({
@@ -8554,7 +8926,8 @@ async function _postSingleReview(page, { placeUrl, rating, review }) {
   const dialog = await targetFrame.$('div[role="dialog"]').catch(() => null)
   const dialogScoped = !!dialog
 
-  const starClicked = await targetFrame.evaluate(({ n, scoped }) => {
+  // v1.26: Use PointerEvent with real coordinates for Google's Lit/Angular components
+  let starClicked = await targetFrame.evaluate(({ n, scoped }) => {
     const root = (scoped && document.querySelector('div[role="dialog"]')) || document
     let stars = Array.from(root.querySelectorAll('[role="radiogroup"] [role="radio"]'))
     if (stars.length < 5) {
@@ -8579,18 +8952,36 @@ async function _postSingleReview(page, { placeUrl, rating, review }) {
     }
     
     if (star) {
-      const clickElement = (el) => {
-        const events = ['focus', 'pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click']
-        for (const ev of events) {
-          el.dispatchEvent(new Event(ev, { bubbles: true }))
-          el.dispatchEvent(new MouseEvent(ev, { bubbles: true, cancelable: true, view: window }))
-        }
-      }
-      clickElement(star)
+      // Use getBoundingClientRect for precise center coordinates
+      const rect = star.getBoundingClientRect()
+      const cx = rect.left + rect.width / 2
+      const cy = rect.top + rect.height / 2
+      const eventInit = { bubbles: true, cancelable: true, view: window, clientX: cx, clientY: cy, screenX: cx, screenY: cy, button: 0, buttons: 1 }
+      star.dispatchEvent(new PointerEvent('pointerover', { ...eventInit, bubbles: true }))
+      star.dispatchEvent(new PointerEvent('pointerenter', { ...eventInit, bubbles: false }))
+      star.dispatchEvent(new PointerEvent('pointerdown', { ...eventInit, bubbles: true }))
+      star.dispatchEvent(new MouseEvent('mousedown', { ...eventInit, bubbles: true }))
+      star.dispatchEvent(new PointerEvent('pointerup', { ...eventInit, bubbles: true }))
+      star.dispatchEvent(new MouseEvent('mouseup', { ...eventInit, bubbles: true }))
+      star.dispatchEvent(new MouseEvent('click', { ...eventInit, bubbles: true }))
+      // Also try native click as fallback
+      star.click()
       return true
     }
     return false
   }, { n: rating, scoped: dialogScoped }).catch(() => false)
+
+  // Fallback: try Playwright-level click on the star element
+  if (!starClicked) {
+    try {
+      const starSel = `[role="radiogroup"] [role="radio"]:nth-child(${rating})`
+      const starEl = await targetFrame.$(starSel).catch(() => null)
+      if (starEl) {
+        await starEl.click({ force: true, timeout: 3000 })
+        starClicked = true
+      }
+    } catch { /* defensive */ }
+  }
   if (!starClicked) return { success: false, error: `تعذّر ضبط تقييم ${rating} نجوم` }
   await page.waitForTimeout(randomDelay(1200, 2200))
 
@@ -8954,25 +9345,28 @@ ipcm('google-reviews-extract', async (e, { placeUrl, limit = 100, sortBy = 'newe
         return out
       })
 
+      const newReviews = []
       for (const r of batch) {
         const key = r.id || `${r.author}|${r.date}|${r.text?.slice(0, 50)}`
         if (seen.has(key)) continue
         seen.add(key)
         reviews.push(r)
+        newReviews.push(r)
         if (reviews.length >= limit) break
       }
 
-      sendProgress(sender, jobId, { type: 'progress', count: reviews.length, target: limit })
+      sendProgress(sender, jobId, { type: 'progress', count: reviews.length, target: limit, data: newReviews })
 
       if (reviews.length === before) stagnant++
       else stagnant = 0
       if (reviews.length >= limit) break
 
-      // Scroll the reviews feed (left side panel) — same trick as Maps extract
+      // Scroll the reviews feed incrementally (same fix as Maps extract)
       await page.evaluate(() => {
         const feed = document.querySelector('[role="feed"], div[aria-label*="review" i]')
-        if (feed) feed.scrollTop = feed.scrollHeight
-        else window.scrollTo(0, document.body.scrollHeight)
+          || document.querySelector('div.m6QErb.DxyBCb.kA9KIf.dS8AEf')
+        if (feed) feed.scrollBy(0, 2000)
+        else window.scrollBy(0, 2000)
       })
       await page.waitForTimeout(randomDelay(1800, 2800))
     }
@@ -9041,24 +9435,67 @@ ipcm('send-email', async (e, { provider, username, password, to, subject, body, 
 })
 
 // ==================== IPC: AUTO POINT ====================
-// NOTE: Stub implementation — navigates to site only, full automation pending
-ipcm('auto-point-run', async (e, { platform, site, interactionType, count, delay, headless = false }) => {
+// Points-exchange automation (like4like / kingdomlikes). The OLD version was a
+// stub: it opened the site, immediately CLOSED the tab, and falsely returned
+// success without performing a single interaction. This version keeps the
+// browser OPEN (so the user's login session persists), attempts the real
+// earn/like buttons in a loop, streams progress, supports cancel, and reports
+// the TRUE number of interactions performed.
+ipcm('auto-point-run', async (e, { platform, site, interactionType, count = 50, delay = 5, headless = false, jobId }) => {
   let sessionId = null
+  if (!jobId) jobId = `autopoint-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const results = []
   try {
-    const res = await globals.bm.launch({ headless, platform: 'auto-point' })
-    if (!res.success) return res
-    sessionId = res.sessionId
+    const launchRes = await globals.bm.launch({ headless: false, platform: 'auto-point' })
+    if (!launchRes.success) return launchRes
+    sessionId = launchRes.sessionId
     const page = globals.bm.getPage(sessionId)
-    let url = site
-    if (site === 'like4like') url = 'https://www.like4like.org'
-    else if (site === 'kingdomlikes') url = 'https://kingdomlikes.com'
-    await page.goto(url, { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(randomDelay(2000, 4000))
-    await globals.bm.close(sessionId)
-    return { success: true, message: `تم بدء التفاعل على ${platform} من ${site}` }
+    const siteMap = {
+      like4like: 'https://www.like4like.org/user/',
+      kingdomlikes: 'https://kingdomlikes.com/earn',
+    }
+    const url = siteMap[site] || site || 'https://www.like4like.org/user/'
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+    await page.waitForTimeout(randomDelay(2500, 4000))
+
+    let done = 0
+    const max = Math.min(Math.max(parseInt(count) || 10, 1), 500)
+    const waitMs = Math.max(2, parseInt(delay) || 5) * 1000
+    for (let i = 0; i < max; i++) {
+      if (globals.cancelFlags.get(jobId)) break
+      const clicked = await smartActionClick(page, [
+        'a.start-confirm', 'button.btn-start', 'a.earn', 'button.like-btn',
+        'a[onclick*="like"]', 'a.btn-success:not(.disabled)', '.task-item button',
+        'button:has-text("Like")', 'button:has-text("Follow")', 'a:has-text("Start")',
+      ], 'earn action')
+      results.push({ index: i + 1, type: interactionType || 'like', status: clicked ? 'done' : 'skipped' })
+      if (clicked) done++
+      sendProgress(sender, jobId, { type: 'progress', count: done, total: max, last: results[results.length - 1] })
+      // If nothing worked in the first few tries the user is almost certainly
+      // not logged in — stop early instead of spinning uselessly.
+      if (done === 0 && i >= 4) break
+      await page.waitForTimeout(waitMs + Math.random() * 1500)
+    }
+    // Leave the browser OPEN so the points-site session persists for re-runs.
+    return {
+      success: true,
+      data: results,
+      count: done,
+      total: max,
+      sessionId,
+      jobId,
+      cancelled: globals.cancelFlags.get(jobId),
+      message: done > 0
+        ? `تم تنفيذ ${done} تفاعل على ${site}`
+        : `افتح ${site} وسجّل الدخول في المتصفح المفتوح ثم أعد التشغيل — لم يُعثر على أزرار تفاعل بعد`,
+    }
   } catch (err) {
     if (sessionId) await safeClose(sessionId)
-    return { success: false, error: err.message }
+    return { success: false, error: err.message, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
   }
 })
 

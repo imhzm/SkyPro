@@ -8,8 +8,11 @@ import {
   Plus,
   Loader2,
   Zap,
+  Eye,
+  EyeOff,
 } from 'lucide-react'
 import { useAppStore } from '../../stores/appStore'
+import { useBackgroundMode } from '../../lib/backgroundMode'
 
 export interface BannerAccount {
   id: number
@@ -53,6 +56,7 @@ export default function AccountCycleBanner({
   storageKey,
 }: AccountCycleBannerProps) {
   const { setActivePlatform } = useAppStore()
+  const [bgOn, setBgOn] = useBackgroundMode(platformId)
   const filtered = useMemo(
     () => accounts.filter((a) => a.platform === platformId),
     [accounts, platformId],
@@ -169,6 +173,19 @@ export default function AccountCycleBanner({
         </div>
 
         <div className="flex items-center gap-1.5 flex-shrink-0">
+          <button
+            onClick={() => setBgOn(!bgOn)}
+            className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-all"
+            style={{
+              color: bgOn ? '#ffffff' : '#475569',
+              background: bgOn ? 'linear-gradient(135deg, #0a6cf1, #8b2cf5)' : 'rgba(148, 163, 184, 0.12)',
+              border: `1px solid ${bgOn ? 'transparent' : 'rgba(148, 163, 184, 0.30)'}`,
+            }}
+            title="تشغيل المتصفح مخفيًا في الخلفية حتى لا يزعجك. للمنصات ذات الدخول اليدوي (جوجل / تيك توك / تيليجرام): سجّل الدخول أول مرة والوضع مُطفأ، ثم فعّله."
+          >
+            {bgOn ? <EyeOff size={12} /> : <Eye size={12} />}
+            {bgOn ? 'الخلفية: مُفعّل' : 'وضع الخلفية'}
+          </button>
           {filtered.length > 1 && (
             <button
               onClick={toggleAll}

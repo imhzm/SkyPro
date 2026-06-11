@@ -1,5 +1,7 @@
 import { useState, useRef } from 'react'
 import { usePlatform } from '../../hooks/usePlatform'
+import { makeJobId } from '../../lib/jobId'
+import { getBackgroundMode } from '../../lib/backgroundMode'
 import { useAccountsStore } from '../../stores/accountsStore'
 import type { Account } from '../../stores/accountsStore'
 import AccountSelector from '../../components/common/AccountSelector'
@@ -38,6 +40,7 @@ export default function LinkedinModule() {
     loading, setLoading, message, error, showMsg, sessionId, setSessionId,
     checkSession, clearSession, accounts, results, loadAccounts, loadResults,
     handleExport, clearResults, cycleActive, cycleProgress, startCycle, stopCycle,
+    liveRows, beginLiveJob, endLiveJob,
   } = usePlatform('linkedin')
   const { accounts: allAccounts, loadAccounts: loadAllAccounts } = useAccountsStore()
 
@@ -110,7 +113,7 @@ export default function LinkedinModule() {
     if (!loginForm.username || !loginForm.password) { showMsg('يرجى إدخال البيانات', true); return }
     setLoading(true)
     try {
-      const res = await window.electronAPI.linkedinLogin({ username: loginForm.username, password: loginForm.password, headless: false, proxy: loginForm.proxy || undefined })
+      const res = await window.electronAPI.linkedinLogin({ username: loginForm.username, password: loginForm.password, headless: getBackgroundMode('linkedin'), proxy: loginForm.proxy || undefined })
       if (res.success) { setSessionId(res.sessionId || ''); showMsg('تم تسجيل الدخول بنجاح!'); await loadAccounts(); setShowLoginPanel(false) }
       else showMsg(res.error || 'فشل تسجيل الدخول', true)
     } catch (err: any) { showMsg(err.message || 'خطأ في الاتصال', true) }
@@ -136,7 +139,7 @@ export default function LinkedinModule() {
     }
     setLoginForm({ ...loginForm, username: account.username, password: account.password || '' })
     try {
-      const res = await window.electronAPI.linkedinLogin({ accountId: account.id, username: account.username, password: account.password, headless: false, proxy: account.proxy || loginForm.proxy || undefined })
+      const res = await window.electronAPI.linkedinLogin({ accountId: account.id, username: account.username, password: account.password, headless: getBackgroundMode('linkedin'), proxy: account.proxy || loginForm.proxy || undefined })
       if (res.success) { setSessionId(res.sessionId || ''); showMsg(`تم تسجيل الدخول بحساب ${account.username}!`); await loadAllAccounts() }
       else showMsg(res.error || 'فشل تسجيل الدخول', true)
     } catch (err: any) { showMsg(err.message || 'خطأ في الاتصال', true) }
@@ -174,12 +177,15 @@ export default function LinkedinModule() {
     if (!broadcastMessage || recipients.length === 0) { showMsg('أدخل المستلمين والرسالة', true); return }
     setLoading(true)
     setResultsOwner('broadcast')
+    setToolResults([])
+    const jobId = makeJobId('li-send')
+    beginLiveJob(jobId)
     try {
-      const res = await window.electronAPI.linkedinSendMessages({ sessionId, recipients, message: broadcastMessage })
+      const res = await window.electronAPI.linkedinSendMessages({ sessionId, recipients, message: broadcastMessage, jobId })
       if (res.success) { const ok = ((res.data as any[]) || []).filter((x: any) => x.status === 'sent').length; showMsg(`تم إرسال ${ok} من ${recipients.length} رسالة`); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
-    setLoading(false)
+    finally { endLiveJob(); setLoading(false) }
   }
 
   const handleClearResults = () => {
@@ -195,8 +201,10 @@ export default function LinkedinModule() {
     setLoading(true)
     setResultsOwner('extract-people')
     setToolResults([])
+    const jobId = makeJobId('li-people')
+    beginLiveJob(jobId)
     try {
-      const res = await window.electronAPI.linkedinExtractPeople({ sessionId, query: peopleQuery.trim(), limit: peopleLimit })
+      const res = await window.electronAPI.linkedinExtractPeople({ sessionId, query: peopleQuery.trim(), limit: peopleLimit, jobId })
       if (res.success) {
         const items = (res.data as any[]) || []
         setToolResults(items)
@@ -207,7 +215,7 @@ export default function LinkedinModule() {
         if (res.partialData) setToolResults(res.partialData as any[])
       }
     } catch (err: any) { showMsg(err.message || 'خطأ', true) }
-    setLoading(false)
+    finally { endLiveJob(); setLoading(false) }
   }
 
   // ---- Connect requests ----
@@ -218,8 +226,10 @@ export default function LinkedinModule() {
     setLoading(true)
     setResultsOwner('connect-requests')
     setToolResults([])
+    const jobId = makeJobId('li-connect')
+    beginLiveJob(jobId)
     try {
-      const res = await window.electronAPI.linkedinConnectRequests({ sessionId, profiles, note: connectNote.trim() || undefined, delayMs: Math.max(2, connectDelay) * 1000 })
+      const res = await window.electronAPI.linkedinConnectRequests({ sessionId, profiles, note: connectNote.trim() || undefined, delayMs: Math.max(2, connectDelay) * 1000, jobId })
       if (res.success) {
         const items = (res.data as any[]) || []
         setToolResults(items)
@@ -230,7 +240,7 @@ export default function LinkedinModule() {
         if (res.partialData) setToolResults(res.partialData as any[])
       }
     } catch (err: any) { showMsg(err.message || 'خطأ', true) }
-    setLoading(false)
+    finally { endLiveJob(); setLoading(false) }
   }
 
   // ---- Follow companies ----
@@ -673,7 +683,7 @@ export default function LinkedinModule() {
 
   const renderResultsTable = (owner: ResultsOwner, columns: string[], exportKey: string) => {
     if (resultsOwner !== owner) return null
-    const displayResults = toolResults.length > 0 ? toolResults : results
+    const displayResults = toolResults.length > 0 ? toolResults : (liveRows.length > 0 ? liveRows : results)
     const list = displayResults
     if (list.length === 0) return null
     return (

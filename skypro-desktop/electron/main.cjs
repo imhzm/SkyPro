@@ -575,30 +575,21 @@ async function detectLoginState(page, platform) {
   return false
 }
 
-ipcm('check-platform-session', async (e, { platform, headless = false }) => {
+ipcm('check-platform-session', async (e, { platform, profileId }) => {
   try {
-    const res = await globals.bm.launch({ headless, platform })
-    if (!res.success) return { success: false, error: res.error }
-    const sessionId = res.sessionId
-    const page = globals.bm.getPage(sessionId)
+    // CRITICAL UX FIX: this used to call bm.launch() — so the live-login poll
+    // that runs every few seconds when a platform tab is open would SPAWN a
+    // browser window unexpectedly. We now ONLY inspect an already-open session;
+    // the browser appears strictly when the user clicks login. If no live
+    // session exists we report "not logged in" without launching anything.
+    const found = await globals.bm.findAliveSession(platform, profileId)
+    if (!found) return { success: true, alreadyLoggedIn: false }
 
-    // Wait briefly for page to settle, then check URL.
-    await page.waitForTimeout(500)
-    let url = page.url()
+    const page = globals.bm.getPage(found.id)
+    if (!page) return { success: true, alreadyLoggedIn: false }
 
-    // If fresh browser (about:blank), navigate to the platform first.
-    if (!url || url === 'about:blank') {
-      const targetUrl = PLATFORM_URLS[platform] || 'https://www.google.com'
-      await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
-      // Wait for the DOM idle event — much smarter than a fixed timeout.
-      await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {})
-      url = page.url()
-    }
-
-    // Polling-based detection (≤ 8s, returns as soon as match found).
     const loggedIn = await detectLoginState(page, platform)
-
-    return { success: true, alreadyLoggedIn: loggedIn, sessionId, url }
+    return { success: true, alreadyLoggedIn: loggedIn, sessionId: found.id, url: page.url() }
   } catch (err) {
     return { success: false, error: err.message }
   }
@@ -729,10 +720,22 @@ function getSender(event) {
   return event.sender
 }
 
-function sendProgress(sender, status, message) {
-  if (sender && !sender.isDestroyed()) {
-    sender.send('extraction-progress', { status, message })
-  }
+// Unified live-streaming contract. Every extraction handler calls this as
+// `sendProgress(sender, jobId, payload)` where payload is the rich object
+// `{ type, count, total, data?, last?, ... }`. We FLATTEN the payload onto the
+// event so a single renderer contract serves every consumption style:
+//   - data.jobId === jobId   → job routing + concurrency isolation (two
+//                              platforms can run at once without cross-talk)
+//   - data.type === 'progress' && data.data → append incremental rows live
+//   - data.last              → single incremental row (per-target handlers)
+//   - data.status (= full payload) → progress-bar style (count/total)
+// A rare string payload (legacy) is wrapped as { message } so nothing throws.
+function sendProgress(sender, jobId, payload) {
+  if (!sender || sender.isDestroyed()) return
+  const body = (payload && typeof payload === 'object') ? payload : { message: payload }
+  try {
+    sender.send('extraction-progress', { ...body, jobId, status: body })
+  } catch { /* sender torn down mid-send — safe to ignore */ }
 }
 
 const helpers = {

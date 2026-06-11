@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { usePlatform } from '../../hooks/usePlatform'
+import { getBackgroundMode } from '../../lib/backgroundMode'
 import { useAccountsStore } from '../../stores/accountsStore'
 import type { Account } from '../../stores/accountsStore'
 import AccountSelector from '../../components/common/AccountSelector'
@@ -51,6 +52,7 @@ export default function InstagramModule() {
   const [extracting, setExtracting] = useState(false)
   const [streamResults, setStreamResults] = useState<any[]>([])
   const streamResultsRef = useRef<any[]>([])
+  const currentJobIdRef = useRef<string | null>(null)
   const [currentJobId, setCurrentJobId] = useState<string | null>(null)
   const [toolResults, setToolResults] = useState<any[]>([])
   const [resultsOwner, setResultsOwner] = useState<ResultsOwner>(null)
@@ -97,6 +99,8 @@ export default function InstagramModule() {
 
   useEffect(() => {
     const cleanup = window.electronAPI.onExtractionProgress((data: any) => {
+      // Concurrency isolation: only append rows for THIS module's active job.
+      if (data.jobId && currentJobIdRef.current && data.jobId !== currentJobIdRef.current) return
       if (data.type === 'progress' && data.data) {
         streamResultsRef.current = [...streamResultsRef.current, ...data.data]
         setStreamResults([...streamResultsRef.current])
@@ -116,7 +120,7 @@ export default function InstagramModule() {
     if (!loginForm.username || !loginForm.password) { showMsg('يرجى إدخال البيانات', true); return }
     setLoading(true)
     try {
-      const res = await window.electronAPI.instagramLogin({ username: loginForm.username, password: loginForm.password, headless: false, proxy: loginForm.proxy || undefined })
+      const res = await window.electronAPI.instagramLogin({ username: loginForm.username, password: loginForm.password, headless: getBackgroundMode('instagram'), proxy: loginForm.proxy || undefined })
       if (res.success) { setSessionId(res.sessionId || ''); showMsg('تم تسجيل الدخول بنجاح!'); await loadAccounts(); setShowLoginPanel(false) }
       else showMsg(res.error || 'فشل تسجيل الدخول', true)
     } catch (err: any) { showMsg(err.message || 'خطأ', true) }
@@ -142,7 +146,7 @@ export default function InstagramModule() {
     }
     setLoginForm({ ...loginForm, username: account.username, password: account.password || '' })
     try {
-      const res = await window.electronAPI.instagramLogin({ accountId: account.id, username: account.username, password: account.password, headless: false, proxy: account.proxy || loginForm.proxy || undefined })
+      const res = await window.electronAPI.instagramLogin({ accountId: account.id, username: account.username, password: account.password, headless: getBackgroundMode('instagram'), proxy: account.proxy || loginForm.proxy || undefined })
       if (res.success) { setSessionId(res.sessionId || ''); showMsg(`تم تسجيل الدخول بحساب ${account.username}!`); await loadAllAccounts() }
       else showMsg(res.error || 'فشل تسجيل الدخول', true)
     } catch (err: any) { showMsg(err.message || 'خطأ في الاتصال', true) }
@@ -166,6 +170,7 @@ export default function InstagramModule() {
     setResultsOwner('extract')
     const jobId = `ig-${extractType}-${Date.now()}`
     setCurrentJobId(jobId)
+    currentJobIdRef.current = jobId
     try {
       let res: any
       const baseParams = { sessionId, limit: extractLimit, jobId, delayMs }
@@ -193,6 +198,7 @@ export default function InstagramModule() {
     } catch (err: any) { showMsg(err.message || 'خطأ في الاستخراج', true) }
     setExtracting(false)
     setCurrentJobId(null)
+    currentJobIdRef.current = null
   }
 
   const handleAutoFollow = async () => {
@@ -332,6 +338,7 @@ export default function InstagramModule() {
     setToolResults([])
     const jobId = `ig-likers-${Date.now()}`
     setCurrentJobId(jobId)
+    currentJobIdRef.current = jobId
     try {
       const res = await window.electronAPI.instagramExtractLikers({ sessionId, postUrl: likersPostUrl.trim(), limit: likersLimit, jobId })
       if (res.success) {
@@ -348,6 +355,7 @@ export default function InstagramModule() {
     } catch (err: any) { showMsg(err.message || 'خطأ', true) }
     setExtracting(false)
     setCurrentJobId(null)
+    currentJobIdRef.current = null
   }
 
   // ---- Extract following list of a target ----
@@ -361,6 +369,7 @@ export default function InstagramModule() {
     setToolResults([])
     const jobId = `ig-following-${Date.now()}`
     setCurrentJobId(jobId)
+    currentJobIdRef.current = jobId
     try {
       const res = await window.electronAPI.instagramExtractFollowing({ sessionId, targetUser: followingTarget.trim(), limit: followingLimit, jobId })
       if (res.success) {
@@ -377,6 +386,7 @@ export default function InstagramModule() {
     } catch (err: any) { showMsg(err.message || 'خطأ', true) }
     setExtracting(false)
     setCurrentJobId(null)
+    currentJobIdRef.current = null
   }
 
   // ---- Extract suggested users ----
