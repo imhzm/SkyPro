@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { usePlatform } from '../../hooks/usePlatform'
+import { getBackgroundMode } from '../../lib/backgroundMode'
+import { makeJobId } from '../../lib/jobId'
 import { useAccountsStore } from '../../stores/accountsStore'
 import AccountCycleBanner from '../../components/common/AccountCycleBanner'
 import ToolGrid from '../../components/tools/ToolGrid'
@@ -22,7 +24,7 @@ export default function TelegramPremiumModule() {
   const {
     loading, setLoading, message, error, showMsg, sessionId, setSessionId,
     accounts, results, loadAccounts, loadResults, handleExport, clearResults,
-    clearSession,
+    clearSession, liveRows, beginLiveJob,
   } = usePlatform('telegram')
   const { accounts: allAccounts } = useAccountsStore()
 
@@ -63,7 +65,7 @@ export default function TelegramPremiumModule() {
     if (!phoneNumber.trim()) { showMsg('أدخل رقم الهاتف', true); return }
     setLoading(true)
     try {
-      const res = await window.electronAPI.telegramLogin({ phoneNumber, headless: false, proxy: proxy || undefined })
+      const res = await window.electronAPI.telegramLogin({ phoneNumber, headless: getBackgroundMode('telegram'), proxy: proxy || undefined })
       if (res.success) {
         setSessionId(res.sessionId || '')
         if (res.needsCode) { setNeedsCode(true); showMsg('أدخل كود التحقق المرسل لهاتفك') }
@@ -91,8 +93,10 @@ export default function TelegramPremiumModule() {
     setLoading(true)
     setResultsOwner('extract-hidden')
     setToolResults([])
+    const jobId = makeJobId('tgp-hidden')
+    beginLiveJob(jobId)
     try {
-      const res = await window.electronAPI.telegramPremiumExtractHidden({ sessionId, groupName: hiddenGroup.trim(), limit: hiddenLimit })
+      const res = await window.electronAPI.telegramPremiumExtractHidden({ sessionId, groupName: hiddenGroup.trim(), limit: hiddenLimit, jobId })
       if (res.success) {
         const items = (res.data as any[]) || []
         setToolResults(items)
@@ -114,8 +118,10 @@ export default function TelegramPremiumModule() {
     setLoading(true)
     setResultsOwner('add-username')
     setToolResults([])
+    const jobId = makeJobId('tgp-add-user')
+    beginLiveJob(jobId)
     try {
-      const res = await window.electronAPI.telegramPremiumAddByUsername({ sessionId, targetGroup: usernameTargetGroup.trim(), usernames, delayMs: Math.max(2, usernameDelay) * 1000 })
+      const res = await window.electronAPI.telegramPremiumAddByUsername({ sessionId, targetGroup: usernameTargetGroup.trim(), usernames, delayMs: Math.max(2, usernameDelay) * 1000, jobId })
       if (res.success) {
         const items = (res.data as any[]) || []
         setToolResults(items)
@@ -137,8 +143,10 @@ export default function TelegramPremiumModule() {
     setLoading(true)
     setResultsOwner('add-phone')
     setToolResults([])
+    const jobId = makeJobId('tgp-add-phone')
+    beginLiveJob(jobId)
     try {
-      const res = await window.electronAPI.telegramPremiumAddByPhone({ sessionId, targetGroup: phoneTargetGroup.trim(), phones, delayMs: Math.max(2, phoneDelay) * 1000 })
+      const res = await window.electronAPI.telegramPremiumAddByPhone({ sessionId, targetGroup: phoneTargetGroup.trim(), phones, delayMs: Math.max(2, phoneDelay) * 1000, jobId })
       if (res.success) {
         const items = (res.data as any[]) || []
         setToolResults(items)
@@ -159,8 +167,10 @@ export default function TelegramPremiumModule() {
     setLoading(true)
     setResultsOwner('react')
     setToolResults([])
+    const jobId = makeJobId('tgp-react')
+    beginLiveJob(jobId)
     try {
-      const res = await window.electronAPI.telegramPremiumReact({ sessionId, groupName: reactGroup.trim(), emoji: reactEmoji, count: reactCount, delayMs: Math.max(1, reactDelay) * 1000 })
+      const res = await window.electronAPI.telegramPremiumReact({ sessionId, groupName: reactGroup.trim(), emoji: reactEmoji, count: reactCount, delayMs: Math.max(1, reactDelay) * 1000, jobId })
       if (res.success) {
         const items = (res.data as any[]) || []
         setToolResults(items)
@@ -270,7 +280,7 @@ export default function TelegramPremiumModule() {
   // ---- Results table ----
   const renderResultsTable = (owner: ResultsOwner, columns: string[], exportKey: string) => {
     if (resultsOwner !== owner) return null
-    const list = toolResults.length > 0 ? toolResults : results
+    const list = toolResults.length > 0 ? toolResults : (liveRows.length > 0 ? liveRows : results)
     if (list.length === 0) return null
     return (
       <div className="mt-5 rounded-xl border border-secondary-200 bg-white/60 overflow-hidden">

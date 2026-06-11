@@ -85,6 +85,8 @@ export default function SendEmailsModule() {
           if (res.success) sent++
           else failed++
         } catch (err: any) { console.error(`Failed to send to ${to}:`, err.message); failed++ }
+        // Live progress — the showMsg timer refreshes so the counter updates in place.
+        showMsg(`جاري الإرسال المباشر... ${sent + failed}/${toList.length} — نجح ${sent}، فشل ${failed}`)
         if (timer > 0 && toList.length > 1) await new Promise(r => setTimeout(r, timer * 1000))
       }
       showMsg(`تم إرسال ${sent} بنجاح، فشل ${failed} من ${toList.length}`)

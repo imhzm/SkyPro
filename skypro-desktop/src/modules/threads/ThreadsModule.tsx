@@ -1,5 +1,7 @@
 import { useState, useRef } from 'react'
 import { usePlatform } from '../../hooks/usePlatform'
+import { getBackgroundMode } from '../../lib/backgroundMode'
+import { makeJobId } from '../../lib/jobId'
 import { useAccountsStore } from '../../stores/accountsStore'
 import type { Account } from '../../stores/accountsStore'
 import AccountSelector from '../../components/common/AccountSelector'
@@ -22,7 +24,7 @@ const ACCENT = '#000000'
 const ACCENT_GRADIENT = 'linear-gradient(135deg, #1a1a1a, #404040)'
 
 export default function ThreadsModule() {
-  const { loading, setLoading, message, error, showMsg, sessionId, setSessionId, accounts, results, loadResults, handleExport, clearResults, deleteResult, checkSession, clearSession, cycleActive, cycleProgress, startCycle, stopCycle } = usePlatform('threads')
+  const { loading, setLoading, message, error, showMsg, sessionId, setSessionId, accounts, results, loadResults, handleExport, clearResults, deleteResult, checkSession, clearSession, cycleActive, cycleProgress, startCycle, stopCycle, liveRows, beginLiveJob, endLiveJob } = usePlatform('threads')
 
   const [activeTool, setActiveTool] = useState<ActiveTool>(null)
   const [showLoginPanel, setShowLoginPanel] = useState(false)
@@ -61,7 +63,7 @@ export default function ThreadsModule() {
     if (!loginForm.username || !loginForm.password) { showMsg('يرجى إدخال البيانات', true); return }
     setLoading(true)
     try {
-      const res = await window.electronAPI.threadsLogin({ username: loginForm.username, password: loginForm.password, headless: false, proxy: loginForm.proxy || undefined })
+      const res = await window.electronAPI.threadsLogin({ username: loginForm.username, password: loginForm.password, headless: getBackgroundMode('threads'), proxy: loginForm.proxy || undefined })
       if (res.success) { setSessionId(res.sessionId || ''); showMsg(res.message || 'تم تسجيل الدخول بنجاح!'); await loadAllAccounts(); setShowLoginPanel(false) }
       else showMsg(res.error || 'فشل تسجيل الدخول', true)
     } catch (err: any) { showMsg(err.message || 'خطأ في الاتصال', true) }
@@ -76,7 +78,7 @@ export default function ThreadsModule() {
     if (!hasPass) { setLoginForm({ ...loginForm, username: account.username, password: '' }); setShowLoginPanel(true); setTimeout(() => passwordRef.current?.focus(), 200); showMsg('هذا الحساب ليس لديه كلمة مرور محفوظة.', true); setLoading(false); return }
     setLoginForm({ ...loginForm, username: account.username, password: account.password || '' })
     try {
-      const res = await window.electronAPI.threadsLogin({ accountId: account.id, username: account.username, password: account.password, headless: false, proxy: account.proxy || loginForm.proxy || undefined })
+      const res = await window.electronAPI.threadsLogin({ accountId: account.id, username: account.username, password: account.password, headless: getBackgroundMode('threads'), proxy: account.proxy || loginForm.proxy || undefined })
       if (res.success) { setSessionId(res.sessionId || 'threads-session'); showMsg(`تم تسجيل الدخول بحساب ${account.username}!`); await loadAllAccounts() }
       else showMsg(res.error || 'فشل تسجيل الدخول', true)
     } catch (err: any) { showMsg(err.message || 'خطأ في الاتصال', true) }
@@ -86,7 +88,7 @@ export default function ThreadsModule() {
   const handleLaunchBrowser = async () => {
     setLoading(true)
     try {
-      const res = await window.electronAPI.launchBrowser({ platform: 'threads', headless: false })
+      const res = await window.electronAPI.launchBrowser({ platform: 'threads', headless: getBackgroundMode('threads') })
       if (res.success) { setSessionId(res.sessionId || ''); showMsg('تم فتح المتصفح'); setShowLoginPanel(false) }
       else showMsg(res.error || 'فشل فتح المتصفح', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
@@ -98,12 +100,15 @@ export default function ThreadsModule() {
     if (!extractUrl) { showMsg('أدخل رابط المنشور أو الحساب', true); return }
     setLoading(true)
     setResultsOwner('extract')
+    setToolResults([])
+    const jobId = makeJobId('th-extract')
+    beginLiveJob(jobId)
     try {
-      const res = await window.electronAPI.threadsExtract({ sessionId, url: extractUrl, limit: extractLimit })
+      const res = await window.electronAPI.threadsExtract({ sessionId, url: extractUrl, limit: extractLimit, jobId })
       if (res.success) { setToolResults((res.data as any[]) || []); showMsg(`تم استخراج ${res.count || ((res.data as any[]) || []).length}`); await loadResults() }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
-    setLoading(false)
+    finally { endLiveJob(); setLoading(false) }
   }
 
   const handleMention = async () => {
@@ -132,8 +137,10 @@ export default function ThreadsModule() {
     if (list.length === 0) { showMsg('أدخل المستلمين', true); return }
     if (!broadcastMessage.trim()) { showMsg('أدخل نص الرسالة', true); return }
     setLoading(true); setResultsOwner('broadcast'); setToolResults([])
+    const jobId = makeJobId('th-send')
+    beginLiveJob(jobId)
     try {
-      const res = await window.electronAPI.threadsSendMessage({ sessionId, usernames: list, message: broadcastMessage, delayMs: Math.max(2, broadcastDelay) * 1000 })
+      const res = await window.electronAPI.threadsSendMessage({ sessionId, usernames: list, message: broadcastMessage, delayMs: Math.max(2, broadcastDelay) * 1000, jobId })
       if (res.success) {
         const items = (res.data as any[]) || []; setToolResults(items)
         const ok = items.filter((r: any) => r.status === 'sent').length
@@ -167,8 +174,10 @@ export default function ThreadsModule() {
     if (list.length === 0) { showMsg('أدخل الحسابات', true); return }
     if (!followSendMessage.trim()) { showMsg('أدخل الرسالة', true); return }
     setLoading(true); setResultsOwner('follow-send'); setToolResults([])
+    const jobId = makeJobId('th-follow-send')
+    beginLiveJob(jobId)
     try {
-      const res = await window.electronAPI.threadsFollowSend({ sessionId, usernames: list, message: followSendMessage, followFirst: followSendFirst, delayMs: Math.max(2, followSendDelay) * 1000 })
+      const res = await window.electronAPI.threadsFollowSend({ sessionId, usernames: list, message: followSendMessage, followFirst: followSendFirst, delayMs: Math.max(2, followSendDelay) * 1000, jobId })
       if (res.success) {
         const items = (res.data as any[]) || []; setToolResults(items)
         const ok = items.filter((r: any) => r.status === 'sent').length
@@ -369,7 +378,7 @@ export default function ThreadsModule() {
   // ----- Results table -----
   const renderResultsTable = (owner: ResultsOwner, columns: string[], exportKey: string) => {
     if (resultsOwner !== owner) return null
-    const displayResults = toolResults.length > 0 ? toolResults : results
+    const displayResults = toolResults.length > 0 ? toolResults : (liveRows.length > 0 ? liveRows : results)
     if (displayResults.length === 0) return null
     return (
       <div className="mt-5 rounded-xl border border-secondary-200 bg-white/60 overflow-hidden">

@@ -1,5 +1,7 @@
 import { useState, useRef } from 'react'
 import { usePlatform } from '../../hooks/usePlatform'
+import { getBackgroundMode } from '../../lib/backgroundMode'
+import { makeJobId } from '../../lib/jobId'
 import { useAccountsStore } from '../../stores/accountsStore'
 import type { Account } from '../../stores/accountsStore'
 import AccountSelector from '../../components/common/AccountSelector'
@@ -34,6 +36,7 @@ export default function TwitterModule() {
     loading, setLoading, message, error, showMsg, sessionId, setSessionId,
     accounts, results, loadAccounts, loadResults, handleExport, clearResults,
     checkSession, clearSession, cycleActive, cycleProgress, startCycle, stopCycle,
+    liveRows, beginLiveJob, endLiveJob,
   } = usePlatform('twitter')
   const { accounts: allAccounts, loadAccounts: loadAllAccounts } = useAccountsStore()
 
@@ -105,7 +108,7 @@ export default function TwitterModule() {
     if (!loginForm.username || !loginForm.password) { showMsg('يرجى إدخال البيانات', true); return }
     setLoading(true)
     try {
-      const res = await window.electronAPI.twitterLogin({ username: loginForm.username, password: loginForm.password, headless: false, proxy: loginForm.proxy || undefined })
+      const res = await window.electronAPI.twitterLogin({ username: loginForm.username, password: loginForm.password, headless: getBackgroundMode('twitter'), proxy: loginForm.proxy || undefined })
       if (res.success) { setSessionId(res.sessionId || ''); showMsg('تم تسجيل الدخول بنجاح!'); await loadAccounts(); setShowLoginPanel(false) }
       else showMsg(res.error || 'فشل تسجيل الدخول', true)
     } catch (err: any) { showMsg(err.message || 'خطأ في الاتصال', true) }
@@ -131,7 +134,7 @@ export default function TwitterModule() {
     }
     setLoginForm({ ...loginForm, username: account.username, password: account.password || '' })
     try {
-      const res = await window.electronAPI.twitterLogin({ accountId: account.id, username: account.username, password: account.password, headless: false, proxy: account.proxy || loginForm.proxy || undefined })
+      const res = await window.electronAPI.twitterLogin({ accountId: account.id, username: account.username, password: account.password, headless: getBackgroundMode('twitter'), proxy: account.proxy || loginForm.proxy || undefined })
       if (res.success) { setSessionId(res.sessionId || ''); showMsg(`تم تسجيل الدخول بحساب ${account.username}!`); await loadAllAccounts() }
       else showMsg(res.error || 'فشل تسجيل الدخول', true)
     } catch (err: any) { showMsg(err.message || 'خطأ في الاتصال', true) }
@@ -143,12 +146,15 @@ export default function TwitterModule() {
     if (!extractUser) { showMsg('أدخل اسم المستخدم', true); return }
     setLoading(true)
     setResultsOwner('extract')
+    setToolResults([])
+    const jobId = makeJobId('tw-extract')
+    beginLiveJob(jobId)
     try {
-      const res = await window.electronAPI.twitterExtractFollowers({ sessionId, username: extractUser, limit: extractLimit })
+      const res = await window.electronAPI.twitterExtractFollowers({ sessionId, username: extractUser, limit: extractLimit, jobId })
       if (res.success) { setToolResults((res.data as any[]) || []); showMsg(`تم استخراج ${res.count || 0} متابع`); await loadResults() }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
-    setLoading(false)
+    finally { endLiveJob(); setLoading(false) }
   }
 
   const handleSchedule = async () => {
@@ -182,12 +188,15 @@ export default function TwitterModule() {
     if (usernames.length === 0) { showMsg('أدخل قائمة الحسابات', true); return }
     setLoading(true)
     setResultsOwner('follow')
+    setToolResults([])
+    const jobId = makeJobId('tw-follow')
+    beginLiveJob(jobId)
     try {
-      const res = await window.electronAPI.twitterFollow({ sessionId, usernames })
+      const res = await window.electronAPI.twitterFollow({ sessionId, usernames, jobId })
       if (res.success) { const ok = ((res.data as any[]) || []).filter((x: any) => x.status === 'followed').length; showMsg(`تمت متابعة ${ok} من ${usernames.length} حساب`); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
-    setLoading(false)
+    finally { endLiveJob(); setLoading(false) }
   }
 
   const handleRetweet = async () => {
@@ -231,8 +240,10 @@ export default function TwitterModule() {
     setLoading(true)
     setResultsOwner('search-tweets')
     setToolResults([])
+    const jobId = makeJobId('tw-search')
+    beginLiveJob(jobId)
     try {
-      const res = await window.electronAPI.twitterSearchTweets({ sessionId, query: searchQuery.trim(), tab: searchTab, limit: searchLimit })
+      const res = await window.electronAPI.twitterSearchTweets({ sessionId, query: searchQuery.trim(), tab: searchTab, limit: searchLimit, jobId })
       if (res.success) {
         const items = (res.data as any[]) || []
         setToolResults(items)
@@ -243,7 +254,7 @@ export default function TwitterModule() {
         if (res.partialData) setToolResults(res.partialData as any[])
       }
     } catch (err: any) { showMsg(err.message || 'خطأ', true) }
-    setLoading(false)
+    finally { endLiveJob(); setLoading(false) }
   }
 
   // ---- Extract tweet likers ----
@@ -253,8 +264,10 @@ export default function TwitterModule() {
     setLoading(true)
     setResultsOwner('extract-likers')
     setToolResults([])
+    const jobId = makeJobId('tw-likers')
+    beginLiveJob(jobId)
     try {
-      const res = await window.electronAPI.twitterExtractTweetLikers({ sessionId, tweetUrl: likersTweetUrl.trim(), limit: likersLimit })
+      const res = await window.electronAPI.twitterExtractTweetLikers({ sessionId, tweetUrl: likersTweetUrl.trim(), limit: likersLimit, jobId })
       if (res.success) {
         const items = (res.data as any[]) || []
         setToolResults(items)
@@ -265,7 +278,7 @@ export default function TwitterModule() {
         if (res.partialData) setToolResults(res.partialData as any[])
       }
     } catch (err: any) { showMsg(err.message || 'خطأ', true) }
-    setLoading(false)
+    finally { endLiveJob(); setLoading(false) }
   }
 
   // ---- Extract trends ----
@@ -670,13 +683,13 @@ export default function TwitterModule() {
 
   const renderResultsTable = (owner: ResultsOwner, columns: string[], exportKey: string) => {
     if (resultsOwner !== owner) return null
-    const displayResults = toolResults.length > 0 ? toolResults : results
+    const displayResults = toolResults.length > 0 ? toolResults : (liveRows.length > 0 ? liveRows : results)
     const list = displayResults
     if (list.length === 0) return null
     return (
       <div className="mt-5 rounded-xl border border-secondary-200 bg-white/60 overflow-hidden">
         <div className="flex items-center justify-between p-3 border-b border-secondary-100 flex-wrap gap-2">
-          <h4 className="font-bold text-secondary-900 text-sm">النتائج ({list.length})</h4>
+          <h4 className="font-bold text-secondary-900 text-sm">النتائج ({list.length}){loading && <span className="text-emerald-600 animate-pulse"> • مباشر ⚡</span>}</h4>
           <div className="flex gap-2">
             <button onClick={() => handleExport(columns, exportKey, toolResults)} className="btn-success text-xs">
               <FileSpreadsheet size={14} /> تصدير CSV

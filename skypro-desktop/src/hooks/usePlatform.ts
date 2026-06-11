@@ -20,6 +20,16 @@ export interface CycleProgress {
   error?: string
 }
 
+export interface LiveProgress {
+  jobId?: string
+  type?: string
+  count?: number
+  total?: number
+  data?: Record<string, unknown>[]
+  last?: Record<string, unknown>
+  [key: string]: unknown
+}
+
 export function usePlatform(platformId: string) {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
@@ -29,6 +39,26 @@ export function usePlatform(platformId: string) {
   const [cycleActive, setCycleActive] = useState(false)
   const [cycleProgress, setCycleProgress] = useState<CycleProgress | null>(null)
   const msgTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // ---- Live extraction streaming (real-time rows as the bot finds them) ----
+  // Rows arrive over the shared `extraction-progress` channel tagged with a
+  // jobId. We isolate by the ACTIVE jobId so two platforms (or two tools) can
+  // run concurrently without their rows bleeding together. A module calls
+  // `beginLiveJob(jobId)` right before invoking an extraction, renders
+  // `liveRows` while it runs, then drops in the final result when it returns.
+  const [liveRows, setLiveRows] = useState<any[]>([])
+  const [liveProgress, setLiveProgress] = useState<LiveProgress | null>(null)
+  const liveRowsRef = useRef<any[]>([])
+  const activeJobRef = useRef<string | null>(null)
+
+  const beginLiveJob = useCallback((jobId: string) => {
+    activeJobRef.current = jobId
+    liveRowsRef.current = []
+    setLiveRows([])
+    setLiveProgress(null)
+  }, [])
+
+  const endLiveJob = useCallback(() => { activeJobRef.current = null }, [])
 
   const { accounts: allAccounts, loadAccounts: loadAllAccounts } = useAccountsStore()
   const accounts = useMemo(() => allAccounts.filter((a: any) => a.platform === platformId), [allAccounts, platformId])
@@ -282,8 +312,20 @@ export function usePlatform(platformId: string) {
 
   useEffect(() => {
     const cleanup = window.electronAPI.onExtractionProgress((data: any) => {
+      // Multi-account cycle progress (existing behaviour).
       if (data.type?.startsWith('cycle_') || data.type === 'cycle_progress' || data.type === 'cycle_waiting_login') {
         setCycleProgress(data as CycleProgress)
+      }
+      // Live extraction rows — only for THIS module's active job, so concurrent
+      // runs on other platforms never cross-contaminate this table.
+      const job = activeJobRef.current
+      if (job && data.jobId === job) {
+        setLiveProgress(data as LiveProgress)
+        const batch: any[] = Array.isArray(data.data) ? data.data : (data.last ? [data.last] : [])
+        if (batch.length) {
+          liveRowsRef.current = liveRowsRef.current.concat(batch)
+          setLiveRows(liveRowsRef.current.slice())
+        }
       }
     })
     return () => cleanup()
@@ -296,6 +338,7 @@ export function usePlatform(platformId: string) {
     sessionId, setSessionId, accounts, results, setResults,
     loadAccounts: loadAllAccounts, loadResults, handleExport, clearResults,
     deleteResult, checkSession, clearSession,
-    cycleActive, cycleProgress, startCycle, stopCycle
+    cycleActive, cycleProgress, startCycle, stopCycle,
+    liveRows, liveProgress, beginLiveJob, endLiveJob
   }
 }

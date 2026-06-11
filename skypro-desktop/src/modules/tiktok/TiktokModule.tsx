@@ -1,5 +1,7 @@
 import { useState, useRef } from 'react'
 import { usePlatform } from '../../hooks/usePlatform'
+import { getBackgroundMode } from '../../lib/backgroundMode'
+import { makeJobId } from '../../lib/jobId'
 import { useAccountsStore } from '../../stores/accountsStore'
 import AccountSelector from '../../components/common/AccountSelector'
 import AccountCycleBanner from '../../components/common/AccountCycleBanner'
@@ -21,7 +23,7 @@ const ACCENT = '#fe2c55'
 const ACCENT_GRADIENT = 'linear-gradient(135deg, #fe2c55, #25f4ee)'
 
 export default function TiktokModule() {
-  const { loading, setLoading, message, error, showMsg, sessionId, setSessionId, accounts, results, loadResults, handleExport, clearResults, deleteResult, clearSession, cycleActive, cycleProgress, startCycle, stopCycle } = usePlatform('tiktok')
+  const { loading, setLoading, message, error, showMsg, sessionId, setSessionId, accounts, results, loadResults, handleExport, clearResults, deleteResult, clearSession, cycleActive, cycleProgress, startCycle, stopCycle, liveRows, beginLiveJob, endLiveJob } = usePlatform('tiktok')
 
   const [activeTool, setActiveTool] = useState<ActiveTool>(null)
   const [showLoginPanel, setShowLoginPanel] = useState(false)
@@ -67,7 +69,7 @@ export default function TiktokModule() {
     if (!loginForm.username) { showMsg('أدخل اسم المستخدم', true); return }
     setLoading(true)
     try {
-      const res = await window.electronAPI.launchBrowser({ platform: 'tiktok', headless: false, proxy: loginForm.proxy || undefined })
+      const res = await window.electronAPI.launchBrowser({ platform: 'tiktok', headless: getBackgroundMode('tiktok'), proxy: loginForm.proxy || undefined })
       if (res.success) { setSessionId(res.sessionId || ''); showMsg('تم فتح المتصفح - سجل دخول يدوياً على TikTok'); await loadAllAccounts(); setShowLoginPanel(false) }
       else showMsg(res.error || 'فشل فتح المتصفح', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
@@ -79,14 +81,17 @@ export default function TiktokModule() {
     if (!extractInput) { showMsg('أدخل الرابط أو اسم المستخدم', true); return }
     setLoading(true)
     setResultsOwner('extract')
+    setToolResults([])
+    const jobId = makeJobId('tt-extract')
+    beginLiveJob(jobId)
     try {
       let res: any
-      if (extractType === 'comments') res = await window.electronAPI.tiktokExtractComments({ sessionId, videoUrl: extractInput, limit: extractLimit })
-      else res = await window.electronAPI.tiktokExtractFollowers({ sessionId, username: extractInput.replace('@', ''), limit: extractLimit })
+      if (extractType === 'comments') res = await window.electronAPI.tiktokExtractComments({ sessionId, videoUrl: extractInput, limit: extractLimit, jobId })
+      else res = await window.electronAPI.tiktokExtractFollowers({ sessionId, username: extractInput.replace('@', ''), limit: extractLimit, jobId })
       if (res.success) { setToolResults((res.data as any[]) || []); showMsg(`تم استخراج ${res.count || ((res.data as any[]) || []).length}`); await loadResults() }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
-    setLoading(false)
+    finally { endLiveJob(); setLoading(false) }
   }
 
   const handleDownload = async () => {
@@ -111,12 +116,14 @@ export default function TiktokModule() {
     if (!ensureSession()) return
     if (!searchQuery.trim()) { showMsg('أدخل الكلمة المفتاحية', true); return }
     setLoading(true); setResultsOwner('search'); setToolResults([])
+    const jobId = makeJobId('tt-search')
+    beginLiveJob(jobId)
     try {
-      const res = await window.electronAPI.tiktokSearch({ sessionId, query: searchQuery.trim(), limit: searchLimit })
+      const res = await window.electronAPI.tiktokSearch({ sessionId, query: searchQuery.trim(), limit: searchLimit, jobId })
       if (res.success) { setToolResults((res.data as any[]) || []); showMsg(`تم العثور على ${res.count || ((res.data as any[]) || []).length} فيديو`) }
       else { showMsg(res.error || 'فشلت العملية', true); if (res.partialData) setToolResults(res.partialData as any[]) }
     } catch (err: any) { showMsg(err.message || 'خطأ', true) }
-    setLoading(false)
+    finally { endLiveJob(); setLoading(false) }
   }
 
   const handleFollow = async () => {
@@ -124,15 +131,17 @@ export default function TiktokModule() {
     const list = followList.split('\n').map(s => s.trim()).filter(Boolean)
     if (list.length === 0) { showMsg('أدخل قائمة الحسابات', true); return }
     setLoading(true); setResultsOwner('follow'); setToolResults([])
+    const jobId = makeJobId('tt-follow')
+    beginLiveJob(jobId)
     try {
-      const res = await window.electronAPI.tiktokFollow({ sessionId, usernames: list, delayMs: Math.max(2, followDelay) * 1000 })
+      const res = await window.electronAPI.tiktokFollow({ sessionId, usernames: list, delayMs: Math.max(2, followDelay) * 1000, jobId })
       if (res.success) {
         const items = (res.data as any[]) || []; setToolResults(items)
         const ok = items.filter((r: any) => r.status === 'followed').length
         showMsg(`تمت متابعة ${ok} من ${list.length}`)
       } else { showMsg(res.error || 'فشلت', true); if (res.partialData) setToolResults(res.partialData as any[]) }
     } catch (err: any) { showMsg(err.message || 'خطأ', true) }
-    setLoading(false)
+    finally { endLiveJob(); setLoading(false) }
   }
 
   const handleInteract = async () => {
@@ -141,15 +150,17 @@ export default function TiktokModule() {
     if (urls.length === 0) { showMsg('أدخل روابط الفيديوهات', true); return }
     if (!interactDoLike && !interactComment.trim()) { showMsg('اختر إعجاب أو تعليق', true); return }
     setLoading(true); setResultsOwner('interact'); setToolResults([])
+    const jobId = makeJobId('tt-interact')
+    beginLiveJob(jobId)
     try {
-      const res = await window.electronAPI.tiktokInteract({ sessionId, videoUrls: urls, doLike: interactDoLike, comment: interactComment || undefined, delayMs: Math.max(2, interactDelay) * 1000 })
+      const res = await window.electronAPI.tiktokInteract({ sessionId, videoUrls: urls, doLike: interactDoLike, comment: interactComment || undefined, delayMs: Math.max(2, interactDelay) * 1000, jobId })
       if (res.success) {
         const items = (res.data as any[]) || []; setToolResults(items)
         const ok = items.filter((r: any) => r.status === 'done').length
         showMsg(`تم التفاعل مع ${ok} من ${urls.length}`)
       } else { showMsg(res.error || 'فشلت', true); if (res.partialData) setToolResults(res.partialData as any[]) }
     } catch (err: any) { showMsg(err.message || 'خطأ', true) }
-    setLoading(false)
+    finally { endLiveJob(); setLoading(false) }
   }
 
   const handlePickVideo = () => uploadFileRef.current?.click()
@@ -347,12 +358,12 @@ export default function TiktokModule() {
   // ----- Results table -----
   const renderResultsTable = (owner: ResultsOwner, columns: string[], exportKey: string) => {
     if (resultsOwner !== owner) return null
-    const displayResults = toolResults.length > 0 ? toolResults : results
+    const displayResults = toolResults.length > 0 ? toolResults : (liveRows.length > 0 ? liveRows : results)
     if (displayResults.length === 0) return null
     return (
       <div className="mt-5 rounded-xl border border-secondary-200 bg-white/60 overflow-hidden">
         <div className="flex items-center justify-between p-3 border-b border-secondary-100 flex-wrap gap-2">
-          <h4 className="font-bold text-secondary-900 text-sm">النتائج ({displayResults.length})</h4>
+          <h4 className="font-bold text-secondary-900 text-sm">النتائج ({displayResults.length}){loading && <span className="text-emerald-600 animate-pulse"> • مباشر ⚡</span>}</h4>
           <div className="flex gap-2">
             <button onClick={() => handleExport(columns, exportKey, toolResults)} className="btn-success text-xs">
               <FileSpreadsheet size={14} /> تصدير CSV

@@ -1,7 +1,7 @@
 {
   "name": "sender-pro-desktop",
   "private": true,
-  "version": "1.27.0",
+  "version": "1.28.0",
   "description": "SkyPro - تطبيق تسويق إلكتروني احترافي لأتمتة المتصفح",
   "author": "SkyPro <skywaveads@gmail.com>",
   "type": "module",

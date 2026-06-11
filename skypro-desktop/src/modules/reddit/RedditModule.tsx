@@ -1,5 +1,7 @@
 import { useState, useRef } from 'react'
 import { usePlatform } from '../../hooks/usePlatform'
+import { getBackgroundMode } from '../../lib/backgroundMode'
+import { makeJobId } from '../../lib/jobId'
 import { useAccountsStore } from '../../stores/accountsStore'
 import type { Account } from '../../stores/accountsStore'
 import AccountSelector from '../../components/common/AccountSelector'
@@ -28,7 +30,7 @@ const ACCENT = '#FF4500'
 const ACCENT_GRADIENT = 'linear-gradient(135deg, #FF4500, #CC3700)'
 
 export default function RedditModule() {
-  const { loading, setLoading, message, error, showMsg, sessionId, setSessionId, accounts, results, loadResults, handleExport, clearResults, deleteResult, checkSession, clearSession, cycleActive, cycleProgress, startCycle, stopCycle } = usePlatform('reddit')
+  const { loading, setLoading, message, error, showMsg, sessionId, setSessionId, accounts, results, loadResults, handleExport, clearResults, deleteResult, checkSession, clearSession, cycleActive, cycleProgress, startCycle, stopCycle, liveRows, beginLiveJob, endLiveJob } = usePlatform('reddit')
 
   const [activeTool, setActiveTool] = useState<ActiveTool>(null)
   const [showLoginPanel, setShowLoginPanel] = useState(false)
@@ -78,7 +80,7 @@ export default function RedditModule() {
     if (!loginForm.username || !loginForm.password) { showMsg('يرجى إدخال البيانات', true); return }
     setLoading(true)
     try {
-      const res = await window.electronAPI.redditLogin({ username: loginForm.username, password: loginForm.password, proxy: loginForm.proxy || undefined, headless: false })
+      const res = await window.electronAPI.redditLogin({ username: loginForm.username, password: loginForm.password, proxy: loginForm.proxy || undefined, headless: getBackgroundMode('reddit') })
       if (res.success) { setSessionId(res.sessionId || ''); showMsg('تم تسجيل الدخول بنجاح!'); await loadAllAccounts(); setShowLoginPanel(false) }
       else showMsg(res.error || 'فشل تسجيل الدخول', true)
     } catch (err: any) { showMsg(err.message || 'خطأ في الاتصال', true) }
@@ -93,7 +95,7 @@ export default function RedditModule() {
     if (!hasPass) { setLoginForm({ ...loginForm, username: account.username, password: '' }); setShowLoginPanel(true); setTimeout(() => passwordRef.current?.focus(), 200); showMsg('هذا الحساب ليس لديه كلمة مرور محفوظة.', true); setLoading(false); return }
     setLoginForm({ ...loginForm, username: account.username, password: account.password || '' })
     try {
-      const res = await window.electronAPI.redditLogin({ accountId: account.id, username: account.username, password: account.password, proxy: account.proxy || loginForm.proxy || undefined, headless: false })
+      const res = await window.electronAPI.redditLogin({ accountId: account.id, username: account.username, password: account.password, proxy: account.proxy || loginForm.proxy || undefined, headless: getBackgroundMode('reddit') })
       if (res.success) { setSessionId(res.sessionId || ''); showMsg(`تم تسجيل الدخول بحساب ${account.username}!`); await loadAllAccounts() }
       else showMsg(res.error || 'فشل تسجيل الدخول', true)
     } catch (err: any) { showMsg(err.message || 'خطأ في الاتصال', true) }
@@ -105,12 +107,15 @@ export default function RedditModule() {
     if (!searchQuery) { showMsg('أدخل كلمة البحث', true); return }
     setLoading(true)
     setResultsOwner('search')
+    setToolResults([])
+    const jobId = makeJobId('rd-search')
+    beginLiveJob(jobId)
     try {
-      const res = await window.electronAPI.redditSearch({ sessionId, query: searchQuery, limit: searchLimit })
+      const res = await window.electronAPI.redditSearch({ sessionId, query: searchQuery, limit: searchLimit, jobId })
       if (res.success) { setToolResults((res.data as any[]) || []); showMsg(`تم العثور على ${res.count || ((res.data as any[]) || []).length} نتيجة`); await loadResults() }
       else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
-    setLoading(false)
+    finally { endLiveJob(); setLoading(false) }
   }
 
   const handlePublish = async () => {
@@ -139,8 +144,10 @@ export default function RedditModule() {
     setLoading(true)
     setResultsOwner('vote')
     setToolResults([])
+    const jobId = makeJobId('rd-upvote')
+    beginLiveJob(jobId)
     try {
-      const res = await window.electronAPI.redditUpvote({ sessionId, postUrls: urls, delayMs: Math.max(1, voteDelay) * 1000 })
+      const res = await window.electronAPI.redditUpvote({ sessionId, postUrls: urls, delayMs: Math.max(1, voteDelay) * 1000, jobId })
       if (res.success) {
         const items = (res.data as any[]) || []
         setToolResults(items)
@@ -151,7 +158,7 @@ export default function RedditModule() {
         if (res.partialData) setToolResults(res.partialData as any[])
       }
     } catch (err: any) { showMsg(err.message || 'خطأ', true) }
-    setLoading(false)
+    finally { endLiveJob(); setLoading(false) }
   }
 
   const handleSearchCommunities = async () => {
@@ -178,8 +185,10 @@ export default function RedditModule() {
     setLoading(true)
     setResultsOwner('join-communities')
     setToolResults([])
+    const jobId = makeJobId('rd-join')
+    beginLiveJob(jobId)
     try {
-      const res = await window.electronAPI.redditJoinCommunities({ sessionId, subreddits, delayMs: Math.max(1, joinDelay) * 1000 })
+      const res = await window.electronAPI.redditJoinCommunities({ sessionId, subreddits, delayMs: Math.max(1, joinDelay) * 1000, jobId })
       if (res.success) {
         const items = (res.data as any[]) || []
         setToolResults(items)
@@ -441,7 +450,7 @@ export default function RedditModule() {
 
   const renderResultsTable = (owner: ResultsOwner, columns: string[], exportKey: string) => {
     if (resultsOwner !== owner) return null
-    const displayResults = toolResults.length > 0 ? toolResults : results
+    const displayResults = toolResults.length > 0 ? toolResults : (liveRows.length > 0 ? liveRows : results)
     if (displayResults.length === 0) return null
     return (
       <div className="mt-5 rounded-xl border border-secondary-200 bg-white/60 overflow-hidden">

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { usePlatform } from '../../hooks/usePlatform'
+import { getBackgroundMode } from '../../lib/backgroundMode'
 import { useAccountsStore } from '../../stores/accountsStore'
 import type { Account } from '../../stores/accountsStore'
 import AccountSelector from '../../components/common/AccountSelector'
@@ -51,6 +52,7 @@ export default function FacebookModule() {
   const [extracting, setExtracting] = useState(false)
   const [streamResults, setStreamResults] = useState<any[]>([])
   const streamResultsRef = useRef<any[]>([])
+  const currentJobIdRef = useRef<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchType, setSearchType] = useState('pages')
   const [recipientsText, setRecipientsText] = useState('')
@@ -117,6 +119,10 @@ export default function FacebookModule() {
 
   useEffect(() => {
     const cleanup = window.electronAPI.onExtractionProgress((data: any) => {
+      // Concurrency isolation: only append rows belonging to THIS module's
+      // active job, so a simultaneous extraction on another platform never
+      // bleeds its rows into the Facebook table.
+      if (data.jobId && currentJobIdRef.current && data.jobId !== currentJobIdRef.current) return
       if (data.type === 'progress' && data.data) {
         streamResultsRef.current = [...streamResultsRef.current, ...data.data]
         setStreamResults([...streamResultsRef.current])
@@ -135,7 +141,7 @@ export default function FacebookModule() {
     if (!loginForm.email || !loginForm.password) { showMsg('يرجى إدخال البريد وكلمة المرور', true); return }
     setLoading(true)
     try {
-      const res = await window.electronAPI.facebookLogin({ username: loginForm.email, password: loginForm.password, headless: false, proxy: loginForm.proxy || undefined })
+      const res = await window.electronAPI.facebookLogin({ username: loginForm.email, password: loginForm.password, headless: getBackgroundMode('facebook'), proxy: loginForm.proxy || undefined })
       if (res.success) { setSessionId(res.sessionId || ''); showMsg('تم تسجيل الدخول بنجاح!'); await loadAccounts(); setShowLoginPanel(false) }
       else showMsg(res.error || 'فشل تسجيل الدخول', true)
     } catch (err: any) { showMsg(err.message || 'خطأ في الاتصال', true) }
@@ -161,7 +167,7 @@ export default function FacebookModule() {
     }
     setLoginForm({ ...loginForm, email: account.username, password: account.password || '' })
     try {
-      const res = await window.electronAPI.facebookLogin({ accountId: account.id, username: account.username, password: account.password, headless: false, proxy: account.proxy || loginForm.proxy || undefined })
+      const res = await window.electronAPI.facebookLogin({ accountId: account.id, username: account.username, password: account.password, headless: getBackgroundMode('facebook'), proxy: account.proxy || loginForm.proxy || undefined })
       if (res.success) { setSessionId(res.sessionId || ''); showMsg(`تم تسجيل الدخول بحساب ${account.username}!`); await loadAccounts() }
       else showMsg(res.error || 'فشل تسجيل الدخول', true)
     } catch (err: any) { showMsg(err.message || 'خطأ في الاتصال', true) }
@@ -195,6 +201,7 @@ export default function FacebookModule() {
     setResultsOwner('extract')
     const jobId = `fb-${extractType}-${Date.now()}`
     setCurrentJobId(jobId)
+    currentJobIdRef.current = jobId
     try {
       let res: any
       const baseParams = { sessionId, limit: extractLimit, jobId, delayMs }
@@ -234,6 +241,7 @@ export default function FacebookModule() {
     } catch (err: any) { showMsg(err.message || 'خطأ في الاستخراج', true) }
     setExtracting(false)
     setCurrentJobId(null)
+    currentJobIdRef.current = null
   }
 
   const handleClearResults = () => {
