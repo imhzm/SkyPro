@@ -13,10 +13,12 @@ import {
   ShieldCheck,
   UserCheck,
   Zap,
+  MessageCircle,
 } from 'lucide-react'
 import logoSrc from '../../assets/logo.png'
 import { useAuthStore } from '../../stores/appStore'
 import { activationApi } from '../../services/api/activation'
+import { whatsappLink, openExternal } from '../../config/support'
 import AppTitleBar from '../layout/AppTitleBar'
 
 interface RememberedLogin {
@@ -788,6 +790,15 @@ export default function LoginPage() {
 
           {/* Footer */}
           <div className="mt-5 flex flex-col items-center gap-2 text-center">
+            <button
+              onClick={() => openExternal(whatsappLink('مرحباً، أحتاج مساعدة في تسجيل الدخول إلى SkyPro'))}
+              className="group inline-flex items-center gap-1.5 text-xs transition-colors"
+              style={{ color: 'rgba(134, 239, 172, 0.75)' }}
+              title="تواصل مع الدعم الفني عبر واتساب"
+            >
+              <MessageCircle size={12} />
+              <span>تواجه مشكلة في الدخول؟ تواصل مع الدعم الفني</span>
+            </button>
             <button
               onClick={() => window.open('https://www.skywaveads.com', '_blank', 'noopener,noreferrer')}
               className="group inline-flex items-center gap-1.5 text-xs hover:text-white/85 transition-colors"

@@ -75,6 +75,10 @@ export interface LoginResponse {
 export interface ActivationResponse {
   success: boolean
   message?: string
+  /** True when the server was unreachable (network/timeout) — caller should honor offline grace. */
+  offline?: boolean
+  /** True when the server explicitly rejected the key — caller should fail-closed immediately. */
+  rejected?: boolean
   data?: {
     key: string
     status: 'active' | 'expired' | 'pending' | 'invalid' | 'available' | 'revoked' | 'assigned'
@@ -132,9 +136,11 @@ export const activationApi = {
         body: JSON.stringify({ key, deviceFingerprint: deviceId })
       })
       const result = await response.json()
-      return result.success ? normalizeActivationResult(result, key, deviceId) : result
+      if (result.success) return normalizeActivationResult(result, key, deviceId)
+      // Server reachable but rejected → fail-closed signal for the caller.
+      return { ...result, rejected: true }
     } catch {
-      return { success: false, message: 'فشل الاتصال بالخادم' }
+      return { success: false, offline: true, message: 'تعذر الاتصال بالخادم للتحقق من الاشتراك.' }
     }
   },
 

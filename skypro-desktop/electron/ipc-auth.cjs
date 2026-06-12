@@ -190,15 +190,20 @@ function registerAuthIPC({ ipcm, bm, db }) {
         saveDeviceInfo(db, deviceInfo, key)
         return normalizeWebActivationResult(result, key, fingerprint)
       }
-      if (result.error) return { success: false, message: result.error }
-    } catch (err) { console.error('Server validation failed:', err.message) }
-    if (OFFLINE_FALLBACK_ENABLED) {
-      const check = isKeyValid(key)
-      if (check.valid) {
-        return { success: true, message: 'مفتاح التفعيل صالح!', data: { key: check.key, status: 'active', expiryDate: check.expiryDate, deviceId: fingerprint } }
+      // Server reachable but rejected the license (suspended/expired/revoked/device/maxDevices).
+      // rejected:true tells the client to fail-closed immediately — no offline grace applies.
+      return { success: false, rejected: true, message: result.error || result.message || 'تم رفض مفتاح التفعيل من الخادم.' }
+    } catch (err) {
+      // Network/timeout error — server unreachable. offline:true lets the client honor its grace period.
+      console.error('Server validation failed:', err.message)
+      if (OFFLINE_FALLBACK_ENABLED) {
+        const check = isKeyValid(key)
+        if (check.valid) {
+          return { success: true, message: 'مفتاح التفعيل صالح!', data: { key: check.key, status: 'active', expiryDate: check.expiryDate, deviceId: fingerprint } }
+        }
       }
+      return { success: false, offline: true, message: 'تعذر الاتصال بالخادم للتحقق من الاشتراك.' }
     }
-    return { success: false, message: 'تعذر التحقق من المفتاح بدون اتصال بالخادم.' }
   })
 
   ipcm('check-key-status', async (e, { key } = {}) => {

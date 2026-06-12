@@ -298,7 +298,8 @@ function saveAccount(platform, username, password, status = 'active') {
 function openExternalUrl(rawUrl) {
   try {
     const parsed = new URL(rawUrl)
-    if (parsed.protocol === 'https:') {
+    // https for web/WhatsApp support links; mailto opens the user's mail client (support email).
+    if (parsed.protocol === 'https:' || parsed.protocol === 'mailto:') {
       shell.openExternal(parsed.toString()).catch(() => {})
     }
   } catch {}

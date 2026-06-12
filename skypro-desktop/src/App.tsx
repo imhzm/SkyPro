@@ -5,11 +5,14 @@ import LoginPage from './components/common/LoginPage'
 import ActivationPage from './components/common/ActivationPage'
 import ErrorBoundary from './components/common/ErrorBoundary'
 import { activationApi } from './services/api/activation'
-import { useEffect, useState } from 'react'
+import LicenseLockScreen from './components/common/LicenseLockScreen'
+import { useCallback, useEffect, useState } from 'react'
 import './index.css'
 
-// Grace period: allow offline usage for up to 72 hours after last successful validation
+// Allow offline usage for up to 24h after the last successful server validation, then fail-closed.
 const GRACE_PERIOD_MS = 24 * 60 * 60 * 1000
+// While online, silently re-validate the license on this interval (and on window focus / reconnect).
+const REVALIDATE_INTERVAL_MS = 45 * 60 * 1000
 const LAST_VALIDATED_KEY = 'skypro_last_validated_at'
 
 function isGracePeriodExpired(): boolean {
@@ -29,45 +32,95 @@ function clearValidationTimestamp() {
   localStorage.removeItem(LAST_VALIDATED_KEY)
 }
 
+type LockState = { message: string; variant: 'rejected' | 'offline' }
+
 function AppContent() {
   const { isAuthenticated, activation, setActivation, logout } = useAuthStore()
   const [isValidating, setIsValidating] = useState(false)
+  const [lockState, setLockState] = useState<LockState | null>(null)
 
-  useEffect(() => {
-    async function validateOnStart() {
-      if (!activation?.key) return
-      setIsValidating(true)
-      try {
-        const deviceInfo = await activationApi.getDeviceInfo()
-        const deviceId = deviceInfo?.fingerprint || activation.deviceId || ''
-        const result = await activationApi.validateKey(activation.key, deviceId)
+  // Single validation routine reused on startup, on an interval, and on focus / reconnect.
+  // Reads the live store inside so it stays referentially stable (no stale-closure re-subscribes).
+  const runValidation = useCallback(async (opts?: { initial?: boolean }) => {
+    const current = useAuthStore.getState().activation
+    if (!current?.key) return
+    if (opts?.initial) setIsValidating(true)
+    try {
+      const deviceInfo = await activationApi.getDeviceInfo()
+      const deviceId = deviceInfo?.fingerprint || current.deviceId || ''
+      const result = await activationApi.validateKey(current.key, deviceId)
 
-        if (result.success && result.data?.status === 'active') {
-          // Server confirmed key is active — update grace period timestamp
-          markValidationSuccess()
-        } else {
-          // Server explicitly rejected the key — invalidate immediately
-          console.warn('Key rejected by server:', result.data?.status)
-          clearValidationTimestamp()
-          setActivation(null)
-          logout()
-        }
-      } catch (err) {
-        // Network error or server unreachable — check grace period
-        console.error('Startup validation failed (network):', err)
-        if (isGracePeriodExpired()) {
-          console.warn('Grace period expired — forcing logout')
-          clearValidationTimestamp()
-          setActivation(null)
-          logout()
-        }
-        // If within grace period, allow continued use silently
-      } finally {
-        setIsValidating(false)
+      if (result.success && result.data?.status === 'active') {
+        // Server confirmed the license is active — refresh the offline grace window.
+        markValidationSuccess()
+        setLockState(null)
+        return
       }
+
+      if (result.rejected) {
+        // Server reachable and explicitly rejected (suspended/expired/revoked/device) → fail-closed now.
+        console.warn('License rejected by server:', result.message)
+        clearValidationTimestamp()
+        setLockState({ message: result.message || 'تم إيقاف اشتراكك. يرجى التواصل مع الدعم الفني.', variant: 'rejected' })
+        setActivation(null)
+        logout()
+        return
+      }
+
+      // Offline / unreachable / ambiguous — honor the offline grace period.
+      if (isGracePeriodExpired()) {
+        clearValidationTimestamp()
+        setLockState({
+          message: result.message || 'تعذر الاتصال بالخادم للتحقق من اشتراكك. تأكد من اتصالك بالإنترنت ثم أعد المحاولة.',
+          variant: 'offline',
+        })
+        setActivation(null)
+        logout()
+      }
+      // Within grace period → allow continued use silently.
+    } catch (err) {
+      // Unexpected error — treat as offline and honor grace.
+      console.error('License validation error:', err)
+      if (isGracePeriodExpired()) {
+        clearValidationTimestamp()
+        setLockState({ message: 'تعذر التحقق من اشتراكك. تأكد من اتصالك بالإنترنت ثم أعد المحاولة.', variant: 'offline' })
+        setActivation(null)
+        logout()
+      }
+    } finally {
+      if (opts?.initial) setIsValidating(false)
     }
-    validateOnStart()
-  }, [activation?.key, activation?.deviceId, setActivation, logout])
+  }, [setActivation, logout])
+
+  // Validate on startup and whenever the activation key changes (e.g. right after login).
+  useEffect(() => {
+    runValidation({ initial: true })
+  }, [activation?.key, runValidation])
+
+  // While authenticated, re-validate periodically and on window focus / regained connectivity.
+  // This is what makes a mid-session suspend/revoke take effect without an app restart.
+  useEffect(() => {
+    if (!isAuthenticated) return
+    const interval = setInterval(() => runValidation(), REVALIDATE_INTERVAL_MS)
+    const onWake = () => runValidation()
+    window.addEventListener('focus', onWake)
+    window.addEventListener('online', onWake)
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('focus', onWake)
+      window.removeEventListener('online', onWake)
+    }
+  }, [isAuthenticated, runValidation])
+
+  if (lockState) {
+    return (
+      <LicenseLockScreen
+        message={lockState.message}
+        variant={lockState.variant}
+        onReLogin={() => setLockState(null)}
+      />
+    )
+  }
 
   if (isValidating) {
     return (

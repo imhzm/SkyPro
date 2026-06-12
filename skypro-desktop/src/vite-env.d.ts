@@ -14,6 +14,10 @@ interface IpcError {
   success: false
   error?: string
   message?: string
+  /** Set by license re-validation when the server is unreachable (honor offline grace). */
+  offline?: boolean
+  /** Set by license re-validation when the server explicitly rejected the key (fail-closed now). */
+  rejected?: boolean
   [key: string]: unknown
 }
 
