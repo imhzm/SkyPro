@@ -189,7 +189,7 @@ export default function OffersSection({ hideWhenEmpty = false }: OffersSectionPr
               background:
                 'linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%)',
               border: '1px solid rgba(255, 255, 255, 0.20)',
-              backdropFilter: 'blur(8px)',
+
               boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.15), 0 6px 18px rgba(0,0,0,0.25)',
             }}
           >
@@ -242,7 +242,7 @@ export default function OffersSection({ hideWhenEmpty = false }: OffersSectionPr
               background:
                 'linear-gradient(135deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0.08) 100%)',
               border: '1px solid rgba(255, 255, 255, 0.22)',
-              backdropFilter: 'blur(8px)',
+
             }}
           >
             <span className="text-xs font-semibold text-white">اعرف المزيد</span>

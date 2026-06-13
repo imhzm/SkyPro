@@ -48,7 +48,6 @@ function hexToRgba(hex: string, alpha: number): string {
 const PANEL: React.CSSProperties = {
   background: 'var(--panel-bg)',
   border: '1px solid var(--panel-border)',
-  backdropFilter: 'blur(16px)',
 }
 
 const sqliteUtc = (msAgo: number) => new Date(Date.now() - msAgo).toISOString().slice(0, 19).replace('T', ' ')
@@ -189,9 +188,10 @@ export default function DashboardModule() {
   }, [socialPlatforms])
 
   useEffect(() => {
+    // Load once on mount. No polling interval — the dashboard fires ~40 db
+    // queries per load; a recurring timer caused periodic jank. Use the
+    // manual "تحديث" button to refresh on demand.
     loadData()
-    const handle = window.setInterval(loadData, 30000)
-    return () => window.clearInterval(handle)
   }, [loadData])
 
   const platformInfo = (pid: string) => platforms.find((p) => p.id === normPid(pid))

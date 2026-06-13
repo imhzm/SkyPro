@@ -50,8 +50,6 @@ export default function ToolCard({
         background: active
           ? `linear-gradient(135deg, ${accent}26 0%, ${accent}12 100%)`
           : 'rgba(255, 255, 255, 0.04)',
-        backdropFilter: 'blur(20px) saturate(140%)',
-        WebkitBackdropFilter: 'blur(20px) saturate(140%)',
         border: `1.5px solid ${active ? accent + '70' : 'rgba(255, 255, 255, 0.08)'}`,
         boxShadow: active
           ? `0 0 0 3px ${accent}26, 0 8px 24px ${accent}26, inset 0 1px 0 rgba(255,255,255,0.06)`
@@ -91,7 +89,6 @@ export default function ToolCard({
             background: 'rgba(255, 255, 255, 0.08)',
             border: '1px solid rgba(255, 255, 255, 0.12)',
             color: 'rgba(234, 243, 255, 0.70)',
-            backdropFilter: 'blur(6px)',
           }}
           title="تسجيل الدخول مطلوب"
         >

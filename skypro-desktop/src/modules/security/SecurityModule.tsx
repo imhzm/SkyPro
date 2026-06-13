@@ -160,7 +160,7 @@ export default function SecurityModule() {
       />
 
       {/* ============= PRESETS ============= */}
-      <div className="rounded-2xl p-5" style={{ background: 'var(--panel-bg)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.08)' }}>
+      <div className="rounded-2xl p-5" style={{ background: 'var(--panel-bg)', border: '1px solid rgba(255,255,255,0.08)' }}>
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #10b981, #0A6CF1)' }}>
             <Zap size={18} className="text-white" />
@@ -217,7 +217,7 @@ export default function SecurityModule() {
       </div>
 
       {/* ============= FEATURE TOGGLES ============= */}
-      <div className="rounded-2xl p-5" style={{ background: 'var(--panel-bg)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.08)' }}>
+      <div className="rounded-2xl p-5" style={{ background: 'var(--panel-bg)', border: '1px solid rgba(255,255,255,0.08)' }}>
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #8B2CF5, #FF4FD8)' }}>
             <Settings size={18} className="text-white" />
@@ -265,7 +265,7 @@ export default function SecurityModule() {
       </div>
 
       {/* ============= ADVANCED NUMERIC SETTINGS ============= */}
-      <div className="rounded-2xl p-5" style={{ background: 'var(--panel-bg)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.08)' }}>
+      <div className="rounded-2xl p-5" style={{ background: 'var(--panel-bg)', border: '1px solid rgba(255,255,255,0.08)' }}>
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #0A6CF1, #8B2CF5)' }}>
             <Gauge size={18} className="text-white" />
