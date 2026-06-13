@@ -517,7 +517,7 @@ export default function TwitterModule() {
                   boxShadow: sessionId ? '0 0 8px rgba(34,197,94,0.6)' : 'none',
                 }}
               />
-              <span className="text-xs font-medium" style={{ color: sessionId ? '#16a34a' : '#64748b' }}>
+              <span className="text-xs font-medium" style={{ color: sessionId ? '#16a34a' : 'var(--color-secondary-500)' }}>
                 {sessionId ? 'جلسة نشطة — جاهز للعمل' : 'لا توجد جلسة — سجل الدخول أولاً'}
               </span>
               {accounts.length > 0 && (
@@ -547,7 +547,7 @@ export default function TwitterModule() {
       {twitterAccounts.length > 0 && !sessionId && (
         <div
           className="px-5 py-3 border-t flex items-center gap-3 flex-wrap"
-          style={{ borderColor: 'rgba(29,161,242,0.12)', background: 'rgba(255,255,255,0.5)' }}
+          style={{ borderColor: 'rgba(29,161,242,0.12)', background: 'var(--panel-bg)' }}
         >
           <span className="text-xs font-semibold text-secondary-600 shrink-0">حسابات محفوظة:</span>
           <select
@@ -646,7 +646,7 @@ export default function TwitterModule() {
           <h4 className="font-bold text-secondary-900 text-sm mb-3">الحسابات المحفوظة على الجهاز</h4>
           <div className="space-y-2 max-h-[280px] overflow-y-auto scroll-container pr-1">
             {accounts.map((acc: any) => (
-              <div key={acc.id} className="flex items-center justify-between p-3 rounded-xl bg-white border border-secondary-100">
+              <div key={acc.id} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.04] border border-secondary-100">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0" style={{ background: 'rgba(29,161,242,0.1)', color: '#1DA1F2' }}>
                     {(acc.username || '?')[0].toUpperCase()}
@@ -687,7 +687,7 @@ export default function TwitterModule() {
     const list = displayResults
     if (list.length === 0) return null
     return (
-      <div className="mt-5 rounded-xl border border-secondary-200 bg-white/60 overflow-hidden">
+      <div className="mt-5 rounded-xl border border-secondary-200 bg-white/[0.04] overflow-hidden">
         <div className="flex items-center justify-between p-3 border-b border-secondary-100 flex-wrap gap-2">
           <h4 className="font-bold text-secondary-900 text-sm">النتائج ({list.length}){loading && <span className="text-emerald-600 animate-pulse"> • مباشر ⚡</span>}</h4>
           <div className="flex gap-2">
@@ -1031,8 +1031,8 @@ export default function TwitterModule() {
         <input type="text" className="input-field" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder='مثال: "تسويق إلكتروني" أو #ecommerce' />
       </div>
       <div className="flex gap-3 flex-wrap">
-        <button type="button" onClick={() => setSearchTab('latest')} className="px-4 py-2 rounded-lg text-sm font-medium" style={searchTab === 'latest' ? { background: 'rgba(6,182,212,0.12)', color: '#06b6d4', border: '1px solid #06b6d4' } : { background: 'white', color: '#475569', border: '1px solid #e2e8f0' }}>الأحدث</button>
-        <button type="button" onClick={() => setSearchTab('top')} className="px-4 py-2 rounded-lg text-sm font-medium" style={searchTab === 'top' ? { background: 'rgba(6,182,212,0.12)', color: '#06b6d4', border: '1px solid #06b6d4' } : { background: 'white', color: '#475569', border: '1px solid #e2e8f0' }}>الأشهر</button>
+        <button type="button" onClick={() => setSearchTab('latest')} className="px-4 py-2 rounded-lg text-sm font-medium" style={searchTab === 'latest' ? { background: 'rgba(6,182,212,0.12)', color: '#06b6d4', border: '1px solid #06b6d4' } : { background: 'var(--panel-bg)', color: 'var(--color-secondary-600)', border: '1px solid rgba(255,255,255,0.08)' }}>الأحدث</button>
+        <button type="button" onClick={() => setSearchTab('top')} className="px-4 py-2 rounded-lg text-sm font-medium" style={searchTab === 'top' ? { background: 'rgba(6,182,212,0.12)', color: '#06b6d4', border: '1px solid #06b6d4' } : { background: 'var(--panel-bg)', color: 'var(--color-secondary-600)', border: '1px solid rgba(255,255,255,0.08)' }}>الأشهر</button>
       </div>
       <div>
         <label className="label-field">الحد الأقصى: {searchLimit}</label>
@@ -1205,8 +1205,8 @@ export default function TwitterModule() {
         <input type="url" className="input-field" value={interactorsTweetUrl} onChange={e => setInteractorsTweetUrl(e.target.value)} placeholder="https://x.com/user/status/..." />
       </div>
       <div className="flex gap-3 flex-wrap">
-        <button type="button" onClick={() => setInteractorsMode('likers')} className="px-4 py-2 rounded-lg text-sm font-medium" style={interactorsMode === 'likers' ? { background: 'rgba(16,185,129,0.12)', color: '#10b981', border: '1px solid #10b981' } : { background: 'white', color: '#475569', border: '1px solid #e2e8f0' }}>المعجبين</button>
-        <button type="button" onClick={() => setInteractorsMode('retweeters')} className="px-4 py-2 rounded-lg text-sm font-medium" style={interactorsMode === 'retweeters' ? { background: 'rgba(16,185,129,0.12)', color: '#10b981', border: '1px solid #10b981' } : { background: 'white', color: '#475569', border: '1px solid #e2e8f0' }}>المُعيدين</button>
+        <button type="button" onClick={() => setInteractorsMode('likers')} className="px-4 py-2 rounded-lg text-sm font-medium" style={interactorsMode === 'likers' ? { background: 'rgba(16,185,129,0.12)', color: '#10b981', border: '1px solid #10b981' } : { background: 'var(--panel-bg)', color: 'var(--color-secondary-600)', border: '1px solid rgba(255,255,255,0.08)' }}>المعجبين</button>
+        <button type="button" onClick={() => setInteractorsMode('retweeters')} className="px-4 py-2 rounded-lg text-sm font-medium" style={interactorsMode === 'retweeters' ? { background: 'rgba(16,185,129,0.12)', color: '#10b981', border: '1px solid #10b981' } : { background: 'var(--panel-bg)', color: 'var(--color-secondary-600)', border: '1px solid rgba(255,255,255,0.08)' }}>المُعيدين</button>
       </div>
       <div>
         <label className="label-field">الحد الأقصى: {interactorsLimit}</label>

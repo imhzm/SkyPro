@@ -92,9 +92,9 @@ export default function AntiBanSystem() {
             const Icon = feature.icon
             const isActive = settings[feature.key] as boolean
             return (
-              <div key={feature.key} className="flex items-center justify-between p-3.5 rounded-xl transition-all duration-200" style={{ background: isActive ? 'rgba(248,250,252,0.8)' : 'rgba(248,250,252,0.4)', border: `1px solid ${isActive ? 'rgba(226,232,240,0.6)' : 'rgba(226,232,240,0.3)'}` }}>
+              <div key={feature.key} className="flex items-center justify-between p-3.5 rounded-xl transition-all duration-200" style={{ background: isActive ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.03)', border: `1px solid ${isActive ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.08)'}` }}>
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all" style={{ background: isActive ? `${feature.color}15` : 'rgba(226,232,240,0.5)' }}>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all" style={{ background: isActive ? `${feature.color}15` : 'rgba(255,255,255,0.08)' }}>
                     <Icon size={16} style={{ color: isActive ? feature.color : '#94a3b8' }} />
                   </div>
                   <div>

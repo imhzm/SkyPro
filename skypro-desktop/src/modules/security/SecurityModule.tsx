@@ -160,7 +160,7 @@ export default function SecurityModule() {
       />
 
       {/* ============= PRESETS ============= */}
-      <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)', border: '1px solid rgba(226,232,240,0.6)' }}>
+      <div className="rounded-2xl p-5" style={{ background: 'var(--panel-bg)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.08)' }}>
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #10b981, #0A6CF1)' }}>
             <Zap size={18} className="text-white" />
@@ -183,8 +183,8 @@ export default function SecurityModule() {
                   active ? 'shadow-md' : 'hover:shadow-md'
                 }`}
                 style={{
-                  background: active ? `${preset.color}10` : 'rgba(248,250,252,0.6)',
-                  border: `2px solid ${active ? preset.color : 'rgba(226,232,240,0.6)'}`,
+                  background: active ? `${preset.color}10` : 'rgba(255,255,255,0.03)',
+                  border: `2px solid ${active ? preset.color : 'rgba(255,255,255,0.08)'}`,
                 }}
               >
                 <div className="flex items-center justify-between mb-2">
@@ -203,7 +203,7 @@ export default function SecurityModule() {
                     </span>
                   )}
                 </div>
-                <h4 className="font-bold text-sm" style={{ color: active ? preset.color : '#0f172a' }}>{preset.label}</h4>
+                <h4 className="font-bold text-sm" style={{ color: active ? preset.color : 'var(--color-secondary-900)' }}>{preset.label}</h4>
                 <p className="text-[11px] text-secondary-500 mt-0.5 leading-relaxed">{preset.desc}</p>
                 <div className="flex items-center gap-2 mt-2 text-[10px] text-secondary-600 font-mono">
                   <span>{preset.settings.minDelay}-{preset.settings.maxDelay}ms</span>
@@ -217,7 +217,7 @@ export default function SecurityModule() {
       </div>
 
       {/* ============= FEATURE TOGGLES ============= */}
-      <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)', border: '1px solid rgba(226,232,240,0.6)' }}>
+      <div className="rounded-2xl p-5" style={{ background: 'var(--panel-bg)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.08)' }}>
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #8B2CF5, #FF4FD8)' }}>
             <Settings size={18} className="text-white" />
@@ -236,14 +236,14 @@ export default function SecurityModule() {
                 key={feature.key}
                 className="flex items-center justify-between p-3.5 rounded-xl transition-all duration-200"
                 style={{
-                  background: isActive ? 'rgba(248,250,252,0.8)' : 'rgba(248,250,252,0.4)',
-                  border: `1px solid ${isActive ? 'rgba(226,232,240,0.6)' : 'rgba(226,232,240,0.3)'}`,
+                  background: isActive ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.02)',
+                  border: `1px solid ${isActive ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.05)'}`,
                 }}
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <div
                     className="w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-200 flex-shrink-0"
-                    style={{ background: isActive ? `${feature.color}15` : 'rgba(226,232,240,0.5)' }}
+                    style={{ background: isActive ? `${feature.color}15` : 'rgba(255,255,255,0.08)' }}
                   >
                     <Icon size={17} style={{ color: isActive ? feature.color : '#94a3b8' }} />
                   </div>
@@ -265,7 +265,7 @@ export default function SecurityModule() {
       </div>
 
       {/* ============= ADVANCED NUMERIC SETTINGS ============= */}
-      <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)', border: '1px solid rgba(226,232,240,0.6)' }}>
+      <div className="rounded-2xl p-5" style={{ background: 'var(--panel-bg)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.08)' }}>
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #0A6CF1, #8B2CF5)' }}>
             <Gauge size={18} className="text-white" />
@@ -315,7 +315,7 @@ export default function SecurityModule() {
         </div>
 
         {/* Delay range visualization */}
-        <div className="p-3 rounded-xl mb-4" style={{ background: 'rgba(248,250,252,0.8)', border: '1px solid rgba(226,232,240,0.4)' }}>
+        <div className="p-3 rounded-xl mb-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
           <div className="flex items-center justify-between text-xs text-secondary-500 mb-2">
             <span className="font-mono">{settings.minDelay.toLocaleString('en')}ms</span>
             <span className="font-bold text-secondary-700">نطاق التأخير الفعلي</span>

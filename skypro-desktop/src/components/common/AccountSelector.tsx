@@ -160,7 +160,7 @@ export default function AccountSelector({
         <div
           className="text-center py-6 rounded-xl"
           style={{
-            background: 'rgba(248, 250, 252, 0.6)',
+            background: 'rgba(255,255,255,0.03)',
             border: '1px dashed rgba(99, 102, 241, 0.25)',
           }}
         >
@@ -184,7 +184,7 @@ export default function AccountSelector({
       ) : (
         <div
           className="max-h-56 overflow-y-auto space-y-1 scroll-container rounded-xl p-1"
-          style={{ background: 'rgba(248, 250, 252, 0.4)' }}
+          style={{ background: 'rgba(255,255,255,0.03)' }}
         >
           {platformAccounts.map((account) => {
             const isSelected = selectedIds.has(account.id)
@@ -195,8 +195,8 @@ export default function AccountSelector({
                 style={{
                   background: isSelected
                     ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.10), rgba(168, 85, 247, 0.06))'
-                    : 'rgba(255, 255, 255, 0.6)',
-                  border: `1px solid ${isSelected ? 'rgba(99, 102, 241, 0.30)' : 'rgba(226, 232, 240, 0.5)'}`,
+                    : 'var(--panel-bg)',
+                  border: `1px solid ${isSelected ? 'rgba(99, 102, 241, 0.30)' : 'rgba(255,255,255,0.08)'}`,
                   opacity: cycleActive ? 0.7 : 1,
                   cursor: cycleActive ? 'not-allowed' : 'pointer',
                 }}
@@ -217,7 +217,7 @@ export default function AccountSelector({
                           boxShadow: '0 2px 6px rgba(99, 102, 241, 0.35)',
                         }
                       : {
-                          background: 'white',
+                          background: 'var(--panel-bg)',
                           border: '1.5px solid #cbd5e1',
                         }
                   }
@@ -302,7 +302,7 @@ export default function AccountSelector({
         <button
           onClick={() => setShowSettings(!showSettings)}
           className="flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg transition-colors"
-          style={{ background: 'rgba(248,250,252,0.8)', border: '1px solid rgba(226,232,240,0.5)', color: '#64748b' }}
+          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', color: '#64748b' }}
         >
           <Settings size={12} />
           {showSettings ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
@@ -320,7 +320,7 @@ export default function AccountSelector({
 
       {/* Expandable Settings */}
       {showSettings && (
-        <div className="grid grid-cols-2 gap-3 p-3 rounded-xl" style={{ background: 'rgba(248,250,252,0.8)', border: '1px solid rgba(226,232,240,0.4)' }}>
+        <div className="grid grid-cols-2 gap-3 p-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
           <div>
             <label className="label-field text-[11px]">عمليات/حساب</label>
             <input type="number" value={settings.maxOperations} onChange={e => setSettings(s => ({ ...s, maxOperations: parseInt(e.target.value) || 50 }))} className="input-field text-sm" min={1} max={1000} disabled={cycleActive} />

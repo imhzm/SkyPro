@@ -84,7 +84,7 @@ export default function OffersSection({ hideWhenEmpty = false }: OffersSectionPr
     return (
       <div
         className="rounded-2xl p-5 h-36 flex items-center justify-center shimmer"
-        style={{ background: 'rgba(255,255,255,0.6)' }}
+        style={{ background: 'var(--panel-bg)' }}
       />
     )
   }

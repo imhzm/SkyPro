@@ -517,7 +517,7 @@ export default function LinkedinModule() {
                   boxShadow: sessionId ? '0 0 8px rgba(34,197,94,0.6)' : 'none',
                 }}
               />
-              <span className="text-xs font-medium" style={{ color: sessionId ? '#16a34a' : '#64748b' }}>
+              <span className="text-xs font-medium" style={{ color: sessionId ? '#16a34a' : 'var(--color-secondary-500)' }}>
                 {sessionId ? 'جلسة نشطة — جاهز للعمل' : 'لا توجد جلسة — سجل الدخول أولاً'}
               </span>
               {accounts.length > 0 && (
@@ -547,7 +547,7 @@ export default function LinkedinModule() {
       {linkedinAccounts.length > 0 && !sessionId && (
         <div
           className="px-5 py-3 border-t flex items-center gap-3 flex-wrap"
-          style={{ borderColor: 'rgba(10,102,194,0.12)', background: 'rgba(255,255,255,0.5)' }}
+          style={{ borderColor: 'rgba(10,102,194,0.12)', background: 'var(--panel-bg)' }}
         >
           <span className="text-xs font-semibold text-secondary-600 shrink-0">حسابات محفوظة:</span>
           <select
@@ -646,7 +646,7 @@ export default function LinkedinModule() {
           <h4 className="font-bold text-secondary-900 text-sm mb-3">الحسابات المحفوظة على الجهاز</h4>
           <div className="space-y-2 max-h-[280px] overflow-y-auto scroll-container pr-1">
             {accounts.map((acc: any) => (
-              <div key={acc.id} className="flex items-center justify-between p-3 rounded-xl bg-white border border-secondary-100">
+              <div key={acc.id} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.04] border border-secondary-100">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0" style={{ background: 'rgba(10,102,194,0.1)', color: '#0A66C2' }}>
                     {(acc.username || '?')[0].toUpperCase()}
@@ -687,7 +687,7 @@ export default function LinkedinModule() {
     const list = displayResults
     if (list.length === 0) return null
     return (
-      <div className="mt-5 rounded-xl border border-secondary-200 bg-white/60 overflow-hidden">
+      <div className="mt-5 rounded-xl border border-secondary-200 bg-white/[0.04] overflow-hidden">
         <div className="flex items-center justify-between p-3 border-b border-secondary-100 flex-wrap gap-2">
           <h4 className="font-bold text-secondary-900 text-sm">النتائج ({list.length})</h4>
           <div className="flex gap-2">
@@ -1144,8 +1144,8 @@ export default function LinkedinModule() {
         <input type="url" className="input-field" value={engagementPostUrl} onChange={e => setEngagementPostUrl(e.target.value)} placeholder="https://linkedin.com/posts/..." />
       </div>
       <div className="flex gap-3 flex-wrap">
-        <button type="button" onClick={() => setEngagementMode('reactions')} className="px-4 py-2 rounded-lg text-sm font-medium" style={engagementMode === 'reactions' ? { background: 'rgba(244,63,94,0.12)', color: '#f43f5e', border: '1px solid #f43f5e' } : { background: 'white', color: '#475569', border: '1px solid #e2e8f0' }}>المعجبين</button>
-        <button type="button" onClick={() => setEngagementMode('comments')} className="px-4 py-2 rounded-lg text-sm font-medium" style={engagementMode === 'comments' ? { background: 'rgba(244,63,94,0.12)', color: '#f43f5e', border: '1px solid #f43f5e' } : { background: 'white', color: '#475569', border: '1px solid #e2e8f0' }}>المعلقين</button>
+        <button type="button" onClick={() => setEngagementMode('reactions')} className="px-4 py-2 rounded-lg text-sm font-medium" style={engagementMode === 'reactions' ? { background: 'rgba(244,63,94,0.12)', color: '#f43f5e', border: '1px solid #f43f5e' } : { background: 'var(--panel-bg)', color: 'var(--color-secondary-600)', border: '1px solid rgba(255,255,255,0.08)' }}>المعجبين</button>
+        <button type="button" onClick={() => setEngagementMode('comments')} className="px-4 py-2 rounded-lg text-sm font-medium" style={engagementMode === 'comments' ? { background: 'rgba(244,63,94,0.12)', color: '#f43f5e', border: '1px solid #f43f5e' } : { background: 'var(--panel-bg)', color: 'var(--color-secondary-600)', border: '1px solid rgba(255,255,255,0.08)' }}>المعلقين</button>
       </div>
       <div>
         <label className="label-field">الحد الأقصى: {engagementLimit}</label>
