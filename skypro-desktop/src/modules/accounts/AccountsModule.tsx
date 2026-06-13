@@ -12,6 +12,8 @@ import {
 } from 'lucide-react'
 import ModuleHeader from '../../components/common/ModuleHeader'
 import ConfirmDialog from '../../components/common/ConfirmDialog'
+import BrandIcon from '../../components/icons/BrandIcon'
+import { hasBrandIcon } from '../../components/icons/brand-data'
 
 interface DebugRow {
   id: number
@@ -45,6 +47,27 @@ const PLATFORMS = [
   { id: 'threads', label: 'Threads', icon: AtSign },
   { id: 'reddit', label: 'Reddit', icon: Globe },
 ]
+
+// Marketing-channel summary cards (the headline row under the header).
+// Only ids with an official brand mark are shown; the 6 primary channels
+// lead, the rest follow so every channel is represented. Arabic labels
+// mirror src/data/platforms.ts. All ids pass hasBrandIcon() — verified.
+const CHANNELS: { id: string; label: string }[] = [
+  { id: 'google', label: 'جوجل' },
+  { id: 'facebook', label: 'فيسبوك' },
+  { id: 'whatsapp', label: 'واتساب' },
+  { id: 'instagram', label: 'إنستجرام' },
+  { id: 'twitter', label: 'تويتر / X' },
+  { id: 'linkedin', label: 'لينكدإن' },
+  { id: 'telegram', label: 'تيليجرام' },
+  { id: 'telegram-premium', label: 'تيليجرام بريميوم' },
+  { id: 'snapchat', label: 'سناب شات' },
+  { id: 'pinterest', label: 'بنترست' },
+  { id: 'reddit', label: 'ريديت' },
+  { id: 'tiktok', label: 'تيك توك' },
+  { id: 'threads', label: 'ثريدز' },
+  { id: 'send-emails', label: 'البريد الإلكتروني' },
+].filter((c) => hasBrandIcon(c.id))
 
 interface FormState {
   platform: string
@@ -148,6 +171,16 @@ export default function AccountsModule() {
       )
     })
   }, [accounts, filterPlatform, searchQuery])
+
+  // Per-platform saved-account counts — grouped once from the store data
+  // (no extra IPC). Drives the summary-card row counts.
+  const countsByPlatform = useMemo(() => {
+    const map: Record<string, number> = {}
+    for (const a of accounts) {
+      map[a.platform] = (map[a.platform] || 0) + 1
+    }
+    return map
+  }, [accounts])
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault()
@@ -533,7 +566,7 @@ export default function AccountsModule() {
 
       <ModuleHeader
         title="الحسابات المحفوظة"
-        subtitle="إدارة جميع حسابات السوشيال ميديا في مكان واحد · يمكنك استخدامها للتدوير التلقائي بين المنصات"
+        subtitle="إدارة جميع حساباتك في مكان واحد لأتمتة النشر والتقارير والتدوير التلقائي بين المنصات"
         icon={Users}
         badge={{ label: `${accounts.length} حساب`, tone: 'neutral' }}
         action={
@@ -552,31 +585,59 @@ export default function AccountsModule() {
         }
       />
 
-      {/* Platform Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-6 gap-2.5">
-        {PLATFORMS.slice(0, 6).map((p) => {
-          const count = accounts.filter((a) => a.platform === p.id).length
-          const gradient = getPlatformGradient(p.id)
-          const isActive = filterPlatform === p.id
+      {/* Per-platform summary cards — the headline visual. One card per
+          marketing channel: brand mark + Arabic name, big saved-account
+          count, and an honest status pill (we have no live-session signal
+          for saved accounts, so it reflects whether any are stored — never
+          a fabricated "connected" state). Clicking a card filters the table
+          to that platform. Counts come from the grouped store data. */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        {CHANNELS.map((c) => {
+          const count = countsByPlatform[c.id] || 0
+          const isActive = filterPlatform === c.id
+          const hasAccounts = count > 0
           return (
             <button
-              key={p.id}
-              onClick={() => setFilterPlatform(filterPlatform === p.id ? '' : p.id)}
-              className="group flex items-center gap-2.5 p-3 rounded-xl transition-all duration-200 hover:-translate-y-0.5"
+              key={c.id}
+              onClick={() => setFilterPlatform(filterPlatform === c.id ? '' : c.id)}
+              className="group flex flex-col items-center text-center gap-2 p-4 rounded-2xl transition-all duration-200 hover:-translate-y-0.5"
               style={{
-                background: isActive ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.7)',
-                backdropFilter: 'blur(8px)',
-                border: `1px solid ${isActive ? '#6366f1' : 'rgba(226,232,240,0.5)'}`,
-                boxShadow: isActive ? '0 4px 16px rgba(99,102,241,0.15)' : 'none',
+                background: isActive
+                  ? 'rgba(124,58,237,0.18)'
+                  : 'var(--panel-bg)',
+                border: `1px solid ${isActive ? 'rgba(124,58,237,0.55)' : 'var(--panel-border)'}`,
+                boxShadow: isActive ? '0 8px 24px rgba(124,58,237,0.22)' : 'none',
               }}
+              title={`فلترة حسابات ${c.label}`}
             >
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white flex-shrink-0 transition-shadow group-hover:shadow-md" style={{ background: gradient }}>
-                <p.icon size={16} />
+              <div
+                className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105"
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+              >
+                <BrandIcon platform={c.id} variant="color" size={26} />
               </div>
-              <div className="min-w-0 text-right">
-                <p className="text-xs font-semibold text-secondary-900 truncate">{p.label}</p>
-                <p className="text-[10px] text-secondary-400">{count} حساب</p>
-              </div>
+              <p className={`text-xs font-semibold truncate w-full ${isActive ? 'text-white' : 'text-secondary-500'}`}>
+                {c.label}
+              </p>
+              <p className="text-2xl font-extrabold leading-none text-secondary-900">{count}</p>
+              <span className="text-[10px] text-secondary-500 -mt-1">حساب</span>
+              <span
+                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold mt-0.5"
+                style={
+                  hasAccounts
+                    ? { background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.30)', color: '#22c55e' }
+                    : { background: 'rgba(245,158,11,0.10)', border: '1px solid rgba(245,158,11,0.28)', color: '#f59e0b' }
+                }
+              >
+                <span
+                  className="w-1.5 h-1.5 rounded-full"
+                  style={{
+                    background: hasAccounts ? '#22c55e' : '#f59e0b',
+                    boxShadow: hasAccounts ? '0 0 6px rgba(34,197,94,0.55)' : 'none',
+                  }}
+                />
+                {hasAccounts ? `${count} محفوظ` : 'لا حسابات'}
+              </span>
             </button>
           )
         })}
@@ -617,8 +678,8 @@ export default function AccountsModule() {
                 onClick={() => setImportMode('single')}
                 className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all duration-200 ${
                   importMode === 'single'
-                    ? 'bg-white text-secondary-900 shadow-sm'
-                    : 'text-secondary-600 hover:text-secondary-900'
+                    ? 'bg-[rgba(124,58,237,0.22)] text-white shadow-sm'
+                    : 'text-secondary-500 hover:text-secondary-900'
                 }`}
               >
                 إضافة فردية
@@ -628,8 +689,8 @@ export default function AccountsModule() {
                 onClick={() => setImportMode('bulk')}
                 className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all duration-200 ${
                   importMode === 'bulk'
-                    ? 'bg-white text-secondary-900 shadow-sm'
-                    : 'text-secondary-600 hover:text-secondary-900'
+                    ? 'bg-[rgba(124,58,237,0.22)] text-white shadow-sm'
+                    : 'text-secondary-500 hover:text-secondary-900'
                 }`}
               >
                 استيراد جماعي
@@ -770,7 +831,7 @@ export default function AccountsModule() {
             )}
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3 mt-5 pt-4" style={{ borderTop: '1px solid rgba(226, 232, 240, 0.6)' }}>
+          <div className="flex flex-wrap items-center justify-between gap-3 mt-5 pt-4" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
             <p className="text-[11px] text-secondary-500 flex items-center gap-1.5">
               <Shield size={12} style={{ color: '#a855f7' }} />
               <span>الباسورد محفوظ مشفر — يستخدم فقط داخل البرنامج</span>
@@ -844,8 +905,8 @@ export default function AccountsModule() {
               />
               <Users size={34} className="relative" style={{ color: '#7c3aed' }} />
             </div>
-            <p className="text-secondary-700 font-bold">
-              {searchQuery || filterPlatform ? 'لا توجد نتائج مطابقة' : 'لا توجد حسابات بعد'}
+            <p className="text-secondary-900 font-bold">
+              {searchQuery || filterPlatform ? 'لا توجد نتائج مطابقة' : 'لا توجد حسابات محفوظة بعد'}
             </p>
             <p className="text-xs text-secondary-400 mt-1.5 max-w-md mx-auto">
               {searchQuery || filterPlatform
@@ -864,7 +925,7 @@ export default function AccountsModule() {
         ) : (
           <>
             {/* Bulk action toolbar */}
-            <div className="px-4 py-3 border-b border-secondary-100 flex flex-wrap items-center gap-2 bg-white/40">
+            <div className="px-4 py-3 border-b border-secondary-100 flex flex-wrap items-center gap-2 bg-white/[0.03]">
               <button
                 type="button"
                 onClick={toggleSelectAll}
@@ -978,9 +1039,12 @@ export default function AccountsModule() {
                             const hasAnyContent = notesText || displayUsername || proxyText
                             if (!hasAnyContent) {
                               return (
-                                <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-50 border border-amber-200">
-                                  <AlertCircle size={11} className="text-amber-600 flex-shrink-0" />
-                                  <span className="text-[11px] font-bold text-amber-700">
+                                <div
+                                  className="flex items-center gap-1.5 px-2 py-1 rounded-md"
+                                  style={{ background: 'rgba(245,158,11,0.10)', border: '1px solid rgba(245,158,11,0.28)' }}
+                                >
+                                  <AlertCircle size={11} className="text-amber-400 flex-shrink-0" />
+                                  <span className="text-[11px] font-bold text-amber-300">
                                     ربط مطلوب — اضغط زر &quot;ربط الحساب&quot; للدخول
                                   </span>
                                 </div>
@@ -990,7 +1054,7 @@ export default function AccountsModule() {
                             return (
                               <>
                                 {notesText && (
-                                  <span className="font-bold text-sm text-violet-700 truncate" dir="auto" title={notesText}>
+                                  <span className="font-bold text-sm text-violet-300 truncate" dir="auto" title={notesText}>
                                     {notesText}
                                   </span>
                                 )}
@@ -1000,7 +1064,7 @@ export default function AccountsModule() {
                                   </span>
                                 )}
                                 {!notesText && !displayUsername && proxyText && (
-                                  <span className="text-[11px] text-pink-700 truncate font-mono" dir="ltr">
+                                  <span className="text-[11px] text-pink-300 truncate font-mono" dir="ltr">
                                     حساب عبر بروكسي
                                   </span>
                                 )}
@@ -1023,7 +1087,12 @@ export default function AccountsModule() {
                       </td>
                       <td>
                         {acc.proxy ? (
-                          <code className="text-[10.5px] font-mono px-1.5 py-0.5 rounded-md bg-brand-50 text-brand-700 border border-brand-200" dir="ltr" title={acc.proxy}>
+                          <code
+                            className="text-[10.5px] font-mono px-1.5 py-0.5 rounded-md text-brand-300"
+                            style={{ background: 'rgba(124,58,237,0.12)', border: '1px solid rgba(124,58,237,0.28)' }}
+                            dir="ltr"
+                            title={acc.proxy}
+                          >
                             {acc.proxy.replace(/^.*@/, '*****@')}
                           </code>
                         ) : (
@@ -1165,7 +1234,7 @@ export default function AccountsModule() {
               </div>
             </div>
             <div className="flex items-center gap-1.5">
-              <button type="button" onClick={copyDebugToClipboard} className="text-[11px] font-semibold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 bg-slate-700 text-slate-200 hover:bg-slate-600">
+              <button type="button" onClick={copyDebugToClipboard} className="text-[11px] font-semibold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 bg-white/[0.06] text-slate-200 hover:bg-white/[0.10] border border-white/[0.08]">
                 <Copy size={11} /> نسخ JSON
               </button>
               <button type="button" onClick={loadDebug} disabled={debugLoading} className="text-[11px] font-semibold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 bg-violet-600 text-white hover:bg-violet-500 disabled:opacity-50">
@@ -1181,7 +1250,7 @@ export default function AccountsModule() {
           ) : (
             <div className="overflow-x-auto rounded-lg" style={{ background: 'rgba(0,0,0,0.3)' }}>
               <table className="w-full text-[11px]" style={{ direction: 'ltr' }}>
-                <thead className="bg-slate-800/80 text-slate-300 text-[10px] uppercase tracking-wider">
+                <thead className="bg-white/[0.04] text-slate-300 text-[10px] uppercase tracking-wider">
                   <tr>
                     <th className="px-2 py-2 text-left">ID</th>
                     <th className="px-2 py-2 text-left">platform</th>
@@ -1200,7 +1269,7 @@ export default function AccountsModule() {
                     const userInvis = r.username_len > 0 && !/[\p{L}\p{N}]/u.test(r.username || '')
                     const trouble = isEmpty || userInvis
                     return (
-                      <tr key={r.id} className={trouble ? 'bg-red-900/30' : 'hover:bg-slate-800/50'}>
+                      <tr key={r.id} className={trouble ? 'bg-red-900/30' : 'hover:bg-white/[0.04]'}>
                         <td className="px-2 py-1.5 text-slate-400">{r.id}</td>
                         <td className="px-2 py-1.5">
                           <span className={r.platform_len === 0 ? 'text-red-400' : 'text-emerald-300'}>
