@@ -577,7 +577,7 @@ export default function AccountsModule() {
               background:
                 'linear-gradient(135deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0.08) 100%)',
               border: '1px solid rgba(255,255,255,0.25)',
-              backdropFilter: 'blur(8px)',
+
             }}
           >
             {showForm ? (<><X size={15} /> إغلاق</>) : (<><Plus size={15} /> إضافة حساب</>)}
