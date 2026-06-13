@@ -116,7 +116,7 @@ export default function SettingsModule() {
   return (
     <div className="space-y-6 max-w-3xl">
       {(message || error) && (
-        <div className={`flex items-center gap-3 p-4 rounded-xl text-sm font-medium ${message ? 'text-emerald-700' : 'text-red-600'}`} style={message ? { background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' } : { background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
+        <div className={`flex items-center gap-3 p-4 rounded-xl text-sm font-medium ${message ? 'text-emerald-300' : 'text-red-600'}`} style={message ? { background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' } : { background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
           {message ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
           {message || error}
         </div>
@@ -179,7 +179,7 @@ export default function SettingsModule() {
 
             {updateState.status === 'up-to-date' && (
               <div className="flex items-center gap-2">
-                <span className="text-xs" style={{ color: '#16a34a' }}>
+                <span className="text-xs" style={{ color: '#34d399' }}>
                   <CheckCircle size={14} className="inline ml-1" />
                   أحدث إصدار
                 </span>
@@ -267,7 +267,7 @@ export default function SettingsModule() {
             <RotateCcw size={20} className="text-white" />
           </div>
           <div>
-            <h3 className="font-bold text-red-700">إعادة تعيين</h3>
+            <h3 className="font-bold text-red-300">إعادة تعيين</h3>
             <p className="text-xs text-red-500">حذف جميع البيانات المحلية والإعدادات{confirmReset ? ' — اضغط مرة أخرى للتأكيد' : ''}</p>
           </div>
         </div>

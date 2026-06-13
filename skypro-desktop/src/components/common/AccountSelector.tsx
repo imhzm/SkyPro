@@ -264,7 +264,7 @@ export default function AccountSelector({
                     account.status === 'active'
                       ? {
                           background: 'rgba(34, 197, 94, 0.10)',
-                          color: '#15803d',
+                          color: '#34d399',
                           border: '1px solid rgba(34, 197, 94, 0.25)',
                         }
                       : {
@@ -311,7 +311,7 @@ export default function AccountSelector({
 
       {/* Warning for missing params */}
       {hasNoTaskParams && (
-        <div className="flex items-start gap-2 p-3 rounded-xl text-xs" style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.15)', color: '#b45309' }}>
+        <div className="flex items-start gap-2 p-3 rounded-xl text-xs" style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.15)', color: '#fbbf24' }}>
           {taskType === 'extract'
             ? 'حدد نوع الاستخراج وأدخل البيانات المطلوبة قبل بدء الدورة'
             : 'أدخل نص الرسالة والمستلمين قبل بدء الدورة'}
@@ -364,7 +364,7 @@ export default function AccountSelector({
       {/* Cycle Progress */}
       {cycleActive && cycleProgress && (
         <div className="p-3 rounded-xl space-y-2" style={{ background: 'rgba(10,108,241,0.06)', border: '1px solid rgba(10,108,241,0.15)' }}>
-          <div className="flex items-center gap-2 text-sm" style={{ color: '#1e40af' }}>
+          <div className="flex items-center gap-2 text-sm" style={{ color: '#60a5fa' }}>
             <Loader2 size={14} className="animate-spin" />
             <span className="font-medium">
               {cycleProgress.type === 'cycle_progress' && `جاري المعالجة: ${cycleProgress.accountName} (${cycleProgress.currentAccount}/${cycleProgress.totalAccounts})`}
@@ -386,7 +386,7 @@ export default function AccountSelector({
 
       {/* Cycle Complete */}
       {!cycleActive && cycleProgress && cycleProgress.type === 'cycle_account_done' && (
-        <div className="flex items-center gap-2 p-3 rounded-xl text-sm" style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', color: '#16a34a' }}>
+        <div className="flex items-center gap-2 p-3 rounded-xl text-sm" style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', color: '#34d399' }}>
           <CheckSquare size={16} />
           <span className="font-medium">تمت الدورة بنجاح ({cycleProgress.totalResults || 0} نتيجة)</span>
         </div>

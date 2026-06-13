@@ -191,7 +191,7 @@ export default function AccountCycleBanner({
               onClick={toggleAll}
               className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors"
               style={{
-                color: '#0a6cf1',
+                color: '#60a5fa',
                 background: 'rgba(10, 108, 241, 0.08)',
                 border: '1px solid rgba(10, 108, 241, 0.18)',
               }}

@@ -742,7 +742,7 @@ export default function PinterestModule() {
 
   const renderSignupBatchBody = () => (
     <div className="space-y-5">
-      <div className="p-3 rounded-lg text-xs text-amber-700" style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.3)' }}>
+      <div className="p-3 rounded-lg text-xs text-amber-300" style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.3)' }}>
         <AlertCircle size={14} className="inline ml-1" />
         يفتح عدة نوافذ تسجيل في Pinterest. أكمل كل حساب يدوياً (Pinterest تستخدم CAPTCHA + تحقق بريد).
       </div>
@@ -829,11 +829,11 @@ export default function PinterestModule() {
             </div>
             <div className="p-3 rounded-xl border bg-white/[0.04]">
               <p className="text-xs text-secondary-500">متابعين</p>
-              <p className="text-2xl font-bold text-rose-700">{analyzeResult.followers || '-'}</p>
+              <p className="text-2xl font-bold text-rose-300">{analyzeResult.followers || '-'}</p>
             </div>
             <div className="p-3 rounded-xl border bg-white/[0.04]">
               <p className="text-xs text-secondary-500">متابعون</p>
-              <p className="text-2xl font-bold text-violet-700">{analyzeResult.following || '-'}</p>
+              <p className="text-2xl font-bold text-violet-300">{analyzeResult.following || '-'}</p>
             </div>
           </div>
           {analyzeResult.bio && (
@@ -867,7 +867,7 @@ export default function PinterestModule() {
   // ---- Auto-publish panel ----
   const renderAutoPublishBody = () => (
     <div className="space-y-5">
-      <div className="p-3 rounded-lg text-xs text-amber-700" style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.3)' }}>
+      <div className="p-3 rounded-lg text-xs text-amber-300" style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.3)' }}>
         <AlertCircle size={14} className="inline ml-1" />
         أضف الصور أولاً، ثم لكل صورة يمكن إضافة عنوان ووصف ورابط، وستُنشر تباعاً.
       </div>
@@ -920,7 +920,7 @@ export default function PinterestModule() {
     <div className="space-y-6">
       {(message || error) && (
         <div
-          className={`flex items-center gap-3 p-4 rounded-xl text-sm font-medium ${message ? 'text-emerald-700' : 'text-red-600'}`}
+          className={`flex items-center gap-3 p-4 rounded-xl text-sm font-medium ${message ? 'text-emerald-300' : 'text-red-600'}`}
           style={message
             ? { background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' }
             : { background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}

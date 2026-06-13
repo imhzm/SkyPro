@@ -64,11 +64,11 @@ const PLATFORM_ACTIONS: Record<string, { value: string; label: string; needsMess
 
 // Status display config
 const STATUS_CONFIG: Record<string, { color: string; bg: string; label: string; icon: typeof Clock }> = {
-  pending:   { color: '#0A6CF1', bg: 'rgba(10,108,241,0.1)',  label: 'في الانتظار',  icon: Clock },
-  running:   { color: '#16a34a', bg: 'rgba(34,197,94,0.1)',   label: 'قيد التشغيل', icon: Loader2 },
-  completed: { color: '#059669', bg: 'rgba(5,150,105,0.1)',   label: 'مكتمل',         icon: CheckCircle },
-  paused:    { color: '#d97706', bg: 'rgba(245,158,11,0.1)',  label: 'متوقف',         icon: Pause },
-  failed:    { color: '#dc2626', bg: 'rgba(220,38,38,0.1)',   label: 'فشل',           icon: AlertOctagon },
+  pending:   { color: '#60a5fa', bg: 'rgba(10,108,241,0.14)',  label: 'في الانتظار',  icon: Clock },
+  running:   { color: '#4ade80', bg: 'rgba(34,197,94,0.14)',   label: 'قيد التشغيل', icon: Loader2 },
+  completed: { color: '#34d399', bg: 'rgba(5,150,105,0.14)',   label: 'مكتمل',         icon: CheckCircle },
+  paused:    { color: '#fbbf24', bg: 'rgba(245,158,11,0.14)',  label: 'متوقف',         icon: Pause },
+  failed:    { color: '#f87171', bg: 'rgba(220,38,38,0.14)',   label: 'فشل',           icon: AlertOctagon },
 }
 
 const DEFAULT_FORM: Partial<ScheduledTask> & { scheduleData: ScheduleData } = {
@@ -262,7 +262,7 @@ export default function CampaignScheduler() {
       {/* Notification */}
       {(message || error) && (
         <div
-          className={`flex items-center gap-3 p-3.5 rounded-xl text-sm font-medium ${message ? 'text-emerald-700' : 'text-red-600'}`}
+          className={`flex items-center gap-3 p-3.5 rounded-xl text-sm font-medium ${message ? 'text-emerald-300' : 'text-red-600'}`}
           style={message ? { background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' } : { background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}
         >
           {message ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
@@ -571,7 +571,7 @@ export default function CampaignScheduler() {
                       </span>
                       <span className="text-[10px] text-secondary-500">{actionLabel(task.platform, task.type)}</span>
                       <span className="text-[10px] text-secondary-400">·</span>
-                      <span className="text-[10px] text-violet-700 font-semibold flex items-center gap-1">
+                      <span className="text-[10px] text-violet-300 font-semibold flex items-center gap-1">
                         <Repeat size={9} />
                         {scheduleLabel}
                       </span>
