@@ -1180,7 +1180,7 @@ export default function GoogleModule() {
               key={c.value}
               type="button"
               onClick={() => setOlxKeyword(c.keyword)}
-              className="px-2.5 py-1 rounded-lg text-[11px] border transition-colors hover:bg-emerald-100"
+              className="px-2.5 py-1 rounded-lg text-[11px] border transition-colors hover:bg-emerald-500/15"
               style={{ background: 'rgba(16,185,129,0.06)', borderColor: 'rgba(16,185,129,0.25)', color: '#047857' }}
             >
               {c.label}
@@ -1419,7 +1419,7 @@ export default function GoogleModule() {
                   {googleAccounts.map((acc) => (
                     <label
                       key={acc.id}
-                      className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-amber-50 cursor-pointer text-xs"
+                      className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-amber-500/10 cursor-pointer text-xs"
                     >
                       <input
                         type="checkbox"

@@ -848,7 +848,7 @@ export default function FacebookModule() {
             {accounts.map((acc: any) => (
               <div key={acc.id} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.04] border border-secondary-100">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm font-bold shrink-0">{(acc.username || '?')[0].toUpperCase()}</div>
+                  <div className="w-9 h-9 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-300 text-sm font-bold shrink-0">{(acc.username || '?')[0].toUpperCase()}</div>
                   <div className="min-w-0">
                     <p className="font-medium text-secondary-900 text-sm truncate">{acc.username}</p>
                     <p className="text-[11px] text-secondary-500">{new Date(acc.created_at || Date.now()).toLocaleDateString('ar-EG')}{acc.password?.trim() ? ' • باسورد محفوظ' : ' • بدون باسورد'}</p>
@@ -1041,7 +1041,7 @@ export default function FacebookModule() {
         <p className="text-[11px] text-secondary-400 -mt-2">تأخير أكبر = أمان أكثر ضد الحظر</p>
 
         {extracting && (
-          <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="flex items-center gap-2 p-3 bg-blue-500/10 rounded-lg border border-blue-500/30">
             <Loader2 size={16} className="animate-spin text-blue-600" />
             <span className="text-blue-700 text-sm font-medium">جاري الاستخراج... {streamResults.length} نتيجة حتى الآن</span>
           </div>

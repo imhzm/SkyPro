@@ -157,7 +157,7 @@ export default function ProxyManager() {
                 <button onClick={() => handleTest(proxy)} className="btn-secondary text-sm" disabled={loadingTest === proxy.id} style={{ padding: '0.375rem 0.75rem' }}>
                   {loadingTest === proxy.id ? <Loader2 size={14} className="animate-spin" /> : 'اختبار'}
                 </button>
-                <button onClick={() => handleDelete(proxy.id)} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                <button onClick={() => handleDelete(proxy.id)} className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/15 rounded-lg transition-colors">
                   <Trash2 size={16} />
                 </button>
               </div>

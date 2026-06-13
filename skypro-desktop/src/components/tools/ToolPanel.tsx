@@ -81,10 +81,10 @@ export default function ToolPanel({
         aria-label={title}
         className={`absolute top-0 bottom-0 right-0 w-full ${widthMap[width]} flex flex-col`}
         style={{
-          background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
+          background: 'linear-gradient(180deg, #0b0f1a 0%, #070a13 100%)',
           boxShadow:
-            '-24px 0 80px rgba(15, 23, 42, 0.24), -8px 0 24px rgba(10, 108, 241, 0.08)',
-          borderInlineStart: '1px solid rgba(226, 232, 240, 0.8)',
+            '-24px 0 80px rgba(0, 0, 0, 0.55), -8px 0 24px rgba(124, 58, 237, 0.10)',
+          borderInlineStart: '1px solid rgba(255, 255, 255, 0.08)',
           transform: open ? 'translateX(0)' : 'translateX(100%)',
           transition: 'transform 0.36s cubic-bezier(0.22, 1, 0.36, 1)',
           pointerEvents: open ? 'auto' : 'none',
@@ -179,10 +179,10 @@ export default function ToolPanel({
             className="px-6 py-4 border-t"
             style={{
               background:
-                'linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(248,250,252,0.95) 100%)',
+                'linear-gradient(180deg, rgba(13,17,26,0.95) 0%, rgba(7,10,19,0.95) 100%)',
               backdropFilter: 'blur(12px)',
               WebkitBackdropFilter: 'blur(12px)',
-              borderColor: 'rgba(226, 232, 240, 0.8)',
+              borderColor: 'rgba(255, 255, 255, 0.08)',
             }}
           >
             {footer}

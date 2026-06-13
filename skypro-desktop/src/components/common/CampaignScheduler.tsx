@@ -297,12 +297,12 @@ export default function CampaignScheduler() {
               key={f}
               onClick={() => setFilter(f as 'all' | CampaignStatus)}
               className={`flex-1 sm:flex-initial text-xs font-semibold px-3 py-1.5 rounded-lg transition-all whitespace-nowrap ${
-                active ? 'bg-white text-secondary-900 shadow-sm' : 'text-secondary-500 hover:text-secondary-700'
+                active ? 'bg-white/[0.10] text-secondary-900 shadow-sm' : 'text-secondary-500 hover:text-secondary-700'
               }`}
             >
               {label}
               <span className={`mr-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[10px] font-bold ${
-                active ? 'bg-violet-100 text-violet-700' : 'bg-secondary-200 text-secondary-600'
+                active ? 'bg-violet-500/20 text-violet-200' : 'bg-secondary-200 text-secondary-600'
               }`}>{count}</span>
             </button>
           )
@@ -385,8 +385,8 @@ export default function CampaignScheduler() {
                       onClick={() => setForm({ ...form, scheduleData: { ...form.scheduleData, scheduleType: opt.value } })}
                       className={`p-2.5 rounded-xl border-2 transition-all flex flex-col items-center gap-1 ${
                         active
-                          ? 'border-violet-500 bg-violet-50 text-violet-700'
-                          : 'border-secondary-200 bg-white text-secondary-600 hover:border-secondary-300'
+                          ? 'border-violet-500 bg-violet-500/20 text-violet-200'
+                          : 'border-secondary-200 bg-white/[0.04] text-secondary-600 hover:border-secondary-300'
                       }`}
                     >
                       <Icon size={16} />
@@ -587,7 +587,7 @@ export default function CampaignScheduler() {
                   <button
                     type="button"
                     onClick={() => handleStartEdit(task)}
-                    className="p-1.5 rounded-lg transition-colors text-violet-600 hover:bg-violet-50"
+                    className="p-1.5 rounded-lg transition-colors text-violet-400 hover:bg-violet-500/15"
                     title="تعديل"
                   >
                     <Edit3 size={14} />
@@ -595,7 +595,7 @@ export default function CampaignScheduler() {
                   <button
                     type="button"
                     onClick={() => handleDelete(task.id)}
-                    className="p-1.5 rounded-lg transition-colors text-red-500 hover:bg-red-50"
+                    className="p-1.5 rounded-lg transition-colors text-red-400 hover:bg-red-500/15"
                     title="حذف"
                   >
                     <Trash2 size={14} />
