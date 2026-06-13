@@ -17,10 +17,10 @@ export interface ToolCardProps {
 }
 
 const badgeTones = {
-  success: { bg: 'rgba(34, 197, 94, 0.12)', color: '#15803d', border: 'rgba(34, 197, 94, 0.30)' },
-  warning: { bg: 'rgba(245, 158, 11, 0.12)', color: '#b45309', border: 'rgba(245, 158, 11, 0.30)' },
-  danger:  { bg: 'rgba(239, 68, 68, 0.12)',  color: '#b91c1c', border: 'rgba(239, 68, 68, 0.30)' },
-  primary: { bg: 'rgba(10, 108, 241, 0.10)', color: '#0a4fc4', border: 'rgba(10, 108, 241, 0.28)' },
+  success: { bg: 'rgba(34, 197, 94, 0.14)', color: '#4ade80', border: 'rgba(34, 197, 94, 0.30)' },
+  warning: { bg: 'rgba(245, 158, 11, 0.14)', color: '#fbbf24', border: 'rgba(245, 158, 11, 0.30)' },
+  danger:  { bg: 'rgba(239, 68, 68, 0.14)',  color: '#f87171', border: 'rgba(239, 68, 68, 0.30)' },
+  primary: { bg: 'rgba(139, 92, 246, 0.14)', color: '#c4b5fd', border: 'rgba(139, 92, 246, 0.30)' },
 }
 
 export default function ToolCard({
@@ -48,28 +48,28 @@ export default function ToolCard({
       className="group relative text-right rounded-2xl p-4 transition-all duration-300 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:transform-none focus:outline-none overflow-hidden"
       style={{
         background: active
-          ? `linear-gradient(135deg, ${accent}12 0%, ${accent}06 100%)`
-          : 'rgba(255, 255, 255, 0.85)',
-        backdropFilter: 'blur(20px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-        border: `1.5px solid ${active ? accent + '60' : 'rgba(226, 232, 240, 0.7)'}`,
+          ? `linear-gradient(135deg, ${accent}26 0%, ${accent}12 100%)`
+          : 'rgba(255, 255, 255, 0.04)',
+        backdropFilter: 'blur(20px) saturate(140%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(140%)',
+        border: `1.5px solid ${active ? accent + '70' : 'rgba(255, 255, 255, 0.08)'}`,
         boxShadow: active
-          ? `0 0 0 3px ${accent}1f, 0 8px 24px ${accent}1c, inset 0 1px 0 rgba(255,255,255,0.6)`
-          : '0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 14px rgba(15, 23, 42, 0.03), inset 0 1px 0 rgba(255,255,255,0.5)',
+          ? `0 0 0 3px ${accent}26, 0 8px 24px ${accent}26, inset 0 1px 0 rgba(255,255,255,0.06)`
+          : '0 1px 3px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255,255,255,0.04)',
         opacity: locked ? 0.72 : 1,
       }}
       onMouseEnter={(e) => {
         if (disabled || active) return
         e.currentTarget.style.transform = 'translateY(-3px)'
-        e.currentTarget.style.boxShadow = `0 12px 32px ${accent}22, 0 4px 14px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255,255,255,0.6)`
-        e.currentTarget.style.borderColor = accent + '60'
+        e.currentTarget.style.boxShadow = `0 12px 32px ${accent}33, inset 0 1px 0 rgba(255,255,255,0.06)`
+        e.currentTarget.style.borderColor = accent + '70'
         if (locked) e.currentTarget.style.opacity = '1'
       }}
       onMouseLeave={(e) => {
         if (disabled || active) return
         e.currentTarget.style.transform = 'translateY(0)'
-        e.currentTarget.style.boxShadow = '0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 14px rgba(15, 23, 42, 0.03), inset 0 1px 0 rgba(255,255,255,0.5)'
-        e.currentTarget.style.borderColor = 'rgba(226, 232, 240, 0.7)'
+        e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255,255,255,0.04)'
+        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)'
         if (locked) e.currentTarget.style.opacity = '0.72'
       }}
     >
@@ -88,9 +88,9 @@ export default function ToolCard({
           aria-hidden
           className="absolute top-3 left-3 w-6 h-6 rounded-full flex items-center justify-center transition-transform duration-300 group-hover:scale-110"
           style={{
-            background: 'rgba(15, 23, 42, 0.08)',
-            border: '1px solid rgba(15, 23, 42, 0.10)',
-            color: 'rgba(71, 85, 105, 0.85)',
+            background: 'rgba(255, 255, 255, 0.08)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
+            color: 'rgba(234, 243, 255, 0.70)',
             backdropFilter: 'blur(6px)',
           }}
           title="تسجيل الدخول مطلوب"
@@ -144,7 +144,7 @@ export default function ToolCard({
         <div className="space-y-1 w-full">
           <h4
             className="font-bold text-sm leading-tight tracking-tight"
-            style={{ color: active ? accent : '#0f172a' }}
+            style={{ color: active ? accent : 'rgba(255,255,255,0.92)' }}
           >
             {name}
           </h4>

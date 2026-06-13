@@ -39,7 +39,7 @@ export default function ToolGrid({
                   background: `linear-gradient(135deg, ${accent}1a, ${accent}08)`,
                   border: `1px solid ${accent}30`,
                   color: accent,
-                  boxShadow: `inset 0 1px 0 rgba(255,255,255,0.6), 0 2px 8px ${accent}14`,
+                  boxShadow: `inset 0 1px 0 rgba(255,255,255,0.10), 0 2px 8px ${accent}14`,
                 }}
               >
                 <Icon size={19} />

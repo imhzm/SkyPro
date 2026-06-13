@@ -672,7 +672,7 @@ export default function InstagramModule() {
             {accounts.map((acc: any) => (
               <div key={acc.id} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.04] border border-secondary-100">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-9 h-9 rounded-full bg-pink-100 flex items-center justify-center text-pink-600 text-sm font-bold shrink-0">
+                  <div className="w-9 h-9 rounded-full bg-pink-500/20 flex items-center justify-center text-pink-300 text-sm font-bold shrink-0">
                     {(acc.username || '?')[0].toUpperCase()}
                   </div>
                   <div className="min-w-0">
@@ -919,7 +919,7 @@ export default function InstagramModule() {
         <p className="text-[11px] text-secondary-400 -mt-2">تأخير أكبر = أمان أكثر ضد الحظر</p>
 
         {extracting && (
-          <div className="flex items-center gap-2 p-3 bg-pink-50 rounded-lg border border-pink-200">
+          <div className="flex items-center gap-2 p-3 bg-pink-500/10 rounded-lg border border-pink-500/30">
             <Loader2 size={16} className="animate-spin text-pink-600" />
             <span className="text-pink-700 text-sm font-medium">جاري الاستخراج... {streamResults.length} نتيجة حتى الآن</span>
           </div>
@@ -1114,7 +1114,7 @@ export default function InstagramModule() {
         <input type="range" min={20} max={2000} step={20} className="w-full accent-rose-500" value={likersLimit} onChange={e => setLikersLimit(parseInt(e.target.value))} />
       </div>
       {extracting && (
-        <div className="flex items-center gap-2 p-3 bg-rose-50 rounded-lg border border-rose-200">
+        <div className="flex items-center gap-2 p-3 bg-rose-500/10 rounded-lg border border-rose-500/30">
           <Loader2 size={16} className="animate-spin text-rose-600" />
           <span className="text-rose-700 text-sm font-medium">جاري الاستخراج... {streamResults.length} نتيجة حتى الآن</span>
         </div>
@@ -1143,7 +1143,7 @@ export default function InstagramModule() {
         <input type="range" min={20} max={2000} step={20} className="w-full accent-purple-500" value={followingLimit} onChange={e => setFollowingLimit(parseInt(e.target.value))} />
       </div>
       {extracting && (
-        <div className="flex items-center gap-2 p-3 bg-purple-50 rounded-lg border border-purple-200">
+        <div className="flex items-center gap-2 p-3 bg-purple-500/10 rounded-lg border border-purple-500/30">
           <Loader2 size={16} className="animate-spin text-purple-600" />
           <span className="text-purple-700 text-sm font-medium">جاري الاستخراج... {streamResults.length} نتيجة حتى الآن</span>
         </div>
