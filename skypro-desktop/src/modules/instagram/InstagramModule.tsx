@@ -835,7 +835,7 @@ export default function InstagramModule() {
                       <td className="text-secondary-500">{i + 1}</td>
                       <td className="font-medium">{r.username || '-'}</td>
                       <td className="text-xs">{r.name || '-'}</td>
-                      <td className="text-xs font-mono text-amber-700">{r.followers || '-'}</td>
+                      <td className="text-xs font-mono text-amber-300">{r.followers || '-'}</td>
                       <td className="text-xs">{r.profile ? <a href={r.profile} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline" dir="ltr">@{r.username}</a> : '-'}</td>
                     </tr>
                   )
@@ -921,7 +921,7 @@ export default function InstagramModule() {
         {extracting && (
           <div className="flex items-center gap-2 p-3 bg-pink-500/10 rounded-lg border border-pink-500/30">
             <Loader2 size={16} className="animate-spin text-pink-600" />
-            <span className="text-pink-700 text-sm font-medium">جاري الاستخراج... {streamResults.length} نتيجة حتى الآن</span>
+            <span className="text-pink-300 text-sm font-medium">جاري الاستخراج... {streamResults.length} نتيجة حتى الآن</span>
           </div>
         )}
 
@@ -1027,7 +1027,7 @@ export default function InstagramModule() {
   // ----- Unfollow panel -----
   const renderUnfollowBody = () => (
     <div className="space-y-5">
-      <div className="p-3 rounded-lg text-xs text-amber-700" style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.3)' }}>
+      <div className="p-3 rounded-lg text-xs text-amber-300" style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.3)' }}>
         <AlertCircle size={14} className="inline ml-1" />
         إنستجرام يقيّد عمليات إلغاء المتابعة السريعة. ابق الفاصل أكبر من 4 ثوانٍ.
       </div>
@@ -1116,7 +1116,7 @@ export default function InstagramModule() {
       {extracting && (
         <div className="flex items-center gap-2 p-3 bg-rose-500/10 rounded-lg border border-rose-500/30">
           <Loader2 size={16} className="animate-spin text-rose-600" />
-          <span className="text-rose-700 text-sm font-medium">جاري الاستخراج... {streamResults.length} نتيجة حتى الآن</span>
+          <span className="text-rose-300 text-sm font-medium">جاري الاستخراج... {streamResults.length} نتيجة حتى الآن</span>
         </div>
       )}
       {renderResultsTable('extract-likers', ['#', 'الحساب', 'الاسم', 'الرابط'], 'instagram-likers')}
@@ -1145,7 +1145,7 @@ export default function InstagramModule() {
       {extracting && (
         <div className="flex items-center gap-2 p-3 bg-purple-500/10 rounded-lg border border-purple-500/30">
           <Loader2 size={16} className="animate-spin text-purple-600" />
-          <span className="text-purple-700 text-sm font-medium">جاري الاستخراج... {streamResults.length} نتيجة حتى الآن</span>
+          <span className="text-purple-300 text-sm font-medium">جاري الاستخراج... {streamResults.length} نتيجة حتى الآن</span>
         </div>
       )}
       {renderResultsTable('extract-following', ['#', 'الحساب', 'الاسم', 'الرابط'], 'instagram-following')}
@@ -1163,7 +1163,7 @@ export default function InstagramModule() {
   // ----- Follow + message combo panel -----
   const renderFollowMessageBody = () => (
     <div className="space-y-5">
-      <div className="p-3 rounded-lg text-xs text-amber-700" style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.3)' }}>
+      <div className="p-3 rounded-lg text-xs text-amber-300" style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.3)' }}>
         <AlertCircle size={14} className="inline ml-1" />
         ابق الفاصل أكبر من 4 ثوانٍ لتقليل احتمال الحظر التلقائي.
       </div>
@@ -1246,11 +1246,11 @@ export default function InstagramModule() {
             </div>
             <div className="p-3 rounded-xl border bg-white/[0.04]">
               <p className="text-xs text-secondary-500">متابعين</p>
-              <p className="text-2xl font-bold text-pink-700">{analyzeResult.followers || '-'}</p>
+              <p className="text-2xl font-bold text-pink-300">{analyzeResult.followers || '-'}</p>
             </div>
             <div className="p-3 rounded-xl border bg-white/[0.04]">
               <p className="text-xs text-secondary-500">متابعون</p>
-              <p className="text-2xl font-bold text-purple-700">{analyzeResult.following || '-'}</p>
+              <p className="text-2xl font-bold text-purple-300">{analyzeResult.following || '-'}</p>
             </div>
           </div>
           {analyzeResult.bio && (
@@ -1285,7 +1285,7 @@ export default function InstagramModule() {
     <div className="space-y-6">
       {(message || error) && (
         <div
-          className={`flex items-center gap-3 p-4 rounded-xl text-sm font-medium ${message ? 'text-emerald-700' : 'text-red-600'}`}
+          className={`flex items-center gap-3 p-4 rounded-xl text-sm font-medium ${message ? 'text-emerald-300' : 'text-red-600'}`}
           style={message
             ? { background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' }
             : { background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}

@@ -1043,7 +1043,7 @@ export default function FacebookModule() {
         {extracting && (
           <div className="flex items-center gap-2 p-3 bg-blue-500/10 rounded-lg border border-blue-500/30">
             <Loader2 size={16} className="animate-spin text-blue-600" />
-            <span className="text-blue-700 text-sm font-medium">جاري الاستخراج... {streamResults.length} نتيجة حتى الآن</span>
+            <span className="text-blue-300 text-sm font-medium">جاري الاستخراج... {streamResults.length} نتيجة حتى الآن</span>
           </div>
         )}
 
@@ -1293,7 +1293,7 @@ export default function FacebookModule() {
 
   const renderLikePagesBody = () => (
     <div className="space-y-5">
-      <div className="p-3 rounded-lg text-xs text-amber-700" style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.3)' }}>
+      <div className="p-3 rounded-lg text-xs text-amber-300" style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.3)' }}>
         <AlertCircle size={14} className="inline ml-1" />
         فيسبوك يحدد ~50 إعجاب صفحة يومياً للحسابات الجديدة. استخدم فاصل ≥ 4 ثوانٍ.
       </div>
@@ -1415,15 +1415,15 @@ export default function FacebookModule() {
           <div className="grid grid-cols-3 gap-3">
             <div className="p-3 rounded-xl border" style={{ background: 'rgba(34,197,94,0.06)', borderColor: 'rgba(34,197,94,0.2)' }}>
               <p className="text-xs text-secondary-500">المجموع</p>
-              <p className="text-2xl font-bold text-emerald-700">{demoResult.total}</p>
+              <p className="text-2xl font-bold text-emerald-300">{demoResult.total}</p>
             </div>
             <div className="p-3 rounded-xl border" style={{ background: 'rgba(59,130,246,0.06)', borderColor: 'rgba(59,130,246,0.2)' }}>
               <p className="text-xs text-secondary-500">ذكور</p>
-              <p className="text-2xl font-bold text-blue-700">{demoResult.genderGuess?.male ?? 0}</p>
+              <p className="text-2xl font-bold text-blue-300">{demoResult.genderGuess?.male ?? 0}</p>
             </div>
             <div className="p-3 rounded-xl border" style={{ background: 'rgba(236,72,153,0.06)', borderColor: 'rgba(236,72,153,0.2)' }}>
               <p className="text-xs text-secondary-500">إناث</p>
-              <p className="text-2xl font-bold text-pink-700">{demoResult.genderGuess?.female ?? 0}</p>
+              <p className="text-2xl font-bold text-pink-300">{demoResult.genderGuess?.female ?? 0}</p>
             </div>
           </div>
           {(demoResult.arabicSpeakers !== undefined || demoResult.topRegions?.length) && (
@@ -1557,7 +1557,7 @@ export default function FacebookModule() {
   return (
     <div className="space-y-6">
       {(message || error) && (
-        <div className={`flex items-center gap-3 p-4 rounded-xl text-sm font-medium ${message ? 'text-emerald-700' : 'text-red-600'}`} style={message ? { background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' } : { background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
+        <div className={`flex items-center gap-3 p-4 rounded-xl text-sm font-medium ${message ? 'text-emerald-300' : 'text-red-600'}`} style={message ? { background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' } : { background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
           {message ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
           {message || error}
         </div>

@@ -144,7 +144,7 @@ export default function SecurityModule() {
     <div className="space-y-5 max-w-4xl">
       {(message || error) && (
         <div
-          className={`flex items-center gap-3 p-3.5 rounded-xl text-sm font-medium ${message ? 'text-emerald-700' : 'text-red-600'}`}
+          className={`flex items-center gap-3 p-3.5 rounded-xl text-sm font-medium ${message ? 'text-emerald-300' : 'text-red-600'}`}
           style={message ? { background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' } : { background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}
         >
           {message ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
@@ -348,8 +348,8 @@ export default function SecurityModule() {
         <div className="flex items-start gap-3">
           <AlertTriangle size={20} className="text-amber-500 flex-shrink-0 mt-0.5" />
           <div>
-            <h4 className="font-bold text-amber-800 text-sm">تنبيه مهم</h4>
-            <p className="text-sm text-amber-700 mt-1 leading-relaxed">
+            <h4 className="font-bold text-amber-300 text-sm">تنبيه مهم</h4>
+            <p className="text-sm text-amber-300 mt-1 leading-relaxed">
               هذه الإعدادات تقلل احتمال الحظر بشكل كبير لكن لا تضمنه 100%.
               <strong> لأقصى حماية:</strong> استخدم بروكسي مخصص لكل حساب + لا تتجاوز الحد الأقصى للإجراءات في الساعة.
             </p>

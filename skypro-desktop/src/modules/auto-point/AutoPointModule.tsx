@@ -66,7 +66,7 @@ export default function AutoPointModule() {
 
   const renderExchangeBody = (radioName: string, interactionOptions: { value: string; label: string }[]) => (
     <div className="space-y-5">
-      <div className="p-3 rounded-lg text-sm" style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.2)', color: '#b45309' }}>
+      <div className="p-3 rounded-lg text-sm" style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.2)', color: '#fbbf24' }}>
         <AlertCircle size={16} className="inline ml-1" /> هذه الأداة تعمل عبر مواقع تبادل خارجية — تحتاج تسجيل دخول يدوي على الموقع
       </div>
       <div>
@@ -133,7 +133,7 @@ export default function AutoPointModule() {
   return (
     <div className="space-y-6">
       {(message || error) && (
-        <div className={`flex items-center gap-3 p-4 rounded-xl text-sm font-medium ${message ? 'text-emerald-700' : 'text-red-600'}`} style={message ? { background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' } : { background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
+        <div className={`flex items-center gap-3 p-4 rounded-xl text-sm font-medium ${message ? 'text-emerald-300' : 'text-red-600'}`} style={message ? { background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' } : { background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
           {message ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
           {message || error}
         </div>

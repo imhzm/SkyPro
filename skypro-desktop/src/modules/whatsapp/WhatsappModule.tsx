@@ -849,7 +849,7 @@ export default function WhatsappModule() {
   // -------- Fast send panel --------
   const renderFastSendBody = () => (
     <div className="space-y-5">
-      <div className="p-3 rounded-lg text-xs text-amber-700" style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.3)' }}>
+      <div className="p-3 rounded-lg text-xs text-amber-300" style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.3)' }}>
         <AlertCircle size={14} className="inline ml-1" />
         أسرع 2-3 مرات من الإرسال العادي. استخدم دفعات صغيرة (أقل من 50 رقم) لتجنب التقييد.
       </div>
@@ -983,7 +983,7 @@ export default function WhatsappModule() {
   // -------- Add to group panel --------
   const renderAddToGroupBody = () => (
     <div className="space-y-5">
-      <div className="p-3 rounded-lg text-xs text-amber-700" style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.3)' }}>
+      <div className="p-3 rounded-lg text-xs text-amber-300" style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.3)' }}>
         <AlertCircle size={14} className="inline ml-1" />
         يتطلب أن تكون مشرف في المجموعة. ستتم إضافة 1 رقم في كل مرة لتجنب التقييد.
       </div>
@@ -1033,7 +1033,7 @@ export default function WhatsappModule() {
   // -------- Temp-group broadcast panel --------
   const renderTempGroupBroadcastBody = () => (
     <div className="space-y-5">
-      <div className="p-3 rounded-lg text-xs text-amber-700" style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.3)' }}>
+      <div className="p-3 rounded-lg text-xs text-amber-300" style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.3)' }}>
         <AlertCircle size={14} className="inline ml-1" />
         ينشئ مجموعة جديدة بالأرقام، يبث رسالة، ثم يخرج تلقائياً (إن فعّلت الخيار). هذه الطريقة أسرع من الإرسال الفردي.
       </div>
@@ -1125,7 +1125,7 @@ export default function WhatsappModule() {
           {(['google', 'facebook', 'telegram', 'twitter'] as const).map(s => {
             const active = crossSources.includes(s)
             return (
-              <button key={s} type="button" onClick={() => setCrossSources(prev => active ? prev.filter(x => x !== s) : [...prev, s])} className="px-3 py-1.5 rounded-lg text-sm font-medium" style={active ? { background: 'rgba(99,102,241,0.12)', color: '#6366f1', border: '1px solid #6366f1' } : { background: 'var(--panel-bg)', color: '#475569', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <button key={s} type="button" onClick={() => setCrossSources(prev => active ? prev.filter(x => x !== s) : [...prev, s])} className="px-3 py-1.5 rounded-lg text-sm font-medium" style={active ? { background: 'rgba(99,102,241,0.18)', color: '#a5b4fc', border: '1px solid #6366f1' } : { background: 'var(--panel-bg)', color: '#94a3b8', border: '1px solid rgba(255,255,255,0.08)' }}>
                 {s.toUpperCase()}
               </button>
             )
@@ -1167,7 +1167,7 @@ export default function WhatsappModule() {
     <div className="space-y-6">
       {(message || error) && (
         <div
-          className={`flex items-center gap-3 p-4 rounded-xl text-sm font-medium ${message ? 'text-emerald-700' : 'text-red-600'}`}
+          className={`flex items-center gap-3 p-4 rounded-xl text-sm font-medium ${message ? 'text-emerald-300' : 'text-red-600'}`}
           style={message
             ? { background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' }
             : { background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}

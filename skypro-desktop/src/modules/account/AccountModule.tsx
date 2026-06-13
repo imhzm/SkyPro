@@ -105,7 +105,7 @@ export default function AccountModule() {
       {(message || error) && (
         <div
           className="flex items-center gap-3 p-3.5 rounded-xl text-sm font-medium"
-          style={message ? { background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', color: '#16a34a' } : { background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#dc2626' }}
+          style={message ? { background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', color: '#34d399' } : { background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}
         >
           {message ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
           {message || error}

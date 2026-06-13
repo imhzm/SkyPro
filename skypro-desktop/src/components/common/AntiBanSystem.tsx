@@ -144,8 +144,8 @@ export default function AntiBanSystem() {
         <div className="flex items-start gap-3">
           <AlertTriangle size={18} className="text-amber-500 flex-shrink-0 mt-0.5" />
           <div>
-            <h4 className="font-bold text-amber-800 text-sm">تنبيه</h4>
-            <p className="text-xs text-amber-700 mt-1">هذه الإعدادات تساعد في تقليل خطر الحظر، لكنها لا تضمن الحماية 100%. استخدم بروكسيات ولا تبالغ في عدد الإجراءات.</p>
+            <h4 className="font-bold text-amber-300 text-sm">تنبيه</h4>
+            <p className="text-xs text-amber-300 mt-1">هذه الإعدادات تساعد في تقليل خطر الحظر، لكنها لا تضمن الحماية 100%. استخدم بروكسيات ولا تبالغ في عدد الإجراءات.</p>
           </div>
         </div>
       </div>

@@ -883,7 +883,7 @@ export default function GoogleModule() {
           </div>
           {bulkProgress.keyword && (
             <p className="text-xs text-secondary-600 mb-1">
-              الكلمة الحالية: <span className="font-semibold text-violet-700">{bulkProgress.keyword}</span>
+              الكلمة الحالية: <span className="font-semibold text-violet-300">{bulkProgress.keyword}</span>
               {bulkProgress.keywordIndex && bulkProgress.totalKeywords && (
                 <span className="text-secondary-500"> ({bulkProgress.keywordIndex}/{bulkProgress.totalKeywords})</span>
               )}
@@ -951,7 +951,7 @@ export default function GoogleModule() {
                     </td>
                     <td className="text-xs">{b.address || '-'}</td>
                     <td><span className="flex items-center gap-1"><Star size={11} className="text-warning-500" />{b.rating || '-'}</span></td>
-                    <td className="text-xs text-violet-700 font-semibold">{b.keyword || '-'}</td>
+                    <td className="text-xs text-violet-300 font-semibold">{b.keyword || '-'}</td>
                     <td>{b.profile || b.url ? <a href={b.profile || b.url} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline text-xs">خرائط</a> : '-'}</td>
                   </tr>
                 ))}
@@ -1043,7 +1043,7 @@ export default function GoogleModule() {
           </div>
           <div className="rounded-xl p-3" style={{ background: overLimit ? 'rgba(239,68,68,0.08)' : 'rgba(236,72,153,0.06)', border: `1px solid ${overLimit ? 'rgba(239,68,68,0.25)' : 'rgba(236,72,153,0.15)'}` }}>
             <p className="text-[11px] text-secondary-600 leading-relaxed">
-              عدد التركيبات: <strong className={overLimit ? 'text-red-600' : 'text-pink-700'}>{combos}</strong> {overLimit && '(يتجاوز الحد!)'}
+              عدد التركيبات: <strong className={overLimit ? 'text-red-600' : 'text-pink-300'}>{combos}</strong> {overLimit && '(يتجاوز الحد!)'}
               <br />⏱ تقدير الوقت: ~{estimateMin} دقيقة
               <br />📊 أقصى نتائج محتملة: {combos * matrixLimit}
             </p>
@@ -1058,9 +1058,9 @@ export default function GoogleModule() {
             </div>
             {matrixProgress.city && matrixProgress.keyword && (
               <p className="text-xs text-secondary-600 mb-1">
-                التركيبة الحالية: <span className="font-semibold text-pink-700">{matrixProgress.keyword}</span>
+                التركيبة الحالية: <span className="font-semibold text-pink-300">{matrixProgress.keyword}</span>
                 {' في '}
-                <span className="font-semibold text-pink-700">{matrixProgress.city}</span>
+                <span className="font-semibold text-pink-300">{matrixProgress.city}</span>
                 {matrixProgress.comboIndex && matrixProgress.totalCombos && (
                   <span className="text-secondary-500"> ({matrixProgress.comboIndex}/{matrixProgress.totalCombos})</span>
                 )}
@@ -1120,8 +1120,8 @@ export default function GoogleModule() {
                         )}
                       </td>
                       <td className="font-medium">{b.name || '-'}</td>
-                      <td className="text-xs font-semibold text-pink-700">{b.city || '-'}</td>
-                      <td className="text-xs text-violet-700">{b.keyword || '-'}</td>
+                      <td className="text-xs font-semibold text-pink-300">{b.city || '-'}</td>
+                      <td className="text-xs text-violet-300">{b.keyword || '-'}</td>
                       <td className="text-xs font-mono">{b.phone || '-'}</td>
                       <td className="text-xs">{b.email || '-'}</td>
                       <td className="text-xs truncate max-w-[150px]">
@@ -1181,7 +1181,7 @@ export default function GoogleModule() {
               type="button"
               onClick={() => setOlxKeyword(c.keyword)}
               className="px-2.5 py-1 rounded-lg text-[11px] border transition-colors hover:bg-emerald-500/15"
-              style={{ background: 'rgba(16,185,129,0.06)', borderColor: 'rgba(16,185,129,0.25)', color: '#047857' }}
+              style={{ background: 'rgba(16,185,129,0.10)', borderColor: 'rgba(16,185,129,0.30)', color: '#34d399' }}
             >
               {c.label}
             </button>
@@ -1232,7 +1232,7 @@ export default function GoogleModule() {
                     </td>
                     <td className="font-medium">{l.title || '-'}</td>
                     <td className="text-xs font-mono font-bold text-emerald-600">{l.phone || 'جاري السحب...'}</td>
-                    <td className="font-bold" style={{ color: '#16a34a' }}>{l.price || '-'}</td>
+                    <td className="font-bold" style={{ color: '#34d399' }}>{l.price || '-'}</td>
                     <td className="text-sm flex items-center gap-1"><MapPin size={14} />{l.location || '-'}</td>
                     <td className="text-xs text-secondary-500">{l.postedDate || '-'}</td>
                     <td>{l.link ? <a href={l.link} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline text-sm">عرض</a> : '-'}</td>
@@ -1313,7 +1313,7 @@ export default function GoogleModule() {
           <>
             {!sessionId && (
               <div className="p-3 rounded-xl border" style={{ background: 'rgba(239,68,68,0.06)', borderColor: 'rgba(239,68,68,0.2)' }}>
-                <p className="text-xs text-red-700 font-semibold flex items-center gap-2">
+                <p className="text-xs text-red-300 font-semibold flex items-center gap-2">
                   <AlertCircle size={14} /> النمط المنفرد يحتاج جلسة نشطة — سجّل دخول أولاً
                 </p>
               </div>
@@ -1346,7 +1346,7 @@ export default function GoogleModule() {
                 {rateReviewsList.map((r, idx) => (
                   <div key={r.id} className="p-3 rounded-xl border" style={{ background: 'rgba(245,158,11,0.04)', borderColor: 'rgba(245,158,11,0.15)' }}>
                     <div className="flex items-center justify-between mb-2 gap-2">
-                      <span className="text-[11px] font-bold text-amber-800">تقييم #{idx + 1}</span>
+                      <span className="text-[11px] font-bold text-amber-300">تقييم #{idx + 1}</span>
                       <div className="flex items-center gap-2">
                         <div className="flex items-center gap-1">
                           {[1, 2, 3, 4, 5].map((n) => (
@@ -1368,7 +1368,7 @@ export default function GoogleModule() {
                           <button
                             type="button"
                             onClick={() => removeReviewItem(r.id)}
-                            className="text-red-500 hover:text-red-700"
+                            className="text-red-500 hover:text-red-300"
                             title="حذف"
                           >
                             <Trash2 size={14} />
@@ -1404,7 +1404,7 @@ export default function GoogleModule() {
                     <button
                       type="button"
                       onClick={() => setRateSelectedAccountIds(googleAccounts.map((a) => a.id as number))}
-                      className="text-[10px] text-amber-700 hover:underline"
+                      className="text-[10px] text-amber-300 hover:underline"
                     >
                       تحديد الكل
                     </button>
@@ -1463,7 +1463,7 @@ export default function GoogleModule() {
                   <Loader2 size={14} className="animate-spin text-amber-600" />
                   <span className="text-xs font-bold">
                     جاري التقييم ({rateBulkProgress.index}/{rateBulkProgress.total})
-                    {rateBulkProgress.username && <span className="text-amber-700"> — {rateBulkProgress.username}</span>}
+                    {rateBulkProgress.username && <span className="text-amber-300"> — {rateBulkProgress.username}</span>}
                   </span>
                 </div>
                 <div className="h-1.5 rounded-full bg-secondary-100 overflow-hidden">
@@ -1497,9 +1497,9 @@ export default function GoogleModule() {
                           <td><span className="inline-flex items-center gap-0.5">{Array.from({ length: r.rating || 0 }).map((_, j) => <Star key={j} size={10} className="fill-amber-500 text-amber-500" />)}</span></td>
                           <td>
                             {r.success ? (
-                              <span className="text-emerald-700 font-semibold flex items-center gap-1"><CheckCircle size={12} /> نجح</span>
+                              <span className="text-emerald-300 font-semibold flex items-center gap-1"><CheckCircle size={12} /> نجح</span>
                             ) : (
-                              <span className="text-red-700 font-semibold flex items-center gap-1"><AlertCircle size={12} /> فشل</span>
+                              <span className="text-red-300 font-semibold flex items-center gap-1"><AlertCircle size={12} /> فشل</span>
                             )}
                           </td>
                           <td className="text-[10px] text-secondary-500">{r.error || (r.reviewText ? r.reviewText.slice(0, 40) + (r.reviewText.length > 40 ? '...' : '') : '-')}</td>
@@ -1627,7 +1627,7 @@ export default function GoogleModule() {
   return (
     <div className="space-y-6">
       {(message || error) && (
-        <div className={`flex items-center gap-3 p-4 rounded-xl text-sm font-medium ${message ? 'text-emerald-700' : 'text-red-600'}`} style={message ? { background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' } : { background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
+        <div className={`flex items-center gap-3 p-4 rounded-xl text-sm font-medium ${message ? 'text-emerald-300' : 'text-red-600'}`} style={message ? { background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' } : { background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
           {message ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
           {message || error}
         </div>

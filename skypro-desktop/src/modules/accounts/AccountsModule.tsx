@@ -555,8 +555,8 @@ export default function AccountsModule() {
           className="flex items-center gap-3 p-4 rounded-xl text-sm font-medium sw-fade-in-up"
           style={
             message
-              ? { background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', color: '#16a34a' }
-              : { background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#dc2626' }
+              ? { background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', color: '#34d399' }
+              : { background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }
           }
         >
           {message ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
@@ -951,7 +951,7 @@ export default function AccountsModule() {
                 onClick={handleDeleteEmpty}
                 disabled={bulkBusy}
                 className="text-xs px-3 py-1.5 rounded-lg border disabled:opacity-50"
-                style={{ background: 'rgba(245,158,11,0.08)', borderColor: 'rgba(245,158,11,0.25)', color: '#b45309' }}
+                style={{ background: 'rgba(245,158,11,0.08)', borderColor: 'rgba(245,158,11,0.25)', color: '#fbbf24' }}
                 title="حذف كل الصفوف بدون اسم مستخدم"
               >
                 <Filter size={14} className="inline ml-1" /> حذف الحسابات الفارغة
@@ -961,7 +961,7 @@ export default function AccountsModule() {
                 onClick={handleDeleteAll}
                 disabled={bulkBusy || accounts.length === 0}
                 className="text-xs px-3 py-1.5 rounded-lg border disabled:opacity-50"
-                style={{ background: 'rgba(220,38,38,0.08)', borderColor: 'rgba(220,38,38,0.3)', color: '#991b1b' }}
+                style={{ background: 'rgba(220,38,38,0.08)', borderColor: 'rgba(220,38,38,0.3)', color: '#f87171' }}
                 title="حذف كل الحسابات في الجدول"
               >
                 <Trash2 size={14} className="inline ml-1" /> حذف الكل ({accounts.length})
@@ -1192,7 +1192,7 @@ export default function AccountsModule() {
             className="text-[11px] font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1.5"
             style={{
               background: 'rgba(245, 158, 11, 0.06)',
-              color: '#b45309',
+              color: '#fbbf24',
               border: '1px solid rgba(245, 158, 11, 0.20)',
             }}
             title="حذف الصفوف الفارغة تماماً (بدون أي بيانات حقيقية)"
@@ -1209,7 +1209,7 @@ export default function AccountsModule() {
             className="text-[11px] font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1.5"
             style={{
               background: 'rgba(239, 68, 68, 0.06)',
-              color: '#b91c1c',
+              color: '#f87171',
               border: '1px solid rgba(239, 68, 68, 0.20)',
             }}
             title="استخدم هذا إذا كانت هناك حسابات لا يمكن حذفها بالطريقة العادية"

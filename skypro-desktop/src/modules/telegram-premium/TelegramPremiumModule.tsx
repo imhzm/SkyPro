@@ -346,7 +346,7 @@ export default function TelegramPremiumModule() {
   // ---- Panel bodies ----
   const renderExtractHiddenBody = () => (
     <div className="space-y-5">
-      <div className="p-3 rounded-lg text-xs text-amber-700" style={{ background: 'rgba(250,204,21,0.08)', border: '1px solid rgba(250,204,21,0.3)' }}>
+      <div className="p-3 rounded-lg text-xs text-amber-300" style={{ background: 'rgba(250,204,21,0.08)', border: '1px solid rgba(250,204,21,0.3)' }}>
         <AlertCircle size={14} className="inline ml-1" />
         يعمل عبر تحليل سجل الرسائل واستخراج المرسلين الفريدين (يتجاوز قيود إخفاء قائمة الأعضاء).
       </div>
@@ -443,7 +443,7 @@ export default function TelegramPremiumModule() {
   return (
     <div className="space-y-6">
       {(message || error) && (
-        <div className={`flex items-center gap-3 p-4 rounded-xl text-sm font-medium ${message ? 'text-emerald-700' : 'text-red-600'}`} style={message ? { background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' } : { background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
+        <div className={`flex items-center gap-3 p-4 rounded-xl text-sm font-medium ${message ? 'text-emerald-300' : 'text-red-600'}`} style={message ? { background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' } : { background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
           {message ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
           {message || error}
         </div>
