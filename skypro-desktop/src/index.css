@@ -93,16 +93,20 @@
   --color-primary-800: #0a3a8a;
   --color-primary-900: #061f4d;
 
-  --color-secondary-50:  #f8fafc;
-  --color-secondary-100: #f1f5f9;
-  --color-secondary-200: #e2e8f0;
-  --color-secondary-300: #cbd5e1;
-  --color-secondary-400: #94a3b8;
-  --color-secondary-500: #64748b;
-  --color-secondary-600: #475569;
-  --color-secondary-700: #334155;
-  --color-secondary-800: #1e293b;
-  --color-secondary-900: #0f172a;
+  /* Dark-theme remap: the secondary scale is inverted so existing utility
+     classes (text-secondary-900 = primary text, bg/border-secondary-100/200
+     = surfaces/borders) read correctly on the night background. ~550 usages
+     across modules flip from this single remap. */
+  --color-secondary-50:  #0f1420;   /* darkest surface (was lightest) */
+  --color-secondary-100: #161c2a;   /* dark surface / chip bg */
+  --color-secondary-200: #232b3b;   /* subtle border */
+  --color-secondary-300: #334155;   /* divider / strong border */
+  --color-secondary-400: #64748b;   /* placeholder text */
+  --color-secondary-500: #94a3b8;   /* muted text */
+  --color-secondary-600: #cbd5e1;   /* secondary text */
+  --color-secondary-700: #e2e8f0;   /* strong text */
+  --color-secondary-800: #eef2f7;   /* heading text */
+  --color-secondary-900: #f8fafc;   /* primary text (was darkest) */
 
   /* === Typography (Arabic-first: Cairo bundled via @fontsource) === */
   --font-sans:    'Cairo', 'Inter', 'Segoe UI Variable', 'Segoe UI', 'Tahoma', sans-serif;
