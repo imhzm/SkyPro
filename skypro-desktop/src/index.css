@@ -74,6 +74,17 @@
   --color-danger-600:  #dc2626;
   --color-info-500:    #06b6d4;
 
+  /* Semantic tints (dark-theme): -50 = translucent tint background,
+     -700 = light readable text. Used by status/error/warning boxes. */
+  --color-success-50:  rgba(34, 197, 94, 0.12);
+  --color-success-700: #4ade80;
+  --color-warning-50:  rgba(245, 158, 11, 0.12);
+  --color-warning-700: #fbbf24;
+  --color-danger-50:   rgba(239, 68, 68, 0.12);
+  --color-danger-700:  #f87171;
+  --color-info-50:     rgba(6, 182, 212, 0.12);
+  --color-info-700:    #67e8f9;
+
   /* === Legacy aliases (kept so existing className references compile) === */
   --color-sw-primary: #7c3aed;
   --color-sw-navy:    #001A3A;
