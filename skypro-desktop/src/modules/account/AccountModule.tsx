@@ -136,7 +136,7 @@ export default function AccountModule() {
           <div
             key={stat.label}
             className="rounded-2xl p-4 transition-all hover:shadow-lg hover:-translate-y-0.5 cursor-default"
-            style={{ background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)', border: '1px solid rgba(226,232,240,0.6)' }}
+            style={{ background: 'var(--panel-bg)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.08)' }}
           >
             <div className="flex items-start justify-between mb-2">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md" style={{ background: stat.gradient }}>
@@ -157,7 +157,7 @@ export default function AccountModule() {
       {/* ============= MAIN GRID ============= */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
         {/* Profile Form — 3 columns */}
-        <div className="lg:col-span-3 rounded-2xl p-5 space-y-4" style={{ background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)', border: '1px solid rgba(226,232,240,0.6)' }}>
+        <div className="lg:col-span-3 rounded-2xl p-5 space-y-4" style={{ background: 'var(--panel-bg)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.08)' }}>
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #8B2CF5, #0A6CF1)' }}>
               <User size={20} className="text-white" />

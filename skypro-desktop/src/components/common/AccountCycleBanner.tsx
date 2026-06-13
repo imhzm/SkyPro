@@ -225,7 +225,7 @@ export default function AccountCycleBanner({
         <div
           className="rounded-xl p-4 flex items-center justify-between gap-3 flex-wrap"
           style={{
-            background: 'rgba(255, 255, 255, 0.6)',
+            background: 'var(--panel-bg)',
             border: '1px dashed rgba(10, 108, 241, 0.25)',
           }}
         >
@@ -273,8 +273,8 @@ export default function AccountCycleBanner({
                   onClick={() => toggleOne(acc.id)}
                   className="group flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium transition-all"
                   style={{
-                    background: isSelected ? 'rgba(10, 108, 241, 0.12)' : 'rgba(255, 255, 255, 0.7)',
-                    border: `1.5px solid ${isSelected ? '#0a6cf1' : 'rgba(226, 232, 240, 0.7)'}`,
+                    background: isSelected ? 'rgba(10, 108, 241, 0.12)' : 'var(--panel-bg)',
+                    border: `1.5px solid ${isSelected ? '#0a6cf1' : 'rgba(255,255,255,0.08)'}`,
                     color: isSelected ? '#0a4fc4' : '#475569',
                     boxShadow: isSelected ? '0 2px 8px rgba(10, 108, 241, 0.15)' : 'none',
                   }}

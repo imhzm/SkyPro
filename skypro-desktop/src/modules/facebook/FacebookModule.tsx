@@ -789,7 +789,7 @@ export default function FacebookModule() {
         </div>
       </div>
       {fbAccounts.length > 0 && !sessionId && (
-        <div className="px-5 py-3 border-t flex items-center gap-3 flex-wrap" style={{ borderColor: 'rgba(24,119,242,0.12)', background: 'rgba(255,255,255,0.5)' }}>
+        <div className="px-5 py-3 border-t flex items-center gap-3 flex-wrap" style={{ borderColor: 'rgba(24,119,242,0.12)', background: 'var(--panel-bg)' }}>
           <span className="text-xs font-semibold text-secondary-600 shrink-0">حسابات محفوظة:</span>
           <select
             className="select-field flex-1 min-w-[200px] max-w-xs text-sm py-2"
@@ -846,7 +846,7 @@ export default function FacebookModule() {
           <h4 className="font-bold text-secondary-900 text-sm mb-3">الحسابات المحفوظة على الجهاز</h4>
           <div className="space-y-2 max-h-[280px] overflow-y-auto scroll-container pr-1">
             {accounts.map((acc: any) => (
-              <div key={acc.id} className="flex items-center justify-between p-3 rounded-xl bg-white border border-secondary-100">
+              <div key={acc.id} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.04] border border-secondary-100">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm font-bold shrink-0">{(acc.username || '?')[0].toUpperCase()}</div>
                   <div className="min-w-0">
@@ -876,7 +876,7 @@ export default function FacebookModule() {
     const list = streamResults.length > 0 ? streamResults : displayResults
     if (list.length === 0) return null
     return (
-      <div className="mt-5 rounded-xl border border-secondary-200 bg-white/60 overflow-hidden">
+      <div className="mt-5 rounded-xl border border-secondary-200 bg-white/[0.04] overflow-hidden">
         <div className="flex items-center justify-between p-3 border-b border-secondary-100 flex-wrap gap-2">
           <h4 className="font-bold text-secondary-900 text-sm">النتائج ({list.length})</h4>
           <div className="flex gap-2">
@@ -977,8 +977,8 @@ export default function FacebookModule() {
                   onClick={() => setExtractType(t.id)}
                   className="flex items-center gap-2 p-3 rounded-xl border text-sm font-medium transition-all text-right"
                   style={{
-                    background: isSel ? 'rgba(10,108,241,0.08)' : 'white',
-                    borderColor: isSel ? '#0A6CF1' : 'rgba(226,232,240,0.8)',
+                    background: isSel ? 'rgba(10,108,241,0.08)' : 'var(--panel-bg)',
+                    borderColor: isSel ? '#0A6CF1' : 'rgba(255,255,255,0.08)',
                     color: isSel ? '#0A6CF1' : '#475569',
                     boxShadow: isSel ? '0 0 0 2px rgba(10,108,241,0.15)' : 'none',
                   }}
@@ -1229,7 +1229,7 @@ export default function FacebookModule() {
   const newResultsTable = (owner: Exclude<ActiveTool, null>, columns: string[], exportKey: string) => {
     if (resultsOwner !== owner || toolResults.length === 0) return null
     return (
-      <div className="mt-5 rounded-xl border border-secondary-200 bg-white/60 overflow-hidden">
+      <div className="mt-5 rounded-xl border border-secondary-200 bg-white/[0.04] overflow-hidden">
         <div className="flex items-center justify-between p-3 border-b border-secondary-100 flex-wrap gap-2">
           <h4 className="font-bold text-secondary-900 text-sm">النتائج ({toolResults.length})</h4>
           <div className="flex gap-2">
@@ -1384,7 +1384,7 @@ export default function FacebookModule() {
         {imagePostPaths.length > 0 && (
           <ul className="mt-3 space-y-1.5 text-xs">
             {imagePostPaths.map((p, i) => (
-              <li key={i} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-white/70 border border-secondary-100">
+              <li key={i} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-white/[0.04] border border-secondary-100">
                 <span className="truncate" dir="ltr">{p}</span>
                 <button onClick={() => setImagePostPaths(prev => prev.filter((_, j) => j !== i))} className="text-danger-500 p-1 hover:bg-danger-50 rounded" type="button"><X size={14} /></button>
               </li>
@@ -1428,14 +1428,14 @@ export default function FacebookModule() {
           </div>
           {(demoResult.arabicSpeakers !== undefined || demoResult.topRegions?.length) && (
             <div className="grid grid-cols-2 gap-3">
-              <div className="p-3 rounded-xl border bg-white/60">
+              <div className="p-3 rounded-xl border bg-white/[0.04]">
                 <p className="text-xs font-bold text-secondary-700 mb-2">اللغة (تقديري)</p>
                 <div className="flex items-center gap-3 text-xs">
                   <span>🇸🇦 العربية: <strong className="text-emerald-600">{demoResult.arabicSpeakers ?? 0}</strong></span>
                   <span>🇬🇧 الإنجليزية: <strong className="text-blue-600">{demoResult.englishSpeakers ?? 0}</strong></span>
                 </div>
               </div>
-              <div className="p-3 rounded-xl border bg-white/60">
+              <div className="p-3 rounded-xl border bg-white/[0.04]">
                 <p className="text-xs font-bold text-secondary-700 mb-2">حسب البلد</p>
                 <ul className="space-y-1 text-xs max-h-32 overflow-y-auto">
                   {(demoResult.topRegions || []).slice(0, 12).map((r: any, i: number) => (
@@ -1446,7 +1446,7 @@ export default function FacebookModule() {
             </div>
           )}
           <div className="grid grid-cols-2 gap-3">
-            <div className="p-3 rounded-xl border bg-white/60">
+            <div className="p-3 rounded-xl border bg-white/[0.04]">
               <p className="text-xs font-bold text-secondary-700 mb-2">أكثر المواقع</p>
               <ul className="space-y-1 text-xs">
                 {(demoResult.topLocations || []).slice(0, 8).map((r: any, i: number) => (
@@ -1454,7 +1454,7 @@ export default function FacebookModule() {
                 ))}
               </ul>
             </div>
-            <div className="p-3 rounded-xl border bg-white/60">
+            <div className="p-3 rounded-xl border bg-white/[0.04]">
               <p className="text-xs font-bold text-secondary-700 mb-2">أكثر الأسماء</p>
               <ul className="space-y-1 text-xs">
                 {(demoResult.topNames || []).slice(0, 10).map((r: any, i: number) => (

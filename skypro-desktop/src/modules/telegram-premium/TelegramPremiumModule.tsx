@@ -239,7 +239,7 @@ export default function TelegramPremiumModule() {
           )}
         </div>
       </div>
-      <div className="px-5 py-3 border-t text-xs text-secondary-700" style={{ borderColor: 'rgba(250,204,21,0.2)', background: 'rgba(255,255,255,0.5)' }}>
+      <div className="px-5 py-3 border-t text-xs text-secondary-700" style={{ borderColor: 'rgba(250,204,21,0.2)', background: 'var(--panel-bg)' }}>
         <AlertCircle size={12} className="inline ml-1 text-amber-600" />
         هذه الأدوات تتطلب حساب Telegram Premium لاستخدامها بشكل كامل. مع حساب عادي ستعمل الأدوات لكن قد تواجه قيوداً.
       </div>
@@ -423,7 +423,7 @@ export default function TelegramPremiumModule() {
       </div>
       <div className="flex flex-wrap gap-2 text-2xl">
         {['❤️', '👍', '🔥', '😂', '😍', '👏', '🙏', '💯', '🎉', '✨'].map(emo => (
-          <button key={emo} type="button" onClick={() => setReactEmoji(emo)} className="w-10 h-10 rounded-lg border hover:bg-secondary-50" style={reactEmoji === emo ? { background: 'rgba(236,72,153,0.08)', borderColor: '#ec4899' } : { borderColor: 'rgba(226,232,240,0.7)' }}>
+          <button key={emo} type="button" onClick={() => setReactEmoji(emo)} className="w-10 h-10 rounded-lg border hover:bg-secondary-50" style={reactEmoji === emo ? { background: 'rgba(236,72,153,0.08)', borderColor: '#ec4899' } : { borderColor: 'rgba(255,255,255,0.08)' }}>
             {emo}
           </button>
         ))}

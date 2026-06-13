@@ -74,9 +74,9 @@ export default function ConfirmDialog({
       <div
         className="card-gradient-border max-w-md w-full"
         style={{
-          background: '#ffffff',
+          background: 'var(--panel-bg)',
           padding: '1.5rem',
-          border: danger ? '2px solid #ef4444' : '1px solid #e5e7eb',
+          border: danger ? '2px solid #ef4444' : '1px solid rgba(255,255,255,0.08)',
         }}
         onClick={(e) => e.stopPropagation()}
       >

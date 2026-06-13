@@ -635,7 +635,7 @@ export default function GoogleModule() {
       {googleAccounts.length > 0 && !sessionId && (
         <div
           className="px-5 py-3 border-t flex items-center gap-3 flex-wrap"
-          style={{ borderColor: 'rgba(66,133,244,0.12)', background: 'rgba(255,255,255,0.5)' }}
+          style={{ borderColor: 'rgba(66,133,244,0.12)', background: 'var(--panel-bg)' }}
         >
           <span className="text-xs font-semibold text-secondary-600 shrink-0">حسابات محفوظة:</span>
           <select
@@ -757,7 +757,7 @@ export default function GoogleModule() {
       <div><label className="label-field">الحد الأقصى: {mapsLimit}</label><input type="range" min="10" max="500" value={mapsLimit} onChange={e => setMapsLimit(parseInt(e.target.value))} className="w-full" /></div>
 
       {resultsOwner === 'maps' && mapsDisplay.length > 0 && (
-        <div className="mt-5 rounded-xl border border-secondary-200 bg-white/60 overflow-hidden">
+        <div className="mt-5 rounded-xl border border-secondary-200 bg-white/[0.04] overflow-hidden">
           <div className="flex items-center justify-between p-3 border-b border-secondary-100 flex-wrap gap-2">
             <h4 className="font-bold text-secondary-900 text-sm">النتائج ({mapsDisplay.length}){loading && resultsOwner === 'maps' && <span className="text-emerald-600 animate-pulse"> • مباشر ⚡</span>}</h4>
             <div className="flex gap-2">
@@ -917,7 +917,7 @@ export default function GoogleModule() {
 
       {/* Results */}
       {resultsOwner === 'bulk-maps' && bulkDisplay.length > 0 && (
-        <div className="mt-5 rounded-xl border border-secondary-200 bg-white/60 overflow-hidden">
+        <div className="mt-5 rounded-xl border border-secondary-200 bg-white/[0.04] overflow-hidden">
           <div className="flex items-center justify-between p-3 border-b border-secondary-100 flex-wrap gap-2">
             <h4 className="font-bold text-secondary-900 text-sm">النتائج ({bulkDisplay.length}){loading && resultsOwner === 'bulk-maps' && <span className="text-emerald-600 animate-pulse"> • مباشر ⚡</span>}</h4>
             <div className="flex gap-2">
@@ -1093,7 +1093,7 @@ export default function GoogleModule() {
         )}
 
         {resultsOwner === 'bulk-matrix' && matrixDisplay.length > 0 && (
-          <div className="mt-5 rounded-xl border border-secondary-200 bg-white/60 overflow-hidden">
+          <div className="mt-5 rounded-xl border border-secondary-200 bg-white/[0.04] overflow-hidden">
             <div className="flex items-center justify-between p-3 border-b border-secondary-100 flex-wrap gap-2">
               <h4 className="font-bold text-secondary-900 text-sm">النتائج ({matrixDisplay.length}){loading && resultsOwner === 'bulk-matrix' && <span className="text-emerald-600 animate-pulse"> • مباشر ⚡</span>}</h4>
               <div className="flex gap-2">
@@ -1208,7 +1208,7 @@ export default function GoogleModule() {
       </div>
 
       {resultsOwner === 'olx' && olxDisplay.length > 0 && (
-        <div className="mt-5 rounded-xl border border-secondary-200 bg-white/60 overflow-hidden">
+        <div className="mt-5 rounded-xl border border-secondary-200 bg-white/[0.04] overflow-hidden">
           <div className="flex items-center justify-between p-3 border-b border-secondary-100 flex-wrap gap-2">
             <h4 className="font-bold text-secondary-900 text-sm">الإعلانات ({olxDisplay.length}){loading && resultsOwner === 'olx' && <span className="text-emerald-600 animate-pulse"> • مباشر ⚡</span>}</h4>
             <div className="flex gap-2">
@@ -1480,7 +1480,7 @@ export default function GoogleModule() {
 
             {/* Results table */}
             {rateBulkResults.length > 0 && (
-              <div className="rounded-xl border border-secondary-200 bg-white/60 overflow-hidden">
+              <div className="rounded-xl border border-secondary-200 bg-white/[0.04] overflow-hidden">
                 <div className="px-3 py-2 border-b border-secondary-100">
                   <h4 className="font-bold text-secondary-900 text-xs">
                     النتائج: {rateBulkResults.filter((r) => r.success).length} ناجح / {rateBulkResults.length} حساب
@@ -1566,7 +1566,7 @@ export default function GoogleModule() {
       </div>
 
       {resultsOwner === 'reviews-extract' && reviewsDisplay.length > 0 && (
-        <div className="mt-5 rounded-xl border border-secondary-200 bg-white/60 overflow-hidden">
+        <div className="mt-5 rounded-xl border border-secondary-200 bg-white/[0.04] overflow-hidden">
           <div className="flex items-center justify-between p-3 border-b border-secondary-100 flex-wrap gap-2">
             <h4 className="font-bold text-secondary-900 text-sm">التقييمات ({reviewsDisplay.length}){loading && resultsOwner === 'reviews-extract' && <span className="text-emerald-600 animate-pulse"> • مباشر ⚡</span>}</h4>
             <div className="flex gap-2">

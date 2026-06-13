@@ -540,7 +540,7 @@ export default function WhatsappModule() {
           <h4 className="font-bold text-secondary-900 text-sm mb-3">الجلسات المحفوظة على الجهاز</h4>
           <div className="space-y-2 max-h-[280px] overflow-y-auto scroll-container pr-1">
             {accounts.map((acc: any) => (
-              <div key={acc.id} className="flex items-center justify-between p-3 rounded-xl bg-white border border-secondary-100">
+              <div key={acc.id} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.04] border border-secondary-100">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0" style={{ background: 'rgba(37,211,102,0.1)', color: '#128C7E' }}>
                     {(acc.username || acc.email || '?')[0].toUpperCase()}
@@ -579,7 +579,7 @@ export default function WhatsappModule() {
     const list = displayResults as any[]
     if (list.length === 0) return null
     return (
-      <div className="mt-5 rounded-xl border border-secondary-200 bg-white/60 overflow-hidden">
+      <div className="mt-5 rounded-xl border border-secondary-200 bg-white/[0.04] overflow-hidden">
         <div className="flex items-center justify-between p-3 border-b border-secondary-100 flex-wrap gap-2">
           <h4 className="font-bold text-secondary-900 text-sm">النتائج ({list.length})</h4>
           <div className="flex gap-2">
@@ -795,10 +795,10 @@ export default function WhatsappModule() {
           const isSel = extractType === tool.id
           return (
             <button key={tool.id} onClick={() => setExtractType(tool.id)}
-              className="rounded-xl border bg-white/60 p-3 text-center relative cursor-pointer"
-              style={isSel ? { borderColor: '#22c55e', boxShadow: '0 0 0 2px rgba(34,197,94,0.2)' } : { borderColor: 'rgba(226,232,240,0.7)' }}>
+              className="rounded-xl border bg-white/[0.04] p-3 text-center relative cursor-pointer"
+              style={isSel ? { borderColor: '#22c55e', boxShadow: '0 0 0 2px rgba(34,197,94,0.2)' } : { borderColor: 'rgba(255,255,255,0.08)' }}>
               <div className="w-9 h-9 rounded-xl mx-auto flex items-center justify-center"
-                style={isSel ? { background: ACCENT_GRADIENT, color: 'white' } : { background: 'rgba(248,250,252,0.8)', color: '#64748b' }}>
+                style={isSel ? { background: ACCENT_GRADIENT, color: 'white' } : { background: 'rgba(255,255,255,0.03)', color: '#64748b' }}>
                 <tool.icon size={18} />
               </div>
               <p className="text-[10px] font-bold mt-2" style={{ color: isSel ? '#22c55e' : '#334155' }}>{tool.name}</p>
@@ -894,7 +894,7 @@ export default function WhatsappModule() {
         {mediaPaths.length > 0 && (
           <ul className="mt-3 space-y-1.5 text-xs">
             {mediaPaths.map((p, i) => (
-              <li key={i} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-white/70 border border-secondary-100">
+              <li key={i} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-white/[0.04] border border-secondary-100">
                 <span className="truncate" dir="ltr">{p}</span>
                 <button onClick={() => handleRemoveMedia(i)} className="text-danger-500 p-1 hover:bg-danger-50 rounded" type="button"><X size={14} /></button>
               </li>
@@ -1125,7 +1125,7 @@ export default function WhatsappModule() {
           {(['google', 'facebook', 'telegram', 'twitter'] as const).map(s => {
             const active = crossSources.includes(s)
             return (
-              <button key={s} type="button" onClick={() => setCrossSources(prev => active ? prev.filter(x => x !== s) : [...prev, s])} className="px-3 py-1.5 rounded-lg text-sm font-medium" style={active ? { background: 'rgba(99,102,241,0.12)', color: '#6366f1', border: '1px solid #6366f1' } : { background: 'white', color: '#475569', border: '1px solid #e2e8f0' }}>
+              <button key={s} type="button" onClick={() => setCrossSources(prev => active ? prev.filter(x => x !== s) : [...prev, s])} className="px-3 py-1.5 rounded-lg text-sm font-medium" style={active ? { background: 'rgba(99,102,241,0.12)', color: '#6366f1', border: '1px solid #6366f1' } : { background: 'var(--panel-bg)', color: '#475569', border: '1px solid rgba(255,255,255,0.08)' }}>
                 {s.toUpperCase()}
               </button>
             )

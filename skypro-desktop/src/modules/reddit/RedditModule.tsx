@@ -337,7 +337,7 @@ export default function RedditModule() {
       {redditAccounts.length > 0 && !sessionId && (
         <div
           className="px-5 py-3 border-t flex items-center gap-3 flex-wrap"
-          style={{ borderColor: 'rgba(255,69,0,0.12)', background: 'rgba(255,255,255,0.5)' }}
+          style={{ borderColor: 'rgba(255,69,0,0.12)', background: 'var(--panel-bg)' }}
         >
           <span className="text-xs font-semibold text-secondary-600 shrink-0">حسابات محفوظة:</span>
           <select
@@ -413,7 +413,7 @@ export default function RedditModule() {
           <h4 className="font-bold text-secondary-900 text-sm mb-3">الحسابات المحفوظة على الجهاز</h4>
           <div className="space-y-2 max-h-[280px] overflow-y-auto scroll-container pr-1">
             {accounts.map((acc: any) => (
-              <div key={acc.id} className="flex items-center justify-between p-3 rounded-xl bg-white border border-secondary-100">
+              <div key={acc.id} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.04] border border-secondary-100">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0" style={{ background: 'rgba(255,69,0,0.1)', color: ACCENT }}>
                     {(acc.username || '?')[0].toUpperCase()}

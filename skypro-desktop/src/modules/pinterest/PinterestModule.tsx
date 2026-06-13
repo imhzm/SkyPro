@@ -356,7 +356,7 @@ export default function PinterestModule() {
                   boxShadow: sessionId ? '0 0 8px rgba(34,197,94,0.6)' : 'none',
                 }}
               />
-              <span className="text-xs font-medium" style={{ color: sessionId ? '#16a34a' : '#64748b' }}>
+              <span className="text-xs font-medium" style={{ color: sessionId ? '#16a34a' : 'var(--color-secondary-500)' }}>
                 {sessionId ? 'جلسة نشطة — جاهز للعمل' : 'لا توجد جلسة — سجل الدخول أولاً'}
               </span>
               {accounts.length > 0 && (
@@ -386,7 +386,7 @@ export default function PinterestModule() {
       {pinterestAccounts.length > 0 && !sessionId && (
         <div
           className="px-5 py-3 border-t flex items-center gap-3 flex-wrap"
-          style={{ borderColor: 'rgba(230,0,35,0.12)', background: 'rgba(255,255,255,0.5)' }}
+          style={{ borderColor: 'rgba(230,0,35,0.12)', background: 'var(--panel-bg)' }}
         >
           <span className="text-xs font-semibold text-secondary-600 shrink-0">حسابات محفوظة:</span>
           <select
@@ -460,7 +460,7 @@ export default function PinterestModule() {
           <h4 className="font-bold text-secondary-900 text-sm mb-3">الحسابات المحفوظة على الجهاز</h4>
           <div className="space-y-2 max-h-[280px] overflow-y-auto scroll-container pr-1">
             {accounts.map((acc: any) => (
-              <div key={acc.id} className="flex items-center justify-between p-3 rounded-xl bg-white border border-secondary-100">
+              <div key={acc.id} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.04] border border-secondary-100">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0" style={{ background: 'rgba(230,0,35,0.1)', color: ACCENT }}>
                     {(acc.username || '?')[0].toUpperCase()}
@@ -501,7 +501,7 @@ export default function PinterestModule() {
     const displayResults = toolResults.length > 0 ? toolResults : (liveRows.length > 0 ? liveRows : results)
     if (displayResults.length === 0) return null
     return (
-      <div className="mt-5 rounded-xl border border-secondary-200 bg-white/60 overflow-hidden">
+      <div className="mt-5 rounded-xl border border-secondary-200 bg-white/[0.04] overflow-hidden">
         <div className="flex items-center justify-between p-3 border-b border-secondary-100 flex-wrap gap-2">
           <h4 className="font-bold text-secondary-900 text-sm">النتائج ({displayResults.length})</h4>
           <div className="flex gap-2">
@@ -720,8 +720,8 @@ export default function PinterestModule() {
       <div>
         <label className="label-field">المصدر</label>
         <div className="flex gap-3 flex-wrap">
-          <button type="button" onClick={() => setDownloadSource('search')} className="px-4 py-2 rounded-lg text-sm font-medium" style={downloadSource === 'search' ? { background: 'rgba(14,165,233,0.12)', color: '#0ea5e9', border: '1px solid #0ea5e9' } : { background: 'white', color: '#475569', border: '1px solid #e2e8f0' }}>من البحث</button>
-          <button type="button" onClick={() => setDownloadSource('board')} className="px-4 py-2 rounded-lg text-sm font-medium" style={downloadSource === 'board' ? { background: 'rgba(14,165,233,0.12)', color: '#0ea5e9', border: '1px solid #0ea5e9' } : { background: 'white', color: '#475569', border: '1px solid #e2e8f0' }}>من رابط لوحة</button>
+          <button type="button" onClick={() => setDownloadSource('search')} className="px-4 py-2 rounded-lg text-sm font-medium" style={downloadSource === 'search' ? { background: 'rgba(14,165,233,0.12)', color: '#0ea5e9', border: '1px solid #0ea5e9' } : { background: 'var(--panel-bg)', color: 'var(--color-secondary-600)', border: '1px solid rgba(255,255,255,0.08)' }}>من البحث</button>
+          <button type="button" onClick={() => setDownloadSource('board')} className="px-4 py-2 rounded-lg text-sm font-medium" style={downloadSource === 'board' ? { background: 'rgba(14,165,233,0.12)', color: '#0ea5e9', border: '1px solid #0ea5e9' } : { background: 'var(--panel-bg)', color: 'var(--color-secondary-600)', border: '1px solid rgba(255,255,255,0.08)' }}>من رابط لوحة</button>
         </div>
       </div>
       {downloadSource === 'search' ? (
@@ -823,21 +823,21 @@ export default function PinterestModule() {
       {analyzeResult && (
         <div className="space-y-3">
           <div className="grid grid-cols-3 gap-3">
-            <div className="p-3 rounded-xl border bg-white/60">
+            <div className="p-3 rounded-xl border bg-white/[0.04]">
               <p className="text-xs text-secondary-500">Pins</p>
               <p className="text-2xl font-bold text-secondary-800">{analyzeResult.pins || '-'}</p>
             </div>
-            <div className="p-3 rounded-xl border bg-white/60">
+            <div className="p-3 rounded-xl border bg-white/[0.04]">
               <p className="text-xs text-secondary-500">متابعين</p>
               <p className="text-2xl font-bold text-rose-700">{analyzeResult.followers || '-'}</p>
             </div>
-            <div className="p-3 rounded-xl border bg-white/60">
+            <div className="p-3 rounded-xl border bg-white/[0.04]">
               <p className="text-xs text-secondary-500">متابعون</p>
               <p className="text-2xl font-bold text-violet-700">{analyzeResult.following || '-'}</p>
             </div>
           </div>
           {analyzeResult.bio && (
-            <div className="p-3 rounded-xl border bg-white/60">
+            <div className="p-3 rounded-xl border bg-white/[0.04]">
               <p className="text-xs text-secondary-500 mb-1">السيرة الذاتية</p>
               <p className="text-sm text-secondary-700 whitespace-pre-wrap">{analyzeResult.bio}</p>
             </div>
@@ -879,7 +879,7 @@ export default function PinterestModule() {
       {autoPublishPins.length > 0 && (
         <ul className="space-y-3">
           {autoPublishPins.map((p, i) => (
-            <li key={i} className="rounded-xl border border-secondary-100 bg-white/70 p-3 space-y-2">
+            <li key={i} className="rounded-xl border border-secondary-100 bg-white/[0.04] p-3 space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <span className="flex items-center gap-2 text-xs truncate" dir="ltr"><ImageIcon size={14} /> {p.imagePath}</span>
                 <button onClick={() => handleRemoveAutoPublishPin(i)} type="button" className="text-danger-500 p-1 hover:bg-danger-50 rounded"><X size={14} /></button>

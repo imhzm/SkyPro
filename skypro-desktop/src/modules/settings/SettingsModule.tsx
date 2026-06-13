@@ -144,7 +144,7 @@ export default function SettingsModule() {
           {systemInfo.map((item) => {
             const Icon = item.icon
             return (
-              <div key={item.label} className="flex items-center justify-between p-3 rounded-xl" style={{ background: 'rgba(248,250,252,0.8)', border: '1px solid rgba(226,232,240,0.4)' }}>
+              <div key={item.label} className="flex items-center justify-between p-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <div className="flex items-center gap-2.5">
                   <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${item.color}15` }}>
                     <Icon size={14} style={{ color: item.color }} />
@@ -157,7 +157,7 @@ export default function SettingsModule() {
           })}
         </div>
         {/* Update Section */}
-        <div className="mt-4 p-4 rounded-xl" style={{ background: 'rgba(248,250,252,0.6)', border: '1px solid rgba(226,232,240,0.4)' }}>
+        <div className="mt-4 p-4 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
           <div className="flex items-center justify-between mb-3">
             <div>
               <p className="text-sm font-medium text-secondary-900">التحديثات</p>
@@ -214,7 +214,7 @@ export default function SettingsModule() {
           {/* Download Progress Bar */}
           {updateState.status === 'downloading' && (
             <div className="space-y-2">
-              <div className="w-full rounded-full h-2 overflow-hidden" style={{ background: 'rgba(226,232,240,0.6)' }}>
+              <div className="w-full rounded-full h-2 overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
                 <div
                   className="h-full rounded-full transition-all duration-300"
                   style={{ width: `${updateState.percent || 0}%`, background: 'linear-gradient(90deg, #0A6CF1, #8B2CF5)' }}
