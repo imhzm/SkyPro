@@ -1,118 +1,150 @@
 import { useMemo } from 'react'
 import { useAppStore } from '../../stores/appStore'
 import { platforms } from '../../data/platforms'
-import { getPlatformGradient } from '../../data/platformGradients'
 import * as Icons from 'lucide-react'
 import { ExternalLink } from 'lucide-react'
+import { BrandIcon } from '../icons/BrandIcon'
+import { hasBrandIcon } from '../icons/brand-data'
 import logoSrc from '../../assets/logo.png'
-import type { PlatformId } from '../../types'
 
+/* ============================================================
+   Sidebar — Night Edition navigation rail
+
+   Groups (order derives from src/data/platforms.ts):
+   · main      dashboard / accounts — 34px rounded icon chips
+   · القنوات    brand channels — flat mono BrandIcon marks
+   · أدوات      auto-point / other-tools — lucide icons
+   · pinned    security / settings / account + footer (fixed)
+   ============================================================ */
+
+/* Lucide resolution for entries without an official brand mark. */
 const iconMap: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
   LayoutDashboard: Icons.LayoutDashboard,
+  Users: Icons.Users,
   Facebook: Icons.Facebook,
   MessageCircle: Icons.MessageCircle,
   Instagram: Icons.Instagram,
   Twitter: Icons.Twitter,
   Linkedin: Icons.Linkedin,
   Send: Icons.Send,
-  Music: Icons.Music,
-  Pin: Icons.Pin,
+  Sparkles: Icons.Sparkles,
   Ghost: Icons.Ghost,
+  Pin: Icons.Pin,
+  Music: Icons.Music,
   MessageSquare: Icons.MessageSquare,
-  Search: Icons.Search,
+  MapPin: Icons.MapPin,
   Mail: Icons.Mail,
   Zap: Icons.Zap,
   Wrench: Icons.Wrench,
   Shield: Icons.Shield,
   User: Icons.User,
-  Globe: Icons.Globe,
-  CreditCard: Icons.CreditCard,
-  BarChart3: Icons.BarChart3,
-  PieChart: Icons.PieChart,
-  LogIn: Icons.LogIn,
-  Download: Icons.Download,
-  Megaphone: Icons.Megaphone,
-  AtSign: Icons.AtSign,
-  FileText: Icons.FileText,
-  Filter: Icons.Filter,
-  Users: Icons.Users,
-  UserPlus: Icons.UserPlus,
-  Calendar: Icons.Calendar,
-  Repeat: Icons.Repeat,
-  ArrowUp: Icons.ArrowUp,
-  TrendingUp: Icons.TrendingUp,
-  Upload: Icons.Upload,
-  MapPin: Icons.MapPin,
-  Star: Icons.Star,
   Settings: Icons.Settings,
-  PenTool: Icons.PenTool,
-  Contact: Icons.Contact,
-  Sparkles: Icons.Sparkles,
-  Wand2: Icons.Wand2,
-  Hash: Icons.Hash,
-  Bot: Icons.Bot,
 }
+
+const MAIN_IDS: ReadonlySet<string> = new Set(['dashboard', 'accounts'])
+const TOOL_IDS: ReadonlySet<string> = new Set(['auto-point', 'other-tools'])
+const PINNED_ID_ORDER = ['security', 'settings', 'account']
+const PINNED_IDS: ReadonlySet<string> = new Set(PINNED_ID_ORDER)
+
+const COMPANY_URL = 'https://www.skywaveads.com'
+
+type SidebarPlatform = (typeof platforms)[number]
 
 export default function Sidebar() {
   const { activePlatform, setActivePlatform, isSidebarOpen } = useAppStore()
 
-  const mainPlatforms = useMemo(() => platforms.filter(p => p.id === 'dashboard'), [])
-  const accountsPlatform = useMemo(() => platforms.filter(p => p.id === 'accounts'), [])
-  const socialPlatforms = useMemo(
-    () => platforms.filter(p => p.id !== 'dashboard' && p.id !== 'accounts'),
+  const mainItems = useMemo(() => platforms.filter((p) => MAIN_IDS.has(p.id)), [])
+  const channelItems = useMemo(
+    () => platforms.filter((p) => !MAIN_IDS.has(p.id) && !TOOL_IDS.has(p.id) && !PINNED_IDS.has(p.id)),
+    [],
+  )
+  const toolItems = useMemo(() => platforms.filter((p) => TOOL_IDS.has(p.id)), [])
+  const pinnedItems = useMemo(
+    () =>
+      PINNED_ID_ORDER.map((id) => platforms.find((p) => p.id === id)).filter(
+        (p): p is SidebarPlatform => Boolean(p),
+      ),
     [],
   )
 
-  const renderPlatformItem = (platform: typeof platforms[0]) => {
-    const IconComponent = iconMap[platform.icon] || Icons.Circle
+  const openCompanySite = () =>
+    window.open(COMPANY_URL, '_blank', 'noopener,noreferrer')
+
+  const renderItem = (platform: SidebarPlatform, variant: 'main' | 'flat') => {
     const isActive = activePlatform === platform.id
-    const gradient = getPlatformGradient(platform.id)
+    const useBrandMark = variant === 'flat' && hasBrandIcon(platform.id)
+    const LucideIcon = iconMap[platform.icon] || Icons.Circle
 
     return (
       <button
         key={platform.id}
-        onClick={() => setActivePlatform(platform.id as PlatformId)}
+        onClick={() => setActivePlatform(platform.id)}
         className={`sidebar-item group ${isActive ? 'active' : ''} ${
           isSidebarOpen ? '' : 'justify-center'
         }`}
         title={platform.name}
       >
         <span
-          className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-200"
-          style={{
-            background: isActive ? gradient : 'rgba(234, 243, 255, 0.04)',
-            color: isActive ? '#fff' : 'rgba(234, 243, 255, 0.7)',
-            boxShadow: isActive
-              ? '0 4px 16px rgba(10, 108, 241, 0.4), inset 0 1px 0 rgba(255,255,255,0.15)'
-              : 'inset 0 1px 0 rgba(255,255,255,0.04)',
-            border: isActive ? 'none' : '1px solid rgba(234, 243, 255, 0.06)',
-          }}
+          className={`w-[34px] h-[34px] flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${
+            variant === 'main' ? 'rounded-xl' : ''
+          }`}
+          style={
+            variant === 'main'
+              ? {
+                  background: 'rgba(255, 255, 255, 0.06)',
+                  border: '1px solid rgba(255, 255, 255, 0.06)',
+                  color: isActive ? '#fff' : 'rgba(255, 255, 255, 0.85)',
+                }
+              : { color: isActive ? '#fff' : 'rgba(255, 255, 255, 0.75)' }
+          }
         >
-          <IconComponent size={16} />
+          {useBrandMark ? (
+            <BrandIcon platform={platform.id} variant="mono" size={18} />
+          ) : (
+            <LucideIcon size={variant === 'main' ? 16 : 17} />
+          )}
         </span>
+
         {isSidebarOpen && (
           <div className="flex flex-col items-start min-w-0 flex-1">
-            <span className="truncate text-[12.5px] font-medium tracking-tight">
+            <span
+              className={`truncate w-full tracking-tight ${
+                variant === 'main' ? 'text-[13px] font-semibold' : 'text-[12.5px] font-medium'
+              }`}
+            >
               {platform.name}
             </span>
             <span
-              className="text-[9.5px] truncate font-medium"
-              style={{ color: isActive ? 'rgba(255,255,255,0.55)' : 'rgba(234, 243, 255, 0.32)' }}
+              className="truncate w-full text-[10.5px] font-medium"
+              style={{ color: isActive ? 'rgba(255, 255, 255, 0.55)' : 'rgba(234, 243, 255, 0.40)' }}
             >
               {platform.segment}
             </span>
           </div>
         )}
+
         {isActive && isSidebarOpen && (
           <Icons.ChevronLeft
             size={13}
-            className="opacity-50"
-            style={{ color: 'rgba(255,255,255,0.55)' }}
+            className="flex-shrink-0"
+            style={{ color: 'rgba(255, 255, 255, 0.55)' }}
           />
         )}
       </button>
     )
   }
+
+  const renderSectionLabel = (label: string) =>
+    isSidebarOpen ? (
+      <div className="flex items-center gap-2 px-2 pt-5 pb-1.5">
+        <span className="text-[10px] font-semibold flex-shrink-0" style={{ color: 'rgba(255, 255, 255, 0.35)' }}>
+          {label}
+        </span>
+        <span className="flex-1 h-px" style={{ background: 'rgba(255, 255, 255, 0.07)' }} />
+      </div>
+    ) : (
+      <div className="my-2.5 mx-3 h-px" style={{ background: 'rgba(255, 255, 255, 0.08)' }} />
+    )
 
   return (
     <aside
@@ -120,166 +152,98 @@ export default function Sidebar() {
         isSidebarOpen ? 'w-[260px]' : 'w-[68px]'
       }`}
       style={{
-        /* Refined dark sidebar — slightly violet-tinted instead of flat navy
-           so it visually links to the ModuleHeader brand gradient. */
-        background:
-          'linear-gradient(180deg, #0a0a23 0%, #0e0d2e 30%, #11102d 70%, #0a0a23 100%)',
-        borderInlineEnd: '1px solid rgba(124, 58, 237, 0.12)',
+        background: 'rgba(255, 255, 255, 0.02)',
+        borderInlineEnd: '1px solid rgba(255, 255, 255, 0.06)',
       }}
     >
-      {/* Radial accent — violet glow at top */}
+      {/* ===== Header ===== */}
       <div
-        aria-hidden
-        className="absolute inset-x-0 top-0 h-44 pointer-events-none"
-        style={{
-          background:
-            'radial-gradient(circle at 50% 0%, rgba(124, 58, 237, 0.18) 0%, rgba(99, 102, 241, 0.08) 35%, transparent 70%)',
-        }}
-      />
-      {/* Subtle bottom accent */}
-      <div
-        aria-hidden
-        className="absolute inset-x-0 bottom-0 h-32 pointer-events-none"
-        style={{
-          background:
-            'radial-gradient(ellipse at 50% 100%, rgba(56, 189, 248, 0.08) 0%, transparent 65%)',
-        }}
-      />
-
-      {/* ===== Logo ===== */}
-      <div className="relative px-3 pt-4 pb-3">
-        <div
-          className={`flex items-center gap-3 ${
-            isSidebarOpen ? 'px-1.5' : 'justify-center'
-          }`}
-        >
-          <div className="relative">
-            <div
-              aria-hidden
-              className="absolute inset-0 -m-1.5 rounded-full"
-              style={{
-                background:
-                  'radial-gradient(circle, rgba(10, 108, 241, 0.5) 0%, transparent 65%)',
-                filter: 'blur(8px)',
-              }}
-            />
-            <img
-              src={logoSrc}
-              alt="SkyPro"
-              className="relative w-9 h-9 flex-shrink-0 object-contain"
-              style={{ filter: 'drop-shadow(0 4px 14px rgba(10, 108, 241, 0.5))' }}
-            />
+        className={`flex items-center gap-2.5 px-3 pt-4 pb-3 ${isSidebarOpen ? 'ps-4' : 'justify-center'}`}
+      >
+        <img
+          src={logoSrc}
+          alt="SkyPro"
+          className="w-8 h-8 flex-shrink-0 object-contain"
+          style={{ filter: 'drop-shadow(0 3px 12px rgba(124, 58, 237, 0.40))' }}
+        />
+        {isSidebarOpen && (
+          <div className="min-w-0 leading-tight">
+            <h1 className="font-bold text-[15px] tracking-tight">
+              <span className="text-white/95">Sky</span>
+              <span className="text-gradient">Pro</span>
+            </h1>
+            <p
+              className="text-[8.5px] mt-0.5 font-semibold uppercase tracking-[0.2em]"
+              style={{ color: 'rgba(234, 243, 255, 0.35)' }}
+            >
+              Marketing Automation
+            </p>
           </div>
-          {isSidebarOpen && (
-            <div className="min-w-0 leading-tight">
-              <h1 className="font-bold text-[15px] tracking-tight">
-                <span className="text-white">Sky</span>
-                <span className="text-gradient">Pro</span>
-              </h1>
-              <p
-                className="text-[9.5px] mt-0.5 font-medium uppercase tracking-[0.18em]"
-                style={{ color: 'rgba(167, 139, 250, 0.55)' }}
-              >
-                Marketing Automation
-              </p>
-            </div>
-          )}
-        </div>
+        )}
       </div>
 
-      {/* Separator */}
-      <div
-        className="mx-4 mb-1.5 h-px"
-        style={{
-          background:
-            'linear-gradient(90deg, transparent, rgba(10, 108, 241, 0.22), transparent)',
-        }}
-      />
-
-      {/* ===== Navigation ===== */}
+      {/* ===== Navigation (scrolls) ===== */}
       <nav className="flex-1 overflow-y-auto py-2 px-2 space-y-0.5 scroll-container">
-        {mainPlatforms.map(renderPlatformItem)}
-        {accountsPlatform.map(renderPlatformItem)}
+        {mainItems.map((p) => renderItem(p, 'main'))}
 
-        {/* Category header */}
-        {isSidebarOpen ? (
-          <div className="px-2 pt-5 pb-1.5">
-            <div className="flex items-center gap-2">
-              <div
-                className="flex-1 h-px"
-                style={{
-                  background:
-                    'linear-gradient(90deg, transparent, rgba(10, 108, 241, 0.15), transparent)',
-                }}
-              />
-              <span
-                className="text-[9px] font-bold uppercase tracking-[0.22em]"
-                style={{ color: 'rgba(167, 139, 250, 0.45)' }}
-              >
-                المنصات
-              </span>
-              <div
-                className="flex-1 h-px"
-                style={{
-                  background:
-                    'linear-gradient(90deg, transparent, rgba(10, 108, 241, 0.15), transparent)',
-                }}
-              />
-            </div>
-          </div>
-        ) : (
-          <div
-            className="my-2 mx-3 h-px"
-            style={{
-              background:
-                'linear-gradient(90deg, transparent, rgba(10, 108, 241, 0.15), transparent)',
-            }}
-          />
-        )}
+        {renderSectionLabel('القنوات')}
+        {channelItems.map((p) => renderItem(p, 'flat'))}
 
-        {socialPlatforms.map(renderPlatformItem)}
+        {renderSectionLabel('أدوات')}
+        {toolItems.map((p) => renderItem(p, 'flat'))}
       </nav>
 
-      {/* ===== Footer ===== */}
+      {/* ===== Pinned group ===== */}
       <div
-        className="px-3 py-3 relative"
-        style={{ borderTop: '1px solid rgba(10, 108, 241, 0.10)' }}
+        className="px-2 pt-2 pb-1 space-y-0.5"
+        style={{ borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}
       >
+        {pinnedItems.map((p) => renderItem(p, 'flat'))}
+      </div>
+
+      {/* ===== Footer ===== */}
+      <div className="px-3 pb-3 pt-2">
         {isSidebarOpen ? (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 px-1">
-              <span className="sw-status-dot" />
-              <span className="text-[10.5px] font-medium" style={{ color: 'rgba(34, 197, 94, 0.78)' }}>
+          <>
+            <div className="flex items-center justify-between px-1 mb-2">
+              <span className="text-[10px] font-medium" style={{ color: 'rgba(234, 243, 255, 0.40)' }}>
                 Active Workspace
               </span>
+              <span className="sw-status-dot" />
             </div>
             <button
-              onClick={() =>
-                window.open('https://www.skywaveads.com', '_blank', 'noopener,noreferrer')
-              }
-              className="group w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg transition-colors"
+              onClick={openCompanySite}
+              className="group w-full flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-xl text-[11px] font-medium transition-colors hover:bg-white/[0.07]"
               style={{
-                background: 'rgba(255, 255, 255, 0.025)',
-                border: '1px solid rgba(10, 108, 241, 0.12)',
+                background: 'rgba(255, 255, 255, 0.04)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                color: 'rgba(234, 243, 255, 0.70)',
               }}
               title="زيارة موقع Sky Wave Ads"
             >
-              <span
-                className="text-[10.5px] font-medium tracking-wide truncate"
-                style={{ color: 'rgba(234, 243, 255, 0.7)' }}
-              >
-                www.skywaveads.com
-              </span>
               <ExternalLink
-                size={11}
-                style={{ color: 'rgba(167, 139, 250, 0.55)' }}
-                className="flex-shrink-0 group-hover:opacity-100 opacity-70 transition-opacity"
+                size={12}
+                className="flex-shrink-0"
+                style={{ color: 'rgba(167, 139, 250, 0.70)' }}
               />
+              www.skywaveads.com
             </button>
-          </div>
+          </>
         ) : (
-          <div className="flex justify-center">
+          <div className="flex flex-col items-center gap-2.5">
             <span className="sw-status-dot" />
+            <button
+              onClick={openCompanySite}
+              className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors hover:bg-white/[0.07]"
+              style={{
+                background: 'rgba(255, 255, 255, 0.04)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                color: 'rgba(234, 243, 255, 0.60)',
+              }}
+              title="زيارة موقع Sky Wave Ads"
+            >
+              <ExternalLink size={13} />
+            </button>
           </div>
         )}
       </div>

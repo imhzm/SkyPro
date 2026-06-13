@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { useAppStore } from '../../stores/appStore'
 import Sidebar from './Sidebar'
 import AppTitleBar from './AppTitleBar'
+import CommandPalette from './CommandPalette'
 import ErrorBoundary from '../../components/common/ErrorBoundary'
 
 const DashboardModule = lazy(() => import('../../modules/dashboard/DashboardModule'))
@@ -59,15 +60,8 @@ export default function Layout() {
       <AppTitleBar />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
-        <main
-          className="flex-1 overflow-y-auto p-5 scroll-container"
-          style={{
-            /* Body already paints the soft indigo/violet wash; main reads
-               through with subtle layered radials for depth. */
-            background:
-              'radial-gradient(ellipse 70% 50% at 18% 0%, rgba(99,102,241,0.06), transparent 60%), radial-gradient(ellipse 70% 50% at 82% 100%, rgba(168,85,247,0.05), transparent 60%), linear-gradient(180deg, #f7f8ff 0%, #ecedfa 100%)',
-          }}
-        >
+        {/* Transparent — the body's night background reads through. */}
+        <main className="flex-1 overflow-y-auto p-5 scroll-container">
           <ErrorBoundary>
             <Suspense fallback={<div className="flex items-center justify-center h-[60vh]"><div className="text-center"><div className="animate-spin rounded-full h-10 w-10 border-4 mx-auto mb-3" style={{ borderColor: 'rgba(99,102,241,0.25)', borderTopColor: '#7c3aed' }} /><p className="text-secondary-400 text-xs">جاري التحميل...</p></div></div>}>
               <ActiveModule />
@@ -75,6 +69,7 @@ export default function Layout() {
           </ErrorBoundary>
         </main>
       </div>
+      <CommandPalette />
     </div>
   )
 }
