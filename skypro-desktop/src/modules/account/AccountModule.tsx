@@ -93,10 +93,10 @@ export default function AccountModule() {
   }, [keyData])
 
   const statCards = [
-    { label: 'سجل مستخرج', value: stats.leads.toLocaleString('en'), icon: Database, gradient: 'linear-gradient(135deg, #f59e0b, #ef4444)' },
-    { label: 'حساب محفوظ', value: stats.accounts.toLocaleString('en'), icon: Users, gradient: 'linear-gradient(135deg, #22c55e, #16a34a)', sub: `${stats.activeAccounts} نشط` },
-    { label: 'حملة مجدولة', value: stats.campaigns.toLocaleString('en'), icon: BarChart3, gradient: 'linear-gradient(135deg, #8B2CF5, #FF4FD8)' },
-    { label: 'منذ', value: memberSince || '—', icon: Calendar, gradient: 'linear-gradient(135deg, #0A6CF1, #06b6d4)' },
+    { label: 'سجل مستخرج', value: stats.leads.toLocaleString('en'), icon: Database, color: '#f59e0b' },
+    { label: 'حساب محفوظ', value: stats.accounts.toLocaleString('en'), icon: Users, color: '#22c55e', sub: `${stats.activeAccounts} نشط` },
+    { label: 'حملة مجدولة', value: stats.campaigns.toLocaleString('en'), icon: BarChart3, color: '#8b5cf6' },
+    { label: 'منذ', value: memberSince || '—', icon: Calendar, color: '#06b6d4' },
   ]
 
   return (
@@ -139,8 +139,8 @@ export default function AccountModule() {
             style={{ background: 'var(--panel-bg)', border: '1px solid rgba(255,255,255,0.08)' }}
           >
             <div className="flex items-start justify-between mb-2">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md" style={{ background: stat.gradient }}>
-                <stat.icon size={18} className="text-white" />
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `${stat.color}24`, border: `1px solid ${stat.color}40` }}>
+                <stat.icon size={18} style={{ color: stat.color }} />
               </div>
               {stat.sub && (
                 <span className="text-[10px] font-medium text-secondary-500 px-2 py-0.5 rounded-full bg-secondary-100">
