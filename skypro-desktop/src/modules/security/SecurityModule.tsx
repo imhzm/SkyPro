@@ -141,7 +141,7 @@ export default function SecurityModule() {
   const activePreset = PRESETS.find((p) => presetMatches(settings, p))
 
   return (
-    <div className="space-y-5 max-w-4xl">
+    <div className="space-y-5 max-w-5xl mx-auto w-full">
       {(message || error) && (
         <div
           className={`flex items-center gap-3 p-3.5 rounded-xl text-sm font-medium ${message ? 'text-emerald-300' : 'text-red-600'}`}

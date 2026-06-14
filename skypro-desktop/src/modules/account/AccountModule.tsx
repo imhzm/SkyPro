@@ -100,7 +100,7 @@ export default function AccountModule() {
   ]
 
   return (
-    <div className="space-y-5 max-w-5xl">
+    <div className="space-y-5 max-w-6xl mx-auto w-full">
       {/* Notification */}
       {(message || error) && (
         <div
