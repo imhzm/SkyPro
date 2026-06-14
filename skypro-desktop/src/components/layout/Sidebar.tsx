@@ -4,7 +4,7 @@ import { platforms } from '../../data/platforms'
 import * as Icons from 'lucide-react'
 import { ExternalLink } from 'lucide-react'
 import { BrandIcon } from '../icons/BrandIcon'
-import { hasBrandIcon } from '../icons/brand-data'
+import { hasBrandIcon, BRAND_COLORS } from '../icons/brand-data'
 import logoSrc from '../../assets/logo.png'
 
 /* ============================================================
@@ -18,7 +18,7 @@ import logoSrc from '../../assets/logo.png'
    ============================================================ */
 
 /* Lucide resolution for entries without an official brand mark. */
-const iconMap: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
+const iconMap: Record<string, React.ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }>> = {
   LayoutDashboard: Icons.LayoutDashboard,
   Users: Icons.Users,
   Facebook: Icons.Facebook,
@@ -72,18 +72,43 @@ export default function Sidebar() {
 
   const renderItem = (platform: SidebarPlatform, variant: 'main' | 'flat') => {
     const isActive = activePlatform === platform.id
-    const useBrandMark = variant === 'flat' && hasBrandIcon(platform.id)
+    const useBrandMark = hasBrandIcon(platform.id)
     const LucideIcon = iconMap[platform.icon] || Icons.Circle
+    // Per-platform accent: official brand color, else the platform's own color.
+    const color = BRAND_COLORS[platform.id] || platform.color || '#8b5cf6'
 
     return (
       <button
         key={platform.id}
         onClick={() => setActivePlatform(platform.id)}
-        className={`sidebar-item group ${isActive ? 'active' : ''} ${
-          isSidebarOpen ? '' : 'justify-center'
-        }`}
+        className={`sidebar-item group ${isSidebarOpen ? '' : 'justify-center'}`}
         title={platform.name}
+        style={
+          isActive
+            ? {
+                background: `linear-gradient(135deg, ${color}26, ${color}0d)`,
+                boxShadow: `inset 0 0 0 1px ${color}40`,
+                color: '#fff',
+              }
+            : undefined
+        }
       >
+        {/* Per-platform colored accent bar on the active tab */}
+        {isActive && (
+          <span
+            aria-hidden
+            style={{
+              position: 'absolute',
+              insetInlineStart: '-2px',
+              top: '18%',
+              bottom: '18%',
+              width: '3px',
+              borderRadius: '0 4px 4px 0',
+              background: color,
+              boxShadow: `0 0 10px ${color}aa`,
+            }}
+          />
+        )}
         <span
           className={`w-[34px] h-[34px] flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${
             variant === 'main' ? 'rounded-xl' : ''
@@ -91,17 +116,16 @@ export default function Sidebar() {
           style={
             variant === 'main'
               ? {
-                  background: 'rgba(255, 255, 255, 0.06)',
-                  border: '1px solid rgba(255, 255, 255, 0.06)',
-                  color: isActive ? '#fff' : 'rgba(255, 255, 255, 0.85)',
+                  background: isActive ? `${color}22` : 'rgba(255, 255, 255, 0.06)',
+                  border: `1px solid ${isActive ? color + '40' : 'rgba(255, 255, 255, 0.06)'}`,
                 }
-              : { color: isActive ? '#fff' : 'rgba(255, 255, 255, 0.75)' }
+              : undefined
           }
         >
           {useBrandMark ? (
-            <BrandIcon platform={platform.id} variant="mono" size={18} />
+            <BrandIcon platform={platform.id} variant="color" size={18} />
           ) : (
-            <LucideIcon size={variant === 'main' ? 16 : 17} />
+            <LucideIcon size={variant === 'main' ? 16 : 17} style={{ color }} />
           )}
         </span>
 
@@ -124,11 +148,7 @@ export default function Sidebar() {
         )}
 
         {isActive && isSidebarOpen && (
-          <Icons.ChevronLeft
-            size={13}
-            className="flex-shrink-0"
-            style={{ color: 'rgba(255, 255, 255, 0.55)' }}
-          />
+          <Icons.ChevronLeft size={13} className="flex-shrink-0" style={{ color }} />
         )}
       </button>
     )
