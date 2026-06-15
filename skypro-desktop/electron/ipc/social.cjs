@@ -1165,12 +1165,20 @@ ipcm('facebook-users-to-ids', async (e, { sessionId, usernames }) => {
       await page.goto(`https://www.facebook.com/${username}`, { waitUntil: 'domcontentloaded', timeout: 30000 })
       await page.waitForTimeout(randomDelay(2000, 4000))
       const userId = await page.evaluate(() => {
-        const meta = document.querySelector('meta[property="al:android:url"]')
-        if (meta) { const m = (meta.getAttribute('content') || '').match(/profile\.php\?id=(\d+)/); if (m) return m[1] }
+        // Canonical entity ref points at the VIEWED profile/page (not the viewer).
+        const al = document.querySelector('meta[property="al:android:url"], meta[property="al:ios:url"]')
+        if (al) { const m = (al.getAttribute('content') || '').match(/(?:profile|page|group|user|fb)\/(\d{5,})/); if (m) return m[1] }
+        const um = window.location.href.match(/profile\.php\?id=(\d{5,})/); if (um) return um[1]
         const src = document.documentElement.innerHTML
-        const m1 = src.match(/"userID":"(\d+)"/); if (m1) return m1[1]
-        const m2 = src.match(/"actor_id":"(\d+)"/); if (m2) return m2[1]
-        const m3 = src.match(/"ownerID":"(\d+)"/); if (m3) return m3[1]
+        const pats = [
+          /"delegate_page"\s*:\s*\{\s*"id"\s*:\s*"(\d{5,})"/,
+          /"page_id":"?(\d{6,})"?/,
+          /"pageID":"?(\d{6,})"?/,
+          /"profile_owner"\s*:\s*\{\s*"id"\s*:\s*"(\d{5,})"/,
+          /"actorID":"(\d{5,})"/,
+          /"entity_id":"(\d{6,})"/,
+        ]
+        for (const p of pats) { const m = src.match(p); if (m) return m[1] }
         return null
       })
       results.push({ username, id: userId || 'غير موجود', status: userId ? 'found' : 'not_found' })
@@ -2225,23 +2233,31 @@ ipcm('facebook-detect-open-groups', async (e, { sessionId, groupUrls = [], delay
     for (const url of groupUrls) {
       if (globals.cancelFlags.get(jobId)) break
       try {
-        const aboutUrl = url.replace(/\/$/, '') + '/about'
-        await page.goto(aboutUrl, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
-        await page.waitForTimeout(randomDelay(2000, 3500))
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+        await page.waitForTimeout(randomDelay(2500, 4000))
         const info = await page.evaluate(() => {
-          const text = document.body.innerText
-          const approval = /(Membership approval|All posts must be approved|require admin approval|بحاجة لموافقة مشرف|كل المنشورات بحاجة لموافقة)/i.test(text)
-          const open = /(Anyone can post|Public group|Anyone can join|أي شخص يمكنه النشر|مجموعة عامة)/i.test(text)
-          const nameEl = document.querySelector('h1, h2 a, h2')
-          const memberMatch = text.match(/(\d[\d,.\s]*)\s*(members|عضو)/i)
+          // FB wraps these labels in bidi control marks which broke the old regex.
+          const BIDI = /[‎‏‪-‮⁦-⁩]/g
+          const main = document.querySelector('[role="main"]') || document.body
+          const text = main.innerText.replace(BIDI, '')
+          const isPublic = /مجموعة\s*عامة|Public group/i.test(text)
+          const isPrivate = /مجموعة\s*خاصة|Private group/i.test(text)
+          const approval = /في انتظار موافقة|بحاجة لموافقة|تحتاج إلى موافقة|posts must be approved|requires? admin approval|approval required/i.test(text)
+          const nameEl = main.querySelector('h1, h2 a, h2')
+          const memberMatch = text.match(/([\d.,]+\s*(?:ألف|مليون|K|M)?)\s*(?:عضو|members?)/i)
+          let status = 'unknown'
+          if (approval) status = 'approval-needed'
+          else if (isPublic) status = 'open'
+          else if (isPrivate) status = 'private'
           return {
-            name: nameEl ? nameEl.innerText.trim() : '',
+            name: nameEl ? nameEl.innerText.replace(BIDI, '').trim() : '',
+            privacy: isPublic ? 'public' : isPrivate ? 'private' : 'unknown',
             approvalRequired: approval,
-            openPosting: open && !approval,
             members: memberMatch ? memberMatch[1].trim() : '',
+            status,
           }
         })
-        results.push({ url, ...info, status: info.openPosting ? 'open' : info.approvalRequired ? 'approval-needed' : 'unknown' })
+        results.push({ url, ...info })
       } catch (err) {
         results.push({ url, status: 'failed', error: err.message })
       }
