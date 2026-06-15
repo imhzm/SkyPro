@@ -739,44 +739,6 @@ ipcm('facebook-extract-phones', async (e, { sessionId, postUrl, limit = 50, jobI
   }
 })
 
-ipcm('facebook-extract-post-details', async (e, { sessionId, postUrl }) => {
-  const page = globals.bm.getPage(sessionId)
-  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
-  try {
-    await page.goto(postUrl, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
-    await page.waitForTimeout(randomDelay(3000, 5000))
-    const details = await page.evaluate((url) => {
-      const result = { author: '', text: '', likes: 0, comments: 0, shares: 0, date: '', url: window.location.href, images: [], videos: [], postType: '' }
-      const authorSelectors = ['a[role="link"] strong span', 'h2 a span', 'a[role="link"][href*="/"] span span', '[data-ad-preview] a span', 'a[role="link"] span']
-      for (const sel of authorSelectors) {
-        const el = document.querySelector(sel)
-        if (el && el.innerText.trim().length > 1 && el.innerText.trim().length < 60) { result.author = el.innerText.trim(); break }
-      }
-      const textSelectors = ['div[data-ad-comet-preview="message"] span', 'div[dir="auto"] span[dir="auto"]', '[role="article"] div[dir="auto"] > span', 'div.x1iorvi4 > span']
-      for (const sel of textSelectors) {
-        const el = document.querySelector(sel)
-        if (el && el.innerText.trim().length > 3) { result.text = el.innerText.trim(); break }
-      }
-      const body = document.body.innerText
-      const lm = body.match(/([\d,]+(?:\.\d+)?)\s*(?:likes|Like|أعجبني|إعجاب)/i); if (lm) result.likes = parseInt(lm[1].replace(/,/g, '')) || 0
-      const cm = body.match(/([\d,]+(?:\.\d+)?)\s*(?:comments?|comment|تعليق|تعليقات)/i); if (cm) result.comments = parseInt(cm[1].replace(/,/g, '')) || 0
-      const sm = body.match(/([\d,]+(?:\.\d+)?)\s*(?:shares?|share|مشاركة|مشاركات)/i); if (sm) result.shares = parseInt(sm[1].replace(/,/g, '')) || 0
-      const timeEl = document.querySelector('[role="article"] abbr, [role="article"] time, a[role="link"] abbr')
-      if (timeEl) result.date = timeEl.innerText.trim() || timeEl.getAttribute('title') || timeEl.getAttribute('datetime') || ''
-      document.querySelectorAll('img[src*="scontent"], img[src*="fbcdn"]').forEach((img, i) => { if (i < 5 && img.width > 100) result.images.push(img.src) })
-      document.querySelectorAll('video[src]').forEach((v, i) => { if (i < 2) result.videos.push(v.src) })
-      if (result.text.length > 0) result.postType = 'text'
-      if (result.images.length > 0) result.postType = result.images.length > 1 ? 'album' : 'image'
-      if (result.videos.length > 0) result.postType = 'video'
-      return result
-    }, postUrl)
-    saveLeads('facebook', 'post-details', [details])
-    return { success: true, data: details }
-  } catch (err) {
-    return { success: false, error: err.message }
-  }
-})
-
 ipcm('facebook-post-groups', async (e, { sessionId, groups, message }) => {
   const page = globals.bm.getPage(sessionId)
   if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
@@ -1365,6 +1327,58 @@ ipcm('facebook-search-groups', async (e, { sessionId, query, limit = 20 }) => {
     return { success: true, data: groups, count: groups.length }
   } catch (err) {
     return { success: false, error: err.message }
+  }
+})
+
+ipcm('facebook-extract-my-groups', async (e, { sessionId, limit = 500, jobId, delayMs = 1800 }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!jobId) jobId = `my-groups-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const seen = new Set()
+  const groups = []
+  try {
+    await page.goto('https://www.facebook.com/groups/joins/', { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
+    await page.waitForTimeout(randomDelay(3000, 5000))
+    const maxScrolls = Math.max(Math.ceil(limit / 8), 25)
+    let stall = 0
+    for (let i = 0; i < maxScrolls; i++) {
+      if (globals.cancelFlags.get(jobId)) break
+      const before = seen.size
+      const batch = await page.evaluate(() => {
+        const r = []
+        const main = document.querySelector('[role="main"]') || document.body
+        const RESERVED = new Set(['joins', 'feed', 'create', 'discover', 'explore', 'search', 'your_groups', 'category', 'browse'])
+        main.querySelectorAll('a[href*="/groups/"]').forEach((a) => {
+          const href = a.getAttribute('href') || ''
+          const m = href.match(/\/groups\/([0-9]+|[a-zA-Z0-9._-]+)\/?(?:\?|#|$)/)
+          if (!m) return
+          const gid = m[1]
+          if (RESERVED.has(gid.toLowerCase())) return
+          const name = (a.innerText || '').trim().split('\n')[0]
+          if (!name || name.length < 2 || name.length > 100) return
+          if (/^(المجموعات|مجموعات|groups|الكل|all|عرض الكل|see all)$/i.test(name)) return
+          r.push({ name, url: 'https://www.facebook.com/groups/' + gid, groupId: gid, platform: 'facebook' })
+        })
+        return r
+      })
+      for (const g of batch) {
+        if (groups.length >= limit) break
+        if (!seen.has(g.groupId)) { seen.add(g.groupId); groups.push(g) }
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: groups.length, total: limit, data: groups })
+      if (groups.length >= limit) break
+      if (seen.size === before) { if (++stall >= 6) break } else stall = 0
+      await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
+      await page.waitForTimeout(delayMs + Math.random() * 1000)
+    }
+    saveLeads('facebook', 'my-groups', groups)
+    return { success: true, data: groups, count: groups.length, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, jobId, partialData: groups }
+  } finally {
+    globals.cancelFlags.delete(jobId)
   }
 })
 
