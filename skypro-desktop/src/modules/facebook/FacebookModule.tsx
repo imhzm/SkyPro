@@ -713,9 +713,7 @@ export default function FacebookModule() {
     { id: 'extract', name: 'استخراج البيانات', description: 'متابعين، تعليقات، مجموعات، أرقام، تقييمات', icon: Download, accent: '#0A6CF1', accentGradient: 'linear-gradient(135deg, #0A6CF1, #1d4ed8)' },
     { id: 'search-pages', name: 'البحث عن الصفحات', description: 'بحث متقدم + استهداف بالموقع', icon: Search, accent: '#06b6d4', accentGradient: 'linear-gradient(135deg, #06b6d4, #0891b2)' },
     { id: 'extract-sharers', name: 'استخراج المشاركين', description: 'العملاء الذين شاركوا المنشور', icon: Share2, accent: '#f43f5e', accentGradient: 'linear-gradient(135deg, #f43f5e, #be123c)' },
-    { id: 'extract-active-friends', name: 'الأصدقاء النشطين', description: 'الأصدقاء بمنشورات حديثة', icon: UserCheck, accent: '#10b981', accentGradient: 'linear-gradient(135deg, #10b981, #047857)' },
     { id: 'detect-open-groups', name: 'كشف المجموعات المفتوحة', description: 'فحص قبول النشر بدون موافقة', icon: ShieldCheck, accent: '#84cc16', accentGradient: 'linear-gradient(135deg, #84cc16, #4d7c0f)' },
-    { id: 'demographics-analyze', name: 'تحليل ديموغرافي', description: 'إحصائيات الجنس والمواقع', icon: BarChart3, accent: '#a855f7', accentGradient: 'linear-gradient(135deg, #a855f7, #7e22ce)' },
   ]
 
   const marketingTools: ToolDef[] = [
