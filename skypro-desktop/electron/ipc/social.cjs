@@ -1423,50 +1423,68 @@ ipcm('facebook-extract-page-messengers', async (e, { sessionId, pageUrl, limit =
   const sender = getSender(e)
   const allMessengers = []
   try {
+    // The page inbox lives in Meta Business Suite, keyed by the page's numeric id.
     await page.goto(pageUrl, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
-    await page.waitForTimeout(randomDelay(3000, 5000))
-    const inboxBtn = await page.$('a[href*="/inbox"], a:has-text("Inbox"), a:has-text("الوارد"), div[role="button"]:has-text("Inbox"), div[role="button"]:has-text("الوارد")')
-    if (inboxBtn) {
-      await inboxBtn.click({ force: true }).catch(() => {})
-      await page.waitForTimeout(randomDelay(3000, 5000))
-    } else {
-      await page.goto(pageUrl.replace(/\/$/, '') + '/inbox', { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
-      await page.waitForTimeout(randomDelay(3000, 5000))
-    }
-    const maxScrolls = Math.max(Math.ceil(limit / 10), 5)
+    await page.waitForTimeout(randomDelay(2500, 4000))
+    const pageId = await page.evaluate(() => {
+      const al = document.querySelector('meta[property="al:android:url"], meta[property="al:ios:url"]')
+      if (al) { const m = (al.getAttribute('content') || '').match(/(?:page|profile|fb)\/(\d{5,})/); if (m) return m[1] }
+      const src = document.documentElement.innerHTML
+      const pats = [/"delegate_page"\s*:\s*\{\s*"id"\s*:\s*"(\d{5,})"/, /"page_id":"?(\d{6,})"?/, /"pageID":"?(\d{6,})"?/, /\/(\d{6,})\/(?:ad_center|leads_center|insights)/]
+      for (const p of pats) { const m = src.match(p); if (m) return m[1] }
+      return ''
+    }).catch(() => '')
+    if (!pageId) return { success: false, error: 'تعذّر تحديد معرّف الصفحة من الرابط', jobId }
+    await page.goto(`https://business.facebook.com/latest/inbox/all?asset_id=${pageId}`, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+    await page.waitForTimeout(randomDelay(5000, 7000))
+    const seenNames = new Set()
+    let stall = 0
+    const maxScrolls = Math.max(Math.ceil(limit / 4), 25)
     for (let i = 0; i < maxScrolls; i++) {
       if (globals.cancelFlags.get(jobId)) break
-      await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
-      await page.waitForTimeout(delayMs + Math.random() * 1000)
-      const batch = await page.evaluate((existingNames) => {
+      const before = allMessengers.length
+      const batch = await page.evaluate(() => {
+        const BIDI = /[‎‏‪-‮⁦-⁩]/g
         const r = []
-        const seen = new Set(existingNames)
-        document.querySelectorAll('a[href*="/"], [role="row"], [role="listitem"]').forEach((el) => {
-          const nameEl = el.querySelector('span[dir="auto"], span > span, a[role="link"] span') || el
-          const name = nameEl.innerText.trim().split('\n')[0]
-          const linkEl = el.closest('a[href*="/"]') || el.querySelector('a[href*="/"]')
-          const href = linkEl ? linkEl.getAttribute('href') || '' : ''
-          if (!name || name.length < 2 || name.length > 60 || seen.has(name)) return
-          if (href.includes('/settings') || href.includes('/help') || href.includes('/login')) return
-          seen.add(name)
-          let userId = ''
-          const idMatch = href.match(/id=(\d+)/)
-          const profileMatch = href.match(/facebook\.com\/([a-zA-Z0-9.]+)/)
-          if (idMatch) userId = idMatch[1]
-          else if (profileMatch && !['posts','groups','watch','reel','stories','photo','photos','videos','events','marketplace','gaming','login','recover','checkpoint','inbox','settings'].includes(profileMatch[1])) userId = profileMatch[1]
-          r.push({ name, profile: href.startsWith('/') ? 'https://www.facebook.com' + href : href, userId, platform: 'facebook' })
+        // Scroll the conversation list's scrollable container.
+        let scroller = null
+        for (const el of document.querySelectorAll('div')) {
+          const s = getComputedStyle(el)
+          if ((s.overflowY === 'auto' || s.overflowY === 'scroll') && el.scrollHeight > el.clientHeight + 50 &&
+              el.querySelectorAll('[role="row"],[role="listitem"],[role="gridcell"]').length > 2) { scroller = el; break }
+        }
+        if (scroller) scroller.scrollTop = scroller.scrollHeight
+        // Each conversation is a thread link; the sender name is its aria-label or
+        // the strongest text in its row (Business Suite hides it from plain spans).
+        document.querySelectorAll('a[href*="selected_item_id"], a[role="link"][href*="inbox"], [role="row"], [role="listitem"]').forEach((node) => {
+          const row = node.closest('[role="row"],[role="listitem"],[role="gridcell"]') || node
+          let name = (node.getAttribute('aria-label') || row.getAttribute('aria-label') || '').replace(BIDI, '').trim().split('\n')[0]
+          if (!name || name.length < 2 || name.length > 50) {
+            name = ''
+            for (const sp of row.querySelectorAll('span, div[dir="auto"], strong')) {
+              const t = (sp.textContent || '').replace(BIDI, '').trim().split('\n')[0]
+              if (t && t.length >= 2 && t.length <= 50 && !/^[\d•·،,.]/.test(t)) { name = t; break }
+            }
+          }
+          if (!name) return
+          const link = node.matches('a') ? node : row.querySelector('a[href*="selected_item_id"], a[href*="inbox"]')
+          const href = link ? (link.getAttribute('href') || '') : ''
+          r.push({ name, profile: href.startsWith('http') ? href : (href ? 'https://business.facebook.com' + href : ''), platform: 'facebook' })
         })
         return r
-      }, allMessengers.map(m => m.name))
-      for (const u of batch) {
-        if (allMessengers.length >= limit) break
-        allMessengers.push(u)
+      })
+      for (const m of batch) {
+        if (!seenNames.has(m.name)) { seenNames.add(m.name); allMessengers.push(m) }
       }
-      sendProgress(sender, jobId, { type: 'progress', count: allMessengers.length, total: limit, data: batch })
-      if (allMessengers.length >= limit) break
+      const cleaned = sanitizeRecords(allMessengers, { platform: 'facebook', kind: 'page-messengers' })
+      sendProgress(sender, jobId, { type: 'progress', count: cleaned.length, total: limit, data: cleaned })
+      if (cleaned.length >= limit) break
+      if (allMessengers.length === before) { if (++stall >= 8) break } else stall = 0
+      await page.waitForTimeout(delayMs + Math.random() * 1200)
     }
-    saveLeads('facebook', 'page-messengers', allMessengers)
-    return { success: true, data: allMessengers, count: allMessengers.length, jobId }
+    const finalMsg = sanitizeRecords(allMessengers, { platform: 'facebook', kind: 'page-messengers' }).slice(0, limit)
+    saveLeads('facebook', 'page-messengers', finalMsg)
+    return { success: true, data: finalMsg, count: finalMsg.length, pageId, jobId, cancelled: globals.cancelFlags.get(jobId) }
   } catch (err) {
     return { success: false, error: err.message, jobId, partialData: allMessengers }
   } finally {
@@ -1484,15 +1502,28 @@ ipcm('facebook-extract-profile-messengers', async (e, { sessionId, limit = 50, j
   try {
     await page.goto('https://www.facebook.com/messages/', { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
     await page.waitForTimeout(randomDelay(3000, 5000))
-    const maxScrolls = Math.max(Math.ceil(limit / 10), 5)
+    const maxScrolls = Math.max(Math.ceil(limit / 3), 25)
+    let stall = 0
     for (let i = 0; i < maxScrolls; i++) {
       if (globals.cancelFlags.get(jobId)) break
-      const chatList = await page.$('[role="main"]') || await page.$('[data-pagelet="LeftRail"]')
-      if (chatList) {
-        await chatList.evaluate((el) => { el.scrollTop = el.scrollHeight })
-      } else {
-        await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
-      }
+      const before = allMessengers.length
+      // Scroll the conversation-list's OWN scrollable container (NOT [role="main"]),
+      // otherwise the list lazy-loads only the first ~18 rows then stalls.
+      await page.evaluate(() => {
+        const rows = document.querySelectorAll('a[href*="/messages/t/"]')
+        let scroller = null
+        if (rows.length) {
+          let el = rows[rows.length - 1]
+          for (let k = 0; k < 20 && el && el !== document.documentElement; k++) {
+            const s = getComputedStyle(el)
+            if ((s.overflowY === 'auto' || s.overflowY === 'scroll') && el.scrollHeight > el.clientHeight + 20) { scroller = el; break }
+            el = el.parentElement
+          }
+          rows[rows.length - 1].scrollIntoView({ block: 'end' })
+        }
+        const t = scroller || document.scrollingElement || document.documentElement
+        t.scrollTop = t.scrollHeight
+      })
       await page.waitForTimeout(delayMs + Math.random() * 1000)
       const batch = await page.evaluate((existingNames) => {
         const r = []
@@ -1515,6 +1546,7 @@ ipcm('facebook-extract-profile-messengers', async (e, { sessionId, limit = 50, j
       }
       sendProgress(sender, jobId, { type: 'progress', count: allMessengers.length, total: limit, data: batch })
       if (allMessengers.length >= limit) break
+      if (allMessengers.length === before) { if (++stall >= 8) break } else stall = 0
     }
     saveLeads('facebook', 'profile-messengers', allMessengers)
     return { success: true, data: allMessengers, count: allMessengers.length, jobId }
