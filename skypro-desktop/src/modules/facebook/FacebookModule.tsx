@@ -215,8 +215,8 @@ export default function FacebookModule() {
         case 'profile-messengers': res = await window.electronAPI.facebookExtractProfileMessengers({ ...baseParams, limit: profileMessengerLimit }); break
         case 'reviews': res = await window.electronAPI.facebookExtractReviews({ ...baseParams, pageUrl: reviewPageUrl }); break
         case 'phone-numbers': res = await window.electronAPI.facebookExtractPhones({ ...baseParams, postUrl: extractUrl }); break
-        case 'post-details': res = await window.electronAPI.facebookExtractPostDetails({ sessionId, postUrl: extractUrl }); break
         case 'search-groups': res = await window.electronAPI.facebookSearchGroups({ sessionId, query: searchGroupQuery, limit: extractLimit }); break
+        case 'my-groups': res = await window.electronAPI.facebookExtractMyGroups({ ...baseParams }); break
         case 'join-groups': {
           const groups = joinGroupUrls.split('\n').map(s => s.trim()).filter(Boolean)
           res = await window.electronAPI.facebookJoinGroups({ sessionId, groupUrls: groups }); break
@@ -695,8 +695,8 @@ export default function FacebookModule() {
     { id: 'profile-messengers', name: 'مراسلين الملف الشخصي', icon: Send, needsUrl: false },
     { id: 'reviews', name: 'تقييمات الصفحة', icon: BarChart3, needsUrl: true, urlLabel: 'رابط الصفحة' },
     { id: 'phone-numbers', name: 'أرقام الهاتف', icon: Globe, needsUrl: true, urlLabel: 'رابط المنشور' },
-    { id: 'post-details', name: 'تفاصيل المنشور', icon: FileText, needsUrl: true, urlLabel: 'رابط المنشور' },
     { id: 'search-groups', name: 'البحث عن مجموعات', icon: Search, needsUrl: false },
+    { id: 'my-groups', name: 'استخراج مجموعاتي', icon: Users, needsUrl: false },
     { id: 'join-groups', name: 'الانضمام لمجموعات', icon: Users, needsUrl: true, urlLabel: 'روابط المجموعات' },
   ]
 

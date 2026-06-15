@@ -264,10 +264,10 @@ declare global {
       facebookDeletePosts: (data: Record<string, unknown>) => Promise<IpcResult>
       facebookAnalyzeGroup: (data: Record<string, unknown>) => Promise<IpcResult>
       facebookUsersToIds: (data: Record<string, unknown>) => Promise<IpcResult>
-      facebookExtractPostDetails: (data: ExtractionParams) => Promise<ExtractionResult>
       facebookExtractPhones: (data: ExtractionParams) => Promise<ExtractionResult>
       facebookLinksToIds: (data: Record<string, unknown>) => Promise<IpcResult>
       facebookSearchGroups: (data: PlatformSearchParams) => Promise<ExtractionResult>
+      facebookExtractMyGroups: (data: ExtractionParams) => Promise<ExtractionResult>
       facebookJoinGroups: (data: Record<string, unknown>) => Promise<IpcResult>
       facebookExtractPageMessengers: (data: ExtractionParams) => Promise<ExtractionResult>
       facebookExtractProfileMessengers: (data: ExtractionParams) => Promise<ExtractionResult>
