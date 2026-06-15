@@ -290,7 +290,7 @@ ipcm('facebook-search', async (e, { sessionId, query, type = 'all', limit = 50 }
     await page.goto(`https://www.facebook.com/search/${t}/?q=${encodeURIComponent(query)}`, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
     await page.waitForTimeout(randomDelay(2000, 4000))
     for (let i = 0; i < 5; i++) {
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(randomDelay(1500, 3000))
     }
     const data = await page.evaluate((lim) => {
@@ -325,43 +325,72 @@ ipcm('facebook-extract-likers', async (e, { sessionId, postUrl, limit = 50, jobI
     await page.waitForTimeout(randomDelay(3000, 5000))
     const guard = await verifyExtractionPage(page, { platform: 'facebook' })
     if (!guard.ok) return { success: false, error: guard.error, jobId }
-    const reactionsBtn = await page.$('div[role="button"][aria-label*="eactions"], div[role="button"][aria-label*="إعجاب"], span[data-testid*="UFI2ReactionsCount"], a[role="button"][href*="reactions"]')
-    if (reactionsBtn) {
-      await reactionsBtn.click({ force: true }).catch(() => {})
-      await page.waitForTimeout(randomDelay(2000, 4000))
-    }
-    const maxScrolls = Math.max(Math.ceil(limit / 15), 5)
+    // Open the reactions list. There are several "أعجبني: N" buttons on the page
+    // (the post itself + notification items), so pick the one with the HIGHEST
+    // count — that is the post's reaction-count button — and must NOT be the
+    // react-ACTION button ("التفاعل باستخدام…"). Close any open flyout first.
+    await page.keyboard.press('Escape').catch(() => {})
+    await page.waitForTimeout(400)
+    await page.evaluate(() => {
+      const els = [...document.querySelectorAll('[role="button"][aria-label]')].filter((el) => {
+        const al = el.getAttribute('aria-label') || ''
+        if (/التفاعل باستخدام|التفاعل مع منشور|react with|react to/i.test(al)) return false
+        return /أعجبني|تفاعلوا مع|من قاموا|people who reacted|\breactions?\b/i.test(al)
+      })
+      let best = null, bestN = -1
+      for (const el of els) {
+        const al = el.getAttribute('aria-label') || ''
+        const m = al.match(/(\d[\d,]*)\s*(?:أشخاص|أشخاصًا|شخص|people|persons?)/i)
+        const n = m ? parseInt(m[1].replace(/,/g, ''), 10) : (/شخص واحد|one person/i.test(al) ? 1 : 0)
+        if (n > bestN) { bestN = n; best = el }
+      }
+      if (best) best.click()
+    }).catch(() => {})
+    await page.waitForTimeout(randomDelay(2500, 4000))
+    const seenUrls = new Set()
+    const maxScrolls = Math.max(Math.ceil(limit / 12), 6)
+    let stall = 0
     for (let i = 0; i < maxScrolls; i++) {
       if (globals.cancelFlags.get(jobId)) break
-      await page.evaluate(() => { const modal = document.querySelector('[role="dialog"]'); if (modal) modal.scrollTop = modal.scrollHeight; else window.scrollTo(0, document.body.scrollHeight) })
+      const before = allUsers.length
+      await page.evaluate(() => {
+        const dlg = document.querySelector('[role="dialog"]')
+        if (!dlg) return
+        const scrollable = Array.from(dlg.querySelectorAll('*')).find(el => el.scrollHeight > el.clientHeight + 40 && /auto|scroll/.test(getComputedStyle(el).overflowY)) || dlg
+        scrollable.scrollTop = scrollable.scrollHeight
+      })
       await page.waitForTimeout(delayMs + Math.random() * 1000)
-      const batch = await page.evaluate((existingCount) => {
+      const batch = await page.evaluate(() => {
         const r = []
-        const seen = new Set(existingCount.map(u => u.name))
-        const modal = document.querySelector('[role="dialog"]') || document.body
-        modal.querySelectorAll('a[href*="/"]').forEach((a) => {
+        // Reactors live ONLY inside the reactions dialog. No body fallback —
+        // that was the source of page-name / post-link noise.
+        const dlg = document.querySelector('[role="dialog"]')
+        if (!dlg) return r
+        const SYS = ['posts','groups','watch','reel','reels','stories','story.php','permalink.php','photo','photos','videos','events','marketplace','gaming','login','recover','checkpoint','help','settings','legal','notifications','messages','friends','bookmarks','sharer','hashtag','media','pages','ads']
+        dlg.querySelectorAll('a[role="link"][href]').forEach((a) => {
           const href = a.getAttribute('href') || ''
-          const name = a.innerText.trim()
-          if (!name || name.length < 2 || name.length > 60 || seen.has(name)) return
-          if (!href.includes('facebook.com') && !href.startsWith('/')) return
-          const skipPaths = ['/posts/', '/groups/', '/watch/', '/reel/', '/stories/', '/photo/', '/photos/', '/videos/', '/events/', '/marketplace/', '/gaming/', '/login', '/recover/', '/checkpoint/', '/help/', '/settings/', '/legal/', '/notifications/', '/messages/', '/friends/', '/bookmarks/']
-          if (skipPaths.some(p => href.includes(p))) return
-          seen.add(name)
-          let userId = ''
-          const idMatch = href.match(/id=(\d+)/)
-          const profileMatch = href.match(/facebook\.com\/([a-zA-Z0-9.]+)/)
+          const idMatch = href.match(/profile\.php\?id=(\d+)/)
+          const vanityMatch = href.match(/facebook\.com\/([a-zA-Z0-9.]+)(?:\/)?(?:\?|$)/) || (href.startsWith('/') ? href.match(/^\/([a-zA-Z0-9.]+)\/?(?:\?|$)/) : null)
+          let userId = '', vanity = ''
           if (idMatch) userId = idMatch[1]
-          else if (profileMatch && !['posts','groups','watch','reel','stories','photo','photos','videos','events','marketplace','gaming','login','recover','checkpoint'].includes(profileMatch[1])) userId = profileMatch[1]
-          r.push({ name, profile: href.startsWith('/') ? 'https://www.facebook.com' + href : href, userId, platform: 'facebook' })
+          else if (vanityMatch && vanityMatch[1] && !SYS.includes(vanityMatch[1].toLowerCase())) vanity = vanityMatch[1]
+          if (!userId && !vanity) return
+          const name = (a.innerText || a.textContent || '').trim().split('\n')[0].trim()
+          if (!name || name.length < 2 || name.length > 70) return
+          const profile = userId ? 'https://www.facebook.com/profile.php?id=' + userId : 'https://www.facebook.com/' + vanity
+          r.push({ name, userId: userId || vanity, profile, platform: 'facebook' })
         })
         return r
-      }, allUsers)
+      })
+      const added = []
       for (const u of batch) {
         if (allUsers.length >= limit) break
-        allUsers.push(u)
+        if (!seenUrls.has(u.profile)) { seenUrls.add(u.profile); allUsers.push(u); added.push(u) }
       }
-      sendProgress(sender, jobId, { type: 'progress', count: allUsers.length, total: limit, data: batch })
+      sendProgress(sender, jobId, { type: 'progress', count: allUsers.length, total: limit, data: added })
       if (allUsers.length >= limit) break
+      stall = (allUsers.length === before) ? stall + 1 : 0
+      if (stall >= 5) break
     }
     saveLeads('facebook', 'post-likers', allUsers)
     return { success: true, data: allUsers, count: allUsers.length, jobId, cancelled: globals.cancelFlags.get(jobId) }
@@ -388,17 +417,17 @@ ipcm('facebook-extract-comments', async (e, { sessionId, postUrl, limit = 50, jo
     const maxScrolls = Math.max(Math.ceil(limit / 8), 8)
     for (let i = 0; i < maxScrolls; i++) {
       if (globals.cancelFlags.get(jobId)) break
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(delayMs + Math.random() * 1000)
       try {
         const moreBtn = await page.$('div[role="button"]:has-text("View more comments"), div[role="button"]:has-text("عرض المزيد من التعليقات"), div[role="button"]:has-text("عرض المزيد")')
         if (moreBtn) { await moreBtn.click({ force: true }); await page.waitForTimeout(2000) }
       } catch (ex) { console.error('Click more comments:', ex.message) }
-      const batch = await page.evaluate((existingNames, lim) => {
+      const batch = await page.evaluate(({ existingNames, cap }) => {
         const r = []
         const seen = new Set(existingNames)
         document.querySelectorAll('[role="article"]').forEach((art) => {
-          if (r.length >= 50) return
+          if (r.length >= cap) return
           const nameEl = art.querySelector('a[role="link"] span span, a[role="link"] span, h3 a span')
           const linkEl = art.querySelector('a[role="link"][href*="/"]')
           const textEl = art.querySelector('div[dir="auto"] span[dir="auto"], div[dir="auto"] span')
@@ -414,19 +443,20 @@ ipcm('facebook-extract-comments', async (e, { sessionId, postUrl, limit = 50, jo
           r.push({ name, text: textEl ? textEl.innerText.trim() : '', profile: href.startsWith('/') ? 'https://www.facebook.com' + href : href, userId, platform: 'facebook' })
         })
         return r
-      }, [...seenNames], limit - allComments.length)
+      }, { existingNames: [...seenNames], cap: Math.max(1, limit - allComments.length) })
       for (const c of batch) {
-        if (allComments.length >= limit) break
         if (!seenNames.has(c.name)) {
           seenNames.add(c.name)
           allComments.push(c)
         }
       }
-      sendProgress(sender, jobId, { type: 'progress', count: allComments.length, total: limit, data: batch })
-      if (allComments.length >= limit) break
+      const cleaned = sanitizeRecords(allComments, { platform: 'facebook', kind: 'post-comments' })
+      sendProgress(sender, jobId, { type: 'progress', count: cleaned.length, total: limit, data: cleaned })
+      if (cleaned.length >= limit) break
     }
-    saveLeads('facebook', 'post-comments', allComments)
-    return { success: true, data: allComments, count: allComments.length, jobId, cancelled: globals.cancelFlags.get(jobId) }
+    const finalComments = sanitizeRecords(allComments, { platform: 'facebook', kind: 'post-comments' }).slice(0, limit)
+    saveLeads('facebook', 'post-comments', finalComments)
+    return { success: true, data: finalComments, count: finalComments.length, jobId, cancelled: globals.cancelFlags.get(jobId) }
   } catch (err) {
     return { success: false, error: err.message, jobId, partialData: allComments }
   } finally {
@@ -441,42 +471,57 @@ ipcm('facebook-extract-group-members', async (e, { sessionId, groupUrl, limit = 
   globals.cancelFlags.set(jobId, false)
   const sender = getSender(e)
   const allMembers = []
+  const seenIds = new Set()
+  // Numeric group id lets us hard-scope to real member links
+  // (/groups/<gid>/user/<uid>/) and reject feed/post-author noise.
+  const gidMatch = String(groupUrl).match(/groups\/(\d+)/)
+  const groupId = gidMatch ? gidMatch[1] : ''
   try {
-    await page.goto(`${groupUrl.replace(/\/$/, '')}/members`, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
+    const membersUrl = groupId
+      ? `https://www.facebook.com/groups/${groupId}/members`
+      : `${String(groupUrl).replace(/\/$/, '')}/members`
+    await page.goto(membersUrl, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
     await page.waitForTimeout(randomDelay(3000, 5000))
     const guard = await verifyExtractionPage(page, { platform: 'facebook' })
     if (!guard.ok) return { success: false, error: guard.error, jobId }
-    const maxScrolls = Math.max(Math.ceil(limit / 10), 8)
+    // Generous scroll cap (supports very large groups up to ~200k); stall
+    // detection stops early once the member list is exhausted.
+    const maxScrolls = Math.min(Math.max(Math.ceil(limit / 8), 12), 40000)
+    let stall = 0
     for (let i = 0; i < maxScrolls; i++) {
       if (globals.cancelFlags.get(jobId)) break
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      const before = allMembers.length
+      await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(delayMs + Math.random() * 1000)
-      const batch = await page.evaluate((existingCount) => {
+      const batch = await page.evaluate((gid) => {
         const r = []
-        const seen = new Set(existingCount.map(u => u.name))
-        const mainContent = document.querySelector('[role="main"]') || document.body
-        mainContent.querySelectorAll('a[href*="/"]').forEach((a) => {
+        const main = document.querySelector('[role="main"]') || document.body
+        // Real members ONLY: anchors of the form /groups/<gid>/user/<uid>/
+        const re = gid ? new RegExp('/groups/' + gid + '/user/(\\d+)') : /\/groups\/\d+\/user\/(\d+)/
+        main.querySelectorAll('a[href*="/user/"]').forEach((a) => {
           const href = a.getAttribute('href') || ''
-          const name = a.innerText.trim()
-          if (!name || name.length < 2 || name.length > 60 || seen.has(name)) return
-          if (href.includes('/groups/') && !href.includes('/user/')) return
-          if (href.includes('/help/') || href.includes('/settings') || href.includes('/login') || href.includes('/legal/')) return
-          seen.add(name)
-          let userId = ''
-          const idMatch = href.match(/id=(\d+)/)
-          const profileMatch = href.match(/facebook\.com\/([a-zA-Z0-9.]+)/)
-          if (idMatch) userId = idMatch[1]
-          else if (profileMatch && !['posts','groups','watch','reel','stories','photo','photos','videos','events','marketplace','gaming','login','recover','checkpoint'].includes(profileMatch[1])) userId = profileMatch[1]
-          r.push({ name, profile: href.startsWith('/') ? 'https://www.facebook.com' + href : href, userId, platform: 'facebook' })
+          const m = href.match(re)
+          if (!m) return
+          const name = (a.innerText || a.textContent || '').trim().split('\n')[0].trim()
+          if (!name || name.length < 2 || name.length > 70) return
+          r.push({ name, userId: m[1], profile: 'https://www.facebook.com/profile.php?id=' + m[1], platform: 'facebook' })
         })
         return r
-      }, allMembers)
+      }, groupId)
+      const added = []
       for (const u of batch) {
         if (allMembers.length >= limit) break
-        allMembers.push(u)
+        if (u.userId && !seenIds.has(u.userId)) {
+          seenIds.add(u.userId)
+          allMembers.push(u)
+          added.push(u)
+        }
       }
-      sendProgress(sender, jobId, { type: 'progress', count: allMembers.length, total: limit, data: batch })
+      sendProgress(sender, jobId, { type: 'progress', count: allMembers.length, total: limit, data: added })
       if (allMembers.length >= limit) break
+      // Stop when the page yields no new members for several scrolls (end of list).
+      stall = (allMembers.length === before) ? stall + 1 : 0
+      if (stall >= 5) break
     }
     saveLeads('facebook', 'group-members', allMembers)
     return { success: true, data: allMembers, count: allMembers.length, jobId, cancelled: globals.cancelFlags.get(jobId) }
@@ -497,66 +542,60 @@ ipcm('facebook-extract-friends', async (e, { sessionId, limit = 100, jobId, dela
   try {
     await page.goto('https://www.facebook.com/me/friends', { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
     await page.waitForTimeout(randomDelay(3000, 5000))
-    const maxScrolls = Math.max(Math.ceil(limit / 10), 10)
+    // The /me/friends redirect resolves to the profile slug — capture it so we
+    // can exclude the owner's OWN profile nav links (about/photos/الكل/…) which
+    // otherwise leak into the friends list.
+    const ownerSlug = (page.url().match(/facebook\.com\/([^/?#]+)/) || [, ''])[1].toLowerCase()
+    const maxScrolls = Math.max(Math.ceil(limit / 8), 40)
 
     // Track seen profile URLs (the unique identifier — not the displayed
     // name, which collides between people who share a name).
     const seenUrls = new Set()
     const raw = []
+    let stall = 0
 
     for (let i = 0; i < maxScrolls; i++) {
       if (globals.cancelFlags.get(jobId)) break
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      const beforeLen = seenUrls.size
+      await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(delayMs + Math.random() * 1000)
-      const batch = await page.evaluate(() => {
+      const batch = await page.evaluate((owner) => {
+        // Broad anchor sweep inside [role="main"], then exclude system paths and
+        // the profile OWNER's own nav (about/photos/friends/الكل/…). A narrow
+        // selector missed friends whose links are absolute or non-/profile.php.
+        const main = document.querySelector('[role="main"]') || document.body
+        if (!main) return []
+        const SYSTEM = new Set(['login','help','settings','legal','policies','marketplace','watch','reel','reels','stories','story','groups','group','events','event','notes','gaming','messages','messenger','notifications','friends','friends_all','find-friends','bookmarks','ads','live','i','flx','flow','public','accounts','direct','explore','hashtag','tags','tag','oauth','auth','recover','checkpoint','signup','reg','r','about','careers','directory','business','developers','photo','photos','video','videos','home','logout','reels_tab','me','map','places','sports','music','movies','tv','books','likes','following','followers','pages'])
+        const NAVTABS = new Set(['about','photos','friends','friends_all','reels_tab','videos','check-ins','sports','music','movies','tv','books','likes','following','followers','map','places','groups_tab'])
         const r = []
-        // STRICT scoping: friends live inside [role="main"] but we go a level
-        // deeper to skip the page header. A friend tile is a div that wraps:
-        //   - an avatar <image> inside an <svg>
-        //   - the friend's name as the anchor's text
-        //   - optional "X mutual friends" link
-        // We look for anchors with an aria-label OR a structured tile pattern,
-        // and we reject anything where the link text is empty or the URL is
-        // a system path.
-        const main = document.querySelector('[role="main"]')
-        if (!main) return r
-        // Find all profile-style anchors (matching /profile.php?id= or /handle)
-        const candidates = main.querySelectorAll('a[href*="/profile.php?id="], a[href^="/"]:not([href*="/posts/"]):not([href*="/groups/"])')
         const seenInPass = new Set()
-        for (const a of candidates) {
-          let href = a.getAttribute('href') || ''
+        for (const a of main.querySelectorAll('a[href]')) {
+          const href = a.getAttribute('href') || ''
           if (!href) continue
-          // Strip query params for system-path check but keep them in the
-          // stored URL (we need profile.php?id=... intact).
-          const pathOnly = href.split('?')[0]
-          // Reject anchors pointing to non-profile FB sections.
-          const seg1 = pathOnly.replace(/^https?:\/\/[^/]+/, '').replace(/^\/+/, '').split('/')[0].toLowerCase()
-          const SYSTEM = new Set(['login','help','settings','legal','policies','marketplace','watch','reel','reels','stories','story','groups','group','events','event','notes','gaming','messages','messenger','notifications','friends','find-friends','bookmarks','ads','live','i','flx','flow','public','accounts','direct','explore','hashtag','tags','tag','oauth','auth','recover','checkpoint','signup','reg','r','about','careers','directory','business','developers','photo','photos','video','videos','home','logout'])
-          // Empty seg1 = root page link, skip.
-          if (!seg1 || SYSTEM.has(seg1)) continue
-          // Name from the anchor's text — but EXCLUDE text from nested badge
-          // links (those are the "X mutual friends" subtext).
-          // Strategy: find a span/strong inside the anchor that holds JUST
-          // the name (no digit prefix, no UI label).
+          const isPhp = href.includes('/profile.php?id=')
+          const segs = href.split('?')[0].replace(/^https?:\/\/[^/]+/, '').replace(/^\/+/, '').split('/')
+          const seg1 = (segs[0] || '').toLowerCase()
+          if (!isPhp) {
+            if (!seg1 || SYSTEM.has(seg1) || seg1 === owner) continue
+            if (segs[1] && NAVTABS.has((segs[1] || '').toLowerCase())) continue
+          }
+          // Name from a span/strong inside the anchor, skipping mutual-friend badges.
           let name = ''
-          const spans = a.querySelectorAll('span, strong')
-          for (const s of spans) {
+          for (const s of a.querySelectorAll('span, strong')) {
             const t = (s.innerText || s.textContent || '').trim()
             if (!t) continue
-            // Skip badge text (digits-prefixed mutual-friend hints)
             if (/^\d+\s+(صديق|اصدقاء|أصدقاء|mutual|friend)/i.test(t)) continue
             if (t.length >= 2 && t.length <= 60) { name = t; break }
           }
           if (!name) name = (a.innerText || '').trim().split('\n')[0].trim()
           if (!name) continue
-          // Build absolute URL.
           const absUrl = href.startsWith('http') ? href : 'https://www.facebook.com' + (href.startsWith('/') ? href : '/' + href)
           if (seenInPass.has(absUrl)) continue
           seenInPass.add(absUrl)
           r.push({ name, profile: absUrl, platform: 'facebook' })
         }
         return r
-      })
+      }, ownerSlug)
 
       // Apply centralized sanitizer + URL-based dedup.
       for (const item of batch) {
@@ -564,6 +603,9 @@ ipcm('facebook-extract-friends', async (e, { sessionId, limit = 100, jobId, dela
         seenUrls.add(item.profile)
         raw.push(item)
       }
+      // End-of-list detection: stop once no new friends appear for several
+      // consecutive scrolls (prevents endless scrolling past the real list).
+      if (seenUrls.size === beforeLen) { if (++stall >= 6) break } else { stall = 0 }
       const cleaned = sanitizeRecords(raw, { platform: 'facebook', kind: 'friends' })
       // Trim to the requested limit.
       if (cleaned.length >= limit) {
@@ -603,7 +645,7 @@ ipcm('facebook-extract-page-followers', async (e, { sessionId, pageUrl, limit = 
     const maxScrolls = Math.max(Math.ceil(limit / 10), 5)
     for (let i = 0; i < maxScrolls; i++) {
       if (globals.cancelFlags.get(jobId)) break
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(delayMs + Math.random() * 1000)
       const batch = await page.evaluate((existingNames) => {
         const r = []
@@ -624,15 +666,22 @@ ipcm('facebook-extract-page-followers', async (e, { sessionId, pageUrl, limit = 
         })
         return r
       }, allFollowers.map(f => f.name))
-      for (const u of batch) {
-        if (allFollowers.length >= limit) break
-        allFollowers.push(u)
+      for (const u of batch) allFollowers.push(u)
+      // Clean the accumulated list (drops page-admin nav, section headers,
+      // mutual-friend badges, bidi-wrapped labels) and gate the limit on the
+      // CLEAN count so junk never eats into the requested total.
+      const cleaned = sanitizeRecords(allFollowers, { platform: 'facebook', kind: 'page-followers' })
+      if (cleaned.length >= limit) {
+        const trimmed = cleaned.slice(0, limit)
+        sendProgress(sender, jobId, { type: 'progress', count: trimmed.length, total: limit, data: trimmed })
+        saveLeads('facebook', 'page-followers', trimmed)
+        return { success: true, data: trimmed, count: trimmed.length, jobId, cancelled: globals.cancelFlags.get(jobId) }
       }
-      sendProgress(sender, jobId, { type: 'progress', count: allFollowers.length, total: limit, data: batch })
-      if (allFollowers.length >= limit) break
+      sendProgress(sender, jobId, { type: 'progress', count: cleaned.length, total: limit, data: cleaned })
     }
-    saveLeads('facebook', 'page-followers', allFollowers)
-    return { success: true, data: allFollowers, count: allFollowers.length, jobId, cancelled: globals.cancelFlags.get(jobId) }
+    const finalFollowers = sanitizeRecords(allFollowers, { platform: 'facebook', kind: 'page-followers' }).slice(0, limit)
+    saveLeads('facebook', 'page-followers', finalFollowers)
+    return { success: true, data: finalFollowers, count: finalFollowers.length, jobId, cancelled: globals.cancelFlags.get(jobId) }
   } catch (err) {
     return { success: false, error: err.message, jobId, partialData: allFollowers }
   } finally {
@@ -655,7 +704,7 @@ ipcm('facebook-extract-phones', async (e, { sessionId, postUrl, limit = 50, jobI
     for (let i = 0; i < maxScrolls; i++) {
       if (globals.cancelFlags.get(jobId)) break
       if (allPhones.length >= limit) break
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(delayMs + Math.random() * 1000)
       const batch = await page.evaluate((existingPhones) => {
         const r = []
@@ -891,7 +940,7 @@ ipcm('facebook-auto-reply', async (e, { sessionId, postUrl, replyText, limit = 1
     await page.goto(postUrl, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
     await page.waitForTimeout(randomDelay(3000, 5000))
     for (let i = 0; i < 5; i++) {
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(randomDelay(1500, 3000))
     }
     const replies = typeof replyText === 'string' ? [replyText] : replyText
@@ -961,7 +1010,7 @@ ipcm('facebook-delete-friends', async (e, { sessionId, friendUrls = [], deleteAl
       await page.goto('https://www.facebook.com/me/friends', { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
       await page.waitForTimeout(randomDelay(3000, 5000))
       for (let i = 0; i < Math.ceil(limit / 5); i++) {
-        await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+        await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
         await page.waitForTimeout(randomDelay(2000, 4000))
       }
       const friendCards = await page.$$('div[data-visualcompletion] a[role="link"], [role="main"] div > div > div > a[role="link"]')
@@ -1271,7 +1320,7 @@ ipcm('facebook-search-groups', async (e, { sessionId, query, limit = 20 }) => {
     await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
     await page.waitForTimeout(randomDelay(3000, 5000))
     for (let i = 0; i < Math.ceil(limit / 5); i++) {
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(randomDelay(2000, 4000))
     }
     const groups = await page.evaluate((lim) => {
@@ -1282,7 +1331,8 @@ ipcm('facebook-search-groups', async (e, { sessionId, query, limit = 20 }) => {
         const href = a.getAttribute('href') || ''
         const name = a.innerText.trim()
         if (!name || name.length < 2 || name.length > 100 || seen.has(name)) return
-        if (href.includes('/groups/create') || href.includes('/groups/discover') || href.includes('/groups/explore')) return
+        if (/^(المجموعات|مجموعات|groups|نتائج البحث|search results|الكل|all)$/i.test(name)) return
+        if (href.includes('/groups/create') || href.includes('/groups/discover') || href.includes('/groups/explore') || href.includes('/groups/feed')) return
         seen.add(name)
         const groupMatch = href.match(/\/groups\/([^/?]+)/)
         const groupId = groupMatch ? groupMatch[1] : ''
@@ -1352,7 +1402,7 @@ ipcm('facebook-extract-page-messengers', async (e, { sessionId, pageUrl, limit =
     const maxScrolls = Math.max(Math.ceil(limit / 10), 5)
     for (let i = 0; i < maxScrolls; i++) {
       if (globals.cancelFlags.get(jobId)) break
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(delayMs + Math.random() * 1000)
       const batch = await page.evaluate((existingNames) => {
         const r = []
@@ -1407,7 +1457,7 @@ ipcm('facebook-extract-profile-messengers', async (e, { sessionId, limit = 50, j
       if (chatList) {
         await chatList.evaluate((el) => { el.scrollTop = el.scrollHeight })
       } else {
-        await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+        await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       }
       await page.waitForTimeout(delayMs + Math.random() * 1000)
       const batch = await page.evaluate((existingNames) => {
@@ -1451,35 +1501,62 @@ ipcm('facebook-extract-reviews', async (e, { sessionId, pageUrl, limit = 50, job
   try {
     await page.goto(pageUrl.replace(/\/$/, '') + '/reviews', { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
     await page.waitForTimeout(randomDelay(3000, 5000))
-    const maxScrolls = Math.max(Math.ceil(limit / 8), 5)
+    // Capture the page's numeric ID (bug: pageID was never returned).
+    const pageId = await page.evaluate(() => {
+      const html = document.documentElement.innerHTML
+      const m = html.match(/"page_id":"?(\d{6,})"?/)
+        || html.match(/"pageID":"?(\d{6,})"?/)
+        || html.match(/"delegate_page"\s*:\s*\{\s*"id"\s*:\s*"(\d{6,})"/)
+        || html.match(/"entity_id"\s*:\s*"(\d{6,})"/)
+        || html.match(/\/(\d{6,})\/(?:ad_center|leads_center|insights|settings|posts|reviews)/)
+        || html.match(/[?&](?:page_id|asset_id)=(\d{6,})/)
+        || html.match(/fb:\/\/page\/(\d+)/)
+        || location.href.match(/facebook\.com\/(\d{6,})/)
+      return m ? m[1] : ''
+    }).catch(() => '')
+    const maxScrolls = Math.max(Math.ceil(limit / 5), 8)
+    const seen = new Set()
+    let stall = 0
     for (let i = 0; i < maxScrolls; i++) {
       if (globals.cancelFlags.get(jobId)) break
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      const before = seen.size
+      const batch = await page.evaluate(() => {
+        const r = []
+        // Reviews are real article tiles WITH text. Requiring review text drops
+        // the page's left-nav admin links (ad_center/leads_center) which have a
+        // label but no review body.
+        document.querySelectorAll('[role="article"]').forEach((art) => {
+          const nameEl = art.querySelector('h3 a[role="link"], a[role="link"] strong, a[role="link"] span')
+          const name = nameEl ? nameEl.innerText.trim() : ''
+          const textEl = art.querySelector('div[dir="auto"]')
+          const text = textEl ? textEl.innerText.trim() : ''
+          const ratingEl = art.querySelector('[aria-label*="star"], [aria-label*="نجم"], [aria-label*="Star"]')
+          const rating = ratingEl ? (ratingEl.getAttribute('aria-label') || '') : ''
+          const linkEl = art.querySelector('a[role="link"][href*="/"]')
+          const href = linkEl ? (linkEl.getAttribute('href') || '') : ''
+          if (text && text.length > 1) {
+            r.push({ name, text: text.substring(0, 500), rating, profile: href.startsWith('/') ? 'https://www.facebook.com' + href : href, platform: 'facebook' })
+          }
+        })
+        return r
+      })
+      for (const rv of batch) {
+        const key = (rv.profile || '') + '::' + rv.text.slice(0, 40)
+        if (seen.has(key)) continue
+        seen.add(key)
+        rv.pageId = pageId
+        allReviews.push(rv)
+      }
+      const cleaned = sanitizeRecords(allReviews, { platform: 'facebook', kind: 'page-reviews', allowEmptyName: true })
+      sendProgress(sender, jobId, { type: 'progress', count: cleaned.length, total: limit, data: cleaned })
+      if (cleaned.length >= limit) break
+      if (seen.size === before) { if (++stall >= 5) break } else stall = 0
+      await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(delayMs + Math.random() * 1000)
     }
-    const reviews = await page.evaluate(() => {
-      const r = []
-      document.querySelectorAll('[role="article"], [data-visualcompletion], div[class*="review"]').forEach((art) => {
-        const nameEl = art.querySelector('a[role="link"] span, a[role="link"]')
-        const name = nameEl ? nameEl.innerText.trim() : ''
-        const textEl = art.querySelector('div[dir="auto"] span, div[dir="auto"]')
-        const text = textEl ? textEl.innerText.trim() : ''
-        const ratingEl = art.querySelector('[aria-label*="star"], [aria-label*="نجمة"], [aria-label*="Star"]')
-        const rating = ratingEl ? ratingEl.getAttribute('aria-label') || '' : ''
-        const dateEl = art.querySelector('abbr, time')
-        const date = dateEl ? dateEl.innerText.trim() : ''
-        const linkEl = art.querySelector('a[role="link"][href*="/"]')
-        const href = linkEl ? linkEl.getAttribute('href') || '' : ''
-        if (name || text) {
-          r.push({ name, text: text.substring(0, 500), rating, date, profile: href.startsWith('/') ? 'https://www.facebook.com' + href : href, platform: 'facebook' })
-        }
-      })
-      return r
-    })
-    allReviews.push(...reviews)
-    sendProgress(sender, jobId, { type: 'progress', count: allReviews.length, total: limit, data: reviews })
-    saveLeads('facebook', 'page-reviews', allReviews)
-    return { success: true, data: allReviews, count: allReviews.length, jobId }
+    const finalReviews = sanitizeRecords(allReviews, { platform: 'facebook', kind: 'page-reviews', allowEmptyName: true }).slice(0, limit)
+    saveLeads('facebook', 'page-reviews', finalReviews)
+    return { success: true, data: finalReviews, count: finalReviews.length, pageId, jobId, cancelled: globals.cancelFlags.get(jobId) }
   } catch (err) {
     return { success: false, error: err.message, jobId, partialData: allReviews }
   } finally {
@@ -1714,7 +1791,7 @@ ipcm('facebook-search-pages', async (e, { sessionId, query, location, limit = 50
     for (let i = 0; i < maxScrolls; i++) {
       if (globals.cancelFlags.get(jobId)) break
       if (pages.length >= limit) break
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(delayMs + Math.random() * 1500)
       const batch = await page.evaluate(() => {
         const r = []
@@ -2170,7 +2247,7 @@ ipcm('facebook-extract-active-friends', async (e, { sessionId, limit = 50, activ
     await page.waitForTimeout(randomDelay(2500, 4000))
     // Scroll friends list.
     for (let i = 0; i < 5; i++) {
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(randomDelay(1500, 2500))
     }
     const friends = await page.evaluate((max) => {
@@ -3148,7 +3225,7 @@ ipcm('whatsapp-extract-groups-from-platforms', async (e, { sessionId, keyword, s
         await page.waitForTimeout(randomDelay(2500, 4000))
         // Scroll a couple of times to load more results.
         for (let s = 0; s < 4; s++) {
-          await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+          await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
           await page.waitForTimeout(randomDelay(1200, 2000))
         }
         const text = await page.evaluate(() => document.body.innerText).catch(() => '')
@@ -4376,7 +4453,7 @@ ipcm('twitter-extract-followers', async (e, { sessionId, username, limit = 100, 
       sendProgress(sender, jobId, { type: 'progress', count: followers.length, total: limit, data: fresh })
       if (followers.length === before) stagnant++
       else stagnant = 0
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(randomDelay(1500, 2800))
     }
     saveLeads('twitter', 'followers', followers)
@@ -4509,7 +4586,7 @@ ipcm('twitter-search-tweets', async (e, { sessionId, query, tab = 'latest', limi
       sendProgress(sender, jobId, { type: 'progress', count: tweets.length, total: limit, data: batch })
       if (tweets.length === before) stagnant++
       else stagnant = 0
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(delayMs + Math.random() * 1000)
     }
     saveLeads('twitter', 'search-tweets', tweets.map(t => ({ name: t.username, url: t.url, text: t.text, extra: t.time })))
@@ -4565,7 +4642,7 @@ ipcm('twitter-extract-tweet-likers', async (e, { sessionId, tweetUrl, limit = 20
       sendProgress(sender, jobId, { type: 'progress', count: users.length, total: limit, data: batch })
       if (users.length === before) stagnant++
       else stagnant = 0
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(delayMs + Math.random() * 1000)
     }
     saveLeads('twitter', 'tweet-likers', users)
@@ -4853,7 +4930,7 @@ ipcm('twitter-follow-interactors', async (e, { sessionId, tweetUrl, mode = 'like
       if (globals.cancelFlags.get(jobId)) break
       const before = results.length
       // Scroll once before iteration to ensure new cells appear.
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(randomDelay(800, 1500))
       const cells = await page.$$('button[data-testid="UserCell"]')
       for (const cell of cells) {
@@ -4979,7 +5056,7 @@ ipcm('linkedin-search', async (e, { sessionId, query, type = 'all', limit = 50 }
     await page.goto(url, { waitUntil: 'domcontentloaded' })
     await page.waitForTimeout(randomDelay(2000, 4000))
     for (let i = 0; i < 3; i++) {
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(randomDelay(1500, 3000))
     }
     const results = await page.evaluate((lim) => {
@@ -5004,7 +5081,7 @@ ipcm('linkedin-extract-companies', async (e, { sessionId, searchUrl, limit = 50 
     await page.goto(searchUrl, { waitUntil: 'domcontentloaded' })
     await page.waitForTimeout(randomDelay(2000, 4000))
     for (let i = 0; i < 3; i++) {
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(randomDelay(1500, 3000))
     }
     const companies = await page.evaluate((lim) => {
@@ -5106,7 +5183,7 @@ ipcm('linkedin-extract-people', async (e, { sessionId, query, limit = 100, jobId
     for (let p = 0; p < maxPages; p++) {
       if (globals.cancelFlags.get(jobId)) break
       if (people.length >= limit) break
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(randomDelay(1200, 2200))
       const batch = await page.evaluate(() => {
         const r = []
@@ -5418,7 +5495,7 @@ ipcm('linkedin-extract-schools', async (e, { sessionId, query, limit = 50, jobId
     for (let p = 0; p < maxPages; p++) {
       if (globals.cancelFlags.get(jobId)) break
       if (schools.length >= limit) break
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(randomDelay(1500, 2500))
       const batch = await page.evaluate(() => {
         const r = []
@@ -5469,7 +5546,7 @@ ipcm('linkedin-extract-org-members', async (e, { sessionId, orgUrl, kind = 'comp
     while (members.length < limit && stagnant < 6) {
       if (globals.cancelFlags.get(jobId)) break
       const before = members.length
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(randomDelay(1500, 2500))
       const batch = await page.evaluate(() => {
         const r = []
@@ -5580,7 +5657,7 @@ ipcm('linkedin-list-my-groups', async (e, { sessionId, limit = 100, jobId, delay
     await page.waitForTimeout(randomDelay(2500, 4000))
     for (let i = 0; i < 10 && groups.length < limit; i++) {
       if (globals.cancelFlags.get(jobId)) break
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(randomDelay(1500, 2500))
       const batch = await page.evaluate(() => {
         const r = []
@@ -6561,7 +6638,7 @@ ipcm('tiktok-extract-comments', async (e, { sessionId, videoUrl, limit = 50, job
       sendProgress(sender, jobId, { type: 'progress', count: comments.length, total: limit, data: fresh })
       if (comments.length === before) stagnant++
       else stagnant = 0
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(randomDelay(1500, 3000))
     }
     saveLeads('tiktok', 'comments', comments)
@@ -6647,7 +6724,7 @@ ipcm('tiktok-search', async (e, { sessionId, query, limit = 50, jobId, delayMs =
     while (videos.length < limit && stagnant < 5) {
       if (globals.cancelFlags.get(jobId)) break
       const before = videos.length
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(randomDelay(1500, 2500))
       const batch = await page.evaluate(() => {
         const r = []
@@ -6890,7 +6967,7 @@ ipcm('pinterest-search', async (e, { sessionId, query, limit = 50, jobId }) => {
       sendProgress(sender, jobId, { type: 'progress', count: pins.length, total: limit, data: fresh })
       if (pins.length === before) stagnant++
       else stagnant = 0
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(randomDelay(1500, 2800))
     }
     saveLeads('pinterest', 'search', pins.map(p => ({ name: p.title, url: p.link, image: p.image })))
@@ -6909,7 +6986,7 @@ ipcm('pinterest-extract', async (e, { sessionId, boardUrl, limit = 50 }) => {
     await page.goto(boardUrl, { waitUntil: 'domcontentloaded' })
     await page.waitForTimeout(randomDelay(2000, 4000))
     for (let i = 0; i < 5; i++) {
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(randomDelay(1500, 3000))
     }
     const pins = await page.evaluate((lim) => {
@@ -7050,7 +7127,7 @@ ipcm('pinterest-extract-boards', async (e, { sessionId, keyword, limit = 50, job
     while (boards.length < limit && stagnant < 5) {
       if (globals.cancelFlags.get(jobId)) break
       const before = boards.length
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(randomDelay(1500, 2500))
       const batch = await page.evaluate(() => {
         const r = []
@@ -7142,7 +7219,7 @@ ipcm('pinterest-extract-hashtag', async (e, { sessionId, keyword, limit = 100 })
     const seen = new Set()
     const pins = []
     for (let i = 0; i < 10 && pins.length < limit; i++) {
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(randomDelay(1500, 2500))
       const batch = await page.evaluate(() => {
         const r = []
@@ -7192,7 +7269,7 @@ ipcm('pinterest-download', async (e, { sessionId, source, query, boardUrl, saveD
     while (downloaded.length < limit && stagnant < 5) {
       if (globals.cancelFlags.get(jobId)) break
       const before = downloaded.length
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(randomDelay(1500, 2500))
       const batch = await page.evaluate(() => {
         const r = []
@@ -7384,7 +7461,7 @@ ipcm('threads-extract', async (e, { sessionId, url, limit = 50, jobId }) => {
       sendProgress(sender, jobId, { type: 'progress', count: data.length, total: limit, data: fresh })
       if (data.length === before) stagnant++
       else stagnant = 0
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(randomDelay(1500, 2800))
     }
     saveLeads('threads', 'extract', data)
@@ -7637,7 +7714,7 @@ ipcm('reddit-search', async (e, { sessionId, query, limit = 50, jobId }) => {
       sendProgress(sender, jobId, { type: 'progress', count: posts.length, total: limit, data: fresh })
       if (posts.length === before) stagnant++
       else stagnant = 0
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(randomDelay(1500, 2800))
     }
     saveLeads('reddit', 'search', posts.map(p => ({ name: p.title, url: p.link })))
@@ -7679,7 +7756,7 @@ ipcm('reddit-search-communities', async (e, { sessionId, query, limit = 30 }) =>
     const seen = new Set()
     const communities = []
     for (let i = 0; i < 5 && communities.length < limit; i++) {
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(randomDelay(1500, 2500))
       const batch = await page.evaluate(() => {
         const r = []
@@ -7849,7 +7926,7 @@ ipcm('reddit-top-growing-communities', async (e, { sessionId, limit = 50, jobId 
     while (communities.length < limit && stagnant < 5) {
       if (globals.cancelFlags.get(jobId)) break
       const before = communities.length
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(randomDelay(1500, 2500))
       const batch = await page.evaluate(() => {
         const r = []
@@ -8690,7 +8767,7 @@ ipcm('olx-extract', async (e, { country, keyword, category, limit = 50, jobId, s
         await page.evaluate(() => window.scrollBy(0, Math.ceil(document.body.scrollHeight / 4)))
         await page.waitForTimeout(randomDelay(600, 1100))
       }
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(randomDelay(1000, 1800))
 
       const batch = await page.evaluate(() => {
