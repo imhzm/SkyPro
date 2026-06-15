@@ -89,6 +89,8 @@ const UI_LABEL_PATTERNS = [
   new RegExp(`^مشاركات${NB}`),
   new RegExp(`^المشاركات${NB}`),
   new RegExp(`^متابعة${NB}`),
+  new RegExp(`^يتابع${NB}`),          // "يتابع 6" (following count)
+  new RegExp(`^يتابِع${NB}`),
   /^تمت\s+المتابعة/,
   /^غير\s+متابع/,
   /^إلغاء\s+المتابعة/,
@@ -100,6 +102,8 @@ const UI_LABEL_PATTERNS = [
   /^معًا\s+ضد/,                     // "Together against" (FB ads)
   /^الملف\s+الشخصي/,                // "Profile" header
   /^صفحة\s+شخصية/,
+  /^مؤشر\s+حالة/,                   // "مؤشر حالة الاتصال" (online-status indicator)
+  /^حالة\s+الاتصال/,
 
   // "X mutual friends" badge text — has digits + "صديقًا/أصدقاء مشتركين"
   // Also catches singular form "صديق واحد مشترك" and dual "صديقان مشتركان"
@@ -151,15 +155,33 @@ const UI_LABEL_PATTERNS = [
 //   - Numeric-only strings (timestamps, counts)
 //   - Pure punctuation
 //   - Single chars / overly long (>80 char names are page descriptions)
+// Relative-time strings Facebook renders beside posts/comments that loose
+// selectors capture as if they were names: "7 س" (7h), "25 د" (25m),
+// "3 ي" (3d), "5 س", "منذ ساعة", "5h", "2 weeks", "1y", "3d ago", etc.
+const RELATIVE_TIME_RE = new RegExp(
+  '^(?:منذ\\s*)?\\d{1,4}\\s*' +
+  '(?:ث|ثانية|ثوان|ثواني|د|دق|دقيقة|دقائق|س|سا|ساعة|ساعات|ي|يوم|أيام|اسبوع|أسبوع|أسابيع|ش|شهر|أشهر|سنة|سنوات|' +
+  's|sec|secs|second|seconds|m|min|mins|minute|minutes|h|hr|hrs|hour|hours|d|day|days|w|wk|wks|week|weeks|mo|month|months|y|yr|yrs|year|years)' +
+  '(?:\\s*(?:ago|مضت|سابقا))?$', 'i'
+)
+
+// Unicode bidi/direction control marks Facebook injects around RTL text
+// (e.g. "‏المتابعون‏ ‏28K‏"). They break ^anchor patterns, so strip them first.
+const BIDI_MARKS = /[‎‏‪-‮⁦-⁩؜]/g
+
 function isJunkName(name) {
   if (!name) return true
-  const s = String(name).trim()
+  const s = String(name).replace(BIDI_MARKS, '').trim()
   if (s.length < 2) return true
   if (s.length > 80) return true
   if (/^(undefined|null|nan|none|n\/a)$/i.test(s)) return true
   if (/^[\d\s.,/:\-_+]+$/.test(s)) return true   // pure numeric/punctuation
   // Must contain at least one Unicode letter (rejects pure emoji/punctuation).
   if (!/\p{L}/u.test(s)) return true
+  // Relative-time labels ("7 س", "25 د", "2 weeks") captured as names.
+  if (RELATIVE_TIME_RE.test(s)) return true
+  // Hashtag captured as a name ("#شوف_اكتر").
+  if (s.startsWith('#')) return true
   // Match any UI label pattern
   for (const pat of UI_LABEL_PATTERNS) {
     if (pat.test(s)) return true
@@ -199,20 +221,50 @@ const NON_PROFILE_PATHS = new Set([
   'accounts', 'direct',                // Instagram internal
   'hashtag', 'tags', 'tag',            // Generic hashtag pages
   'oauth', 'auth',                     // OAuth screens
+  // Page-admin / business surfaces captured from the left-nav (reviews bug)
+  'latest', 'ad_center', 'ad_campaign', 'adsmanager', 'ads_manager',
+  'leads_center', 'insights', 'professional_dashboard',
+  'commerce', 'commerce_manager', 'business_help',
+  // Post/permalink/comment/media surfaces (not people)
+  'permalink.php', 'permalink', 'comment', 'comment.php',
+  'sharer', 'sharer.php', 'dialog', 'plugins', 'l.php', 'lsr.php',
+  'media', 'media.php', 'composer', 'create',
+])
+
+// Hosts that are NEVER user profiles — reject the whole URL.
+const REJECT_HOSTS = new Set([
+  'business.facebook.com', 'l.facebook.com', 'lm.facebook.com',
+  'l.messenger.com', 'adsmanager.facebook.com', 'web.facebook.com/business',
+])
+
+// When the first path segment is a numeric page/user id, these SECOND segments
+// mark a page-admin surface (e.g. /104231809169657/ad_center/) — not a profile.
+const ADMIN_SUBPATHS = new Set([
+  'ad_center', 'ad_campaign', 'leads_center', 'latest', 'insights',
+  'settings', 'commerce', 'commerce_manager', 'professional_dashboard',
+  'ads', 'admin', 'manage',
 ])
 
 // Check whether a URL path's FIRST segment is a non-profile system path.
 function isSystemPath(href) {
   if (!href) return false
   try {
-    let path = String(href)
-    // Strip protocol/host
-    path = path.replace(/^https?:\/\/[^/]+/, '')
-    // Strip leading slash + query + hash
+    const raw = String(href)
+    // Reject known non-profile hosts entirely (business suite, link shims, ads).
+    const hostMatch = raw.match(/^https?:\/\/([^/]+)/i)
+    if (hostMatch && REJECT_HOSTS.has(hostMatch[1].toLowerCase())) return true
+    // Strip protocol/host + leading slash + query + hash.
+    let path = raw.replace(/^https?:\/\/[^/]+/, '')
     path = path.replace(/^\/+/, '').split('?')[0].split('#')[0]
     if (!path) return true
-    const first = path.split('/')[0].toLowerCase()
-    return NON_PROFILE_PATHS.has(first)
+    const segs = path.split('/')
+    const first = segs[0].toLowerCase()
+    // EXCEPTION: /groups/{gid}/user/{uid}/ is a VALID group-member profile link.
+    if (first === 'groups' && /\/user\/\d{4,}/.test('/' + path)) return false
+    if (NON_PROFILE_PATHS.has(first)) return true
+    // /<numericPageId>/<adminSubpath>  e.g. /104231809169657/ad_center/
+    if (/^\d{6,}$/.test(first) && segs[1] && ADMIN_SUBPATHS.has(segs[1].toLowerCase())) return true
+    return false
   } catch { return true }
 }
 
@@ -222,6 +274,9 @@ function isSystemPath(href) {
 function parseFacebookProfile(href) {
   if (!href) return { userId: '', username: '' }
   const out = { userId: '', username: '' }
+  // Group-member links: /groups/{gid}/user/{uid}/ — the uid is the real profile id.
+  const groupMember = href.match(/\/groups\/\d+\/user\/(\d{4,})/)
+  if (groupMember) { out.userId = groupMember[1]; return out }
   const idMatch = href.match(/[?&]id=(\d{6,})/)
   if (idMatch) out.userId = idMatch[1]
   // Get the path portion (strip protocol + host) and extract first segment.
@@ -260,7 +315,7 @@ function sanitizeRecords(raw, opts = {}) {
   for (const item of raw) {
     if (!item || typeof item !== 'object') continue
 
-    const name = String(item.name || item.username || item.title || '').trim()
+    const name = String(item.name || item.username || item.title || '').replace(BIDI_MARKS, '').trim()
     const href = String(item.profile || item.url || item.link || '').trim()
     const phone = String(item.phone || '').trim()
     const email = String(item.email || '').trim()
