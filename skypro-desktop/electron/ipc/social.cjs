@@ -914,11 +914,13 @@ ipcm('facebook-auto-reply', async (e, { sessionId, postUrl, replyText, limit = 1
         const article = commentArticles[i]
         if (!article) continue
         const replyBtn = await article.$('div[role="button"]:has-text("Reply"), div[role="button"]:has-text("رد"), div[role="button"]:has-text("الرد"), button:has-text("Reply")')
-        if (replyBtn) {
-          await replyBtn.click({ force: true }).catch(() => {})
-          await page.waitForTimeout(randomDelay(1000, 2000))
-        }
-        const replyBox = await page.$('div[contenteditable="true"][role="textbox"]:not([aria-label*="Write"])')
+        if (!replyBtn) { results.push({ index: i, status: 'skipped', error: 'لا يوجد زر رد' }); await page.waitForTimeout(randomDelay(1500, 3000)); continue }
+        await replyBtn.click({ force: true }).catch(() => {})
+        await page.waitForTimeout(randomDelay(1200, 2200))
+        // Scope the reply box to THIS comment's article — using the global first
+        // box was why it kept replying to our own comment in a loop.
+        let replyBox = await article.$('div[contenteditable="true"][role="textbox"]')
+        if (!replyBox) replyBox = await page.$('div[contenteditable="true"][role="textbox"][aria-label*="Reply"], div[contenteditable="true"][role="textbox"][aria-label*="رد"]')
         if (replyBox) {
           await replyBox.click({ force: true })
           await page.waitForTimeout(randomDelay(500, 1000))
@@ -1257,7 +1259,12 @@ ipcm('facebook-send-page-messages', async (e, { sessionId, pageUrls, message }) 
       if (messageBtn) {
         await messageBtn.click({ force: true }).catch(() => {})
         await page.waitForTimeout(randomDelay(2000, 4000))
-        const input = await page.$('div[contenteditable="true"][role="textbox"], div[contenteditable="true"][aria-label*="Message"], div[contenteditable="true"][aria-label*="رسالة"], div[contenteditable="true"]')
+        // Scope to the message DIALOG — a bare div[contenteditable] matched the
+        // page's comment box, which is why it posted a comment instead of a DM.
+        const dlg = await page.$('[role="dialog"]')
+        const input = dlg
+          ? await dlg.$('div[contenteditable="true"][role="textbox"]')
+          : await page.$('div[contenteditable="true"][role="textbox"][aria-label*="Message"], div[contenteditable="true"][role="textbox"][aria-label*="رسالة"]')
         if (input) {
           await input.click({ force: true })
           await page.waitForTimeout(randomDelay(500, 1000))
@@ -1272,7 +1279,8 @@ ipcm('facebook-send-page-messages', async (e, { sessionId, pageUrls, message }) 
       } else {
         await page.goto(pageUrl.replace(/\/$/, '') + '/messages', { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
         await page.waitForTimeout(randomDelay(3000, 5000))
-        const input2 = await page.$('div[contenteditable="true"][role="textbox"], div[contenteditable="true"]')
+        const dlg2 = await page.$('[role="dialog"]')
+        const input2 = dlg2 ? await dlg2.$('div[contenteditable="true"][role="textbox"]') : await page.$('div[contenteditable="true"][role="textbox"][aria-label*="Message"], div[contenteditable="true"][role="textbox"][aria-label*="رسالة"]')
         if (input2) {
           await input2.click({ force: true })
           await page.waitForTimeout(randomDelay(500, 1000))
@@ -1923,13 +1931,18 @@ ipcm('facebook-like-pages', async (e, { sessionId, pageUrls = [], delayMs = 4500
       try {
         await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
         await page.waitForTimeout(randomDelay(1800, 3000))
-        const liked = await smartActionClick(page, [
+        // Modern FB pages use FOLLOW (the old "Like" button was replaced). Target
+        // Follow first, fall back to Like for older page layouts.
+        const followed = await smartActionClick(page, [
+          'div[role="button"][aria-label="Follow"]:not([aria-pressed="true"])',
+          'div[role="button"][aria-label="متابعة"]:not([aria-pressed="true"])',
+          'div[aria-label="Follow"]', 'div[aria-label="متابعة"]',
+          'div[role="button"]:has-text("Follow"):not(:has-text("Following")):not(:has-text("تتابع"))',
+          'div[role="button"]:has-text("متابعة"):not(:has-text("تتابع"))',
           'div[role="button"][aria-label="Like"]:not([aria-pressed="true"])',
           'div[role="button"][aria-label="إعجاب"]:not([aria-pressed="true"])',
-          'div[aria-label="Like this Page"]', 'div[aria-label="إعجاب هذه الصفحة"]',
-          'div[role="button"]:has-text("Like"):not(:has-text("Liked"))'
-        ], 'like page')
-        results.push({ url, status: liked ? 'liked' : 'skipped' })
+        ], 'follow page')
+        results.push({ url, status: followed ? 'followed' : 'skipped' })
       } catch (err) {
         results.push({ url, status: 'failed', error: err.message })
       }

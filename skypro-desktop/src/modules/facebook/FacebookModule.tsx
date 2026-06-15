@@ -722,7 +722,7 @@ export default function FacebookModule() {
     { id: 'share-post', name: 'مشاركة منشور', description: 'مشاركة منشور في مجموعات متعددة', icon: Share2, accent: '#3b82f6', accentGradient: 'linear-gradient(135deg, #3b82f6, #1e40af)' },
     { id: 'auto-reply', name: 'رد تلقائي', description: 'الرد على التعليقات تلقائياً', icon: Bot, accent: '#8b5cf6', accentGradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' },
     { id: 'mention', name: 'منشن جماعي', description: 'منشن مستخدمين في عدة منشورات', icon: AtSign, accent: '#f97316', accentGradient: 'linear-gradient(135deg, #f97316, #c2410c)' },
-    { id: 'like-pages', name: 'إعجاب جماعي بالصفحات', description: 'إعجاب بقائمة صفحات', icon: ThumbsUp, accent: '#22c55e', accentGradient: 'linear-gradient(135deg, #22c55e, #15803d)' },
+    { id: 'like-pages', name: 'متابعة جماعية للصفحات', description: 'متابعة قائمة صفحات', icon: ThumbsUp, accent: '#22c55e', accentGradient: 'linear-gradient(135deg, #22c55e, #15803d)' },
     { id: 'comment-on-pages', name: 'تعليقات على الصفحات', description: 'تعليق على آخر منشور لقائمة صفحات', icon: MessageSquare, accent: '#0ea5e9', accentGradient: 'linear-gradient(135deg, #0ea5e9, #0369a1)' },
     { id: 'invite-friends', name: 'دعوة الأصدقاء', description: 'دعوة الأصدقاء للإعجاب بصفحة', icon: UserPlus, accent: '#eab308', accentGradient: 'linear-gradient(135deg, #eab308, #a16207)' },
   ]
