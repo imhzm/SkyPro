@@ -1192,12 +1192,24 @@ ipcm('facebook-links-to-ids', async (e, { sessionId, links }) => {
       await page.goto(link, { waitUntil: 'domcontentloaded', timeout: 30000 })
       await page.waitForTimeout(randomDelay(2000, 4000))
       const id = await page.evaluate(() => {
+        // 1) Canonical entity reference — points at the VIEWED page/profile/group,
+        //    NOT the logged-in viewer (the old "userID" match returned the viewer).
+        const al = document.querySelector('meta[property="al:android:url"], meta[property="al:ios:url"]')
+        if (al) { const m = (al.getAttribute('content') || '').match(/(?:profile|page|group|user|fb)\/(\d{5,})/); if (m) return m[1] }
+        // 2) Redirected to a numeric profile URL.
+        const um = window.location.href.match(/profile\.php\?id=(\d{5,})/); if (um) return um[1]
+        // 3) Entity ids embedded in the page payload (pages/profiles).
         const src = document.documentElement.innerHTML
-        const m1 = src.match(/"userID":"(\d+)"/); if (m1) return m1[1]
-        const m2 = src.match(/profile\.php\?id=(\d+)/); if (m2) return m2[1]
-        const m3 = src.match(/"ownerID":"(\d+)"/); if (m3) return m3[1]
-        const url = window.location.href
-        const m4 = url.match(/id=(\d+)/); if (m4) return m4[1]
+        const pats = [
+          /"delegate_page"\s*:\s*\{\s*"id"\s*:\s*"(\d{5,})"/,
+          /"page_id":"?(\d{6,})"?/,
+          /"pageID":"?(\d{6,})"?/,
+          /"profile_owner"\s*:\s*\{\s*"id"\s*:\s*"(\d{5,})"/,
+          /"actorID":"(\d{5,})"/,
+          /"entity_id":"(\d{6,})"/,
+          /\/(\d{6,})\/(?:ad_center|leads_center|insights|settings)/,
+        ]
+        for (const p of pats) { const m = src.match(p); if (m) return m[1] }
         return null
       })
       results.push({ link, id: id || 'غير موجود', status: id ? 'found' : 'not_found' })
@@ -1794,24 +1806,35 @@ ipcm('facebook-search-pages', async (e, { sessionId, query, location, limit = 50
       await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(delayMs + Math.random() * 1500)
       const batch = await page.evaluate(() => {
+        // Page-search results are profile anchors (slug or profile.php?id=) under
+        // [role="main"] — NOT article cards. Sweep broadly + exclude system/ads/posts.
         const r = []
-        document.querySelectorAll('div[role="article"], div[data-pagelet*="SearchResults"] > div > div').forEach(card => {
-          const linkEl = card.querySelector('a[role="link"][href*="/"]:not([href*="/posts/"]):not([href*="/photo"])')
-          if (!linkEl) return
-          const href = linkEl.getAttribute('href') || ''
-          if (!href || href === '#' || href.includes('/groups/') || href.includes('/photo')) return
-          const cleanHref = href.split('?')[0]
-          const name = linkEl.innerText.trim().split('\n')[0]
-          if (!name || name.length > 100) return
-          const followersText = (Array.from(card.querySelectorAll('span'))
-            .map(s => s.innerText)
-            .find(t => /(\d[\d,.]*)\s*(K|M|متابع|follower|like|إعجاب)/i.test(t)) || '').trim()
-          r.push({
-            name,
-            url: cleanHref.startsWith('http') ? cleanHref : `https://www.facebook.com${cleanHref}`,
-            followers: followersText,
-          })
-        })
+        const main = document.querySelector('[role="main"]') || document.body
+        const SYS = new Set(['search','watch','reel','reels','groups','marketplace','stories','story','events','gaming','photo','photos','videos','friends','pages','hashtag','about','me','bookmarks','notifications','messages','ads','live','media','permalink.php','sharer'])
+        const seenLocal = new Set()
+        for (const a of main.querySelectorAll('a[href]')) {
+          const href = a.getAttribute('href') || ''
+          if (!href || href === '#') continue
+          if (href.includes('/groups/') || href.includes('/posts/') || href.includes('/photo') || href.includes('/reel') || href.includes('/videos/')) continue
+          const isPhp = href.includes('/profile.php?id=')
+          const seg = href.split('?')[0].replace(/^https?:\/\/[^/]+/, '').replace(/^\/+/, '').split('/')[0].toLowerCase()
+          if (!isPhp && (!seg || SYS.has(seg))) continue
+          const name = (a.innerText || '').trim().split('\n')[0]
+          if (!name || name.length < 2 || name.length > 100) continue
+          const idMatch = href.match(/id=(\d+)/)
+          const url = isPhp && idMatch ? 'https://www.facebook.com/profile.php?id=' + idMatch[1]
+            : (href.split('?')[0].startsWith('http') ? href.split('?')[0] : 'https://www.facebook.com' + href.split('?')[0])
+          if (seenLocal.has(url)) continue
+          seenLocal.add(url)
+          let followers = '', node = a
+          for (let up = 0; up < 5 && node; up++) {
+            node = node.parentElement
+            if (!node) break
+            const ft = Array.from(node.querySelectorAll('span')).map(s => s.innerText || '').find(t => /(\d[\d,.]*)\s*(K|M|ألف|مليون|متابع|follower|like|إعجاب)/i.test(t))
+            if (ft) { followers = ft.trim(); break }
+          }
+          r.push({ name, url, followers })
+        }
         return r
       })
       for (const p of batch) {
