@@ -231,17 +231,18 @@ ipcm('facebook-login', async (e, { username, password, headless = false, proxy }
     sessionId = res.sessionId
     const page = globals.bm.getPage(sessionId)
     
-    // Check if already logged in (persistent context may have cookies)
-    const currentUrl = page.url()
-    if (currentUrl && !currentUrl.includes('login') && !currentUrl.includes('about:blank')) {
-      await page.waitForTimeout(3000)
-      const loggedIn = await page.evaluate(() => {
-        return !!(document.querySelector('[data-testid="blue_bar"]') || document.querySelector('[role="navigation"]') || document.querySelector('div[role="main"]') || document.querySelector('[aria-label="Facebook"]') || document.querySelector('a[aria-label="Home"]'))
-      }).catch(() => false)
-      if (loggedIn) {
-        saveAccount('facebook', username, password || 'saved')
-        return { success: true, message: 'تم تسجيل الدخول بنجاح - الجلسة محفوظة', sessionId }
-      }
+    // Definitive logged-in check: load FB and look for the `c_user` cookie, which
+    // is ONLY present on an authenticated session. The old DOM-selector check gave
+    // false negatives (div[role="main"] exists on the login page too), so the app
+    // kept re-typing the password into whatever field it found, every launch.
+    await page.goto('https://www.facebook.com/', { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+    await page.waitForTimeout(randomDelay(2000, 3500))
+    const fbCookies = await page.context().cookies('https://www.facebook.com').catch(() => [])
+    const hasSession = fbCookies.some(c => c.name === 'c_user' && c.value)
+    const domLoggedIn = await page.evaluate(() => !!document.querySelector('a[aria-label="Home"], div[aria-label="Your profile"], [role="navigation"] a[href="/"]')).catch(() => false)
+    if ((hasSession || domLoggedIn) && !page.url().includes('/login')) {
+      saveAccount('facebook', username, password || 'saved')
+      return { success: true, message: 'تم تسجيل الدخول بنجاح - الجلسة محفوظة', sessionId }
     }
     
     await page.goto('https://www.facebook.com/login', { waitUntil: 'domcontentloaded', timeout: 60000 }).catch(() => {})
