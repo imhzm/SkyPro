@@ -54,6 +54,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   facebookExtractSharers: (data) => ipcRenderer.invoke('facebook-extract-sharers', data),
   facebookInviteFriends: (data) => ipcRenderer.invoke('facebook-invite-friends', data),
   facebookCommentOnPages: (data) => ipcRenderer.invoke('facebook-comment-on-pages', data),
+  facebookCommentOnPosts: (data) => ipcRenderer.invoke('facebook-comment-on-posts', data),
   facebookPostWithImages: (data) => ipcRenderer.invoke('facebook-post-with-images', data),
   facebookDemographicsAnalyze: (data) => ipcRenderer.invoke('facebook-demographics-analyze', data),
   facebookDetectOpenGroups: (data) => ipcRenderer.invoke('facebook-detect-open-groups', data),
