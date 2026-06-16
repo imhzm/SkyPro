@@ -987,7 +987,10 @@ ipcm('facebook-delete-friends', async (e, { sessionId, friendUrls = [], deleteAl
           const name = await card.innerText().catch(() => '')
           await card.click({ force: true }).catch(() => {})
           await page.waitForTimeout(randomDelay(2000, 4000))
-          const unfriendBtn = await page.$('div[role="button"]:has-text("Unfriend"), div[role="button"]:has-text("إلغاء الصداقة"), a[role="button"]:has-text("Unfriend"), a[role="button"]:has-text("إلغاء الصداقة")')
+          // Unfriend lives INSIDE the profile's "Friends" menu — open it first.
+          await smartClick(page, ['div[role="button"][aria-label="Friends"]', 'div[role="button"][aria-label="أصدقاء"]', 'div[role="button"]:has-text("Friends"):not(:has-text("Add")):not(:has-text("Find"))', 'div[role="button"]:has-text("أصدقاء"):not(:has-text("إضافة"))'], 'open friends menu')
+          await page.waitForTimeout(randomDelay(1000, 1800))
+          const unfriendBtn = await page.$('div[role="menuitem"]:has-text("Unfriend"), div[role="menuitem"]:has-text("إلغاء الصداقة"), div[role="button"]:has-text("Unfriend"), div[role="button"]:has-text("إلغاء الصداقة")')
           if (unfriendBtn) {
             await unfriendBtn.click({ force: true }).catch(() => {})
             await page.waitForTimeout(randomDelay(1000, 2000))
@@ -1007,7 +1010,10 @@ ipcm('facebook-delete-friends', async (e, { sessionId, friendUrls = [], deleteAl
         try {
           await page.goto(friendUrl, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
           await page.waitForTimeout(randomDelay(2000, 4000))
-          const unfriendBtn = await page.$('div[role="button"]:has-text("Unfriend"), div[role="button"]:has-text("إلغاء الصداقة"), div[role="button"][aria-label*="Unfriend"], div[role="button"][aria-label*="إلغاء الصداقة"]')
+          // Unfriend lives INSIDE the profile's "Friends" menu — open it first.
+          await smartClick(page, ['div[role="button"][aria-label="Friends"]', 'div[role="button"][aria-label="أصدقاء"]', 'div[role="button"]:has-text("Friends"):not(:has-text("Add")):not(:has-text("Find"))', 'div[role="button"]:has-text("أصدقاء"):not(:has-text("إضافة"))'], 'open friends menu')
+          await page.waitForTimeout(randomDelay(1000, 1800))
+          const unfriendBtn = await page.$('div[role="menuitem"]:has-text("Unfriend"), div[role="menuitem"]:has-text("إلغاء الصداقة"), div[role="button"]:has-text("Unfriend"), div[role="button"]:has-text("إلغاء الصداقة")')
           if (unfriendBtn) {
             await unfriendBtn.click({ force: true }).catch(() => {})
             await page.waitForTimeout(randomDelay(1000, 2000))
