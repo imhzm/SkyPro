@@ -14,7 +14,7 @@ import {
   Trash2, AlertCircle, CheckCircle, Loader2, FileSpreadsheet, Heart,
   UserPlus, MessageSquare, Globe, AtSign, BarChart3, FileText,
   Share2, Copy, ThumbsUp, Bot, Square, LogOut, Facebook as FacebookIcon,
-  Image as ImageIcon, ShieldCheck, UserCheck, X,
+  Image as ImageIcon, ShieldCheck, X,
 } from 'lucide-react'
 
 type ActiveTool =
@@ -24,8 +24,8 @@ type ActiveTool =
   | 'analyze-group' | 'add-to-group-chat' | 'create-group-chat' | 'send-page-messages'
   | 'users-to-ids' | 'links-to-ids'
   | 'search-pages' | 'like-pages' | 'extract-sharers' | 'invite-friends'
-  | 'comment-on-pages' | 'comment-on-posts' | 'post-with-images' | 'demographics-analyze'
-  | 'detect-open-groups' | 'extract-active-friends'
+  | 'comment-on-pages' | 'comment-on-posts' | 'post-with-images'
+  | 'detect-open-groups'
   | null
 
 type ResultsOwner = Exclude<ActiveTool, null> | null
@@ -118,12 +118,8 @@ export default function FacebookModule() {
   const [imagePostPaths, setImagePostPaths] = useState<string[]>([])
   const imagePostInputRef = useRef<HTMLInputElement | null>(null)
   const [imagePostDelay, setImagePostDelay] = useState(8)
-  const [demoInputJson, setDemoInputJson] = useState('')
-  const [demoResult, setDemoResult] = useState<any>(null)
   const [openGroupsUrls, setOpenGroupsUrls] = useState('')
   const [openGroupsDelay, setOpenGroupsDelay] = useState(3)
-  const [activeFriendsLimit, setActiveFriendsLimit] = useState(50)
-  const [activeFriendsDays, setActiveFriendsDays] = useState(30)
 
   useEffect(() => {
     const cleanup = window.electronAPI.onExtractionProgress((data: any) => {
@@ -652,29 +648,6 @@ export default function FacebookModule() {
     setLoading(false)
   }
 
-  const handleDemographicsAnalyze = async () => {
-    if (!demoInputJson.trim() && toolResults.length === 0) {
-      showMsg('استخدم نتائج أداة استخراج موجودة، أو الصق JSON', true); return
-    }
-    setLoading(true)
-    setDemoResult(null)
-    try {
-      let items: any[] = []
-      if (demoInputJson.trim()) {
-        try { items = JSON.parse(demoInputJson) } catch { items = [] }
-        if (!Array.isArray(items)) items = [items]
-      } else {
-        items = toolResults
-      }
-      const res = await window.electronAPI.facebookDemographicsAnalyze({ items })
-      if (res.success) {
-        setDemoResult(res.data)
-        showMsg(`تم تحليل ${res.data?.total ?? items.length} نتيجة`)
-      } else showMsg(res.error || 'فشل التحليل', true)
-    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
-    setLoading(false)
-  }
-
   const handleDetectOpenGroups = async () => {
     if (!ensureSession()) return
     const urls = openGroupsUrls.split('\n').map(s => s.trim()).filter(Boolean)
@@ -691,26 +664,6 @@ export default function FacebookModule() {
         showMsg(`${open} مفتوحة للنشر من أصل ${urls.length}`)
       } else {
         showMsg(res.error || 'فشلت العملية', true)
-        if (res.partialData) setToolResults(res.partialData as any[])
-      }
-    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
-    setLoading(false)
-  }
-
-  const handleExtractActiveFriends = async () => {
-    if (!ensureSession()) return
-    setLoading(true)
-    setResultsOwner('extract-active-friends')
-    setToolResults([])
-    try {
-      const res = await window.electronAPI.facebookExtractActiveFriends({ sessionId, limit: activeFriendsLimit, activeDays: activeFriendsDays })
-      if (res.success) {
-        const items = (res.data as any[]) || []
-        setToolResults(items)
-        showMsg(`تم العثور على ${res.count || items.length} صديق نشط`)
-        await loadResults()
-      } else {
-        showMsg(res.error || 'فشل الاستخراج', true)
         if (res.partialData) setToolResults(res.partialData as any[])
       }
     } catch (err: any) { showMsg(err.message || 'خطأ', true) }
@@ -1320,9 +1273,6 @@ export default function FacebookModule() {
                 if (owner === 'detect-open-groups') {
                   return (<tr key={i}><td className="text-secondary-500">{i + 1}</td><td className="font-medium">{r.name || '-'}</td><td className="text-xs text-secondary-600">{r.members || '-'}</td><td><span className={`badge ${r.status === 'open' ? 'badge-success' : r.status === 'approval-needed' ? 'badge-warning' : 'badge-danger'}`}>{r.status === 'open' ? 'مفتوحة' : r.status === 'approval-needed' ? 'بحاجة موافقة' : r.status}</span></td><td className="text-xs">{r.url ? <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">رابط</a> : '-'}</td></tr>)
                 }
-                if (owner === 'extract-active-friends') {
-                  return (<tr key={i}><td className="text-secondary-500">{i + 1}</td><td className="font-medium">{r.name || '-'}</td><td className="text-xs text-secondary-600">{r.lastSeen || '-'}</td><td className="text-xs">{r.profile ? <a href={r.profile} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">رابط</a> : '-'}</td></tr>)
-                }
                 return null
               })}
             </tbody>
@@ -1480,74 +1430,6 @@ export default function FacebookModule() {
   )
   const postWithImagesFooter = (<button onClick={handlePostWithImages} disabled={loading || !imagePostGroups.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #ec4899, #be185d)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><ImageIcon size={18} /> نشر</>}</button>)
 
-  const renderDemographicsAnalyzeBody = () => (
-    <div className="space-y-5">
-      <div className="p-3 rounded-lg text-xs text-secondary-600" style={{ background: 'rgba(168,85,247,0.05)', border: '1px solid rgba(168,85,247,0.2)' }}>
-        استخدم نتائج أداة استخراج موجودة (سيتم استخدام النتائج الحالية تلقائياً) أو الصق JSON يدوياً.
-      </div>
-      <div>
-        <label className="label-field">JSON يدوي (اختياري)</label>
-        <textarea className="textarea-field font-mono text-xs" rows={4} value={demoInputJson} onChange={e => setDemoInputJson(e.target.value)} placeholder='[{"name":"Ahmed", "location":"Cairo"}, ...]' dir="ltr" />
-      </div>
-      {demoResult && (
-        <div className="space-y-3">
-          <div className="grid grid-cols-3 gap-3">
-            <div className="p-3 rounded-xl border" style={{ background: 'rgba(34,197,94,0.06)', borderColor: 'rgba(34,197,94,0.2)' }}>
-              <p className="text-xs text-secondary-500">المجموع</p>
-              <p className="text-2xl font-bold text-emerald-300">{demoResult.total}</p>
-            </div>
-            <div className="p-3 rounded-xl border" style={{ background: 'rgba(59,130,246,0.06)', borderColor: 'rgba(59,130,246,0.2)' }}>
-              <p className="text-xs text-secondary-500">ذكور</p>
-              <p className="text-2xl font-bold text-blue-300">{demoResult.genderGuess?.male ?? 0}</p>
-            </div>
-            <div className="p-3 rounded-xl border" style={{ background: 'rgba(236,72,153,0.06)', borderColor: 'rgba(236,72,153,0.2)' }}>
-              <p className="text-xs text-secondary-500">إناث</p>
-              <p className="text-2xl font-bold text-pink-300">{demoResult.genderGuess?.female ?? 0}</p>
-            </div>
-          </div>
-          {(demoResult.arabicSpeakers !== undefined || demoResult.topRegions?.length) && (
-            <div className="grid grid-cols-2 gap-3">
-              <div className="p-3 rounded-xl border bg-white/[0.04]">
-                <p className="text-xs font-bold text-secondary-700 mb-2">اللغة (تقديري)</p>
-                <div className="flex items-center gap-3 text-xs">
-                  <span>🇸🇦 العربية: <strong className="text-emerald-600">{demoResult.arabicSpeakers ?? 0}</strong></span>
-                  <span>🇬🇧 الإنجليزية: <strong className="text-blue-600">{demoResult.englishSpeakers ?? 0}</strong></span>
-                </div>
-              </div>
-              <div className="p-3 rounded-xl border bg-white/[0.04]">
-                <p className="text-xs font-bold text-secondary-700 mb-2">حسب البلد</p>
-                <ul className="space-y-1 text-xs max-h-32 overflow-y-auto">
-                  {(demoResult.topRegions || []).slice(0, 12).map((r: any, i: number) => (
-                    <li key={i} className="flex justify-between"><span>{r.value}</span><span className="text-secondary-500">{r.count}</span></li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          )}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="p-3 rounded-xl border bg-white/[0.04]">
-              <p className="text-xs font-bold text-secondary-700 mb-2">أكثر المواقع</p>
-              <ul className="space-y-1 text-xs">
-                {(demoResult.topLocations || []).slice(0, 8).map((r: any, i: number) => (
-                  <li key={i} className="flex justify-between"><span>{r.value}</span><span className="text-secondary-500">{r.count}</span></li>
-                ))}
-              </ul>
-            </div>
-            <div className="p-3 rounded-xl border bg-white/[0.04]">
-              <p className="text-xs font-bold text-secondary-700 mb-2">أكثر الأسماء</p>
-              <ul className="space-y-1 text-xs">
-                {(demoResult.topNames || []).slice(0, 10).map((r: any, i: number) => (
-                  <li key={i} className="flex justify-between"><span>{r.value}</span><span className="text-secondary-500">{r.count}</span></li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-  const demographicsAnalyzeFooter = (<button onClick={handleDemographicsAnalyze} disabled={loading} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #a855f7, #7e22ce)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><BarChart3 size={18} /> تحليل</>}</button>)
-
   const renderDetectOpenGroupsBody = () => (
     <div className="space-y-5">
       <div>
@@ -1563,33 +1445,11 @@ export default function FacebookModule() {
   )
   const detectOpenGroupsFooter = (<button onClick={handleDetectOpenGroups} disabled={loading || !openGroupsUrls.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #84cc16, #4d7c0f)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><ShieldCheck size={18} /> فحص</>}</button>)
 
-  const renderExtractActiveFriendsBody = () => (
-    <div className="space-y-5">
-      <div className="p-3 rounded-lg text-xs text-secondary-600" style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.2)' }}>
-        يفحص آخر نشاط لكل صديق ويعتبره نشطاً إذا نشر خلال الفترة المحددة.
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="label-field">عدد الأصدقاء للفحص: {activeFriendsLimit}</label>
-          <input type="range" min={10} max={300} step={5} className="w-full accent-emerald-500" value={activeFriendsLimit} onChange={e => setActiveFriendsLimit(parseInt(e.target.value))} />
-        </div>
-        <div>
-          <label className="label-field">أيام النشاط: {activeFriendsDays}</label>
-          <input type="range" min={1} max={365} step={1} className="w-full accent-emerald-500" value={activeFriendsDays} onChange={e => setActiveFriendsDays(parseInt(e.target.value))} />
-        </div>
-      </div>
-      {newResultsTable('extract-active-friends', ['#', 'الاسم', 'آخر نشاط', 'الرابط'], 'fb-active-friends')}
-    </div>
-  )
-  const extractActiveFriendsFooter = (<button onClick={handleExtractActiveFriends} disabled={loading} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #10b981, #047857)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><UserCheck size={18} /> استخراج</>}</button>)
-
   const panelMap: Record<Exclude<ActiveTool, null>, { body: React.ReactNode; footer: React.ReactNode }> = {
     extract: { body: renderExtractBody(), footer: extractFooter },
     'search-pages': { body: renderSearchPagesBody(), footer: searchPagesFooter },
     'extract-sharers': { body: renderExtractSharersBody(), footer: extractSharersFooter },
-    'extract-active-friends': { body: renderExtractActiveFriendsBody(), footer: extractActiveFriendsFooter },
     'detect-open-groups': { body: renderDetectOpenGroupsBody(), footer: detectOpenGroupsFooter },
-    'demographics-analyze': { body: renderDemographicsAnalyzeBody(), footer: demographicsAnalyzeFooter },
     'post-to-groups': { body: renderPostToGroupsBody(), footer: postToGroupsFooter },
     'post-with-images': { body: renderPostWithImagesBody(), footer: postWithImagesFooter },
     'share-post': { body: renderSharePostBody(), footer: sharePostFooter },
