@@ -280,6 +280,7 @@ declare global {
       facebookExtractSharers: (data: { sessionId: string; postUrl: string; limit?: number; jobId?: string; delayMs?: number }) => Promise<ExtractionResult>
       facebookInviteFriends: (data: { sessionId: string; pageUrl: string; usernames?: string[]; inviteAll?: boolean }) => Promise<IpcResult>
       facebookCommentOnPages: (data: { sessionId: string; pageUrls: string[]; commentText: string; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>
+      facebookCommentOnPosts: (data: { sessionId: string; postUrls: string[]; commentText: string; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>
       facebookPostWithImages: (data: { sessionId: string; groups: string[]; message?: string; imagePaths?: string[]; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>
       facebookDemographicsAnalyze: (data: { items: Record<string, unknown>[] }) => Promise<IpcResult<{ total: number; genderGuess: { male: number; female: number; unknown: number }; hasPhone: number; hasEmail: number; arabicSpeakers?: number; englishSpeakers?: number; topLocations: Array<{ value: string; count: number }>; topRegions?: Array<{ value: string; count: number }>; topNames: Array<{ value: string; count: number }> }>>
       facebookDetectOpenGroups: (data: { sessionId: string; groupUrls: string[]; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>

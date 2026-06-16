@@ -23,7 +23,7 @@ type ActiveTool =
   | 'analyze-group' | 'add-to-group-chat' | 'send-page-messages'
   | 'users-to-ids' | 'links-to-ids'
   | 'search-pages' | 'like-pages' | 'extract-sharers' | 'invite-friends'
-  | 'comment-on-pages' | 'post-with-images' | 'demographics-analyze'
+  | 'comment-on-pages' | 'comment-on-posts' | 'post-with-images' | 'demographics-analyze'
   | 'detect-open-groups' | 'extract-active-friends'
   | null
 
@@ -105,6 +105,9 @@ export default function FacebookModule() {
   const [commentPagesUrls, setCommentPagesUrls] = useState('')
   const [commentPagesText, setCommentPagesText] = useState('')
   const [commentPagesDelay, setCommentPagesDelay] = useState(6)
+  const [commentPostsUrls, setCommentPostsUrls] = useState('')
+  const [commentPostsText, setCommentPostsText] = useState('')
+  const [commentPostsDelay, setCommentPostsDelay] = useState(6)
   const [imagePostGroups, setImagePostGroups] = useState('')
   const [imagePostMessage, setImagePostMessage] = useState('')
   const [imagePostPaths, setImagePostPaths] = useState<string[]>([])
@@ -572,6 +575,29 @@ export default function FacebookModule() {
     setLoading(false)
   }
 
+  const handleCommentOnPosts = async () => {
+    if (!ensureSession()) return
+    const urls = commentPostsUrls.split('\n').map(s => s.trim()).filter(Boolean)
+    if (urls.length === 0) { showMsg('أدخل روابط المنشورات', true); return }
+    if (!commentPostsText.trim()) { showMsg('أدخل نص التعليق', true); return }
+    setLoading(true)
+    setResultsOwner('comment-on-posts')
+    setToolResults([])
+    try {
+      const res = await window.electronAPI.facebookCommentOnPosts({ sessionId, postUrls: urls, commentText: commentPostsText, delayMs: Math.max(2, commentPostsDelay) * 1000 })
+      if (res.success) {
+        const items = (res.data as any[]) || []
+        setToolResults(items)
+        const ok = items.filter((r: any) => r.status === 'commented').length
+        showMsg(`تم التعليق على ${ok} من ${urls.length}`)
+      } else {
+        showMsg(res.error || 'فشلت العملية', true)
+        if (res.partialData) setToolResults(res.partialData as any[])
+      }
+    } catch (err: any) { showMsg(err.message || 'خطأ', true) }
+    setLoading(false)
+  }
+
   const handlePickImages = () => imagePostInputRef.current?.click()
   const handleImagesSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
@@ -724,6 +750,7 @@ export default function FacebookModule() {
     { id: 'mention', name: 'منشن جماعي', description: 'منشن مستخدمين في عدة منشورات', icon: AtSign, accent: '#f97316', accentGradient: 'linear-gradient(135deg, #f97316, #c2410c)' },
     { id: 'like-pages', name: 'متابعة جماعية للصفحات', description: 'متابعة قائمة صفحات', icon: ThumbsUp, accent: '#22c55e', accentGradient: 'linear-gradient(135deg, #22c55e, #15803d)' },
     { id: 'comment-on-pages', name: 'تعليقات على الصفحات', description: 'تعليق على آخر منشور لقائمة صفحات', icon: MessageSquare, accent: '#0ea5e9', accentGradient: 'linear-gradient(135deg, #0ea5e9, #0369a1)' },
+    { id: 'comment-on-posts', name: 'تعليقات على المنشورات', description: 'تعليق على قائمة روابط منشورات', icon: MessageSquare, accent: '#6366f1', accentGradient: 'linear-gradient(135deg, #6366f1, #4338ca)' },
     { id: 'invite-friends', name: 'دعوة الأصدقاء', description: 'دعوة الأصدقاء للإعجاب بصفحة', icon: UserPlus, accent: '#eab308', accentGradient: 'linear-gradient(135deg, #eab308, #a16207)' },
   ]
 
@@ -1249,7 +1276,7 @@ export default function FacebookModule() {
                 if (owner === 'extract-sharers') {
                   return (<tr key={i}><td className="text-secondary-500">{i + 1}</td><td className="font-medium">{r.name || '-'}</td><td className="text-xs">{r.profile ? <a href={r.profile} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">رابط</a> : '-'}</td></tr>)
                 }
-                if (owner === 'comment-on-pages') {
+                if (owner === 'comment-on-pages' || owner === 'comment-on-posts') {
                   return (<tr key={i}><td className="text-secondary-500">{i + 1}</td><td className="text-xs max-w-[300px] truncate" dir="ltr">{r.url}</td><td><span className={`badge ${r.status === 'commented' ? 'badge-success' : r.status === 'skipped' ? 'badge-warning' : 'badge-danger'}`}>{r.status}</span></td><td className="text-xs text-secondary-500">{r.error || '-'}</td></tr>)
                 }
                 if (owner === 'post-with-images') {
@@ -1361,6 +1388,25 @@ export default function FacebookModule() {
     </div>
   )
   const commentOnPagesFooter = (<button onClick={handleCommentOnPages} disabled={loading || !commentPagesUrls.trim() || !commentPagesText.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #0ea5e9, #0369a1)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><MessageSquare size={18} /> تعليق</>}</button>)
+
+  const renderCommentOnPostsBody = () => (
+    <div className="space-y-5">
+      <div>
+        <label className="label-field">روابط المنشورات (سطر لكل منشور)</label>
+        <textarea className="textarea-field" rows={6} value={commentPostsUrls} onChange={e => setCommentPostsUrls(e.target.value)} placeholder="https://facebook.com/page/posts/..." />
+      </div>
+      <div>
+        <label className="label-field">نص التعليق ({'{{n}}'} = رقم المنشور)</label>
+        <textarea className="textarea-field" rows={3} value={commentPostsText} onChange={e => setCommentPostsText(e.target.value)} placeholder="تعليق احترافي ومحترم..." />
+      </div>
+      <div>
+        <label className="label-field">الفاصل (ثانية)</label>
+        <input type="number" min={2} max={120} className="input-field w-32" value={commentPostsDelay} onChange={e => setCommentPostsDelay(Number(e.target.value) || 6)} />
+      </div>
+      {newResultsTable('comment-on-posts', ['#', 'المنشور', 'الحالة', 'خطأ'], 'fb-comment-posts')}
+    </div>
+  )
+  const commentOnPostsFooter = (<button onClick={handleCommentOnPosts} disabled={loading || !commentPostsUrls.trim() || !commentPostsText.trim()} className="btn-primary w-full disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #6366f1, #4338ca)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><MessageSquare size={18} /> تعليق</>}</button>)
 
   const renderPostWithImagesBody = () => (
     <div className="space-y-5">
@@ -1516,6 +1562,7 @@ export default function FacebookModule() {
     mention: { body: renderMentionBody(), footer: mentionFooter },
     'like-pages': { body: renderLikePagesBody(), footer: likePagesFooter },
     'comment-on-pages': { body: renderCommentOnPagesBody(), footer: commentOnPagesFooter },
+    'comment-on-posts': { body: renderCommentOnPostsBody(), footer: commentOnPostsFooter },
     'invite-friends': { body: renderInviteFriendsBody(), footer: inviteFriendsFooter },
     'send-messages': { body: renderSendMessagesBody(), footer: sendMessagesFooter },
     'page-send-messages': { body: renderPageSendMessagesBody(), footer: pageSendMessagesFooter },

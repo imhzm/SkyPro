@@ -2179,6 +2179,61 @@ ipcm('facebook-comment-on-pages', async (e, { sessionId, pageUrls = [], commentT
   }
 })
 
+// Comment on a list of specific POST urls (each row may use {{n}} as a counter).
+ipcm('facebook-comment-on-posts', async (e, { sessionId, postUrls = [], commentText, delayMs = 5000, jobId }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!commentText) return { success: false, error: 'نص التعليق مطلوب' }
+  if (!jobId) jobId = `fb-comment-posts-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
+  const results = []
+  try {
+    let idx = 0
+    for (const url of postUrls) {
+      if (globals.cancelFlags.get(jobId)) break
+      idx++
+      try {
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
+        await page.waitForTimeout(randomDelay(2500, 4000))
+        // Open the post's comment box (the post is the page's main article/dialog).
+        await smartClick(page, [
+          'div[role="dialog"] div[aria-label="Leave a comment"]', 'div[role="dialog"] div[aria-label="اكتب تعليقًا"]',
+          'div[role="article"] div[aria-label="Leave a comment"]', 'div[role="article"] div[aria-label="اكتب تعليقًا"]',
+          'div[role="button"]:has-text("Comment"):not(:has-text("comments"))',
+          'div[role="button"]:has-text("تعليق"):not(:has-text("تعليقات"))'
+        ], 'open comment')
+        await page.waitForTimeout(randomDelay(700, 1400))
+        const text = String(commentText).replace(/\{\{n\}\}/g, String(idx))
+        const typed = await smartType(page, [
+          'div[contenteditable="true"][role="textbox"][aria-label*="تعليق"]',
+          'div[contenteditable="true"][role="textbox"][aria-label*="omment"]',
+          'div[role="dialog"] div[contenteditable="true"][role="textbox"]',
+          'div[role="article"] div[contenteditable="true"][role="textbox"]'
+        ], text, 'comment')
+        if (!typed) {
+          results.push({ url, status: 'failed', error: 'لم يتم العثور على حقل التعليق' })
+        } else {
+          await page.waitForTimeout(randomDelay(500, 1200))
+          await page.keyboard.press('Enter')
+          await page.waitForTimeout(randomDelay(1500, 2500))
+          results.push({ url, status: 'commented' })
+        }
+      } catch (err) {
+        results.push({ url, status: 'failed', error: err.message })
+      }
+      sendProgress(sender, jobId, { type: 'progress', count: results.length, total: postUrls.length, last: results[results.length - 1] })
+      await page.waitForTimeout(delayMs + Math.random() * 1500)
+    }
+    saveLeads('facebook', 'comment-posts', results)
+    return { success: true, data: results, count: results.filter(r => r.status === 'commented').length, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: results, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
+  }
+})
+
 // Post text + up to 3 images to a list of groups. Builds on the existing
 // post-to-groups but supports media uploads via file input.
 ipcm('facebook-post-with-images', async (e, { sessionId, groups = [], message, imagePaths = [], delayMs = 8000, jobId }) => {
