@@ -791,8 +791,10 @@ ipcm('facebook-send-messages', async (e, { sessionId, recipients, message }) => 
   for (const recipient of recipients) {
     try {
       await page.goto(`https://www.facebook.com/messages/t/${recipient}`, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
-      await page.waitForTimeout(randomDelay(2000, 4000))
-      const input = await page.$('div[contenteditable="true"][role="textbox"], div[contenteditable="true"]')
+      await page.waitForTimeout(randomDelay(2500, 4000))
+      // Target the Messenger composer specifically (aria-label first) instead of
+      // any contenteditable, so we never type into the wrong field.
+      const input = await page.$('div[contenteditable="true"][role="textbox"][aria-label*="Message"], div[contenteditable="true"][role="textbox"][aria-label*="رسالة"], div[contenteditable="true"][role="textbox"]')
       if (input) {
         await input.click({ force: true })
         await page.waitForTimeout(randomDelay(500, 1000))
@@ -1654,8 +1656,10 @@ ipcm('facebook-page-send-messages', async (e, { sessionId, pageUrl, recipients, 
   for (const recipient of recipients) {
     try {
       await page.goto(`https://www.facebook.com/messages/t/${recipient}`, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
-      await page.waitForTimeout(randomDelay(2000, 4000))
-      const input = await page.$('div[contenteditable="true"][role="textbox"], div[contenteditable="true"]')
+      await page.waitForTimeout(randomDelay(2500, 4000))
+      // Target the Messenger composer specifically (aria-label first) instead of
+      // any contenteditable, so we never type into the wrong field.
+      const input = await page.$('div[contenteditable="true"][role="textbox"][aria-label*="Message"], div[contenteditable="true"][role="textbox"][aria-label*="رسالة"], div[contenteditable="true"][role="textbox"]')
       if (input) {
         await input.click({ force: true })
         await page.waitForTimeout(randomDelay(500, 1000))
@@ -2024,7 +2028,7 @@ ipcm('facebook-extract-sharers', async (e, { sessionId, postUrl, limit = 100, jo
 
 // Invite friends to like a page. Opens the page's "Invite Friends" dialog
 // and selects-all + send. Selection by username if provided.
-ipcm('facebook-invite-friends', async (e, { sessionId, pageUrl, usernames = [], inviteAll = false }) => {
+ipcm('facebook-invite-friends', async (e, { sessionId, pageUrl, usernames = [], inviteAll = false, limit = 500 }) => {
   const page = globals.bm.getPage(sessionId)
   if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
   if (!pageUrl) return { success: false, error: 'رابط الصفحة مطلوب' }
@@ -2041,13 +2045,21 @@ ipcm('facebook-invite-friends', async (e, { sessionId, pageUrl, usernames = [], 
     await page.waitForTimeout(randomDelay(1500, 2500))
     const results = []
     if (inviteAll) {
-      // Click each friend tile in the modal.
-      const tiles = await page.$$('div[role="dialog"] div[role="button"]:has(div[role="img"])')
-      let invited = 0
-      for (const tile of tiles) {
-        if (invited >= 50) break
-        try { await tile.click({ force: true }); invited++ } catch { /* skip */ }
-        await page.waitForTimeout(randomDelay(200, 500))
+      // Invite ALL friends — no hard cap. Scroll the dialog to lazy-load more
+      // tiles, click unchecked ones, and stop only on the requested limit or when
+      // no new friends appear for several rounds.
+      const dlg = await page.$('div[role="dialog"]')
+      let invited = 0, stall = 0
+      while (invited < limit && stall < 6) {
+        const before = invited
+        const tiles = await page.$$('div[role="dialog"] div[role="checkbox"]:not([aria-checked="true"]), div[role="dialog"] div[role="button"][aria-label*="Invite"]:not([aria-disabled="true"])')
+        for (const tile of tiles) {
+          if (invited >= limit) break
+          try { await tile.click({ force: true }); invited++; await page.waitForTimeout(randomDelay(120, 350)) } catch { /* skip */ }
+        }
+        if (dlg) await dlg.evaluate((el) => { el.scrollTop = el.scrollHeight; const inner = el.querySelector('[role="grid"], [role="list"]'); if (inner) inner.scrollTop = inner.scrollHeight }).catch(() => {})
+        await page.waitForTimeout(randomDelay(900, 1500))
+        if (invited === before) stall++; else stall = 0
       }
       results.push({ invited })
     } else {
