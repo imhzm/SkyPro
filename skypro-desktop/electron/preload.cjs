@@ -48,6 +48,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   facebookExtractReviews: (data) => ipcRenderer.invoke('facebook-extract-reviews', data),
   facebookPageSendMessages: (data) => ipcRenderer.invoke('facebook-page-send-messages', data),
   facebookAddToGroupChat: (data) => ipcRenderer.invoke('facebook-add-to-group-chat', data),
+  facebookCreateGroupChat: (data) => ipcRenderer.invoke('facebook-create-group-chat', data),
   facebookSendPageMessages: (data) => ipcRenderer.invoke('facebook-send-page-messages', data),
   facebookSearchPages: (data) => ipcRenderer.invoke('facebook-search-pages', data),
   facebookLikePages: (data) => ipcRenderer.invoke('facebook-like-pages', data),

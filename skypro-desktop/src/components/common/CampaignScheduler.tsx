@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { getPlatformGradient } from '../../data/platformGradients'
 import { platforms as ALL_PLATFORMS } from '../../data/platforms'
+import { useConfirm } from './confirmContext'
 
 // ============================================================================
 // TYPES
@@ -80,6 +81,7 @@ const DEFAULT_FORM: Partial<ScheduledTask> & { scheduleData: ScheduleData } = {
 }
 
 export default function CampaignScheduler() {
+  const confirm = useConfirm()
   const [tasks, setTasks] = useState<ScheduledTask[]>([])
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -191,7 +193,7 @@ export default function CampaignScheduler() {
   }
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('حذف هذه المهمة نهائياً؟')) return
+    if (!(await confirm({ title: 'حذف المهمة', message: 'حذف هذه المهمة نهائياً؟', confirmLabel: 'حذف', danger: true }))) return
     try {
       await window.electronAPI.deleteCampaign({ id })
       showMsg('تم حذف المهمة ✓')

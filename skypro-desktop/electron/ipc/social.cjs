@@ -1273,6 +1273,50 @@ ipcm('facebook-add-to-group-chat', async (e, { sessionId, groupChatUrl, username
   } catch (err) { return { success: false, error: err.message } }
 })
 
+// Create a NEW Messenger group chat with a list of people (+ optional name/first message).
+ipcm('facebook-create-group-chat', async (e, { sessionId, usernames = [], groupName = '', firstMessage = '' }) => {
+  const page = globals.bm.getPage(sessionId)
+  if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  const added = [], failed = []
+  try {
+    await page.goto('https://www.facebook.com/messages/new/', { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
+    await page.waitForTimeout(randomDelay(3000, 5000))
+    for (const username of usernames) {
+      try {
+        const toInput = await page.$('input[aria-label*="To"], input[aria-label*="إلى"], input[placeholder*="To"], input[placeholder*="إلى"], div[contenteditable="true"][aria-label*="To"], div[contenteditable="true"][aria-label*="إلى"]')
+        if (!toInput) { failed.push(username); continue }
+        await toInput.click({ force: true })
+        await page.waitForTimeout(randomDelay(400, 800))
+        await page.keyboard.type(String(username).replace(/^@/, '').trim(), { delay: 50 + Math.random() * 80 })
+        await page.waitForTimeout(randomDelay(2000, 3500))
+        const suggestion = await page.$('ul[role="listbox"] li[role="option"], div[role="listbox"] div[role="option"], div[role="option"]')
+        if (suggestion) { await suggestion.click({ force: true }).catch(() => {}); await page.waitForTimeout(randomDelay(800, 1500)); added.push(username) }
+        else failed.push(username)
+      } catch { failed.push(username) }
+    }
+    // Name the group (the name field appears once 2+ people are added).
+    if (groupName && added.length >= 2) {
+      const nameInput = await page.$('input[aria-label*="group name" i], input[aria-label*="اسم المجموعة"], input[placeholder*="group name" i], input[placeholder*="اسم المجموعة"]')
+      if (nameInput) { await nameInput.click({ force: true }); await page.keyboard.type(groupName, { delay: 50 }); await page.waitForTimeout(randomDelay(800, 1500)) }
+    }
+    // Sending a first message actually creates the conversation.
+    if (added.length > 0) {
+      const composer = await page.$('div[contenteditable="true"][role="textbox"][aria-label*="Message"], div[contenteditable="true"][role="textbox"][aria-label*="رسالة"], div[contenteditable="true"][role="textbox"]')
+      if (composer) {
+        await composer.click({ force: true })
+        await page.waitForTimeout(randomDelay(500, 1000))
+        await page.keyboard.type(firstMessage || 'مرحبًا 👋', { delay: 50 + Math.random() * 80 })
+        await page.waitForTimeout(randomDelay(800, 1500))
+        await page.keyboard.press('Enter')
+        await page.waitForTimeout(randomDelay(2500, 4000))
+      }
+    }
+    return { success: true, data: { added, failed, groupName }, count: added.length }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: { added, failed } }
+  }
+})
+
 ipcm('facebook-send-page-messages', async (e, { sessionId, pageUrls, message }) => {
   const page = globals.bm.getPage(sessionId)
   if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
