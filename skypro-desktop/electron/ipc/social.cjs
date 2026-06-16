@@ -1416,37 +1416,52 @@ ipcm('facebook-extract-my-groups', async (e, { sessionId, limit = 500, jobId, de
   }
 })
 
-ipcm('facebook-join-groups', async (e, { sessionId, groupUrls }) => {
+ipcm('facebook-join-groups', async (e, { sessionId, groupUrls, jobId, delayMs = 4000 }) => {
   const page = globals.bm.getPage(sessionId)
   if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
+  if (!jobId) jobId = `fb-join-${++jobIdCounter}`
+  globals.cancelFlags.set(jobId, false)
+  const sender = getSender(e)
   const results = []
-  for (const groupUrl of groupUrls) {
-    try {
-      await page.goto(groupUrl.replace(/\/$/, ''), { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
-      await page.waitForTimeout(randomDelay(2000, 4000))
-      const joinBtn = await page.$('div[role="button"]:has-text("Join"), div[role="button"]:has-text("انضم"), div[role="button"][aria-label*="Join"], div[role="button"][aria-label*="انضم"], span:has-text("Join group"), span:has-text("انضم")')
-      if (joinBtn) {
-        await joinBtn.click({ force: true }).catch(() => {})
+  try {
+    for (const groupUrl of groupUrls) {
+      if (globals.cancelFlags.get(jobId)) break
+      try {
+        await page.goto(groupUrl.replace(/\/$/, ''), { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
         await page.waitForTimeout(randomDelay(2000, 4000))
-        results.push({ group: groupUrl, status: 'joined' })
-      } else {
-        const alreadyMember = await page.evaluate(() => {
-          const btns = document.querySelectorAll('div[role="button"]')
-          for (const btn of btns) {
-            const txt = btn.innerText.trim().toLowerCase()
-            if (txt.includes('member') || txt.includes('عضو') || txt.includes('joined') || txt.includes('منضم')) return true
-          }
-          return false
-        })
-        results.push({ group: groupUrl, status: alreadyMember ? 'already_joined' : 'failed', error: alreadyMember ? 'عضو بالفعل' : 'لم يتم العثور على زر الانضمام' })
+        const joinBtn = await page.$('div[role="button"][aria-label*="Join"], div[role="button"][aria-label*="انضم"], div[role="button"]:has-text("Join group"), div[role="button"]:has-text("انضمام إلى المجموعة"), div[role="button"]:has-text("Join"):not(:has-text("Joined")), div[role="button"]:has-text("انضمام"):not(:has-text("انضممت"))')
+        if (joinBtn) {
+          await joinBtn.click({ force: true }).catch(() => {})
+          await page.waitForTimeout(randomDelay(2500, 4000))
+          // Some groups require accepting rules / answering questions — submit the
+          // dialog if it appears, otherwise the join never actually completes.
+          const submit = await page.$('div[role="dialog"] div[role="button"]:has-text("Submit"), div[role="dialog"] div[role="button"]:has-text("إرسال"), div[role="dialog"] div[role="button"]:has-text("Agree"), div[role="dialog"] div[role="button"]:has-text("موافقة"), div[role="dialog"] div[role="button"][aria-label*="Join"], div[role="dialog"] div[role="button"]:has-text("انضمام")')
+          if (submit) { await submit.click({ force: true }).catch(() => {}); await page.waitForTimeout(randomDelay(1500, 3000)) }
+          results.push({ group: groupUrl, status: 'joined' })
+        } else {
+          const alreadyMember = await page.evaluate(() => {
+            const btns = document.querySelectorAll('div[role="button"]')
+            for (const btn of btns) {
+              const txt = (btn.innerText || '').trim().toLowerCase()
+              if (txt.includes('joined') || txt.includes('عضو') || txt.includes('منضم') || txt === 'member') return true
+            }
+            return false
+          })
+          results.push({ group: groupUrl, status: alreadyMember ? 'already_joined' : 'failed', error: alreadyMember ? 'عضو بالفعل' : 'لم يتم العثور على زر الانضمام' })
+        }
+      } catch (err) {
+        results.push({ group: groupUrl, status: 'error', error: err.message })
       }
-    } catch (err) {
-      results.push({ group: groupUrl, status: 'error', error: err.message })
+      sendProgress(sender, jobId, { type: 'progress', count: results.length, total: groupUrls.length, last: results[results.length - 1] })
+      await page.waitForTimeout(delayMs + Math.random() * 2000)
     }
-    await page.waitForTimeout(randomDelay(3000, 6000))
+    saveLeads('facebook', 'join-groups', results)
+    return { success: true, data: results, count: results.filter(r => r.status === 'joined' || r.status === 'already_joined').length, jobId, cancelled: globals.cancelFlags.get(jobId) }
+  } catch (err) {
+    return { success: false, error: err.message, partialData: results, jobId }
+  } finally {
+    globals.cancelFlags.delete(jobId)
   }
-  saveLeads('facebook', 'join-groups', results)
-  return { success: true, data: results }
 })
 
 ipcm('facebook-extract-page-messengers', async (e, { sessionId, pageUrl, limit = 50, jobId, delayMs = 2000 }) => {
