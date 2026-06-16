@@ -188,7 +188,7 @@ export default function FacebookModule() {
 
   const handleExtract = async () => {
     if (!ensureSession()) return
-    const typesNeedingUrl = ['post-likers', 'post-comments', 'group-members', 'page-followers', 'phone-numbers', 'post-details']
+    const typesNeedingUrl = ['post-likers', 'post-comments', 'group-members', 'page-followers', 'phone-numbers']
     if (typesNeedingUrl.includes(extractType) && !extractUrl) { showMsg('يرجى إدخال الرابط', true); return }
     if (extractType === 'page-messengers' && !pageMessengerUrl) { showMsg('يرجى إدخال رابط الصفحة', true); return }
     if (extractType === 'reviews' && !reviewPageUrl) { showMsg('يرجى إدخال رابط الصفحة', true); return }

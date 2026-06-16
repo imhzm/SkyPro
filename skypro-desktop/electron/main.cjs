@@ -331,7 +331,6 @@ function isTrustedIpcSender(event) {
 // fields (phone-only extractions, post details, group analytics, etc.).
 const NO_FILTER_SOURCES = new Set([
   'phone-numbers',           // phone-only records
-  'post-details',            // single post metadata
   'group-analysis',          // group statistics
   'profile-analysis',        // profile statistics
   'users-to-ids',            // ID conversion
