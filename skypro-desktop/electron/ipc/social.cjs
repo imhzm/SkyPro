@@ -749,9 +749,9 @@ ipcm('facebook-post-groups', async (e, { sessionId, groups, message }) => {
       await page.goto(groupUrl.replace(/\/$/, ''), { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
       await page.waitForTimeout(randomDelay(3000, 5000))
       const composerBtns = [
+        'div[role="button"]:has-text("بم تفكر")', 'div[role="button"]:has-text("What\'s on your mind")',
         'div[role="button"][aria-label*="Write"], div[role="button"][aria-label*="Create"], div[role="button"][aria-label*="اكتب"]',
         'div[role="button"]:has-text("Write something"), div[role="button"]:has-text("اكتب شيئًا")',
-        'a[role="button"]:has-text("Write Post"), a[role="button"]:has-text("كتابة منشور")',
         'div[role="button"][aria-label*="Post"], div[role="button"][aria-label*="منشور"]'
       ]
       let composer = null
@@ -761,21 +761,33 @@ ipcm('facebook-post-groups', async (e, { sessionId, groups, message }) => {
       }
       if (composer) {
         await composer.click({ force: true }).catch(() => {})
-        await page.waitForTimeout(randomDelay(2000, 4000))
-        const input = await page.$('div[contenteditable="true"][role="textbox"], div[contenteditable="true"][aria-label*="Write"], div[contenteditable="true"][aria-label*="اكتب"], div[contenteditable="true"]')
+        await page.waitForTimeout(randomDelay(2500, 4500))
+        // Scope to the post composer DIALOG so we type into the post body, not a
+        // stray contenteditable (e.g. a comment box behind the modal).
+        const dlg = await page.$('div[role="dialog"]')
+        const input = dlg
+          ? await dlg.$('div[contenteditable="true"][role="textbox"]')
+          : await page.$('div[contenteditable="true"][role="textbox"][aria-label*="Write"], div[contenteditable="true"][role="textbox"][aria-label*="اكتب"], div[contenteditable="true"][role="textbox"][aria-label*="بم"]')
         if (input) {
           await input.click({ force: true })
           await page.waitForTimeout(randomDelay(500, 1000))
-          await page.keyboard.type(message, { delay: 50 + Math.random() * 100 })
-          await page.waitForTimeout(randomDelay(1000, 2000))
-          const postBtn = await page.$('div[role="button"]:has-text("Post"), div[role="button"]:has-text("نشر"), div[aria-label="Post"], div[aria-label="نشر"]')
-          if (postBtn) { await postBtn.click({ force: true }); await page.waitForTimeout(randomDelay(3000, 5000)) }
-          results.push({ group: groupUrl, status: 'posted' })
+          await page.keyboard.type(message, { delay: 40 + Math.random() * 90 })
+          await page.waitForTimeout(randomDelay(1200, 2200))
+          const scope = dlg || page
+          let postBtn = await scope.$('div[role="button"][aria-label="Post"], div[role="button"][aria-label="نشر"]')
+          if (!postBtn) postBtn = await scope.$('div[role="button"]:has-text("نشر"):not(:has-text("جدولة")), div[role="button"]:has-text("Post"):not(:has-text("Schedule"))')
+          if (postBtn) {
+            await postBtn.click({ force: true })
+            await page.waitForTimeout(randomDelay(3000, 5000))
+            results.push({ group: groupUrl, status: 'posted' })
+          } else {
+            results.push({ group: groupUrl, status: 'failed', error: 'لم يتم العثور على زر النشر النهائي' })
+          }
         } else {
           results.push({ group: groupUrl, status: 'failed', error: 'لم يتم العثور على حقل الكتابة' })
         }
       } else {
-        results.push({ group: groupUrl, status: 'failed', error: 'لم يتم العثور على زر النشر' })
+        results.push({ group: groupUrl, status: 'failed', error: 'لم يتم العثور على صندوق النشر' })
       }
     } catch (err) {
       results.push({ group: groupUrl, status: 'error', error: err.message })
@@ -865,18 +877,23 @@ ipcm('facebook-share-post', async (e, { sessionId, postUrl, groups }) => {
     try {
       await page.goto(groupUrl.replace(/\/$/, ''), { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
       await page.waitForTimeout(randomDelay(2000, 4000))
-      const composer = await page.$('div[role="button"][aria-label*="Write"], div[role="button"][aria-label*="Create"], div[role="button"][aria-label*="اكتب"]')
-        || await page.$('div[role="button"]:has-text("Write something"), div[role="button"]:has-text("اكتب شيئًا")')
+      let composer = await page.$('div[role="button"]:has-text("بم تفكر"), div[role="button"]:has-text("What\'s on your mind")')
+      if (!composer) composer = await page.$('div[role="button"][aria-label*="Write"], div[role="button"][aria-label*="Create"], div[role="button"][aria-label*="اكتب"]')
+      if (!composer) composer = await page.$('div[role="button"]:has-text("Write something"), div[role="button"]:has-text("اكتب شيئًا")')
       if (composer) {
         await composer.click({ force: true })
-        await page.waitForTimeout(randomDelay(1500, 3000))
-        const input = await page.$('div[contenteditable="true"]')
+        await page.waitForTimeout(randomDelay(2000, 3500))
+        const dlg = await page.$('div[role="dialog"]')
+        const input = dlg ? await dlg.$('div[contenteditable="true"][role="textbox"]') : await page.$('div[contenteditable="true"][role="textbox"]')
         if (input) {
           await input.click({ force: true })
           await page.waitForTimeout(randomDelay(500, 1000))
-          await page.keyboard.type(postUrl, { delay: 50 + Math.random() * 100 })
-          await page.waitForTimeout(randomDelay(3000, 5000))
-          const postBtn = await page.$('div[role="button"]:has-text("Post"), div[role="button"]:has-text("نشر")')
+          await page.keyboard.type(postUrl, { delay: 40 + Math.random() * 90 })
+          // Wait for FB to render the link-preview card before posting (= a share).
+          await page.waitForTimeout(randomDelay(4000, 6000))
+          const scope = dlg || page
+          let postBtn = await scope.$('div[role="button"][aria-label="Post"], div[role="button"][aria-label="نشر"]')
+          if (!postBtn) postBtn = await scope.$('div[role="button"]:has-text("نشر"):not(:has-text("جدولة")), div[role="button"]:has-text("Post"):not(:has-text("Schedule"))')
           if (postBtn) {
             await postBtn.click({ force: true })
             await page.waitForTimeout(randomDelay(3000, 5000))
@@ -2108,16 +2125,26 @@ ipcm('facebook-comment-on-pages', async (e, { sessionId, pageUrls = [], commentT
       try {
         await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
         await page.waitForTimeout(randomDelay(2500, 4000))
-        // Find the latest post on the page and open its comment box.
+        // Scroll to the first post + open its comment box with broader, locale-aware
+        // selectors (the old :first-of-type often hit the page intro card, not a post).
+        await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = 650 }).catch(() => {})
+        await page.waitForTimeout(randomDelay(1200, 2200))
         const opened = await smartClick(page, [
-          'div[role="article"]:first-of-type div[aria-label="Leave a comment"]',
-          'div[role="article"]:first-of-type div[role="button"]:has-text("Comment")',
-          'div[role="article"]:first-of-type div[role="button"]:has-text("تعليق")'
+          'div[role="article"] div[aria-label="Leave a comment"]',
+          'div[role="article"] div[aria-label="اكتب تعليقًا"]',
+          'div[role="article"] div[role="button"]:has-text("Comment"):not(:has-text("comments"))',
+          'div[role="article"] div[role="button"]:has-text("تعليق"):not(:has-text("تعليقات"))',
+          'div[role="article"] div[contenteditable="true"][role="textbox"]'
         ], 'open comment')
         if (!opened) { results.push({ url, status: 'skipped', error: 'لم يتم العثور على زر التعليق' }); continue }
         await page.waitForTimeout(randomDelay(800, 1500))
         const text = String(commentText).replace(/\{\{n\}\}/g, String(idx))
-        const typed = await smartType(page, ['div[role="article"]:first-of-type div[contenteditable="true"]', 'div[contenteditable="true"][aria-label*="Comment"]'], text, 'comment')
+        const typed = await smartType(page, [
+          'div[role="article"] div[contenteditable="true"][aria-label*="تعليق"]',
+          'div[role="article"] div[contenteditable="true"][aria-label*="omment"]',
+          'div[role="article"] div[contenteditable="true"][role="textbox"]',
+          'div[contenteditable="true"][aria-label*="تعليق"], div[contenteditable="true"][aria-label*="omment"]'
+        ], text, 'comment')
         if (!typed) { results.push({ url, status: 'failed', error: 'لم يتم العثور على حقل التعليق' }); continue }
         await page.waitForTimeout(randomDelay(500, 1200))
         await page.keyboard.press('Enter')
