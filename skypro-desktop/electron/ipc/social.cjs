@@ -547,7 +547,22 @@ ipcm('facebook-extract-friends', async (e, { sessionId, limit = 100, jobId, dela
     // can exclude the owner's OWN profile nav links (about/photos/الكل/…) which
     // otherwise leak into the friends list.
     const ownerSlug = (page.url().match(/facebook\.com\/([^/?#]+)/) || [, ''])[1].toLowerCase()
-    const maxScrolls = Math.max(Math.ceil(limit / 8), 40)
+    // Read the REAL friend count from the page header ("الأصدقاء 472" / "472
+    // friends") so extraction never runs past it into duplicates/suggestions
+    // (bug 1: <500 friends yet 2000 extracted). Arabic-Indic digits normalised.
+    const friendCount = await page.evaluate(() => {
+      const main = document.querySelector('[role="main"]') || document.body
+      const txt = (main.innerText || '').replace(/[‎‏‪-‮⁦-⁩]/g, '')
+      const norm = (s) => s.replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[,،]/g, '')
+      let m = txt.match(/(?:الأصدقاء|الاصدقاء|All friends|Friends)\s*([\d٠-٩,،]{1,7})/i)
+      if (m) { const n = parseInt(norm(m[1]), 10); if (n > 0) return n }
+      m = txt.match(/([\d٠-٩,،]{1,7})\s*(?:من\s*)?(?:صديق|أصدقاء|اصدقاء)\b/)
+      if (m && !/مشترك/.test(txt.slice(m.index, m.index + 30))) { const n = parseInt(norm(m[1]), 10); if (n > 0) return n }
+      return 0
+    }).catch(() => 0)
+    // Cap at the real count (+5 slack for late-loaders); fall back to `limit`.
+    const effectiveLimit = friendCount > 0 ? Math.min(limit, friendCount + 5) : limit
+    const maxScrolls = Math.max(Math.ceil((friendCount || limit) / 6), 40)
 
     // Track seen profile URLs (the unique identifier — not the displayed
     // name, which collides between people who share a name).
@@ -598,24 +613,33 @@ ipcm('facebook-extract-friends', async (e, { sessionId, limit = 100, jobId, dela
         return r
       }, ownerSlug)
 
-      // Apply centralized sanitizer + URL-based dedup.
+      // Dedup by CANONICAL profile identity (numeric id or clean slug), NOT the
+      // full href — FB appends per-render tracking tokens (?__cft__=…&__tn__=…)
+      // so the same friend looked "new" on every scroll and the list ballooned
+      // into the thousands and never stalled (bug 1). Also store the CLEAN url.
       for (const item of batch) {
-        if (seenUrls.has(item.profile)) continue
-        seenUrls.add(item.profile)
-        raw.push(item)
+        const url = item.profile || ''
+        const idm = url.match(/profile\.php\?id=(\d+)/)
+        const slug = url.replace(/^https?:\/\/[^/]+/, '').replace(/^\/+/, '').split(/[/?#]/)[0].toLowerCase()
+        if (!idm && !slug) continue
+        const key = idm ? 'id:' + idm[1] : 'slug:' + slug
+        if (seenUrls.has(key)) continue
+        seenUrls.add(key)
+        const cleanUrl = idm ? `https://www.facebook.com/profile.php?id=${idm[1]}` : url.split('?')[0].split('#')[0]
+        raw.push({ ...item, profile: cleanUrl })
       }
       // End-of-list detection: stop once no new friends appear for several
       // consecutive scrolls (prevents endless scrolling past the real list).
       if (seenUrls.size === beforeLen) { if (++stall >= 6) break } else { stall = 0 }
       const cleaned = sanitizeRecords(raw, { platform: 'facebook', kind: 'friends' })
-      // Trim to the requested limit.
-      if (cleaned.length >= limit) {
-        allFriends = cleaned.slice(0, limit)
-        sendProgress(sender, jobId, { type: 'progress', count: allFriends.length, total: limit, data: allFriends })
+      // Trim to the real-count-capped limit.
+      if (cleaned.length >= effectiveLimit) {
+        allFriends = cleaned.slice(0, effectiveLimit)
+        sendProgress(sender, jobId, { type: 'progress', count: allFriends.length, total: effectiveLimit, data: allFriends })
         break
       }
       allFriends = cleaned
-      sendProgress(sender, jobId, { type: 'progress', count: allFriends.length, total: limit, data: allFriends })
+      sendProgress(sender, jobId, { type: 'progress', count: allFriends.length, total: effectiveLimit, data: allFriends })
     }
 
     saveLeads('facebook', 'friends', allFriends)
