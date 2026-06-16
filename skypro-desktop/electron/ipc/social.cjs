@@ -1547,20 +1547,37 @@ ipcm('facebook-extract-page-messengers', async (e, { sessionId, pageUrl, limit =
               el.querySelectorAll('[role="row"],[role="listitem"],[role="gridcell"]').length > 2) { scroller = el; break }
         }
         if (scroller) scroller.scrollTop = scroller.scrollHeight
-        // Each conversation is a thread link; the sender name is its aria-label or
-        // the strongest text in its row (Business Suite hides it from plain spans).
-        document.querySelectorAll('a[href*="selected_item_id"], a[role="link"][href*="inbox"], [role="row"], [role="listitem"]').forEach((node) => {
-          const row = node.closest('[role="row"],[role="listitem"],[role="gridcell"]') || node
-          let name = (node.getAttribute('aria-label') || row.getAttribute('aria-label') || '').replace(BIDI, '').trim().split('\n')[0]
-          if (!name || name.length < 2 || name.length > 50) {
+        // Business Suite renders the inbox FILTER tabs (كل الرسائل / Messenger /
+        // Instagram / …) and folder rows with the SAME role=row/gridcell markup
+        // as real conversations — so the naive "first span in any row" grabbed
+        // those nav labels as junk on an empty inbox. The reliable discriminator
+        // is the AVATAR: a real conversation row contains a profile <img src>,
+        // nav/filter/chrome rows do not.
+        const NAV = new Set([
+          'كل الرسائل', 'الرسائل', 'messenger', 'instagram', 'رسائل', 'البريد الوارد',
+          'غير المقروءة', 'كل الرسائل غير المقروءة', 'الرسائل غير المقروءة', 'المهمة',
+          'الرسائل المهمة', 'تم', 'المحذوفة', 'الرسائل غير المرغوب فيها', 'متابعون',
+          'spam', 'done', 'unread', 'follow up', 'all', 'comments', 'التعليقات',
+        ])
+        const rows = document.querySelectorAll('[role="row"],[role="listitem"],[role="gridcell"]')
+        const seenInBatch = new Set()
+        rows.forEach((row) => {
+          if (!row.querySelector('img[src]')) return // nav/chrome row → no avatar → skip
+          let name = (row.getAttribute('aria-label') || '').replace(BIDI, '').trim().split('\n')[0]
+          if (!name || name.length < 2 || name.length > 50 || NAV.has(name.toLowerCase())) {
             name = ''
-            for (const sp of row.querySelectorAll('span, div[dir="auto"], strong')) {
+            for (const sp of row.querySelectorAll('span[dir="auto"], strong, span')) {
               const t = (sp.textContent || '').replace(BIDI, '').trim().split('\n')[0]
-              if (t && t.length >= 2 && t.length <= 50 && !/^[\d•·،,.]/.test(t)) { name = t; break }
+              if (!t || t.length < 2 || t.length > 50) continue
+              if (NAV.has(t.toLowerCase())) continue
+              if (/^[\d•·،,.]/.test(t)) continue                                  // times / counters
+              if (/^\d+\s*(?:د|س|ث|ساعة|دقيقة|ثانية|يوم|أسبوع|شهر|سنة|m|h|w|d|y|min|hr)\b/i.test(t)) continue
+              name = t; break
             }
           }
-          if (!name) return
-          const link = node.matches('a') ? node : row.querySelector('a[href*="selected_item_id"], a[href*="inbox"]')
+          if (!name || NAV.has(name.toLowerCase()) || seenInBatch.has(name)) return
+          seenInBatch.add(name)
+          const link = row.querySelector('a[href*="selected_item_id="], a[href*="/t/"], a[href*="inbox"]')
           const href = link ? (link.getAttribute('href') || '') : ''
           r.push({ name, profile: href.startsWith('http') ? href : (href ? 'https://business.facebook.com' + href : ''), platform: 'facebook' })
         })
