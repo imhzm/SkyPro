@@ -57,9 +57,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   facebookCommentOnPages: (data) => ipcRenderer.invoke('facebook-comment-on-pages', data),
   facebookCommentOnPosts: (data) => ipcRenderer.invoke('facebook-comment-on-posts', data),
   facebookPostWithImages: (data) => ipcRenderer.invoke('facebook-post-with-images', data),
-  facebookDemographicsAnalyze: (data) => ipcRenderer.invoke('facebook-demographics-analyze', data),
   facebookDetectOpenGroups: (data) => ipcRenderer.invoke('facebook-detect-open-groups', data),
-  facebookExtractActiveFriends: (data) => ipcRenderer.invoke('facebook-extract-active-friends', data),
   cancelExtraction: (data) => ipcRenderer.invoke('cancel-extraction', data),
   onExtractionProgress: (callback) => {
     const handler = (_, data) => callback(data)
