@@ -227,8 +227,14 @@ export function usePlatform(platformId: string) {
     })
     // Filter `#` column out of CSV — it's just a UI row counter, not data.
     const csvHeaders = headers.filter(h => h !== '#')
+    // Export filename = tool name + date + time, so repeated exports never
+    // overwrite each other (e.g. "facebook-friends_2026-06-14_153042.csv").
+    const _d = new Date()
+    const _p = (n: number) => String(n).padStart(2, '0')
+    const _stamp = `${_d.getFullYear()}-${_p(_d.getMonth() + 1)}-${_p(_d.getDate())}_${_p(_d.getHours())}${_p(_d.getMinutes())}${_p(_d.getSeconds())}`
+    const _safePrefix = (filenamePrefix || 'export').replace(/[^\w؀-ۿ.-]+/g, '-')
     const res = await window.electronAPI.exportToCSV({
-      filename: `${filenamePrefix}-${Date.now()}.csv`, data, headers: csvHeaders
+      filename: `${_safePrefix}_${_stamp}.csv`, data, headers: csvHeaders
     })
     if (res.success) showMsg(`تم التصدير إلى: ${res.path}`)
     else showMsg(res.error || 'فشل التصدير', true)
