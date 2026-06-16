@@ -104,6 +104,17 @@ const UI_LABEL_PATTERNS = [
   /^صفحة\s+شخصية/,
   /^مؤشر\s+حالة/,                   // "مؤشر حالة الاتصال" (online-status indicator)
   /^حالة\s+الاتصال/,
+  // Page-admin / Business-Suite left-nav labels (the "reviews" export grabbed
+  // these). Kept SPECIFIC so legitimate business pages named "مركز ..." (very
+  // common — clinics, centers) are NOT dropped: only the exact FB admin labels.
+  /^مركز\s+(?:الإعلانات|بيانات\s+العملاء|الأعمال|المساعدة|الإعلام|التحرير)/,
+  /^إنشاء\s+(?:إعلان|إعلانات|حملة)/,           // "إنشاء إعلانات" (Create ads)
+  /^Meta\s+(?:Verified|Business|Ads|Pay|Pixel|Spark|Audience|Suite)/i,
+  /^Business\s+Suite/i,
+  /^Ads?\s+(?:Manager|Center)/i,
+  /^Commerce\s+Manager/i,
+  /^Professional\s+Dashboard/i,
+  /^لوحة\s+(?:المعلومات|الأعمال|التحكم)/,       // Professional dashboard (ar)
 
   // "X mutual friends" badge text — has digits + "صديقًا/أصدقاء مشتركين"
   // Also catches singular form "صديق واحد مشترك" and dual "صديقان مشتركان"
@@ -245,6 +256,17 @@ const ADMIN_SUBPATHS = new Set([
   'ads', 'admin', 'manage',
 ])
 
+// SECOND segment under ANY first segment (vanity slug OR numeric id) that marks
+// a CONTENT surface, not a profile: e.g. /LillyKidstore/posts/pfbid… or
+// /skywaveads/reviews. These leaked because the old check only inspected the
+// first segment. A real profile link is /<slug> with no content sub-tab.
+const CONTENT_SUBPATHS = new Set([
+  'posts', 'post', 'photos', 'photo', 'videos', 'video', 'reel', 'reels',
+  'story', 'stories', 'media', 'permalink.php', 'about', 'community',
+  'reviews', 'review', 'services', 'shop', 'events', 'menu', 'offers',
+  'app', 'allactivity', 'timeline', 'map', 'info', 'likes',
+])
+
 // Check whether a URL path's FIRST segment is a non-profile system path.
 function isSystemPath(href) {
   if (!href) return false
@@ -264,6 +286,8 @@ function isSystemPath(href) {
     if (NON_PROFILE_PATHS.has(first)) return true
     // /<numericPageId>/<adminSubpath>  e.g. /104231809169657/ad_center/
     if (/^\d{6,}$/.test(first) && segs[1] && ADMIN_SUBPATHS.has(segs[1].toLowerCase())) return true
+    // /<slug>/<contentSubpath>  e.g. /LillyKidstore/posts/… or /skywaveads/reviews
+    if (segs[1] && CONTENT_SUBPATHS.has(segs[1].toLowerCase())) return true
     return false
   } catch { return true }
 }
