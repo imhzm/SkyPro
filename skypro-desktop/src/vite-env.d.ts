@@ -274,6 +274,7 @@ declare global {
       facebookExtractReviews: (data: ExtractionParams) => Promise<ExtractionResult>
       facebookPageSendMessages: (data: MessageParams) => Promise<IpcResult>
       facebookAddToGroupChat: (data: Record<string, unknown>) => Promise<IpcResult>
+      facebookCreateGroupChat: (data: { sessionId: string; usernames: string[]; groupName?: string; firstMessage?: string }) => Promise<IpcResult>
       facebookSendPageMessages: (data: MessageParams) => Promise<IpcResult>
       facebookSearchPages: (data: { sessionId: string; query: string; location?: string; limit?: number; jobId?: string; delayMs?: number }) => Promise<ExtractionResult>
       facebookLikePages: (data: { sessionId: string; pageUrls: string[]; delayMs?: number; jobId?: string }) => Promise<ExtractionResult>

@@ -8,6 +8,7 @@ import AccountCycleBanner from '../../components/common/AccountCycleBanner'
 import ToolGrid from '../../components/tools/ToolGrid'
 import ToolCard from '../../components/tools/ToolCard'
 import ToolPanel from '../../components/tools/ToolPanel'
+import { useConfirm } from '../../components/common/confirmContext'
 import {
   LogIn, Search, Download, Users, Send, Megaphone, Play, Eye, EyeOff,
   Trash2, AlertCircle, CheckCircle, Loader2, FileSpreadsheet, Heart,
@@ -20,7 +21,7 @@ type ActiveTool =
   | 'extract' | 'post-to-groups' | 'share-post' | 'auto-reply' | 'mention'
   | 'send-messages' | 'page-send-messages'
   | 'friend-requests' | 'delete-friends' | 'interaction-farm' | 'delete-posts'
-  | 'analyze-group' | 'add-to-group-chat' | 'send-page-messages'
+  | 'analyze-group' | 'add-to-group-chat' | 'create-group-chat' | 'send-page-messages'
   | 'users-to-ids' | 'links-to-ids'
   | 'search-pages' | 'like-pages' | 'extract-sharers' | 'invite-friends'
   | 'comment-on-pages' | 'comment-on-posts' | 'post-with-images' | 'demographics-analyze'
@@ -35,6 +36,7 @@ const ACCENT_GRADIENT = 'linear-gradient(135deg, #1877F2, #0866FF)'
 export default function FacebookModule() {
   const { loading, setLoading, message, error, showMsg, sessionId, setSessionId, accounts, results, loadAccounts, loadResults, handleExport, clearResults, checkSession, clearSession, cycleActive, cycleProgress, startCycle, stopCycle } = usePlatform('facebook')
   const { accounts: allAccounts } = useAccountsStore()
+  const confirm = useConfirm()
 
   const [activeTool, setActiveTool] = useState<ActiveTool>(null)
   const [showLoginPanel, setShowLoginPanel] = useState(false)
@@ -81,6 +83,9 @@ export default function FacebookModule() {
   const [deleteFriendsUrls, setDeleteFriendsUrls] = useState('')
   const [groupChatUrl, setGroupChatUrl] = useState('')
   const [addUsernames, setAddUsernames] = useState('')
+  const [createChatUsers, setCreateChatUsers] = useState('')
+  const [createChatName, setCreateChatName] = useState('')
+  const [createChatFirstMsg, setCreateChatFirstMsg] = useState('')
   const [sendPageUrls, setSendPageUrls] = useState('')
   const [sendPageMessage, setSendPageMessage] = useState('')
   const [interactionUrls, setInteractionUrls] = useState('')
@@ -195,7 +200,7 @@ export default function FacebookModule() {
     if (extractType === 'join-groups' && !joinGroupUrls.trim()) { showMsg('يرجى إدخال روابط المجموعات', true); return }
 
     if (extractLimit >= 1000) {
-      if (!confirm(`تحذير: استخراج ${extractLimit} نتيجة قد يستغرق وقتاً طويلاً وقد يعرض حسابك للحظر. هل تريد المتابعة؟`)) return
+      if (!(await confirm({ title: 'تحذير', message: `استخراج ${extractLimit} نتيجة قد يستغرق وقتاً طويلاً وقد يعرض حسابك للحظر. هل تريد المتابعة؟`, confirmLabel: 'متابعة', danger: true }))) return
     }
 
     setExtracting(true)
@@ -356,7 +361,7 @@ export default function FacebookModule() {
 
   const handleDeleteFriends = async () => {
     if (!ensureSession()) return
-    if (deleteFriendsMode === 'all' && !confirm('هل أنت متأكد من حذف الأصدقاء؟ هذا الإجراء لا يمكن التراجع عنه.')) return
+    if (deleteFriendsMode === 'all' && !(await confirm({ title: 'حذف الأصدقاء', message: 'هل أنت متأكد من حذف الأصدقاء؟ هذا الإجراء لا يمكن التراجع عنه.', confirmLabel: 'حذف', danger: true }))) return
     setLoading(true)
     setResultsOwner('delete-friends')
     try {
@@ -383,6 +388,24 @@ export default function FacebookModule() {
       const res = await window.electronAPI.facebookAddToGroupChat({ sessionId, groupChatUrl, usernames })
       if (res.success) { const added = ((res.data as any[]) || []).filter((r: any) => r.status === 'added').length; showMsg(`تم إضافة ${added} من ${usernames.length} عضو`); setToolResults((res.data as any[]) || []) }
       else showMsg(res.error || 'فشلت العملية', true)
+    } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
+    setLoading(false)
+  }
+
+  const handleCreateGroupChat = async () => {
+    if (!ensureSession()) return
+    if (!createChatUsers.trim()) { showMsg('أدخل أسماء المستخدمين', true); return }
+    setLoading(true)
+    setResultsOwner('create-group-chat')
+    const usernames = createChatUsers.split('\n').map(s => s.trim()).filter(Boolean)
+    try {
+      const res = await window.electronAPI.facebookCreateGroupChat({ sessionId, usernames, groupName: createChatName, firstMessage: createChatFirstMsg })
+      if (res.success) {
+        const d = (res.data as any) || {}
+        const rows = [...((d.added as string[]) || []).map((u) => ({ username: u, status: 'added' })), ...((d.failed as string[]) || []).map((u) => ({ username: u, status: 'failed' }))]
+        setToolResults(rows)
+        showMsg(`تم إنشاء المجموعة وإضافة ${((d.added as string[]) || []).length} من ${usernames.length}`)
+      } else showMsg(res.error || 'فشلت العملية', true)
     } catch (err: any) { showMsg(err.message || 'فشلت العملية', true) }
     setLoading(false)
   }
@@ -417,7 +440,7 @@ export default function FacebookModule() {
 
   const handleDeletePosts = async () => {
     if (!ensureSession()) return
-    if (!confirm('هل أنت متأكد من حذف المنشورات؟ هذا الإجراء لا يمكن التراجع عنه.')) return
+    if (!(await confirm({ title: 'حذف المنشورات', message: 'هل أنت متأكد من حذف المنشورات؟ هذا الإجراء لا يمكن التراجع عنه.', confirmLabel: 'حذف', danger: true }))) return
     setLoading(true)
     setResultsOwner('delete-posts')
     try {
@@ -766,6 +789,7 @@ export default function FacebookModule() {
     { id: 'delete-posts', name: 'حذف المنشورات', description: 'حذف منشوراتك القديمة', icon: Trash2, accent: '#dc2626', accentGradient: 'linear-gradient(135deg, #dc2626, #991b1b)' },
     { id: 'analyze-group', name: 'تحليل مجموعة', description: 'استخراج بيانات وإحصائيات مجموعة', icon: BarChart3, accent: '#6366f1', accentGradient: 'linear-gradient(135deg, #6366f1, #4338ca)' },
     { id: 'add-to-group-chat', name: 'إضافة لمجموعة شات', description: 'إضافة عملاء لمجموعة محادثة', icon: UserPlus, accent: '#ec4899', accentGradient: 'linear-gradient(135deg, #ec4899, #be185d)' },
+    { id: 'create-group-chat', name: 'إنشاء مجموعة شات', description: 'إنشاء محادثة جماعية جديدة بعملاء', icon: Users, accent: '#14b8a6', accentGradient: 'linear-gradient(135deg, #14b8a6, #0f766e)' },
     { id: 'send-page-messages', name: 'إرسال للصفحات العامة', description: 'إرسال رسائل لصفحات لست أدمناً فيها', icon: Send, accent: '#f59e0b', accentGradient: 'linear-gradient(135deg, #f59e0b, #d97706)' },
     { id: 'users-to-ids', name: 'تحويل Users إلى IDs', description: 'استخراج معرفات حسابات', icon: Copy, accent: '#14b8a6', accentGradient: 'linear-gradient(135deg, #14b8a6, #0f766e)' },
     { id: 'links-to-ids', name: 'تحويل روابط إلى IDs', description: 'استخراج معرفات من روابط', icon: FileText, accent: '#eab308', accentGradient: 'linear-gradient(135deg, #eab308, #a16207)' },
@@ -1224,6 +1248,17 @@ export default function FacebookModule() {
   )
   const addToGroupChatFooter = (<button onClick={handleAddToGroupChat} disabled={loading} className="btn-primary w-full" style={{ background: 'linear-gradient(135deg, #ec4899, #be185d)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><UserPlus size={18} /> إضافة للمجموعة</>}</button>)
 
+  const renderCreateGroupChatBody = () => (
+    <div className="space-y-4">
+      <p className="text-xs text-secondary-500 bg-secondary-50 p-3 rounded-lg">آلية العمل: يفتح رسالة جديدة، يبحث ويضيف كل اسم، يسمّي المجموعة (اختياري)، ويرسل أول رسالة لإنشاء المحادثة.</p>
+      <div><label className="label-field">أسماء المستخدمين (سطر لكل اسم — 2 على الأقل)</label><textarea className="textarea-field" rows={5} value={createChatUsers} onChange={e => setCreateChatUsers(e.target.value)} placeholder="username1&#10;user2&#10;user3" /></div>
+      <div><label className="label-field">اسم المجموعة (اختياري)</label><input type="text" className="input-field" value={createChatName} onChange={e => setCreateChatName(e.target.value)} placeholder="عملاء سكاي برو" /></div>
+      <div><label className="label-field">أول رسالة (اختياري)</label><input type="text" className="input-field" value={createChatFirstMsg} onChange={e => setCreateChatFirstMsg(e.target.value)} placeholder="مرحبًا 👋" /></div>
+      {renderResultsTable('create-group-chat', ['#', 'التفاصيل', 'الحالة'], 'facebook-create-group-chat', 'simple')}
+    </div>
+  )
+  const createGroupChatFooter = (<button onClick={handleCreateGroupChat} disabled={loading} className="btn-primary w-full" style={{ background: 'linear-gradient(135deg, #14b8a6, #0f766e)' }}>{loading ? <Loader2 size={18} className="animate-spin" /> : <><Users size={18} /> إنشاء المجموعة</>}</button>)
+
   const renderSendPageMessagesBody = () => (
     <div className="space-y-4">
       <p className="text-xs text-secondary-500 bg-secondary-50 p-3 rounded-lg">آلية العمل: ينتقل لكل صفحة، يضغط زر "رسالة"، يكتب الرسالة ويرسلها تلقائياً.</p>
@@ -1572,6 +1607,7 @@ export default function FacebookModule() {
     'delete-posts': { body: renderDeletePostsBody(), footer: deletePostsFooter },
     'analyze-group': { body: renderAnalyzeGroupBody(), footer: analyzeGroupFooter },
     'add-to-group-chat': { body: renderAddToGroupChatBody(), footer: addToGroupChatFooter },
+    'create-group-chat': { body: renderCreateGroupChatBody(), footer: createGroupChatFooter },
     'send-page-messages': { body: renderSendPageMessagesBody(), footer: sendPageMessagesFooter },
     'users-to-ids': { body: renderUsersToIdsBody(), footer: usersToIdsFooter },
     'links-to-ids': { body: renderLinksToIdsBody(), footer: linksToIdsFooter },

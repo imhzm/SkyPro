@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useAccountsStore } from '../stores/accountsStore'
+import { useConfirm } from '../components/common/confirmContext'
 
 // Unified limits for bulk operations
 const BULK_LIMITS = {
@@ -31,6 +32,7 @@ export interface LiveProgress {
 }
 
 export function usePlatform(platformId: string) {
+  const confirm = useConfirm()
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
@@ -246,9 +248,12 @@ export function usePlatform(platformId: string) {
       return
     }
     // Require explicit user confirmation for bulk delete
-    const confirmed = window.confirm(
-      `هل تريد حذف ${results.length} نتيجة من منصة ${platformId}؟ لا يمكن التراجع عن هذا الإجراء.`
-    )
+    const confirmed = await confirm({
+      title: 'مسح النتائج',
+      message: `هل تريد حذف ${results.length} نتيجة من منصة ${platformId}؟ لا يمكن التراجع عن هذا الإجراء.`,
+      confirmLabel: 'مسح',
+      danger: true,
+    })
     if (!confirmed) return
     try {
       const res = await window.electronAPI.clearLeadsByPlatform({ platform: platformId })
@@ -261,7 +266,7 @@ export function usePlatform(platformId: string) {
     } catch (err: any) {
       showMsg('خطأ في مسح النتائج: ' + err.message, true)
     }
-  }, [platformId, results.length, showMsg])
+  }, [platformId, results.length, showMsg, confirm])
 
   const deleteResult = useCallback(async (id: number) => {
     await window.electronAPI.dbDelete({ table: 'leads', id })
