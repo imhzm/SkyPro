@@ -667,44 +667,51 @@ ipcm('facebook-extract-page-followers', async (e, { sessionId, pageUrl, limit = 
       await page.goto(pageUrl.replace(/\/$/, '') + '/followers', { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
       await page.waitForTimeout(randomDelay(2000, 4000))
     }
-    const maxScrolls = Math.max(Math.ceil(limit / 10), 5)
+    const maxScrolls = Math.max(Math.ceil(limit / 8), 8)
+    const seenKeys = new Set()
+    let stall = 0
     for (let i = 0; i < maxScrolls; i++) {
       if (globals.cancelFlags.get(jobId)) break
+      const before = seenKeys.size
       await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(delayMs + Math.random() * 1000)
-      const batch = await page.evaluate((existingNames) => {
+      const batch = await page.evaluate(() => {
         const r = []
-        const seen = new Set(existingNames)
-        document.querySelectorAll('a[href*="/"]').forEach((a) => {
+        const main = document.querySelector('[role="main"]') || document.body
+        main.querySelectorAll('a[href]').forEach((a) => {
+          if (a.closest('[role="complementary"]')) return   // skip suggested/related rail
           const href = a.getAttribute('href') || ''
-          const name = a.innerText.trim()
-          if (!name || name.length < 2 || name.length > 60 || seen.has(name)) return
-          if (href.includes('/help/') || href.includes('/settings') || href.includes('/login') || href.includes('/legal/')) return
-          if (!href.includes('/profile.php') && !href.startsWith('/') && !href.includes('facebook.com/')) return
-          seen.add(name)
-          let userId = ''
-          const idMatch = href.match(/id=(\d+)/)
-          const profileMatch = href.match(/facebook\.com\/([a-zA-Z0-9.]+)/)
-          if (idMatch) userId = idMatch[1]
-          else if (profileMatch && !['posts','groups','watch','reel','stories','photo','photos','videos','events','marketplace','gaming','login','recover','checkpoint'].includes(profileMatch[1])) userId = profileMatch[1]
-          r.push({ name, profile: href.startsWith('/') ? 'https://www.facebook.com' + href : href, userId, platform: 'facebook' })
+          const isPhp = href.includes('/profile.php?id=')
+          if (!isPhp && !/facebook\.com\/[a-zA-Z0-9.]/.test(href) && !href.startsWith('/')) return
+          const name = (a.innerText || '').trim().split('\n')[0]
+          if (!name || name.length < 2 || name.length > 60) return
+          r.push({ name, profile: href.startsWith('/') ? 'https://www.facebook.com' + href : href, platform: 'facebook' })
         })
         return r
-      }, allFollowers.map(f => f.name))
-      for (const u of batch) allFollowers.push(u)
-      // Clean the accumulated list (drops page-admin nav, section headers,
-      // mutual-friend badges, bidi-wrapped labels) and gate the limit on the
-      // CLEAN count so junk never eats into the requested total.
-      const cleaned = sanitizeRecords(allFollowers, { platform: 'facebook', kind: 'page-followers' })
-      if (cleaned.length >= limit) {
-        const trimmed = cleaned.slice(0, limit)
-        sendProgress(sender, jobId, { type: 'progress', count: trimmed.length, total: limit, data: trimmed })
-        saveLeads('facebook', 'page-followers', trimmed)
-        return { success: true, data: trimmed, count: trimmed.length, jobId, cancelled: globals.cancelFlags.get(jobId) }
+      })
+      // Dedup by CANONICAL profile id (not display name — names collide; FB also
+      // appends per-render tracking tokens to hrefs). Store the cleaned url.
+      for (const item of batch) {
+        const url = item.profile || ''
+        const idm = url.match(/profile\.php\?id=(\d+)/)
+        const slug = url.replace(/^https?:\/\/[^/]+/, '').replace(/^\/+/, '').split(/[/?#]/)[0].toLowerCase()
+        if (!idm && !slug) continue
+        const key = idm ? 'id:' + idm[1] : 'slug:' + slug
+        if (seenKeys.has(key)) continue
+        seenKeys.add(key)
+        allFollowers.push({ ...item, profile: idm ? `https://www.facebook.com/profile.php?id=${idm[1]}` : url.split('?')[0].split('#')[0] })
       }
-      sendProgress(sender, jobId, { type: 'progress', count: cleaned.length, total: limit, data: cleaned })
+      // Gate the limit on the CLEAN count so junk never eats into the total.
+      const cleaned = sanitizeRecords(allFollowers, { platform: 'facebook', kind: 'page-followers' })
+      sendProgress(sender, jobId, { type: 'progress', count: Math.min(cleaned.length, limit), total: limit, data: cleaned.slice(0, limit) })
+      if (cleaned.length >= limit) break
+      // Stop when no new followers appear (end of list — or the list is hidden).
+      if (seenKeys.size === before) { if (++stall >= 6) break } else stall = 0
     }
     const finalFollowers = sanitizeRecords(allFollowers, { platform: 'facebook', kind: 'page-followers' }).slice(0, limit)
+    if (finalFollowers.length === 0) {
+      return { success: false, error: 'لم يُعثر على متابعين — قد تكون قائمة المتابعين مخفية على هذه الصفحة أو تتطلب صلاحية', jobId }
+    }
     saveLeads('facebook', 'page-followers', finalFollowers)
     return { success: true, data: finalFollowers, count: finalFollowers.length, jobId, cancelled: globals.cancelFlags.get(jobId) }
   } catch (err) {

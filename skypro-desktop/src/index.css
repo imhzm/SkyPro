@@ -112,10 +112,10 @@
   --color-secondary-100: #161c2a;   /* dark surface / chip bg */
   --color-secondary-200: #232b3b;   /* subtle border */
   --color-secondary-300: #334155;   /* divider / strong border */
-  --color-secondary-400: #64748b;   /* placeholder text */
-  --color-secondary-500: #94a3b8;   /* muted text */
-  --color-secondary-600: #cbd5e1;   /* secondary text */
-  --color-secondary-700: #e2e8f0;   /* strong text */
+  --color-secondary-400: #8b98ab;   /* placeholder text (brightened for readability) */
+  --color-secondary-500: #aebccd;   /* muted text (brightened for readability) */
+  --color-secondary-600: #d4dce7;   /* secondary text (brightened for readability) */
+  --color-secondary-700: #e8edf3;   /* strong text */
   --color-secondary-800: #eef2f7;   /* heading text */
   --color-secondary-900: #f8fafc;   /* primary text (was darkest) */
 
