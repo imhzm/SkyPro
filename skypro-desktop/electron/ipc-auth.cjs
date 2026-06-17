@@ -244,13 +244,16 @@ function registerAuthIPC({ ipcm, bm, db }) {
     return { success: false, message: 'فشل الاتصال بالخادم' }
   })
 
-  ipcm('login', async (e, { email, password, serial } = {}) => {
+  ipcm('login', async (e, { email, password, serial, code } = {}) => {
     if (!checkIpcRateLimit('login')) {
       return { success: false, message: 'طلبات كثيرة. حاول لاحقاً.' }
     }
     email = normalizeText(email, 254).toLowerCase()
     password = typeof password === 'string' ? password.slice(0, 512) : ''
     serial = normalizeText(serial, 80).toUpperCase()
+    // Optional 2FA code (TOTP or backup code) — forwarded to the server, which
+    // enforces it when the account has two-factor enabled.
+    code = typeof code === 'string' ? code.trim().slice(0, 16) : ''
     const caps = getDeviceCapabilities()
     const deviceFingerprint = caps.fingerprint
     // Strip fingerprint from deviceInfo — server schema uses strict() and
@@ -260,7 +263,7 @@ function registerAuthIPC({ ipcm, bm, db }) {
       const { data: result } = await fetchJson(`${WEB_API_URL}/desktop/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, serial, deviceFingerprint, deviceInfo })
+        body: JSON.stringify({ email, password, serial, deviceFingerprint, deviceInfo, code })
       })
       // Normalize: server uses 'error' field but client expects 'message'
       if (!result.success && result.error && !result.message) {

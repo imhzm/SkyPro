@@ -107,6 +107,7 @@ if (typeof window !== 'undefined' && !window.electronAPI) {
     downloadUpdate: noop,
     installUpdate: noop,
     onUpdateStatus: () => noopVoid,
+    onBrowserInstallStatus: () => noopVoid,
     getPlatform: () => 'browser',
 
     minimizeWindow: noopVoid,

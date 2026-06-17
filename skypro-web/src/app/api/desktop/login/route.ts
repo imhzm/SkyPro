@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db'
 import { errorResponse, getErrorMessage, successResponse } from '@/lib/api'
 import { generateSessionId, signSessionToken, getActivationExpiry, isKeyExpired, verifyPassword } from '@/lib/utils'
 import { checkRateLimit, getClientIp, rateLimitedResponse, rejectLargeJson } from '@/lib/request-security'
+import { checkTwoFactorCode } from '@/lib/two-factor'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,6 +16,7 @@ const desktopLoginSchema = z.object({
   email: z.string().trim().toLowerCase().email('بريد إلكتروني غير صالح'),
   password: z.string().min(1, 'كلمة المرور مطلوبة').max(128, 'كلمة المرور طويلة جداً'),
   serial: z.string().trim().min(1, 'السيريال مطلوب').max(64, 'السيريال غير صالح'),
+  code: z.string().trim().max(16).optional(),
   deviceFingerprint: z.string().trim().min(8, 'بصمة الجهاز مطلوبة').max(256, 'بصمة الجهاز طويلة جداً'),
   deviceInfo: z.object({
     hostname: z.string().max(255).optional(),
@@ -43,13 +45,40 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(errorResponse(errors), { status: 400 })
     }
 
-    const { email, password, serial, deviceFingerprint, deviceInfo } = parsed.data
+    const { email, password, serial, code, deviceFingerprint, deviceInfo } = parsed.data
     const emailLimit = checkRateLimit(`desktop-login:email:${email}`, 12, 15 * 60 * 1000)
     if (!emailLimit.allowed) return rateLimitedResponse(emailLimit.retryAfter)
 
     const user = await prisma.user.findUnique({ where: { email } })
     if (!user || !user.passwordHash || !verifyPassword(password, user.passwordHash)) {
       return NextResponse.json(errorResponse('بيانات تسجيل الدخول غير صحيحة'), { status: 401 })
+    }
+
+    // Two-factor enforcement (parity with the web login). Reached only after the
+    // password is confirmed. When 2FA is enabled the desktop client must supply a
+    // TOTP or single-use backup code; otherwise we return requires2FA so the app
+    // can prompt for it.
+    if (user.twoFactorEnabled) {
+      const otp = (code || '').trim()
+      if (!otp) {
+        return NextResponse.json(
+          { ...errorResponse('أدخل رمز التحقق بخطوتين من تطبيق المصادقة'), requires2FA: true },
+          { status: 401 }
+        )
+      }
+      const check = checkTwoFactorCode(otp, user.twoFactorSecret, user.twoFactorBackupCodes)
+      if (!check.ok) {
+        return NextResponse.json(
+          { ...errorResponse('رمز التحقق بخطوتين غير صحيح'), requires2FA: true },
+          { status: 401 }
+        )
+      }
+      if (check.usedBackupCode && check.remainingBackupCodes) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { twoFactorBackupCodes: JSON.stringify(check.remainingBackupCodes) },
+        })
+      }
     }
 
     if (user.status === 'suspended') {

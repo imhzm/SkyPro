@@ -17,6 +17,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   account_locked: 'تم قفل الحساب مؤقتاً بعد عدة محاولات فاشلة. حاول بعد 30 دقيقة أو استخدم استعادة كلمة المرور.',
   google_only_account: 'هذا الحساب مرتبط بـ Google — استخدم زر Google للدخول',
   rate_limited: 'محاولات كثيرة جداً — انتظر قليلاً ثم حاول مرة أخرى',
+  two_factor_required: 'أدخل رمز التحقق بخطوتين من تطبيق المصادقة',
+  two_factor_invalid: 'رمز التحقق بخطوتين غير صحيح — حاول مرة أخرى أو استخدم رمز احتياطي',
   CredentialsSignin: 'بيانات الدخول غير صحيحة',
 }
 
@@ -30,6 +32,8 @@ function LoginContent() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [code, setCode] = useState('')
+  const [twoFactorRequired, setTwoFactorRequired] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [errorCode, setErrorCode] = useState<string | null>(null)
@@ -62,13 +66,18 @@ function LoginContent() {
       const res = await signIn('credentials', {
         email: email.trim().toLowerCase(),
         password,
+        code: code.trim(),
         redirect: false,
       })
 
       if (!res?.ok || res.error) {
-        const code = (res as { code?: string })?.code ?? res?.error
-        setErrorCode(code ?? null)
-        setError(mapAuthError(code))
+        const errCode = (res as { code?: string })?.code ?? res?.error
+        setErrorCode(errCode ?? null)
+        // Password is correct but a second factor is needed → reveal the code field.
+        if (errCode === 'two_factor_required' || errCode === 'two_factor_invalid') {
+          setTwoFactorRequired(true)
+        }
+        setError(mapAuthError(errCode))
         setLoading(false)
         return
       }
@@ -207,6 +216,29 @@ function LoginContent() {
                 </button>
               </div>
             </div>
+
+            {twoFactorRequired && (
+              <div>
+                <label className="admin-label">رمز التحقق بخطوتين</label>
+                <div className="relative">
+                  <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    className="admin-input pr-10 tracking-[0.3em]"
+                    placeholder="123456"
+                    autoFocus
+                    required
+                  />
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  أدخل الرمز من تطبيق المصادقة، أو استخدم أحد رموز النسخ الاحتياطي.
+                </p>
+              </div>
+            )}
 
             <div className="flex items-center justify-between text-sm">
               <Link href="/auth/forgot-password" className="text-sky-400 hover:text-sky-300 transition-colors">
