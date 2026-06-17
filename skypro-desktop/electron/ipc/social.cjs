@@ -1472,7 +1472,18 @@ ipcm('facebook-extract-my-groups', async (e, { sessionId, limit = 500, jobId, de
   try {
     await page.goto('https://www.facebook.com/groups/joins/', { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
     await page.waitForTimeout(randomDelay(3000, 5000))
-    const maxScrolls = Math.max(Math.ceil(limit / 8), 25)
+    // Real joined-group count from the header "...انضممت إليها (249)" so we never
+    // bleed into the SUGGESTED/discover groups column (bug 16: 249 joined yet
+    // 2720 extracted). Arabic-Indic digits normalised.
+    const joinedCount = await page.evaluate(() => {
+      const txt = (document.querySelector('[role="main"]')?.innerText || '').replace(/[‎‏‪-‮⁦-⁩]/g, '')
+      const norm = (s) => s.replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[,،]/g, '')
+      const m = txt.match(/انضممت\s*إليها\s*\(([\d٠-٩,،]+)\)/) || txt.match(/groups you'?ve joined\s*\(([\d,]+)\)/i)
+      if (m) { const n = parseInt(norm(m[1]), 10); if (n > 0) return n }
+      return 0
+    }).catch(() => 0)
+    const effectiveLimit = joinedCount > 0 ? Math.min(limit, joinedCount + 5) : limit
+    const maxScrolls = Math.max(Math.ceil((joinedCount || limit) / 6), 25)
     let stall = 0
     for (let i = 0; i < maxScrolls; i++) {
       if (globals.cancelFlags.get(jobId)) break
@@ -1482,6 +1493,8 @@ ipcm('facebook-extract-my-groups', async (e, { sessionId, limit = 500, jobId, de
         const main = document.querySelector('[role="main"]') || document.body
         const RESERVED = new Set(['joins', 'feed', 'create', 'discover', 'explore', 'search', 'your_groups', 'category', 'browse'])
         main.querySelectorAll('a[href*="/groups/"]').forEach((a) => {
+          // Skip the suggested/discover-groups rail — only the JOINED list counts.
+          if (a.closest('[role="complementary"], [aria-label*="مقترح"], [aria-label*="Suggested"], [aria-label*="اكتشف"], [aria-label*="Discover"]')) return
           const href = a.getAttribute('href') || ''
           const m = href.match(/\/groups\/([0-9]+|[a-zA-Z0-9._-]+)\/?(?:\?|#|$)/)
           if (!m) return
@@ -1495,11 +1508,11 @@ ipcm('facebook-extract-my-groups', async (e, { sessionId, limit = 500, jobId, de
         return r
       })
       for (const g of batch) {
-        if (groups.length >= limit) break
+        if (groups.length >= effectiveLimit) break
         if (!seen.has(g.groupId)) { seen.add(g.groupId); groups.push(g) }
       }
-      sendProgress(sender, jobId, { type: 'progress', count: groups.length, total: limit, data: groups })
-      if (groups.length >= limit) break
+      sendProgress(sender, jobId, { type: 'progress', count: groups.length, total: effectiveLimit, data: groups })
+      if (groups.length >= effectiveLimit) break
       if (seen.size === before) { if (++stall >= 6) break } else stall = 0
       await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(delayMs + Math.random() * 1000)
