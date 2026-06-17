@@ -1446,18 +1446,31 @@ ipcm('facebook-search-groups', async (e, { sessionId, query, limit = 20 }) => {
     const groups = await page.evaluate((lim) => {
       const r = []
       const seen = new Set()
-      document.querySelectorAll('a[href*="/groups/"]').forEach((a) => {
+      // Scope to the search RESULTS area only — the old whole-document sweep also
+      // grabbed the notifications jewel / chat rail, returning junk like
+      // "غير مقروء" (unread) and "وافق أحدهم على طلبك" (someone approved) (bug 12).
+      const main = document.querySelector('[role="main"]') || document.body
+      const BAD = /^(غير مقروء|مقروء|وافق|تمت|قيد|عضو|أعضاء|منذ|آخر نشاط|نشط|مشترك|تفاعل|منشور|تعليق|إعجاب|انضم|عام|خاص|unread|read|approved|pending|members?|active|joined|public|private|posts?|comments?)\b/i
+      main.querySelectorAll('a[href*="/groups/"]').forEach((a) => {
         if (r.length >= lim) return
+        if (a.closest('[role="complementary"], [role="banner"], [role="navigation"]')) return
         const href = a.getAttribute('href') || ''
-        const name = a.innerText.trim()
-        if (!name || name.length < 2 || name.length > 100 || seen.has(name)) return
+        // Real group results link to /groups/<numericId>/ — not create/discover/feed.
+        const gm = href.match(/\/groups\/(\d{5,})(?:\/|\?|#|$)/)
+        if (!gm) return
+        const groupId = gm[1]
+        if (seen.has(groupId)) return
+        // Name from a heading-ish span (anchor text alone includes member/activity badges).
+        let name = ''
+        for (const sp of a.querySelectorAll('span[dir="auto"], strong, span')) {
+          const t = (sp.innerText || sp.textContent || '').trim().split('\n')[0]
+          if (t && t.length >= 2 && t.length <= 90 && !BAD.test(t)) { name = t; break }
+        }
+        if (!name) { const t = (a.innerText || '').trim().split('\n')[0]; if (t && !BAD.test(t)) name = t }
+        if (!name || name.length < 2 || name.length > 90 || BAD.test(name)) return
         if (/^(المجموعات|مجموعات|groups|نتائج البحث|search results|الكل|all)$/i.test(name)) return
-        if (href.includes('/groups/create') || href.includes('/groups/discover') || href.includes('/groups/explore') || href.includes('/groups/feed')) return
-        seen.add(name)
-        const groupMatch = href.match(/\/groups\/([^/?]+)/)
-        const groupId = groupMatch ? groupMatch[1] : ''
-        const cleanUrl = href.split('?')[0]
-        r.push({ name, url: cleanUrl.startsWith('/') ? 'https://www.facebook.com' + cleanUrl : cleanUrl, groupId, platform: 'facebook' })
+        seen.add(groupId)
+        r.push({ name, url: 'https://www.facebook.com/groups/' + groupId, groupId, platform: 'facebook' })
       })
       return r
     }, limit)
@@ -1711,15 +1724,20 @@ ipcm('facebook-extract-profile-messengers', async (e, { sessionId, limit = 50, j
       const batch = await page.evaluate((existingNames) => {
         const r = []
         const seen = new Set(existingNames)
-        document.querySelectorAll('a[href*="/messages/t/"], [role="row"], [role="listitem"]').forEach((el) => {
-          const name = el.innerText.trim().split('\n')[0]
-          if (!name || name.length < 2 || name.length > 60 || seen.has(name)) return
+        // ONLY real conversation anchors. The old [role=row]/[role=listitem]
+        // fallback also grabbed date separators ("اليوم"/today) and status rows
+        // as if they were contacts (bug 8).
+        const SYS = /^(facebook|marketplace|meta\b|meta ai|messenger|workplace|الماركت|ماركت بليس|فيسبوك)/i
+        const DATEJUNK = /^(اليوم|أمس|الآن|today|yesterday|now|جديدة|جديد|new)$|^\d+\s*(?:ث|د|س|ي|دقيقة|دقائق|ساعة|ساعات|يوم|أيام|أسبوع|h|m|d|w|min|hr)\b/i
+        document.querySelectorAll('a[href*="/messages/t/"]').forEach((a) => {
+          let name = (a.getAttribute('aria-label') || '').trim().split('\n')[0]
+          if (!name) name = (a.innerText || '').trim().split('\n')[0]
+          if (!name || name.length < 2 || name.length > 60) return
+          if (SYS.test(name) || DATEJUNK.test(name) || seen.has(name)) return
           seen.add(name)
-          const href = el.getAttribute('href') || el.querySelector('a')?.getAttribute('href') || ''
-          let userId = ''
+          const href = a.getAttribute('href') || ''
           const msgMatch = href.match(/\/messages\/t\/([^/?]+)/)
-          if (msgMatch) userId = msgMatch[1]
-          r.push({ name, profile: href.startsWith('/') ? 'https://www.facebook.com' + href : href, userId, platform: 'facebook' })
+          r.push({ name, profile: href.startsWith('/') ? 'https://www.facebook.com' + href : href, userId: msgMatch ? msgMatch[1] : '', platform: 'facebook' })
         })
         return r
       }, allMessengers.map(m => m.name))
