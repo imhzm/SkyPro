@@ -88,9 +88,11 @@ class BrowserManager {
           this.browsers.delete(id)
         }
       }
-      // First-run / new-machine safety: the Chromium build is downloaded lazily
-      // (it is NOT bundled in the installer to keep it small). If it's missing,
-      // fetch it now before launching so the app works out-of-the-box anywhere.
+      // The packaged installer SHIPS Chromium inside resources/pw-browsers (see
+      // scripts/bundle-chromium.mjs) and main.cjs points PLAYWRIGHT_BROWSERS_PATH
+      // at it — so browserInstalled() is true here and we launch immediately,
+      // fully offline. This download path now only fires as a safety net for
+      // dev/unpacked runs (or a corrupt/missing bundle).
       if (!browserInstalled()) {
         const ready = await ensureBrowser()
         if (!ready.ok) {

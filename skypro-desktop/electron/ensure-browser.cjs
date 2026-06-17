@@ -10,6 +10,7 @@
 
 const { chromium } = require('playwright')
 const fs = require('fs')
+const path = require('path')
 const { spawn } = require('child_process')
 const { BrowserWindow } = require('electron')
 
@@ -34,10 +35,16 @@ function browserInstalled() {
   }
 }
 
-/** Resolve the Playwright install CLI shipped inside the app bundle. */
+/** Resolve the Playwright install CLI shipped inside the app bundle.
+ *  require.resolve('playwright/cli.js') throws ERR_PACKAGE_PATH_NOT_EXPORTED on
+ *  modern Playwright (its "exports" map blocks arbitrary subpaths), so resolve
+ *  the package.json (always exported) and join cli.js next to it. */
 function resolveCliPath() {
-  for (const mod of ['playwright-core/cli.js', 'playwright/cli.js']) {
-    try { return require.resolve(mod) } catch { /* try next */ }
+  for (const pkg of ['playwright', 'playwright-core']) {
+    try {
+      const cliPath = path.join(path.dirname(require.resolve(`${pkg}/package.json`)), 'cli.js')
+      if (fs.existsSync(cliPath)) return cliPath
+    } catch { /* try next */ }
   }
   return null
 }
