@@ -2,6 +2,16 @@ const { app, BrowserWindow, shell, ipcMain, safeStorage } = require('electron')
 const path = require('path')
 const fs = require('fs')
 const { fileURLToPath } = require('url')
+
+// ── Bundled Chromium ────────────────────────────────────────────────────────
+// The installer ships Playwright's Chromium inside resources/pw-browsers (see
+// scripts/bundle-chromium.mjs + build.extraResources), so a freshly downloaded
+// app runs IMMEDIATELY with no first-run download. Point Playwright at it BEFORE
+// requiring playwright. Unpacked/dev runs fall back to Playwright's own cache.
+if (app.isPackaged) {
+  process.env.PLAYWRIGHT_BROWSERS_PATH = path.join(process.resourcesPath, 'pw-browsers')
+}
+
 const { chromium } = require('playwright')
 const Database = require('better-sqlite3')
 const { autoUpdater } = require('electron-updater')

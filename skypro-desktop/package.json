@@ -1,7 +1,7 @@
 {
   "name": "sender-pro-desktop",
   "private": true,
-  "version": "1.31.3",
+  "version": "1.31.4",
   "description": "SkyPro - تطبيق تسويق إلكتروني احترافي لأتمتة المتصفح",
   "author": "SkyPro <skywaveads@gmail.com>",
   "type": "module",
@@ -14,7 +14,8 @@
     "prebuild:renderer": "npm run guard:runtime-data",
     "build": "npm run build:renderer",
     "build:renderer": "tsc -b && vite build",
-    "build:desktop": "npm run build:renderer && electron-builder",
+    "bundle:chromium": "node scripts/bundle-chromium.mjs",
+    "build:desktop": "npm run build:renderer && npm run bundle:chromium && electron-builder",
     "test:security": "node --test scripts/export-sanitizers.test.mjs",
     "test:bindings": "node --test scripts/verify-ipc-bindings.test.mjs",
     "test:sanitizer": "node --test scripts/test-extraction-sanitizer.test.mjs",
@@ -74,6 +75,15 @@
       "electron/**/*",
       "public/**/*",
       "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": ".pw-browsers",
+        "to": "pw-browsers",
+        "filter": [
+          "**/*"
+        ]
+      }
     ],
     "asarUnpack": [
       "node_modules/better-sqlite3/**",
