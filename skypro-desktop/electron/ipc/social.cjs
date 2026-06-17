@@ -725,25 +725,47 @@ ipcm('facebook-extract-phones', async (e, { sessionId, postUrl, limit = 50, jobI
   try {
     await page.goto(postUrl, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
     await page.waitForTimeout(randomDelay(2000, 4000))
-    const maxScrolls = Math.max(Math.ceil(limit / 5), 8)
+    const maxScrolls = Math.max(Math.ceil(limit / 4), 12)
+    let prevArticles = 0
+    let stall = 0
     for (let i = 0; i < maxScrolls; i++) {
       if (globals.cancelFlags.get(jobId)) break
       if (allPhones.length >= limit) break
+      // Comments (and replies) load via "view more comments / view replies"
+      // CLICKS, not just scrolling — without expanding them only the first few
+      // comments were ever read (bug 10: "only first results"). Best-effort and
+      // wrapped so a missing button never breaks extraction.
+      await page.evaluate(() => {
+        const RE = /(عرض|اعرض|إظهار|المزيد|previous|more|view|show)\s*.*(تعليق|التعليقات|ردود|رد|comment|repl)/i
+        for (const b of document.querySelectorAll('div[role="button"], span[role="button"]')) {
+          const t = (b.innerText || '').trim()
+          if (t && t.length < 60 && RE.test(t)) { try { b.click() } catch { /* ignore */ } }
+        }
+      }).catch(() => {})
+      await page.waitForTimeout(randomDelay(700, 1400))
       await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(delayMs + Math.random() * 1000)
       const batch = await page.evaluate((existingPhones) => {
         const r = []
         const seen = new Set(existingPhones)
-        const phoneRegex = /(\+?\d[\d\s\-]{7,}\d)/g
+        // Candidate runs of phone characters; normalise to digits and validate
+        // LENGTH so post-IDs / dates / huge numeric strings are not mistaken for
+        // phone numbers (they were, before).
+        const phoneRegex = /\+?\d[\d\s().\-]{7,15}\d/g
         document.querySelectorAll('[role="article"]').forEach(article => {
-          const text = article.innerText
+          const text = article.innerText || ''
           const nameEl = article.querySelector('a[role="link"]')
-          const name = nameEl ? nameEl.innerText.trim() : ''
+          const name = nameEl ? (nameEl.innerText || '').trim() : ''
           const profile = nameEl ? nameEl.href : ''
           const matches = text.match(phoneRegex)
-          if (matches) matches.forEach(phone => {
-            const p = phone.trim()
-            if (!seen.has(p)) { seen.add(p); r.push({ name, profile, phone: p, platform: 'facebook' }) }
+          if (matches) matches.forEach(raw => {
+            const norm = raw.replace(/[^\d+]/g, '')
+            const digits = norm.replace(/^\+/, '')
+            if (digits.length < 9 || digits.length > 14) return   // ID/date, not a phone (FB ids are 15-16 digits)
+            if (/^(\d)\1+$/.test(digits)) return                  // 000000000 / 1111111111
+            if (seen.has(norm)) return
+            seen.add(norm)
+            r.push({ name, profile, phone: norm, platform: 'facebook' })
           })
         })
         return r
@@ -754,6 +776,13 @@ ipcm('facebook-extract-phones', async (e, { sessionId, postUrl, limit = 50, jobI
       }
       sendProgress(sender, jobId, { type: 'progress', count: allPhones.length, total: limit, data: batch })
       if (allPhones.length >= limit) break
+      // Stall on COMMENT exhaustion (article count stops growing), not phone
+      // scarcity — so it keeps reading while comments still load but stops once
+      // they run out instead of spinning the full maxScrolls (the "hang").
+      const articles = await page.evaluate(() => document.querySelectorAll('[role="article"]').length).catch(() => prevArticles)
+      stall = (articles <= prevArticles) ? stall + 1 : 0
+      prevArticles = articles
+      if (stall >= 4) break
     }
     saveLeads('facebook', 'phone-numbers', allPhones)
     return { success: true, data: allPhones, count: allPhones.length, jobId, cancelled: globals.cancelFlags.get(jobId) }
