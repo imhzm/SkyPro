@@ -76,7 +76,9 @@
       "package.json"
     ],
     "asarUnpack": [
-      "node_modules/better-sqlite3/**"
+      "node_modules/better-sqlite3/**",
+      "node_modules/playwright/**",
+      "node_modules/playwright-core/**"
     ],
     "icon": "public/icon.ico",
     "win": {

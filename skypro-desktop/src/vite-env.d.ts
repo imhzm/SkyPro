@@ -240,7 +240,7 @@ declare global {
       checkKeyStatus: (data: { key: string }) => Promise<IpcResult<ActivationData>>
       resetDevice: (data: { key: string; deviceId?: string; token?: string | null }) => Promise<IpcResult>
       getDeviceInfo: () => Promise<DeviceInfo>
-      login: (data: { email: string; password?: string; serial: string; deviceFingerprint?: string; deviceInfo?: Record<string, unknown> }) => Promise<IpcResult>
+      login: (data: { email: string; password?: string; serial: string; code?: string; deviceFingerprint?: string; deviceInfo?: Record<string, unknown> }) => Promise<IpcResult>
       getRememberedLogin: () => Promise<IpcResult<RememberedLogin>>
       saveRememberedLogin: (data: Partial<RememberedLogin>) => Promise<IpcResult>
       clearRememberedLogin: () => Promise<IpcResult>
@@ -536,6 +536,11 @@ declare global {
         bytesPerSecond?: number
         error?: string
         releaseDate?: string
+      }) => void) => () => void
+      onBrowserInstallStatus: (callback: (data: {
+        phase: 'start' | 'downloading' | 'done' | 'error'
+        percent?: number
+        message?: string
       }) => void) => () => void
       getPlatform: () => string
 

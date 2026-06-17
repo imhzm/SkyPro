@@ -5,6 +5,7 @@ import Credentials from 'next-auth/providers/credentials'
 import { prisma } from '@/lib/db'
 import { generateApiKey, getTrialEndDate, verifyPassword } from '@/lib/utils'
 import { checkRateLimit, getClientIp } from '@/lib/request-security'
+import { checkTwoFactorCode } from '@/lib/two-factor'
 import { sendEmail, generateWelcomeEmail, generateWelcomeEmailText } from '@/lib/email'
 
 // Lightweight in-memory cache for JWT user status checks (avoids DB round trip on every request)
@@ -19,6 +20,8 @@ class AccountDeleted extends CredentialsSignin { code = 'account_deleted' }
 class TooManyAttempts extends CredentialsSignin { code = 'rate_limited' }
 class GoogleOnlyAccount extends CredentialsSignin { code = 'google_only_account' }
 class AccountLocked extends CredentialsSignin { code = 'account_locked' }
+class TwoFactorRequired extends CredentialsSignin { code = 'two_factor_required' }
+class TwoFactorInvalid extends CredentialsSignin { code = 'two_factor_invalid' }
 
 // Lockout policy
 const MAX_FAILED_LOGINS = 5
@@ -93,7 +96,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       name: 'credentials',
       credentials: {
         email: { label: 'البريد الإلكتروني', type: 'email' },
-        password: { label: 'كلمة المرور', type: 'password' }
+        password: { label: 'كلمة المرور', type: 'password' },
+        code: { label: 'رمز التحقق بخطوتين', type: 'text' }
       },
       async authorize(credentials, request) {
         if (!credentials?.email || !credentials?.password) {
@@ -157,6 +161,31 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // an email is registered to attackers).
         if (!user.emailVerifiedAt) {
           throw new EmailNotVerified()
+        }
+
+        // Two-factor enforcement — only reached after the password is correct.
+        // Previously twoFactorEnabled was set up but never checked here, so 2FA
+        // gave a false sense of security. Now a valid TOTP or single-use backup
+        // code is mandatory when the user has enabled 2FA.
+        if (user.twoFactorEnabled) {
+          const code = typeof credentials.code === 'string' ? credentials.code.trim() : ''
+          if (!code) {
+            // Password was correct but the second factor is missing — signal the
+            // login UI to prompt for the code (this is NOT a failed attempt).
+            throw new TwoFactorRequired()
+          }
+          const check = checkTwoFactorCode(code, user.twoFactorSecret, user.twoFactorBackupCodes)
+          if (!check.ok) {
+            await recordFailedLogin(user.id)
+            throw new TwoFactorInvalid()
+          }
+          // Consume the backup code if one was used (single-use).
+          if (check.usedBackupCode && check.remainingBackupCodes) {
+            await prisma.user.update({
+              where: { id: user.id },
+              data: { twoFactorBackupCodes: JSON.stringify(check.remainingBackupCodes) },
+            })
+          }
         }
 
         // Successful login — reset failure counter, record IP/time

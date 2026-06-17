@@ -3,6 +3,7 @@ const path = require('path')
 const fs = require('fs')
 const { app } = require('electron')
 const { randomUA, randomDelay, getSecuritySettings, USER_AGENTS } = require('./anti-ban.cjs')
+const { ensureBrowser, browserInstalled } = require('./ensure-browser.cjs')
 
 class BrowserManager {
   constructor() {
@@ -87,6 +88,16 @@ class BrowserManager {
           this.browsers.delete(id)
         }
       }
+      // First-run / new-machine safety: the Chromium build is downloaded lazily
+      // (it is NOT bundled in the installer to keep it small). If it's missing,
+      // fetch it now before launching so the app works out-of-the-box anywhere.
+      if (!browserInstalled()) {
+        const ready = await ensureBrowser()
+        if (!ready.ok) {
+          return { success: false, error: ready.error ? `تعذّر تجهيز المتصفح: ${ready.error}` : 'تعذّر تجهيز المتصفح. تأكد من اتصال الإنترنت ثم حاول مرة أخرى.' }
+        }
+      }
+
       const dir = this.getProfileDir(platform, profileId)
       if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
 

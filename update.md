@@ -1,5 +1,21 @@
 # دليل تحديث تطبيق SkyPro Desktop
 
+> ## 🔐 تحذير أمني — اقرأه أولاً
+>
+> هذا الملف **لا يحتوي على أي كلمات مرور**. أوامر MySQL أدناه تقرأ كلمة المرور من
+> متغيّر بيئة `DB_PASS` يجب ضبطه في جلستك من مخزن أسرار آمن (وليس كتابته هنا):
+>
+> ```bash
+> read -rs DB_PASS        # أو: export DB_PASS=$(pass show skypro/db)  /  من مدير أسرار
+> export DB_PASS
+> ```
+>
+> **مهم:** كانت نسخة سابقة من هذا الملف تحتوي على كلمة مرور قاعدة بيانات الإنتاج
+> صراحةً، وهي الآن **مكشوفة في سجلّ git**. يجب:
+> 1. **تدوير كلمة مرور مستخدم `skypro_app`** على السيرفر فوراً (اعتبرها مخترَقة).
+> 2. تطهير سجلّ git من القيمة القديمة (`git filter-repo` / BFG) ثم force-push.
+> 3. عدم كتابة أي سرّ في هذا الملف بعد الآن — استخدم متغيّرات بيئة أو `~/.my.cnf` بصلاحية `600`.
+
 ---
 
 ## الخطوات بالترتيب (من أول ما تعدل الكود لحد ما التحديث يوصل للعملاء)
@@ -214,13 +230,13 @@ curl -s https://downloads.skywaveads.com/skypro/latest.yml
 ssh root@147.79.66.116
 
 # شوف حالة المستخدم (غيّر USER_EMAIL بإيميل المستخدم)
-mysql -u skypro_app -p'F4-ejjoe_0k2qpNX2Q3hZ-REyoFtebuR' skypro -e "SELECT id, email, status FROM users WHERE email='USER_EMAIL';"
+mysql -u skypro_app -p"$DB_PASS" skypro -e "SELECT id, email, status FROM users WHERE email='USER_EMAIL';"
 
 # لو الحالة pending_verification → فعّله يدوي:
-mysql -u skypro_app -p'F4-ejjoe_0k2qpNX2Q3hZ-REyoFtebuR' skypro -e "UPDATE users SET status='active', email_verified_at=NOW() WHERE email='USER_EMAIL';"
+mysql -u skypro_app -p"$DB_PASS" skypro -e "UPDATE users SET status='active', email_verified_at=NOW() WHERE email='USER_EMAIL';"
 
 # فعّل مفتاح التفعيل كمان:
-mysql -u skypro_app -p'F4-ejjoe_0k2qpNX2Q3hZ-REyoFtebuR' skypro -e "UPDATE activation_keys SET status='active', activated_at=NOW(), expires_at=DATE_ADD(NOW(), INTERVAL 1 YEAR) WHERE user_id=(SELECT id FROM users WHERE email='USER_EMAIL') AND status='pending';"
+mysql -u skypro_app -p"$DB_PASS" skypro -e "UPDATE activation_keys SET status='active', activated_at=NOW(), expires_at=DATE_ADD(NOW(), INTERVAL 1 YEAR) WHERE user_id=(SELECT id FROM users WHERE email='USER_EMAIL') AND status='pending';"
 ```
 
 ---
