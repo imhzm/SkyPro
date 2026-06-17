@@ -229,9 +229,22 @@ export default function FacebookModule() {
       }
       if (res.success) {
         const data = res.data || res
-        const finalData = streamResultsRef.current.length > 0 ? streamResultsRef.current : (Array.isArray(data) ? data : [data])
+        let finalData = streamResultsRef.current.length > 0 ? streamResultsRef.current : (Array.isArray(data) ? data : [data])
+        // join-groups returns {group,status,error}, not {name,profile} — map it
+        // to the extract table's shape so rows aren't blank (bug 13).
+        if (extractType === 'join-groups') {
+          finalData = finalData.map((r: any) => ({
+            name: r.group || r.name || '',
+            profile: r.group || '',
+            text: r.status === 'joined' ? 'تم الانضمام ✓' : r.status === 'already_joined' ? 'عضو بالفعل' : (r.error || 'فشل'),
+            source: r.status || '',
+          }))
+        }
         setToolResults(finalData)
-        showMsg(res.cancelled ? `تم إيقاف الاستخراج - ${finalData.length} نتيجة محفوظة` : `تم استخراج ${res.count || finalData.length || 0} نتيجة`)
+        const okMsg = extractType === 'join-groups'
+          ? `تمت معالجة ${finalData.length} مجموعة (نجح: ${res.count || 0})`
+          : (res.cancelled ? `تم إيقاف الاستخراج - ${finalData.length} نتيجة محفوظة` : `تم استخراج ${res.count || finalData.length || 0} نتيجة`)
+        showMsg(okMsg)
         await loadResults()
       } else {
         const partial = res.partialData || streamResultsRef.current
