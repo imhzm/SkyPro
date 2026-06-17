@@ -52,14 +52,21 @@ if (in_array($keyData['status'], ['revoked', 'expired', 'suspended'], true)) {
     sendResponse(false, 'This activation key cannot be reset');
 }
 
-// Reset device_id and set status back to pending
-$stmt = $pdo->prepare('UPDATE activation_keys SET device_id = NULL, status = "pending" WHERE key_code = ?');
+// Set the key back to pending. There is no device_id column on activation_keys;
+// device binding lives in the `devices` table and is cleared below.
+$stmt = $pdo->prepare('UPDATE activation_keys SET status = "pending" WHERE key_code = ?');
 $stmt->execute([$key]);
 
-// Remove device record scoped to this key
-if (!empty($deviceFingerprint) && !empty($keyData['id'])) {
-    $stmt = $pdo->prepare('DELETE FROM devices WHERE device_fingerprint = ? AND key_id = ?');
-    $stmt->execute([$deviceFingerprint, $keyData['id']]);
+// Remove the device binding(s) scoped to this key so a free slot opens up.
+if (!empty($keyData['id'])) {
+    if (!empty($deviceFingerprint)) {
+        $stmt = $pdo->prepare('DELETE FROM devices WHERE device_fingerprint = ? AND key_id = ?');
+        $stmt->execute([$deviceFingerprint, $keyData['id']]);
+    } else {
+        // No specific device given — release every binding on the key.
+        $stmt = $pdo->prepare('DELETE FROM devices WHERE key_id = ?');
+        $stmt->execute([$keyData['id']]);
+    }
 }
 
 // Log the action

@@ -26,6 +26,12 @@ function loadEnv($path) {
 
 loadEnv(__DIR__ . '/.env');
 
+// Application environment — defined BEFORE the security headers below that
+// depend on it (HSTS / HTTPS enforcement). Previously this was set further
+// down the file, so $app_env was null at the point of use and both controls
+// were silently dead. Keep this as the single definition.
+$app_env = getenv('APP_ENV') ?: 'production';
+
 // CORS Configuration - Explicit allowlist only
 $allowedOrigins = array_values(array_filter(
     array_map('trim', explode(',', getenv('ALLOWED_ORIGINS') ?: '')),
@@ -64,7 +70,7 @@ if ($app_env === 'production') {
 }
 
 // HTTPS enforcement
-if ($app_env === 'production' && empty($_SERVER['HTTPS']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] !== 'https') {
+if ($app_env === 'production' && empty($_SERVER['HTTPS']) && ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') !== 'https') {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'HTTPS is required']);
     exit();
@@ -79,8 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-// Database credentials from environment
-$app_env = getenv('APP_ENV') ?: 'production';
+// Database credentials from environment ($app_env is defined near the top)
 $db_host = getenv('DB_HOST') ?: '127.0.0.1';
 $db_name = getenv('DB_NAME') ?: 'senderpro';
 $db_user = getenv('DB_USER') ?: '';
@@ -179,4 +184,111 @@ function logAction($pdo, $action, $details = '', $ip = null) {
         $stmt = $pdo->prepare('INSERT INTO app_logs (action, details, ip_address) VALUES (?, ?, ?)');
         $stmt->execute([$action, $details, $ip ?: ($_SERVER['REMOTE_ADDR'] ?? '')]);
     } catch (Exception $e) { /* fail silently */ }
+}
+
+// ============================================================
+// Licensing helpers — single source of truth for key / device logic.
+// Schema reference (sender_pro_database.sql, unified with Prisma):
+//   - activation_keys has columns: id, user_id, key_code, status, plan,
+//     duration_days, max_devices, activated_at, expires_at, created_at.
+//     There is NO `device_id` and NO `expiry_date` column.
+//   - Device binding lives in the `devices` table (key_id + device_fingerprint),
+//     capped by activation_keys.max_devices.
+// These helpers replace the previously duplicated (and schema-drifted) blocks
+// scattered across activate/validate/verify-device/login.
+// ============================================================
+
+// True if a key is expired by status or by its expires_at timestamp.
+function keyIsExpired(array $keyData): bool {
+    if (($keyData['status'] ?? '') === 'expired') {
+        return true;
+    }
+    $expiresAt = $keyData['expires_at'] ?? null;
+    return !empty($expiresAt) && $expiresAt < date('Y-m-d H:i:s');
+}
+
+// Marks a key as expired (idempotent).
+function markKeyExpired(PDO $pdo, string $keyCode): void {
+    $pdo->prepare('UPDATE activation_keys SET status = "expired" WHERE key_code = ?')->execute([$keyCode]);
+}
+
+// Number of active devices currently bound to a key.
+function activeDeviceCount(PDO $pdo, int $keyId): int {
+    $stmt = $pdo->prepare('SELECT COUNT(*) AS cnt FROM devices WHERE key_id = ? AND is_active = 1');
+    $stmt->execute([$keyId]);
+    $row = $stmt->fetch();
+    return (int)($row['cnt'] ?? 0);
+}
+
+// True when a key has no free device slots AND the given fingerprint is not
+// already one of its active devices (i.e. it is bound to other device(s)).
+function isBoundToAnotherDevice(PDO $pdo, array $keyData, string $fingerprint): bool {
+    $keyId = (int)($keyData['id'] ?? 0);
+    if ($keyId <= 0) {
+        return false;
+    }
+    if ($fingerprint !== '') {
+        $stmt = $pdo->prepare('SELECT 1 FROM devices WHERE key_id = ? AND device_fingerprint = ? AND is_active = 1 LIMIT 1');
+        $stmt->execute([$keyId, $fingerprint]);
+        if ($stmt->fetch()) {
+            return false; // this device is already bound — not "another device"
+        }
+    }
+    $maxDevices = max(1, (int)($keyData['max_devices'] ?? 1));
+    return activeDeviceCount($pdo, $keyId) >= $maxDevices;
+}
+
+// Canonical device upsert, keyed by the globally-unique device_fingerprint.
+// Enforces max_devices on first bind. Returns [true, null] on success, or
+// [false, message] when the device limit is reached.
+function upsertKeyDevice(PDO $pdo, array $keyData, string $fingerprint, array $deviceInfo): array {
+    $keyId = (int)($keyData['id'] ?? 0);
+    if ($keyId <= 0 || $fingerprint === '') {
+        return [true, null];
+    }
+
+    $stmt = $pdo->prepare('SELECT id FROM devices WHERE device_fingerprint = ?');
+    $stmt->execute([$fingerprint]);
+    $existing = $stmt->fetch();
+
+    if ($existing) {
+        $pdo->prepare('UPDATE devices SET last_seen_at = NOW(), is_active = 1 WHERE id = ?')->execute([$existing['id']]);
+        return [true, null];
+    }
+
+    $maxDevices = max(1, (int)($keyData['max_devices'] ?? 1));
+    if (activeDeviceCount($pdo, $keyId) >= $maxDevices) {
+        return [false, "تم تجاوز الحد الأقصى للأجهزة ($maxDevices)"];
+    }
+
+    $insert = $pdo->prepare('INSERT INTO devices (user_id, key_id, device_fingerprint, device_name, os_info, cpu_info, ram_info, disk_info, gpu_info, screen_resolution, is_active, reset_count, max_resets_per_year, first_seen_at, last_seen_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, 2, NOW(), NOW())');
+    $insert->execute([
+        $keyData['user_id'] ?? null,
+        $keyId,
+        $fingerprint,
+        $deviceInfo['deviceName'] ?? ($deviceInfo['hostname'] ?? ''),
+        $deviceInfo['os'] ?? ($deviceInfo['platform'] ?? ''),
+        $deviceInfo['cpu'] ?? '',
+        $deviceInfo['ram'] ?? '',
+        $deviceInfo['disk'] ?? '',
+        $deviceInfo['gpu'] ?? '',
+        $deviceInfo['screen'] ?? '',
+    ]);
+    return [true, null];
+}
+
+// Returns a masked hint (last 8 chars) of the active device bound to a key, or ''.
+function activeDeviceHint(PDO $pdo, int $keyId): string {
+    if ($keyId <= 0) {
+        return '';
+    }
+    $stmt = $pdo->prepare('SELECT device_fingerprint FROM devices WHERE key_id = ? AND is_active = 1 ORDER BY last_seen_at DESC LIMIT 1');
+    $stmt->execute([$keyId]);
+    $row = $stmt->fetch();
+    $fp = $row['device_fingerprint'] ?? '';
+    if ($fp === '') {
+        return '';
+    }
+    $len = strlen($fp);
+    return $len > 8 ? str_repeat('*', $len - 8) . substr($fp, -8) : str_repeat('*', $len);
 }

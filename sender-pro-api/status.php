@@ -24,7 +24,8 @@ if (!preg_match('/^[A-Z0-9\\-]+$/', $key)) {
     sendResponse(false, 'Invalid key');
 }
 
-$stmt = $pdo->prepare("SELECT key_code, status, expires_at, device_id, activated_at FROM activation_keys WHERE key_code = ?");
+// Only select columns that exist in the unified schema (no device_id column).
+$stmt = $pdo->prepare("SELECT id, key_code, status, expires_at, activated_at FROM activation_keys WHERE key_code = ?");
 $stmt->execute([$key]);
 $keyData = $stmt->fetch();
 
@@ -33,22 +34,14 @@ if (!$keyData) {
     sendResponse(false, 'Key not found or invalid');
 }
 
-// Mask deviceId — only show last 8 characters for privacy
-$maskedDeviceId = '';
-if (!empty($keyData['device_id'])) {
-    $deviceId = $keyData['device_id'];
-    $len = strlen($deviceId);
-    if ($len > 8) {
-        $maskedDeviceId = str_repeat('*', $len - 8) . substr($deviceId, -8);
-    } else {
-        $maskedDeviceId = str_repeat('*', $len);
-    }
-}
+// Device binding is derived from the `devices` table. Show a masked hint only.
+$activeDevices = activeDeviceCount($pdo, (int)$keyData['id']);
+$deviceHint = activeDeviceHint($pdo, (int)$keyData['id']);
 
 sendResponse(true, 'Status retrieved', [
     'status' => $keyData['status'],
     'expiryDate' => $keyData['expires_at'],
-    'deviceBound' => !empty($keyData['device_id']),
-    'deviceHint' => $maskedDeviceId,
+    'deviceBound' => $activeDevices > 0,
+    'deviceHint' => $deviceHint,
     'activatedAt' => $keyData['activated_at']
 ]);

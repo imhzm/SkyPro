@@ -41,48 +41,33 @@ if (!$keyData) {
     sendResponse(false, 'Invalid activation key');
 }
 
-if ($keyData['status'] === 'expired' || ($keyData['expiry_date'] && $keyData['expiry_date'] < date('Y-m-d'))) {
-    if ($keyData['status'] !== 'expired') {
-        $pdo->prepare('UPDATE activation_keys SET status = "expired" WHERE key_code = ?')->execute([$key]);
-    }
+// Expiry check (expires_at matches the unified schema; there is no expiry_date column)
+if (keyIsExpired($keyData)) {
+    markKeyExpired($pdo, $key);
     logAction($pdo, 'validation_failed', "Key expired: $key, IP: $clientIP");
     sendResponse(false, 'This key has expired');
 }
 
-// Check if device matches (if already activated)
-if ($keyData['status'] === 'active' && $keyData['device_id'] && $keyData['device_id'] !== $deviceId) {
-    logAction($pdo, 'validation_failed', "Device mismatch for key: $key, Expected: {$keyData['device_id']}, Got: $deviceId, IP: $clientIP");
+// Device binding is enforced through the `devices` table + max_devices, NOT a
+// non-existent activation_keys.device_id column.
+if ($keyData['status'] === 'active' && isBoundToAnotherDevice($pdo, $keyData, $deviceId)) {
+    logAction($pdo, 'validation_failed', "Device limit/mismatch for key: $key, IP: $clientIP");
     sendResponse(false, 'This key is already activated on another device');
 }
 
 // Validate device info sub-field lengths
-foreach (['hostname', 'platform', 'arch', 'cpu', 'cpuCores', 'ram'] as $field) {
+foreach (['deviceName', 'hostname', 'os', 'platform', 'arch', 'cpu', 'ram', 'disk', 'gpu', 'screen'] as $field) {
     if (isset($deviceInfo[$field]) && is_string($deviceInfo[$field])) {
         $deviceInfo[$field] = cleanInput($deviceInfo[$field], 255);
     }
 }
 
-// Save/update device info if provided
+// Save/update device info if provided (canonical upsert, enforces max_devices)
 if (!empty($deviceInfo) && !empty($deviceId)) {
-    $checkStmt = $pdo->prepare('SELECT id, first_activation_key FROM devices WHERE fingerprint = ?');
-    $checkStmt->execute([$deviceId]);
-    $existingDevice = $checkStmt->fetch();
-
-    if ($existingDevice) {
-        $updateStmt = $pdo->prepare('UPDATE devices SET last_seen = NOW() WHERE fingerprint = ?');
-        $updateStmt->execute([$deviceId]);
-    } else {
-        $insertStmt = $pdo->prepare('INSERT INTO devices (fingerprint, hostname, platform, arch, cpu, cpu_cores, ram, first_activation_key, first_activated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())');
-        $insertStmt->execute([
-            $deviceId,
-            $deviceInfo['hostname'] ?? '',
-            $deviceInfo['platform'] ?? '',
-            $deviceInfo['arch'] ?? '',
-            $deviceInfo['cpu'] ?? '',
-            $deviceInfo['cpuCores'] ?? 0,
-            $deviceInfo['ram'] ?? '',
-            $key
-        ]);
+    [$ok, $message] = upsertKeyDevice($pdo, $keyData, $deviceId, $deviceInfo);
+    if (!$ok) {
+        logAction($pdo, 'validation_failed', "Device limit reached for key: $key, IP: $clientIP");
+        sendResponse(false, $message);
     }
 }
 
@@ -92,6 +77,6 @@ logAction($pdo, 'validation_success', "Key: $key, Device: $deviceId, IP: $client
 sendResponse(true, 'Key is valid', [
     'key' => $key,
     'status' => $keyData['status'],
-    'expiryDate' => $keyData['expiry_date'],
-    'deviceId' => $keyData['device_id']
+    'expiryDate' => $keyData['expires_at'],
+    'deviceId' => $deviceId
 ]);

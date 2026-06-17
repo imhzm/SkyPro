@@ -128,6 +128,58 @@ module.exports = function(ipcm, helpers) {
     return out
   }
 
+  // ==================== SEND GOVERNOR (anti-ban rate limiting) ====================
+  // Facebook bans accounts that blast many identical messages with no pacing.
+  // This governor enforces per-account (per-session) hourly + daily caps plus a
+  // per-run cap, layered on top of the randomized human-like delays already used.
+  // Counters are in-memory and roll over on the hour/day boundary — a safety
+  // ceiling, not a billing meter. Tunable via env for power users.
+  const SEND_LIMITS = {
+    perRun: Math.max(1, parseInt(process.env.SKYPRO_SEND_PER_RUN || '40', 10) || 40),
+    perHour: Math.max(1, parseInt(process.env.SKYPRO_SEND_PER_HOUR || '30', 10) || 30),
+    perDay: Math.max(1, parseInt(process.env.SKYPRO_SEND_PER_DAY || '120', 10) || 120),
+  }
+  const sendCounters = new Map() // sessionId -> { dayKey, hourKey, day, hour }
+
+  function sendWindowKeys() {
+    const d = new Date()
+    const dayKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
+    return { dayKey, hourKey: `${dayKey}-${d.getHours()}` }
+  }
+
+  function sendCounterFor(sessionId) {
+    const { dayKey, hourKey } = sendWindowKeys()
+    const c = sendCounters.get(sessionId) || { dayKey, hourKey, day: 0, hour: 0 }
+    if (c.dayKey !== dayKey) { c.dayKey = dayKey; c.day = 0; c.hourKey = hourKey; c.hour = 0 }
+    if (c.hourKey !== hourKey) { c.hourKey = hourKey; c.hour = 0 }
+    sendCounters.set(sessionId, c)
+    return c
+  }
+
+  // Returns { allowed, reason } for the NEXT send on this account.
+  function canSend(sessionId) {
+    const c = sendCounterFor(sessionId)
+    if (c.day >= SEND_LIMITS.perDay) return { allowed: false, reason: `بلغت الحد اليومي للإرسال (${SEND_LIMITS.perDay}). حاول غداً.` }
+    if (c.hour >= SEND_LIMITS.perHour) return { allowed: false, reason: `بلغت الحد بالساعة (${SEND_LIMITS.perHour}). انتظر قليلاً ثم تابع.` }
+    return { allowed: true }
+  }
+
+  function recordSend(sessionId) {
+    const c = sendCounterFor(sessionId)
+    c.day += 1
+    c.hour += 1
+  }
+
+  // One place to gate a broadcast loop: checks the per-run cap and the
+  // hourly/daily account caps. Returns { ok, reason }.
+  function sendGate(sessionId, sentThisRun) {
+    if (sentThisRun >= SEND_LIMITS.perRun) {
+      return { ok: false, reason: `بلغت الحد الأقصى لهذه الجلسة (${SEND_LIMITS.perRun}). أعد التشغيل لاحقاً لحماية الحساب.` }
+    }
+    const gate = canSend(sessionId)
+    return gate.allowed ? { ok: true } : { ok: false, reason: gate.reason }
+  }
+
   // Pre-flight: ensure the session is valid and the page is on the right
   // platform before any IPC handler tries to interact. Returns a structured
   // result that callers can short-circuit on.
@@ -804,7 +856,12 @@ ipcm('facebook-post-groups', async (e, { sessionId, groups, message }) => {
   const page = globals.bm.getPage(sessionId)
   if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
   const results = []
+  let sentThisRun = 0
+  let stopReason = null
   for (const groupUrl of groups) {
+    // Anti-ban gate: respect per-run / hourly / daily caps before each post.
+    const gate = sendGate(sessionId, sentThisRun)
+    if (!gate.ok) { stopReason = gate.reason; break }
     try {
       await page.goto(groupUrl.replace(/\/$/, ''), { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
       await page.waitForTimeout(randomDelay(3000, 5000))
@@ -831,7 +888,8 @@ ipcm('facebook-post-groups', async (e, { sessionId, groups, message }) => {
         if (input) {
           await input.click({ force: true })
           await page.waitForTimeout(randomDelay(500, 1000))
-          await page.keyboard.type(message, { delay: 40 + Math.random() * 90 })
+          // Vary the text per-group so we don't broadcast an identical post.
+          await page.keyboard.type(rotateMessage(message), { delay: 40 + Math.random() * 90 })
           await page.waitForTimeout(randomDelay(1200, 2200))
           const scope = dlg || page
           let postBtn = await scope.$('div[role="button"][aria-label="Post"], div[role="button"][aria-label="نشر"]')
@@ -839,6 +897,8 @@ ipcm('facebook-post-groups', async (e, { sessionId, groups, message }) => {
           if (postBtn) {
             await postBtn.click({ force: true })
             await page.waitForTimeout(randomDelay(3000, 5000))
+            recordSend(sessionId)
+            sentThisRun++
             results.push({ group: groupUrl, status: 'posted' })
           } else {
             results.push({ group: groupUrl, status: 'failed', error: 'لم يتم العثور على زر النشر النهائي' })
@@ -852,16 +912,23 @@ ipcm('facebook-post-groups', async (e, { sessionId, groups, message }) => {
     } catch (err) {
       results.push({ group: groupUrl, status: 'error', error: err.message })
     }
-    await page.waitForTimeout(randomDelay(3000, 6000))
+    // Longer randomized cooldown, with an occasional extended pause, to look human.
+    const cooldown = (sentThisRun > 0 && sentThisRun % 10 === 0) ? randomDelay(30000, 60000) : randomDelay(4000, 9000)
+    await page.waitForTimeout(cooldown)
   }
-  return { success: true, data: results }
+  return { success: true, data: results, sent: sentThisRun, stopped: stopReason }
 })
 
 ipcm('facebook-send-messages', async (e, { sessionId, recipients, message }) => {
   const page = globals.bm.getPage(sessionId)
   if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
   const results = []
+  let sentThisRun = 0
+  let stopReason = null
   for (const recipient of recipients) {
+    // Anti-ban gate: respect per-run / hourly / daily caps before each send.
+    const gate = sendGate(sessionId, sentThisRun)
+    if (!gate.ok) { stopReason = gate.reason; break }
     try {
       await page.goto(`https://www.facebook.com/messages/t/${recipient}`, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
       await page.waitForTimeout(randomDelay(2500, 4000))
@@ -871,10 +938,14 @@ ipcm('facebook-send-messages', async (e, { sessionId, recipients, message }) => 
       if (input) {
         await input.click({ force: true })
         await page.waitForTimeout(randomDelay(500, 1000))
-        await page.keyboard.type(message, { delay: 50 + Math.random() * 100 })
+        // Vary the text per-recipient so we don't broadcast an identical string.
+        const outgoing = rotateMessage(message)
+        await page.keyboard.type(outgoing, { delay: 50 + Math.random() * 100 })
         await page.waitForTimeout(randomDelay(1000, 2000))
         await page.keyboard.press('Enter')
         await page.waitForTimeout(randomDelay(2000, 4000))
+        recordSend(sessionId)
+        sentThisRun++
         results.push({ recipient, status: 'sent' })
       } else {
         results.push({ recipient, status: 'failed', error: 'لم يتم العثور على حقل الرسالة' })
@@ -882,9 +953,11 @@ ipcm('facebook-send-messages', async (e, { sessionId, recipients, message }) => 
     } catch (err) {
       results.push({ recipient, status: 'error', error: err.message })
     }
-    await page.waitForTimeout(randomDelay(3000, 6000))
+    // Longer randomized cooldown, with an occasional extended pause, to look human.
+    const cooldown = (sentThisRun > 0 && sentThisRun % 10 === 0) ? randomDelay(30000, 60000) : randomDelay(4000, 9000)
+    await page.waitForTimeout(cooldown)
   }
-  return { success: true, data: results }
+  return { success: true, data: results, sent: sentThisRun, stopped: stopReason }
 })
 
 ipcm('facebook-mention', async (e, { sessionId, postUrls, usernames, text }) => {
@@ -1381,7 +1454,12 @@ ipcm('facebook-send-page-messages', async (e, { sessionId, pageUrls, message }) 
   const page = globals.bm.getPage(sessionId)
   if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
   const results = []
+  let sentThisRun = 0
+  let stopReason = null
   for (const pageUrl of pageUrls) {
+    // Anti-ban gate: respect per-run / hourly / daily caps before each send.
+    const gate = sendGate(sessionId, sentThisRun)
+    if (!gate.ok) { stopReason = gate.reason; break }
     try {
       await page.goto(pageUrl, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
       await page.waitForTimeout(randomDelay(3000, 5000))
@@ -1398,10 +1476,12 @@ ipcm('facebook-send-page-messages', async (e, { sessionId, pageUrls, message }) 
         if (input) {
           await input.click({ force: true })
           await page.waitForTimeout(randomDelay(500, 1000))
-          await page.keyboard.type(message, { delay: 50 + Math.random() * 100 })
+          await page.keyboard.type(rotateMessage(message), { delay: 50 + Math.random() * 100 })
           await page.waitForTimeout(randomDelay(1000, 2000))
           await page.keyboard.press('Enter')
           await page.waitForTimeout(randomDelay(2000, 4000))
+          recordSend(sessionId)
+          sentThisRun++
           results.push({ pageUrl, status: 'sent' })
         } else {
           results.push({ pageUrl, status: 'failed', error: 'لم يتم العثور على حقل الرسالة' })
@@ -1414,10 +1494,12 @@ ipcm('facebook-send-page-messages', async (e, { sessionId, pageUrls, message }) 
         if (input2) {
           await input2.click({ force: true })
           await page.waitForTimeout(randomDelay(500, 1000))
-          await page.keyboard.type(message, { delay: 50 + Math.random() * 100 })
+          await page.keyboard.type(rotateMessage(message), { delay: 50 + Math.random() * 100 })
           await page.waitForTimeout(randomDelay(1000, 2000))
           await page.keyboard.press('Enter')
           await page.waitForTimeout(randomDelay(2000, 4000))
+          recordSend(sessionId)
+          sentThisRun++
           results.push({ pageUrl, status: 'sent' })
         } else {
           results.push({ pageUrl, status: 'failed', error: 'لم يتم العثور على زر الرسالة' })
@@ -1426,10 +1508,12 @@ ipcm('facebook-send-page-messages', async (e, { sessionId, pageUrls, message }) 
     } catch (err) {
       results.push({ pageUrl, status: 'error', error: err.message })
     }
-    await page.waitForTimeout(randomDelay(3000, 6000))
+    // Longer randomized cooldown, with an occasional extended pause, to look human.
+    const cooldown = (sentThisRun > 0 && sentThisRun % 10 === 0) ? randomDelay(30000, 60000) : randomDelay(4000, 9000)
+    await page.waitForTimeout(cooldown)
   }
   saveLeads('facebook', 'page-messages', results)
-  return { success: true, data: results }
+  return { success: true, data: results, sent: sentThisRun, stopped: stopReason }
 })
 
 ipcm('facebook-search-groups', async (e, { sessionId, query, limit = 20 }) => {

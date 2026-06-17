@@ -49,6 +49,8 @@ export default function LoginPage() {
   const [email, setEmail] = useState(emptyRememberedLogin.email)
   const [password, setPassword] = useState('')
   const [serial, setSerial] = useState(emptyRememberedLogin.serial)
+  const [code, setCode] = useState('')
+  const [twoFactorRequired, setTwoFactorRequired] = useState(false)
   const [rememberDetails, setRememberDetails] = useState(emptyRememberedLogin.remember)
   const [rememberLoaded, setRememberLoaded] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -155,6 +157,11 @@ export default function LoginPage() {
       setError('يرجى إدخال البريد الإلكتروني وكلمة المرور والسيريال')
       return
     }
+    const trimmedCode = code.trim()
+    if (twoFactorRequired && !trimmedCode) {
+      setError('أدخل رمز التحقق بخطوتين')
+      return
+    }
     setLoading(true)
     setError('')
     setSuccess('')
@@ -167,11 +174,14 @@ export default function LoginPage() {
         normalizedSerial,
         deviceFingerprint,
         deviceInfo ? { ...deviceInfo } : undefined,
+        trimmedCode || undefined,
       )
 
       if (result.success && result.data) {
         await rememberCurrentLogin().catch(() => {})
         setSuccess('تم تسجيل الدخول بنجاح')
+        setTwoFactorRequired(false)
+        setCode('')
         setLoginUser({ email: result.data.email, role: result.data.role })
         if (result.data.token) setToken(result.data.token)
         if (result.data.key) {
@@ -182,6 +192,11 @@ export default function LoginPage() {
             deviceId: result.data.deviceId || deviceFingerprint,
           })
         }
+      } else if (result.requires2FA) {
+        // Password is correct but the account has 2FA enabled — reveal the
+        // code field and let the user enter their authenticator/backup code.
+        setTwoFactorRequired(true)
+        setError(trimmedCode ? (result.message || 'رمز التحقق غير صحيح') : 'أدخل رمز التحقق بخطوتين من تطبيق المصادقة')
       } else {
         setError(result.message || result.error || 'فشل تسجيل الدخول')
       }
@@ -190,7 +205,7 @@ export default function LoginPage() {
     } finally {
       setLoading(false)
     }
-  }, [email, password, serial, setActivation, setLoginUser, setToken])
+  }, [email, password, serial, code, twoFactorRequired, setActivation, setLoginUser, setToken])
 
   const handleLogin = useCallback(() => submitLogin(), [submitLogin])
 
@@ -701,6 +716,43 @@ export default function LoginPage() {
                   />
                 </div>
               </div>
+
+              {/* Two-factor code (revealed only when the server requires it) */}
+              {twoFactorRequired && (
+                <div className="sw-fade-in-up">
+                  <label className="block text-[11px] font-semibold mb-1.5 tracking-wide"
+                         style={{ color: 'rgba(234, 243, 255, 0.7)' }}>
+                    رمز التحقق بخطوتين
+                  </label>
+                  <div className="relative">
+                    <ShieldCheck
+                      size={15}
+                      className="absolute left-3 top-1/2 -translate-y-1/2"
+                      style={{ color: 'rgba(125, 168, 255, 0.55)' }}
+                    />
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      className="w-full pl-9 pr-3 py-2.5 rounded-xl text-sm font-mono tracking-[0.3em] transition-all"
+                      style={{
+                        background: 'rgba(255,255,255,0.04)',
+                        border: '1px solid rgba(125, 168, 255, 0.18)',
+                        color: '#EAF3FF',
+                      }}
+                      placeholder="123456"
+                      value={code}
+                      onChange={(e) => { setCode(e.target.value); setError('') }}
+                      onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                      autoComplete="one-time-code"
+                      dir="ltr"
+                      autoFocus
+                    />
+                  </div>
+                  <p className="text-[10px] mt-1" style={{ color: 'rgba(234, 243, 255, 0.45)' }}>
+                    أدخل الرمز من تطبيق المصادقة، أو استخدم أحد رموز النسخ الاحتياطي.
+                  </p>
+                </div>
+              )}
 
               {/* Remember */}
               <label

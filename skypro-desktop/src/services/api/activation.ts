@@ -61,6 +61,8 @@ export interface LoginResponse {
   success: boolean
   message?: string
   error?: string
+  /** Set by the server when the account has 2FA enabled and a code is required. */
+  requires2FA?: boolean
   data?: {
     token?: string
     email: string
@@ -191,10 +193,10 @@ export const activationApi = {
     return null
   },
 
-  login: async (email: string, password: string, serial: string, deviceFingerprint: string, deviceInfo?: Record<string, unknown>): Promise<LoginResponse> => {
+  login: async (email: string, password: string, serial: string, deviceFingerprint: string, deviceInfo?: Record<string, unknown>, code?: string): Promise<LoginResponse> => {
     if (window.electronAPI?.login) {
       try {
-        const result = await window.electronAPI.login({ email, password, serial, deviceFingerprint, deviceInfo })
+        const result = await window.electronAPI.login({ email, password, serial, deviceFingerprint, deviceInfo, code })
         if (result) return result as unknown as LoginResponse
       } catch (e) { console.error('IPC login failed:', e) }
     }
@@ -203,7 +205,7 @@ export const activationApi = {
       const response = await fetch(`${assertHttps(WEB_API_URL)}/desktop/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, serial, deviceFingerprint, deviceInfo })
+        body: JSON.stringify({ email, password, serial, deviceFingerprint, deviceInfo, code })
       })
       return response.json()
     } catch {

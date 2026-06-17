@@ -51,54 +51,61 @@ try {
         sendResponse(false, 'Invalid activation key');
     }
 
-    if ($keyData['status'] === 'expired') {
+    if (keyIsExpired($keyData)) {
         $pdo->rollBack();
+        markKeyExpired($pdo, $key);
         sendResponse(false, 'This key has expired');
     }
 
-    if ($keyData['status'] === 'active' && $keyData['device_id'] && $keyData['device_id'] !== $deviceId) {
+    if (in_array($keyData['status'], ['revoked', 'suspended'], true)) {
+        $pdo->rollBack();
+        sendResponse(false, 'This activation key is not allowed');
+    }
+
+    // If the key is bound to a user account, require a matching authenticated
+    // caller so a leaked key string alone cannot be claimed by a stranger.
+    if (!empty($keyData['user_id'])) {
+        $token = JWT::getBearerToken();
+        $payload = $token ? JWT::decode($token) : null;
+        $ownerStmt = $pdo->prepare('SELECT email FROM users WHERE id = ?');
+        $ownerStmt->execute([$keyData['user_id']]);
+        $owner = $ownerStmt->fetch();
+        $ownerEmail = strtolower($owner['email'] ?? '');
+        $callerEmail = strtolower($payload['email'] ?? '');
+        if (!$payload || $callerEmail === '' || $callerEmail !== $ownerEmail) {
+            $pdo->rollBack();
+            sendResponse(false, 'Authentication required to activate this key', null, 401);
+        }
+    }
+
+    // Device binding is enforced via the `devices` table + max_devices.
+    if ($keyData['status'] === 'active' && isBoundToAnotherDevice($pdo, $keyData, $deviceId)) {
         $pdo->rollBack();
         sendResponse(false, 'This key is already activated on another device');
     }
 
-    // Save/update device info (matches Prisma schema)
-    if (!empty($deviceInfo) && !empty($deviceId)) {
-        $checkStmt = $pdo->prepare('SELECT id, user_id, key_id FROM devices WHERE device_fingerprint = ?');
-        $checkStmt->execute([$deviceId]);
-        $existingDevice = $checkStmt->fetch();
-
-        if ($existingDevice) {
-            $updateStmt = $pdo->prepare('UPDATE devices SET last_seen_at = NOW() WHERE device_fingerprint = ?');
-            $updateStmt->execute([$deviceId]);
-        } else {
-            // Get user_id and key_id from activation key
-            $keyStmt = $pdo->prepare('SELECT user_id, id FROM activation_keys WHERE key_code = ?');
-            $keyStmt->execute([$key]);
-            $keyInfo = $keyStmt->fetch();
-
-            $insertStmt = $pdo->prepare('INSERT INTO devices (user_id, key_id, device_fingerprint, device_name, os_info, cpu_info, ram_info, disk_info, gpu_info, screen_resolution, is_active, reset_count, max_resets_per_year, first_seen_at, last_seen_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, 2, NOW(), NOW())');
-            $insertStmt->execute([
-                $keyInfo['user_id'] ?? null,
-                $keyInfo['id'] ?? null,
-                $deviceId,
-                $deviceInfo['deviceName'] ?? ($deviceInfo['hostname'] ?? ''),
-                $deviceInfo['os'] ?? ($deviceInfo['platform'] ?? ''),
-                $deviceInfo['cpu'] ?? '',
-                $deviceInfo['ram'] ?? '',
-                $deviceInfo['disk'] ?? '',
-                $deviceInfo['gpu'] ?? '',
-                $deviceInfo['screen'] ?? ''
-            ]);
-        }
+    // Save/update device info (canonical upsert, enforces max_devices)
+    [$ok, $message] = upsertKeyDevice($pdo, $keyData, $deviceId, $deviceInfo);
+    if (!$ok) {
+        $pdo->rollBack();
+        sendResponse(false, $message);
     }
 
-    // Activate the key (key_code matches Prisma schema)
-    $stmt = $pdo->prepare('UPDATE activation_keys SET status = "active", device_id = ?, activated_at = NOW() WHERE key_code = ?');
-    $stmt->execute([$deviceId, $key]);
+    // Activate the key. There is no device_id column on activation_keys —
+    // binding lives in `devices`. Stamp activated_at + expires_at on first use.
+    $stmt = $pdo->prepare('UPDATE activation_keys SET status = "active", activated_at = COALESCE(activated_at, NOW()), expires_at = COALESCE(expires_at, DATE_ADD(NOW(), INTERVAL duration_days DAY)) WHERE key_code = ?');
+    $stmt->execute([$key]);
+
+    // Re-read to return the freshly-stamped expiry
+    $stmt = $pdo->prepare('SELECT expires_at FROM activation_keys WHERE key_code = ?');
+    $stmt->execute([$key]);
+    $updated = $stmt->fetch();
 
     $pdo->commit();
 } catch (Exception $e) {
-    $pdo->rollBack();
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
     sendResponse(false, 'Activation failed', null, 500);
 }
 
@@ -108,6 +115,6 @@ logAction($pdo, 'activation_success', "Key: $key, Device: $deviceId, IP: $client
 sendResponse(true, 'Activation successful', [
     'key' => $key,
     'status' => 'active',
-    'expiryDate' => $keyData['expiry_date'],
+    'expiryDate' => $updated['expires_at'] ?? null,
     'deviceId' => $deviceId
 ]);

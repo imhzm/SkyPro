@@ -7,9 +7,15 @@ const BOM = '﻿'
 function escapeCell(value: unknown): string {
   if (value === null || value === undefined) return ''
   if (value instanceof Date) return value.toISOString()
-  const str = String(value)
-  // Quote if contains delimiter, quote, newline, or starts with formula char (=,-,+,@)
-  const needsQuoting = /[",\r\n\t]/.test(str) || /^[=\-+@]/.test(str)
+  let str = String(value)
+  // Neutralize spreadsheet formula injection (CSV injection): a cell beginning
+  // with a formula trigger is evaluated by Excel/Sheets even when RFC-quoted, so
+  // quoting alone is NOT enough. Prefix with an apostrophe to force text mode.
+  if (/^[=\-+@\t\r]/.test(str)) {
+    str = `'${str}`
+  }
+  // Quote if it contains a delimiter, quote, or newline
+  const needsQuoting = /[",\r\n\t]/.test(str)
   if (!needsQuoting) return str
   // Escape internal quotes by doubling
   return `"${str.replace(/"/g, '""')}"`

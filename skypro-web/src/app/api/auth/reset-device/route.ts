@@ -25,6 +25,11 @@ async function getActor(req: NextRequest) {
   const userId = parseInt(userIdStr, 10)
   if (!Number.isFinite(userId)) return null
 
+  // CRITICAL: verify the token's HMAC signature binds it to this userId.
+  // Without this, the token was merely parsed (not authenticated), letting an
+  // attacker forge a Bearer for any userId and reset that user's device.
+  if (!verifySessionToken(bearer, userId)) return null
+
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { id: true, role: true, status: true }

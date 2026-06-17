@@ -93,6 +93,13 @@ autoUpdater.on('update-downloaded', (info) => {
 })
 
 // ==================== HELPERS ====================
+// Policy for the plaintext-secret fallback when OS-level encryption (DPAPI /
+// Keychain / libsecret) is unavailable. Defaults to ENABLED to preserve the
+// v1.18 fix (otherwise accounts never save on DPAPI-less machines). Set
+// SKYPRO_ALLOW_PLAINTEXT_SECRETS=0 to make missing OS encryption a HARD ERROR
+// instead of silently degrading to unencrypted on-disk credentials.
+const ALLOW_PLAINTEXT_SECRETS = (process.env.SKYPRO_ALLOW_PLAINTEXT_SECRETS ?? '1') !== '0'
+
 function encryptSecret(value) {
   if (value === null || value === undefined || value === '') return value
   const text = String(value)
@@ -104,18 +111,23 @@ function encryptSecret(value) {
     try {
       return `${SECRET_PREFIX}${safeStorage.encryptString(text).toString('base64')}`
     } catch (err) {
-      console.warn('[encryptSecret] safeStorage.encryptString failed:', err?.message, '- falling back to plaintext')
+      if (!ALLOW_PLAINTEXT_SECRETS) {
+        throw new Error('SECRET_ENCRYPTION_UNAVAILABLE: OS encryption failed and plaintext fallback is disabled by policy')
+      }
+      console.error('[encryptSecret] SECURITY WARNING: safeStorage.encryptString failed:', err?.message, '— storing secret in PLAINTEXT on disk')
     }
   } else {
-    console.warn('[encryptSecret] safeStorage NOT available on this machine - using plaintext fallback')
+    if (!ALLOW_PLAINTEXT_SECRETS) {
+      throw new Error('SECRET_ENCRYPTION_UNAVAILABLE: OS encryption is unavailable and plaintext fallback is disabled by policy')
+    }
+    console.error('[encryptSecret] SECURITY WARNING: safeStorage NOT available on this machine — storing secret in PLAINTEXT on disk')
   }
-  // FALLBACK PATH: store with explicit "this is plaintext" prefix.
-  // This was added in v1.18 to fix a silent failure mode: on Windows machines
-  // where DPAPI is unavailable (corp accounts, missing user profile, certain
-  // VPN configs), the entire saveAccount flow threw — accounts never saved.
-  // The user is operating on their own machine; explicit plaintext is a far
-  // better UX than silently losing their credentials. We still log a warning
-  // so administrators auditing can see the fallback was used.
+  // FALLBACK PATH (opt-out via SKYPRO_ALLOW_PLAINTEXT_SECRETS=0): store with an
+  // explicit "this is plaintext" prefix. Added in v1.18 to fix a silent failure
+  // mode where, on Windows machines without DPAPI (corp accounts, missing user
+  // profile, certain VPN configs), the entire saveAccount flow threw and
+  // accounts never saved. The fallback is now an EXPLICIT, logged policy rather
+  // than a silent degradation.
   return `${PLAIN_PREFIX}${text}`
 }
 
@@ -1363,8 +1375,17 @@ ipcm('db-count', async (e, { table, filters }) => {
         validateColumn(table, f.column)
         const op = String(f.op || '').toUpperCase()
         if (!ALLOWED_OPS.includes(op)) return { success: false, error: 'Invalid operator' }
-        clauses.push(`${f.column} ${op} ?`)
-        params.push(f.value)
+        // Mirror db-query: expand IN into per-value placeholders. Previously this
+        // bound an array to a single `?`, so any IN filter silently returned 0.
+        if (op === 'IN') {
+          if (!Array.isArray(f.value) || f.value.length === 0 || f.value.length > 100) return { success: false, error: 'Invalid IN filter' }
+          const placeholders = f.value.map(() => '?').join(', ')
+          clauses.push(`${f.column} IN (${placeholders})`)
+          params.push(...f.value)
+        } else {
+          clauses.push(`${f.column} ${op} ?`)
+          params.push(f.value)
+        }
       }
       sql += ` WHERE ${clauses.join(' AND ')}`
     }
@@ -1540,6 +1561,21 @@ app.whenReady().then(() => {
   registerAuthIPC({ ipcm, bm: globals.bm, db: globals.db })
 
   createWindow()
+
+  // Pre-download the Playwright Chromium build in the background on first run so
+  // it's ready by the time the user opens a platform. The browser is NOT bundled
+  // in the installer (keeps it small); this makes the app work on any new machine
+  // without manual `npx playwright install`. Launch also guards on this.
+  try {
+    const { ensureBrowser, browserInstalled } = require('./ensure-browser.cjs')
+    if (!browserInstalled()) {
+      ensureBrowser().then((r) => {
+        console.log('[startup] browser ensure result:', r?.ok ? 'ready' : `failed (${r?.error || 'unknown'})`)
+      }).catch((e) => console.error('[startup] ensureBrowser threw:', e?.message))
+    }
+  } catch (e) {
+    console.error('[startup] ensureBrowser setup failed:', e?.message)
+  }
 
   // Content Security Policy
   const { session } = require('electron')

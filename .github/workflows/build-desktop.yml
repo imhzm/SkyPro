@@ -67,23 +67,34 @@ jobs:
         shell: bash
         env:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          # Prefer secrets for server topology. Fallbacks keep existing deploys
+          # working; set DEPLOY_HOST/DEPLOY_USER secrets and a non-root deploy
+          # user to remove the production IP and root login from this repo.
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
         run: |
           if [ -z "$DEPLOY_SSH_KEY" ]; then
             echo "::warning::DEPLOY_SSH_KEY secret is not set — skipping deploy"
             exit 0
           fi
+          HOST="${DEPLOY_HOST:-147.79.66.116}"
+          USER="${DEPLOY_USER:-root}"
+          if [ "$USER" = "root" ]; then
+            echo "::warning::Deploying as root. Create a least-privilege deploy user and set the DEPLOY_USER secret."
+          fi
           mkdir -p ~/.ssh
           printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H 147.79.66.116 >> ~/.ssh/known_hosts 2>/dev/null
-          SCP_OPTS="-o StrictHostKeyChecking=no -o ConnectTimeout=30 -i ~/.ssh/deploy_key"
-          DEST="root@147.79.66.116:/var/www/downloads.skywaveads.com/skypro/"
+          ssh-keyscan -H "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          # accept-new pins the host key on first use and refuses a CHANGED key (MITM), unlike "no".
+          SCP_OPTS="-o StrictHostKeyChecking=accept-new -o ConnectTimeout=30 -i ~/.ssh/deploy_key"
+          DEST="$USER@$HOST:/var/www/downloads.skywaveads.com/skypro/"
           VERSION=$(node -p "require('./skypro-desktop/package.json').version")
           cd skypro-desktop/dist/release
           echo "Deploying SkyPro v${VERSION} to server..."
           scp $SCP_OPTS "SkyPro Setup"*.exe latest.yml *.blockmap version.json "$DEST"
           echo "Updating latest.exe symlink + cleaning up old versions..."
           REMOTE_SCRIPT='set -e; cd /var/www/downloads.skywaveads.com/skypro; ln -sf "SkyPro Setup '"${VERSION}"'.exe" latest.exe; mapfile -t EXES < <(ls -t1 SkyPro\ Setup\ *.exe 2>/dev/null || true); if [ "${#EXES[@]}" -gt 2 ]; then echo "Found ${#EXES[@]} installers, keeping 2 newest..."; for ((i=2; i<${#EXES[@]}; i++)); do exe="${EXES[$i]}"; rm -f -- "$exe" "${exe}.blockmap"; echo "  removed: $exe"; done; else echo "Found ${#EXES[@]} installer(s), nothing to clean."; fi; echo "Disk usage after cleanup:"; du -sh /var/www/downloads.skywaveads.com/skypro'
-          ssh $SCP_OPTS root@147.79.66.116 "$REMOTE_SCRIPT"
+          ssh $SCP_OPTS "$USER@$HOST" "$REMOTE_SCRIPT"
           rm -f ~/.ssh/deploy_key
           echo "Deploy complete: v${VERSION}"

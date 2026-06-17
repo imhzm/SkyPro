@@ -287,6 +287,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('update-status', handler)
     return () => ipcRenderer.removeListener('update-status', handler)
   },
+  // First-run Chromium auto-download progress (phase: start|downloading|done|error, percent?)
+  onBrowserInstallStatus: (callback) => {
+    const handler = (_, data) => callback(data)
+    ipcRenderer.on('browser-install-status', handler)
+    return () => ipcRenderer.removeListener('browser-install-status', handler)
+  },
   getPlatform: () => process.platform,
 
   // Window Controls

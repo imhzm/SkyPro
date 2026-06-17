@@ -44,3 +44,10 @@ dist/release/
 *.exe
 *.blockmap
 *temp_build_log*
+
+# Test fixtures with embedded credentials (never commit)
+test-reg.json
+test-*.json
+
+# One-off destructive DB maintenance scripts (run locally, never ship)
+skypro-web/prisma/db-manage.php
