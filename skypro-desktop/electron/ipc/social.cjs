@@ -346,21 +346,27 @@ ipcm('facebook-search', async (e, { sessionId, query, type = 'all', limit = 50 }
       await page.evaluate(() => { const _se = document.scrollingElement || document.documentElement; _se.scrollTop = _se.scrollHeight; window.scrollTo(0, _se.scrollHeight) })
       await page.waitForTimeout(randomDelay(1500, 3000))
     }
-    const data = await page.evaluate((lim) => {
+    const data = await page.evaluate(() => {
       const r = []
-      document.querySelectorAll('[role="main"] a[href*="/"]').forEach((a, i) => {
-        if (i >= lim) return
+      document.querySelectorAll('[role="main"] a[href*="/"]').forEach((a) => {
         const href = a.getAttribute('href') || ''
+        const name = (a.innerText || '').trim().split('\n')[0]
+        if (!name) return
         if (href.startsWith('/')) {
-          r.push({ name: a.innerText.trim(), profile: 'https://www.facebook.com' + href })
+          r.push({ name, profile: 'https://www.facebook.com' + href })
         } else if (href.includes('facebook.com')) {
-          r.push({ name: a.innerText.trim(), profile: href })
+          r.push({ name, profile: href })
         }
       })
       return r
-    }, limit)
-    saveLeads('facebook', 'search', data)
-    return { success: true, data, count: data.length }
+    })
+    // Previously this tool did NO dedup or junk filtering (raw anchors, capped by
+    // anchor index so the cap was wasted on nav/UI links). Route through the shared
+    // sanitizer (identity dedup + junk + system-path filter), THEN take the limit of
+    // REAL results.
+    const cleaned = sanitizeRecords(data, { platform: 'facebook', kind: 'search' }).slice(0, limit)
+    saveLeads('facebook', 'search', cleaned)
+    return { success: true, data: cleaned, count: cleaned.length }
   } catch (err) {
     return { success: false, error: err.message }
   }
@@ -445,8 +451,11 @@ ipcm('facebook-extract-likers', async (e, { sessionId, postUrl, limit = 50, jobI
       stall = (allUsers.length === before) ? stall + 1 : 0
       if (stall >= 5) break
     }
-    saveLeads('facebook', 'post-likers', allUsers)
-    return { success: true, data: allUsers, count: allUsers.length, jobId, cancelled: globals.cancelFlags.get(jobId) }
+    // Sanitize before saving AND returning so the UI/CSV match the DB (the DB copy
+    // was already sanitized inside saveLeads, but the returned list was raw).
+    const finalUsers = sanitizeRecords(allUsers, { platform: 'facebook', kind: 'post-likers' }).slice(0, limit)
+    saveLeads('facebook', 'post-likers', finalUsers)
+    return { success: true, data: finalUsers, count: finalUsers.length, jobId, cancelled: globals.cancelFlags.get(jobId) }
   } catch (err) {
     return { success: false, error: err.message, jobId, partialData: allUsers }
   } finally {
@@ -2270,20 +2279,30 @@ ipcm('facebook-extract-sharers', async (e, { sessionId, postUrl, limit = 100, jo
           if (!href || href.includes('/photo') || href === '#') return
           const name = a.innerText.trim().split('\n')[0]
           if (!name || name.length > 80) return
-          r.push({
-            name,
-            profile: href.startsWith('http') ? href.split('?')[0] : `https://www.facebook.com${href.split('?')[0]}`,
-          })
+          // Keep the RAW href — canonicalize on the Node side. (Stripping ?id= here
+          // collapsed every profile.php sharer into one record.)
+          r.push({ name, href })
         })
         return r
       })
+      const newOnes = []
       for (const s of batch) {
-        if (seen.has(s.profile)) continue
-        seen.add(s.profile)
-        sharers.push(s)
+        // Canonical identity key: prefer the numeric id, else the vanity slug, else
+        // the name. Never key on the ?id=-stripped URL (that merged all id sharers).
+        const idm = s.href.match(/[?&]id=(\d{6,})/)
+        const slug = s.href.replace(/^https?:\/\/[^/]+/, '').replace(/^\/+/, '').split(/[/?#]/)[0].toLowerCase()
+        const key = idm ? 'id:' + idm[1] : slug ? 'slug:' + slug : 's:' + s.name.toLowerCase()
+        if (seen.has(key)) continue
+        seen.add(key)
+        const profile = idm
+          ? 'https://www.facebook.com/profile.php?id=' + idm[1]
+          : (s.href.startsWith('http') ? s.href.split(/[?#]/)[0] : 'https://www.facebook.com' + s.href.split(/[?#]/)[0])
+        const rec = { name: s.name, profile }
+        sharers.push(rec)
+        newOnes.push(rec)
         if (sharers.length >= limit) break
       }
-      sendProgress(sender, jobId, { type: 'progress', count: sharers.length, total: limit, data: batch })
+      sendProgress(sender, jobId, { type: 'progress', count: sharers.length, total: limit, data: newOnes })
       if (sharers.length === before) stagnant++
       else stagnant = 0
       await page.evaluate(() => {
@@ -2292,8 +2311,10 @@ ipcm('facebook-extract-sharers', async (e, { sessionId, postUrl, limit = 100, jo
       })
       await page.waitForTimeout(delayMs + Math.random() * 1000)
     }
-    saveLeads('facebook', 'sharers', sharers)
-    return { success: true, data: sharers, count: sharers.length, jobId, cancelled: globals.cancelFlags.get(jobId) }
+    // Sanitize before BOTH saving and returning so the UI/CSV match the DB.
+    const cleanSharers = sanitizeRecords(sharers, { platform: 'facebook', kind: 'sharers' }).slice(0, limit)
+    saveLeads('facebook', 'sharers', cleanSharers)
+    return { success: true, data: cleanSharers, count: cleanSharers.length, jobId, cancelled: globals.cancelFlags.get(jobId) }
   } catch (err) {
     return { success: false, error: err.message, partialData: sharers, jobId }
   } finally {

@@ -356,15 +356,11 @@ function sanitizeRecords(raw, opts = {}) {
       continue
     }
 
-    // Dedup: prefer URL+name pair, fall back to phone, then name alone.
-    const dedupKey = href ? `${href}::${name}` : phone ? `phone:${phone}` : email ? `mail:${email}` : `name:${name}`
-    if (seen.has(dedupKey)) {
-      droppedDupe++
-      continue
-    }
-    seen.add(dedupKey)
-
-    // Enrich: parse user IDs from Facebook URLs (works for IG too).
+    // Enrich identity FIRST, so dedup keys on the STABLE identity (userId/username)
+    // instead of the volatile href string. This is what (a) merges the same person
+    // exposed as both /profile.php?id=N and /username, and (b) stops the old
+    // `href::name` key from leaving duplicates whenever the same link was captured
+    // with a slightly different name string.
     let userId = item.userId || item.user_id || item.id || ''
     let username = item.username || ''
     if (!userId && href && (platform === 'facebook' || platform === 'instagram')) {
@@ -373,12 +369,38 @@ function sanitizeRecords(raw, opts = {}) {
       if (!username && parsed.username) username = parsed.username
     }
 
+    // Dedup key in priority order of stability. Identity-less rows fall back to a
+    // TEXT-aware key (e.g. distinct review text) so anonymous-but-different records
+    // are NOT collapsed into one; a row with no identifying field at all is kept
+    // and never merged.
+    const text = String(item.text || item.comment || item.review || '').trim()
+    let dedupKey
+    if (userId) dedupKey = `uid:${userId}`
+    else if (username) dedupKey = `uname:${username.toLowerCase()}`
+    else if (href) dedupKey = `href:${href.replace(/#.*$/, '').replace(/\/+$/, '').toLowerCase()}`
+    else if (phone) dedupKey = `phone:${phone}`
+    else if (email) dedupKey = `mail:${email.toLowerCase()}`
+    else if (name && text) dedupKey = `nt:${name.toLowerCase()}::${text.slice(0, 80)}`
+    else if (name) dedupKey = `name:${name.toLowerCase()}`
+    else if (text) dedupKey = `text:${text.slice(0, 80)}`
+    else dedupKey = null // no identifying field at all — keep, never dedup
+
+    if (dedupKey !== null) {
+      if (seen.has(dedupKey)) {
+        droppedDupe++
+        continue
+      }
+      seen.add(dedupKey)
+    }
+
     out.push({
       ...item,
       name,
       profile: href.startsWith('/') && platform === 'facebook' ? 'https://www.facebook.com' + href : href,
       userId: userId || '',
-      username: username || userId || '',
+      // Do NOT fall back to the numeric userId here — that polluted the username
+      // column with raw ids. Leave username empty when only an id is known.
+      username: username || '',
       phone: phone || '',
       email: email || '',
     })
