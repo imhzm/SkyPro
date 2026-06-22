@@ -829,6 +829,10 @@ ipcm('facebook-extract-phones', async (e, { sessionId, postUrl, limit = 50, jobI
         // phone numbers (they were, before).
         const phoneRegex = /\+?\d[\d\s().\-]{7,15}\d/g
         document.querySelectorAll('[role="article"]').forEach(article => {
+          // Skip CONTAINER articles (a parent comment whose innerText also includes
+          // its nested replies) so a phone written in a reply is NOT attributed to
+          // the parent commenter. Only leaf comment/reply articles are processed.
+          if (article.querySelector('[role="article"]')) return
           const text = article.innerText || ''
           const nameEl = article.querySelector('a[role="link"]')
           const name = nameEl ? (nameEl.innerText || '').trim() : ''
@@ -839,8 +843,10 @@ ipcm('facebook-extract-phones', async (e, { sessionId, postUrl, limit = 50, jobI
             const digits = norm.replace(/^\+/, '')
             if (digits.length < 9 || digits.length > 14) return   // ID/date, not a phone (FB ids are 15-16 digits)
             if (/^(\d)\1+$/.test(digits)) return                  // 000000000 / 1111111111
-            if (seen.has(norm)) return
-            seen.add(norm)
+            // Dedup on the canonical digits (no '+') so '+20…' and '20…' forms of the
+            // same number are not stored twice.
+            if (seen.has(digits)) return
+            seen.add(digits)
             r.push({ name, profile, phone: norm, platform: 'facebook' })
           })
         })
@@ -848,7 +854,8 @@ ipcm('facebook-extract-phones', async (e, { sessionId, postUrl, limit = 50, jobI
       }, [...seenPhones])
       for (const p of batch) {
         if (allPhones.length >= limit) break
-        if (!seenPhones.has(p.phone)) { seenPhones.add(p.phone); allPhones.push(p) }
+        const k = p.phone.replace(/^\+/, '')
+        if (!seenPhones.has(k)) { seenPhones.add(k); allPhones.push(p) }
       }
       sendProgress(sender, jobId, { type: 'progress', count: allPhones.length, total: limit, data: batch })
       if (allPhones.length >= limit) break
@@ -1280,10 +1287,16 @@ ipcm('facebook-analyze-group', async (e, { sessionId, groupUrl }) => {
       const nameEl = document.querySelector('h1 span, h1')
       if (nameEl) result.name = nameEl.innerText.trim()
       const bodyText = document.body.innerText
-      const membersMatch = bodyText.match(/(\d[\d,.\s]*)\s*(?:members|member|أعضاء|عضو|عضوًا)/i)
-      if (membersMatch) result.members = parseInt(membersMatch[1].replace(/[,\s.]/g, '')) || 0
-      if (bodyText.includes('Public') || bodyText.includes('عامة') || bodyText.includes('عام')) result.privacy = 'عامة'
-      else if (bodyText.includes('Private') || bodyText.includes('خاصة') || bodyText.includes('خاص')) result.privacy = 'خاصة'
+      // Members: take the LARGEST "<n> members" value, not the FIRST (the first is
+      // usually "N members online"/"N joined this week"). Normalise Arabic-Indic digits.
+      const normNum = (s) => s.replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[^0-9]/g, '')
+      const memberNums = [...bodyText.matchAll(/([\d٠-٩][\d٠-٩,،.\s]{0,14})\s*(?:members|member|أعضاء|عضوًا|عضو)\b/gi)]
+        .map((m) => parseInt(normNum(m[1]), 10) || 0)
+      result.members = memberNums.length ? Math.max(...memberNums) : 0
+      // Privacy: match the SPECIFIC FB phrase, not the bare token 'عام' (which is a
+      // substring of many common Arabic words → every group was labelled public).
+      if (/مجموعة\s+عامة|\bPublic group\b/i.test(bodyText)) result.privacy = 'عامة'
+      else if (/مجموعة\s+خاصة|\bPrivate group\b/i.test(bodyText)) result.privacy = 'خاصة'
       const aboutEl = document.querySelector('[data-testid="group-about"] span, div[dir="auto"] span')
       if (aboutEl) result.description = aboutEl.innerText.trim().substring(0, 200)
       result.postCount = Math.min(document.querySelectorAll('[role="article"]').length, 20)
@@ -1644,7 +1657,10 @@ ipcm('facebook-extract-my-groups', async (e, { sessionId, limit = 500, jobId, de
       })
       for (const g of batch) {
         if (groups.length >= effectiveLimit) break
-        if (!seen.has(g.groupId)) { seen.add(g.groupId); groups.push(g) }
+        // Lowercase the id/slug so the same group does not slip in twice via
+        // case-variant vanity slugs.
+        const gkey = String(g.groupId).toLowerCase()
+        if (!seen.has(gkey)) { seen.add(gkey); groups.push(g) }
       }
       sendProgress(sender, jobId, { type: 'progress', count: groups.length, total: effectiveLimit, data: groups })
       if (groups.length >= effectiveLimit) break
@@ -1928,8 +1944,11 @@ ipcm('facebook-extract-reviews', async (e, { sessionId, pageUrl, limit = 50, job
           const text = textEl ? textEl.innerText.trim() : ''
           const ratingEl = art.querySelector('[aria-label*="star"], [aria-label*="نجم"], [aria-label*="Star"]')
           const rating = ratingEl ? (ratingEl.getAttribute('aria-label') || '') : ''
-          const linkEl = art.querySelector('a[role="link"][href*="/"]')
-          const href = linkEl ? (linkEl.getAttribute('href') || '') : ''
+          // The reviewer's profile link is the anchor wrapping the NAME — NOT the
+          // first link in the tile (that was the page's own /reviews tab: constant
+          // across tiles, which broke dedup and got dropped as a system path).
+          const reviewerAnchor = nameEl ? nameEl.closest('a[role="link"][href]') : null
+          const href = reviewerAnchor ? (reviewerAnchor.getAttribute('href') || '') : ''
           if (text && text.length > 1) {
             r.push({ name, text: text.substring(0, 500), rating, profile: href.startsWith('/') ? 'https://www.facebook.com' + href : href, platform: 'facebook' })
           }
@@ -1937,7 +1956,10 @@ ipcm('facebook-extract-reviews', async (e, { sessionId, pageUrl, limit = 50, job
         return r
       })
       for (const rv of batch) {
-        const key = (rv.profile || '') + '::' + rv.text.slice(0, 40)
+        // Key on the reviewer (profile, else name) + a longer text slice so two
+        // different reviewers who wrote the same short text ("ممتاز"/"Great") are
+        // NOT collapsed into one.
+        const key = (rv.profile || rv.name || '') + '::' + rv.text.slice(0, 80)
         if (seen.has(key)) continue
         seen.add(key)
         rv.pageId = pageId
@@ -2601,7 +2623,18 @@ ipcm('facebook-detect-open-groups', async (e, { sessionId, groupUrls = [], delay
   const sender = getSender(e)
   const results = []
   try {
-    for (const url of groupUrls) {
+    // Dedup the input group URLs (same group pasted twice, or in different URL
+    // forms like /groups/123 vs /groups/123/?ref=…) so we don't re-check and emit
+    // duplicate rows or inflate the total.
+    const seenG = new Set()
+    const uniqueUrls = []
+    for (const u of groupUrls) {
+      const m = String(u || '').match(/\/groups\/([^/?#]+)/i)
+      const key = (m ? 'g:' + m[1] : 'u:' + String(u || '').split(/[?#]/)[0].replace(/\/+$/, '')).toLowerCase()
+      if (!u || seenG.has(key)) continue
+      seenG.add(key); uniqueUrls.push(u)
+    }
+    for (const url of uniqueUrls) {
       if (globals.cancelFlags.get(jobId)) break
       try {
         await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
@@ -2632,7 +2665,7 @@ ipcm('facebook-detect-open-groups', async (e, { sessionId, groupUrls = [], delay
       } catch (err) {
         results.push({ url, status: 'failed', error: err.message })
       }
-      sendProgress(sender, jobId, { type: 'progress', count: results.length, total: groupUrls.length, last: results[results.length - 1] })
+      sendProgress(sender, jobId, { type: 'progress', count: results.length, total: uniqueUrls.length, last: results[results.length - 1] })
       await page.waitForTimeout(delayMs + Math.random() * 1500)
     }
     return { success: true, data: results, jobId, cancelled: globals.cancelFlags.get(jobId) }
