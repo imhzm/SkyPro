@@ -209,15 +209,46 @@ test('sanitizeRecords drops all the junk from a Facebook friend extraction', () 
   }
 })
 
-test('sanitizeRecords dedupes by URL+name', () => {
+test('sanitizeRecords dedupes by stable identity, not href+name', () => {
   const raw = [
     { name: 'أحمد', profile: '/ahmed' },
-    { name: 'أحمد', profile: '/ahmed' },  // exact dup
-    { name: 'أحمد', profile: '/ahmed2' },  // same name, different URL → keep
-    { name: 'محمد', profile: '/ahmed' },   // same URL, different name → keep
+    { name: 'أحمد', profile: '/ahmed' },   // exact dup → merge
+    { name: 'أحمد', profile: '/ahmed2' },  // different username → keep
+    { name: 'محمد', profile: '/ahmed' },   // SAME username, different name capture → MERGE (same person)
   ]
   const out = sanitizeRecords(raw, { platform: 'facebook', kind: 'friends' })
-  assert.equal(out.length, 3)
+  // /ahmed (×3, varying names) collapse to one; /ahmed2 is a second person.
+  assert.equal(out.length, 2)
+  assert.deepEqual(out.map((r) => r.username).sort(), ['ahmed', 'ahmed2'])
+})
+
+test('sanitizeRecords merges the same numeric id captured twice with different names', () => {
+  const raw = [
+    { name: 'أحمد', profile: 'https://www.facebook.com/profile.php?id=100012345' },
+    { name: 'A. Mohamed', profile: '/profile.php?id=100012345' }, // same id, diff name → merge
+  ]
+  const out = sanitizeRecords(raw, { platform: 'facebook', kind: 'friends' })
+  assert.equal(out.length, 1)
+  assert.equal(out[0].userId, '100012345')
+})
+
+test('sanitizeRecords does NOT over-merge distinct people who share a name but have different links', () => {
+  const raw = [
+    { name: 'محمد', profile: '/mohamed.a' },
+    { name: 'محمد', profile: '/mohamed.b' }, // different person, same display name
+  ]
+  const out = sanitizeRecords(raw, { platform: 'facebook', kind: 'friends' })
+  assert.equal(out.length, 2)
+})
+
+test('sanitizeRecords keeps anonymous reviews with different text (no name/link)', () => {
+  const raw = [
+    { name: '', text: 'خدمة ممتازة جدا وسريعة' },
+    { name: '', text: 'تعامل سيء ولا أنصح به' },
+    { name: '', text: 'خدمة ممتازة جدا وسريعة' }, // exact dup of #1 → merge
+  ]
+  const out = sanitizeRecords(raw, { platform: 'facebook', kind: 'reviews', allowEmptyName: true })
+  assert.equal(out.length, 2)
 })
 
 test('sanitizeRecords enriches userId from URL', () => {

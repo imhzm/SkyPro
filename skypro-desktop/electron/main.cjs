@@ -374,6 +374,13 @@ const NO_FILTER_SOURCES = new Set([
   'page-messages',
   'search-pages',            // pages (have followers count)
   'search-groups',
+  // Messenger sources are keyed by a conversation/thread URL (/messages/t/… or
+  // /latest/inbox), NOT a profile link. sanitizeRecords' isSystemPath() treats
+  // 'messages'/'latest' as non-profile system paths and dropped 100% of these
+  // rows, so the UI showed contacts while the DB stayed empty. Skip the
+  // profile-oriented filter (the per-row isJunkName guard still applies).
+  'profile-messengers',
+  'page-messengers',
 ])
 
 function saveLeads(platform, source, data) {
