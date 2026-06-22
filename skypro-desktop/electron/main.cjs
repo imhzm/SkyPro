@@ -381,6 +381,10 @@ const NO_FILTER_SOURCES = new Set([
   // profile-oriented filter (the per-row isJunkName guard still applies).
   'profile-messengers',
   'page-messengers',
+  // Group URLs are /groups/<id>; isSystemPath treats 'groups' as a non-profile
+  // system path and dropped 100% of joined-group rows at save. The handler
+  // already junk-filters group names inline.
+  'my-groups',
 ])
 
 function saveLeads(platform, source, data) {
