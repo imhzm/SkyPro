@@ -470,7 +470,7 @@ ipcm('facebook-extract-comments', async (e, { sessionId, postUrl, limit = 50, jo
   globals.cancelFlags.set(jobId, false)
   const sender = getSender(e)
   const allComments = []
-  const seenNames = new Set()
+  const seenKeys = new Set()
   try {
     await page.goto(postUrl, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
     await page.waitForTimeout(randomDelay(3000, 5000))
@@ -485,30 +485,38 @@ ipcm('facebook-extract-comments', async (e, { sessionId, postUrl, limit = 50, jo
         const moreBtn = await page.$('div[role="button"]:has-text("View more comments"), div[role="button"]:has-text("عرض المزيد من التعليقات"), div[role="button"]:has-text("عرض المزيد")')
         if (moreBtn) { await moreBtn.click({ force: true }); await page.waitForTimeout(2000) }
       } catch (ex) { console.error('Click more comments:', ex.message) }
-      const batch = await page.evaluate(({ existingNames, cap }) => {
+      const batch = await page.evaluate(({ existingKeys, cap }) => {
         const r = []
-        const seen = new Set(existingNames)
+        const seen = new Set(existingKeys)
         document.querySelectorAll('[role="article"]').forEach((art) => {
           if (r.length >= cap) return
           const nameEl = art.querySelector('a[role="link"] span span, a[role="link"] span, h3 a span')
           const linkEl = art.querySelector('a[role="link"][href*="/"]')
           const textEl = art.querySelector('div[dir="auto"] span[dir="auto"], div[dir="auto"] span')
           const name = nameEl ? nameEl.innerText.trim() : ''
-          if (!name || name.length < 2 || seen.has(name)) return
-          seen.add(name)
+          if (!name || name.length < 2) return
           const href = linkEl ? linkEl.getAttribute('href') || '' : ''
           let userId = ''
-          const idMatch = href.match(/id=(\d+)/)
-          const profileMatch = href.match(/facebook\.com\/([a-zA-Z0-9.]+)/)
+          // Anchored id= with >=5 digits so we don't capture a volatile
+          // comment_id / reply_comment_id as if it were the author's id.
+          const idMatch = href.match(/[?&]id=(\d{5,})/)
+          const profileMatch = href.match(/facebook\.com\/([a-zA-Z0-9.]+)/) || (href.startsWith('/') ? href.match(/^\/([a-zA-Z0-9.]+)/) : null)
           if (idMatch) userId = idMatch[1]
-          else if (profileMatch && !['posts','groups','watch','reel','stories','photo','photos','videos','events','marketplace','gaming','login','recover','checkpoint'].includes(profileMatch[1])) userId = profileMatch[1]
+          else if (profileMatch && !['posts','groups','watch','reel','stories','photo','photos','videos','events','marketplace','gaming','login','recover','checkpoint','permalink.php','story.php','comment','media','profile.php'].includes(profileMatch[1].toLowerCase())) userId = profileMatch[1]
+          // Dedup on the STABLE identity, not the display name — many distinct
+          // people share a name and were being silently dropped. Fall back to the
+          // link, then the name only when there is no identifier at all.
+          const key = userId || href || name
+          if (seen.has(key)) return
+          seen.add(key)
           r.push({ name, text: textEl ? textEl.innerText.trim() : '', profile: href.startsWith('/') ? 'https://www.facebook.com' + href : href, userId, platform: 'facebook' })
         })
         return r
-      }, { existingNames: [...seenNames], cap: Math.max(1, limit - allComments.length) })
+      }, { existingKeys: [...seenKeys], cap: Math.max(1, limit - allComments.length) })
       for (const c of batch) {
-        if (!seenNames.has(c.name)) {
-          seenNames.add(c.name)
+        const key = c.userId || c.profile || c.name
+        if (!seenKeys.has(key)) {
+          seenKeys.add(key)
           allComments.push(c)
         }
       }
@@ -1292,7 +1300,14 @@ ipcm('facebook-users-to-ids', async (e, { sessionId, usernames }) => {
   const page = globals.bm.getPage(sessionId)
   if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
   const results = []
-  for (const username of usernames) {
+  const seenInput = new Set()
+  for (const rawUsername of usernames) {
+    const username = String(rawUsername || '').trim()
+    // Dedup the input so duplicate handles don't trigger duplicate FB navigations
+    // (rate-limit risk) and duplicate output rows.
+    const key = username.replace(/^https?:\/\/(?:www\.|m\.|web\.)?facebook\.com\//i, '').replace(/\/+$/, '').toLowerCase()
+    if (!username || seenInput.has(key)) continue
+    seenInput.add(key)
     try {
       await page.goto(`https://www.facebook.com/${username}`, { waitUntil: 'domcontentloaded', timeout: 30000 })
       await page.waitForTimeout(randomDelay(2000, 4000))
@@ -1313,7 +1328,7 @@ ipcm('facebook-users-to-ids', async (e, { sessionId, usernames }) => {
         for (const p of pats) { const m = src.match(p); if (m) return m[1] }
         return null
       })
-      results.push({ username, id: userId || 'غير موجود', status: userId ? 'found' : 'not_found' })
+      results.push({ username, id: userId || null, idLabel: userId || 'غير موجود', status: userId ? 'found' : 'not_found' })
     } catch (err) {
       results.push({ username, id: null, status: 'error', error: err.message })
     }
@@ -1327,7 +1342,14 @@ ipcm('facebook-links-to-ids', async (e, { sessionId, links }) => {
   const page = globals.bm.getPage(sessionId)
   if (!page) return { success: false, error: 'يرجى تسجيل الدخول أولاً' }
   const results = []
-  for (const link of links) {
+  const seenInput = new Set()
+  for (const rawLink of links) {
+    const link = String(rawLink || '').trim()
+    // Dedup equivalent links (trailing slash / query / case) so we don't re-navigate
+    // and emit duplicate rows for the same target.
+    const key = link.replace(/[?#].*$/, '').replace(/\/+$/, '').toLowerCase()
+    if (!link || seenInput.has(key)) continue
+    seenInput.add(key)
     try {
       await page.goto(link, { waitUntil: 'domcontentloaded', timeout: 30000 })
       await page.waitForTimeout(randomDelay(2000, 4000))
@@ -1352,7 +1374,7 @@ ipcm('facebook-links-to-ids', async (e, { sessionId, links }) => {
         for (const p of pats) { const m = src.match(p); if (m) return m[1] }
         return null
       })
-      results.push({ link, id: id || 'غير موجود', status: id ? 'found' : 'not_found' })
+      results.push({ link, id: id || null, idLabel: id || 'غير موجود', status: id ? 'found' : 'not_found' })
     } catch (err) {
       results.push({ link, id: null, status: 'error', error: err.message })
     }
@@ -1709,7 +1731,7 @@ ipcm('facebook-extract-page-messengers', async (e, { sessionId, pageUrl, limit =
     if (!pageId) return { success: false, error: 'تعذّر تحديد معرّف الصفحة من الرابط', jobId }
     await page.goto(`https://business.facebook.com/latest/inbox/all?asset_id=${pageId}`, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {})
     await page.waitForTimeout(randomDelay(5000, 7000))
-    const seenNames = new Set()
+    const seenIds = new Set()
     let stall = 0
     const maxScrolls = Math.max(Math.ceil(limit / 4), 25)
     for (let i = 0; i < maxScrolls; i++) {
@@ -1754,24 +1776,34 @@ ipcm('facebook-extract-page-messengers', async (e, { sessionId, pageUrl, limit =
               name = t; break
             }
           }
-          if (!name || NAV.has(name.toLowerCase()) || seenInBatch.has(name)) return
-          seenInBatch.add(name)
+          if (!name || NAV.has(name.toLowerCase())) return
           const link = row.querySelector('a[href*="selected_item_id="], a[href*="/t/"], a[href*="inbox"]')
           const href = link ? (link.getAttribute('href') || '') : ''
-          r.push({ name, profile: href.startsWith('http') ? href : (href ? 'https://business.facebook.com' + href : ''), platform: 'facebook' })
+          // Dedup on the unique conversation/thread id, NOT the display name
+          // (distinct contacts commonly share a name and were being dropped).
+          const tm = href.match(/selected_item_id=(\d+)/) || href.match(/\/t\/([^/?&]+)/)
+          const threadId = tm ? tm[1] : ''
+          const key = threadId || name
+          if (seenInBatch.has(key)) return
+          seenInBatch.add(key)
+          r.push({ name, userId: threadId, profile: href.startsWith('http') ? href : (href ? 'https://business.facebook.com' + href : ''), platform: 'facebook' })
         })
         return r
       })
       for (const m of batch) {
-        if (!seenNames.has(m.name)) { seenNames.add(m.name); allMessengers.push(m) }
+        const key = m.userId || m.name
+        if (!seenIds.has(key)) { seenIds.add(key); allMessengers.push(m) }
       }
-      const cleaned = sanitizeRecords(allMessengers, { platform: 'facebook', kind: 'page-messengers' })
+      // These rows are keyed by an inbox/thread URL, not a profile link, so the
+      // profile-oriented sanitizeRecords (isSystemPath) would drop ALL of them.
+      // Apply the name junk-filter only; dedup already happened by threadId.
+      const cleaned = allMessengers.filter(m => !isJunkName(m.name))
       sendProgress(sender, jobId, { type: 'progress', count: cleaned.length, total: limit, data: cleaned })
       if (cleaned.length >= limit) break
       if (allMessengers.length === before) { if (++stall >= 8) break } else stall = 0
       await page.waitForTimeout(delayMs + Math.random() * 1200)
     }
-    const finalMsg = sanitizeRecords(allMessengers, { platform: 'facebook', kind: 'page-messengers' }).slice(0, limit)
+    const finalMsg = allMessengers.filter(m => !isJunkName(m.name)).slice(0, limit)
     saveLeads('facebook', 'page-messengers', finalMsg)
     return { success: true, data: finalMsg, count: finalMsg.length, pageId, jobId, cancelled: globals.cancelFlags.get(jobId) }
   } catch (err) {
@@ -1814,9 +1846,9 @@ ipcm('facebook-extract-profile-messengers', async (e, { sessionId, limit = 50, j
         t.scrollTop = t.scrollHeight
       })
       await page.waitForTimeout(delayMs + Math.random() * 1000)
-      const batch = await page.evaluate((existingNames) => {
+      const batch = await page.evaluate((existingIds) => {
         const r = []
-        const seen = new Set(existingNames)
+        const seen = new Set(existingIds)
         // ONLY real conversation anchors. The old [role=row]/[role=listitem]
         // fallback also grabbed date separators ("اليوم"/today) and status rows
         // as if they were contacts (bug 8).
@@ -1826,14 +1858,18 @@ ipcm('facebook-extract-profile-messengers', async (e, { sessionId, limit = 50, j
           let name = (a.getAttribute('aria-label') || '').trim().split('\n')[0]
           if (!name) name = (a.innerText || '').trim().split('\n')[0]
           if (!name || name.length < 2 || name.length > 60) return
-          if (SYS.test(name) || DATEJUNK.test(name) || seen.has(name)) return
-          seen.add(name)
+          if (SYS.test(name) || DATEJUNK.test(name)) return
           const href = a.getAttribute('href') || ''
           const msgMatch = href.match(/\/messages\/t\/([^/?]+)/)
+          // Dedup on the unique thread id, NOT the display name — distinct people
+          // routinely share a name but each conversation has its own thread id.
+          const key = msgMatch ? msgMatch[1] : name
+          if (seen.has(key)) return
+          seen.add(key)
           r.push({ name, profile: href.startsWith('/') ? 'https://www.facebook.com' + href : href, userId: msgMatch ? msgMatch[1] : '', platform: 'facebook' })
         })
         return r
-      }, allMessengers.map(m => m.name))
+      }, allMessengers.map(m => m.userId || m.name))
       for (const u of batch) {
         if (allMessengers.length >= limit) break
         allMessengers.push(u)
