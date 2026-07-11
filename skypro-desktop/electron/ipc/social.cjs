@@ -652,9 +652,23 @@ ipcm('facebook-extract-friends', async (e, { sessionId, limit = 100, jobId, dela
         if (!main) return []
         const SYSTEM = new Set(['login','help','settings','legal','policies','marketplace','watch','reel','reels','stories','story','groups','group','events','event','notes','gaming','messages','messenger','notifications','friends','friends_all','find-friends','bookmarks','ads','live','i','flx','flow','public','accounts','direct','explore','hashtag','tags','tag','oauth','auth','recover','checkpoint','signup','reg','r','about','careers','directory','business','developers','photo','photos','video','videos','home','logout','reels_tab','me','map','places','sports','music','movies','tv','books','likes','following','followers','pages'])
         const NAVTABS = new Set(['about','photos','friends','friends_all','reels_tab','videos','check-ins','sports','music','movies','tv','books','likes','following','followers','map','places','groups_tab'])
+        // The /me/friends page renders the friends list AND a "People you may
+        // know" suggestions section below it. The broad anchor sweep captured the
+        // suggestions too (e.g. 900 rows for 78 real friends). Find where that
+        // section starts and collect ONLY anchors that appear BEFORE it.
+        // Only real headings (NOT generic div/span wrappers, whose innerText would
+        // span the whole subtree and wrongly exclude the friends they contain).
+        let pymkCutoff = null
+        for (const h of main.querySelectorAll('h1, h2, h3, h4, [role="heading"]')) {
+          const t = (h.innerText || h.textContent || '').trim()
+          if (!t || t.length > 60) continue
+          if (/قد\s*تعرفهم|People\s*you\s*may\s*know|أشخاص\s*مقترح|الأشخاص\s*المقترح|Suggested|Suggestions/i.test(t)) { pymkCutoff = h; break }
+        }
         const r = []
         const seenInPass = new Set()
         for (const a of main.querySelectorAll('a[href]')) {
+          // Skip everything from the "People you may know" heading onward.
+          if (pymkCutoff && (pymkCutoff.compareDocumentPosition(a) & Node.DOCUMENT_POSITION_FOLLOWING)) continue
           const href = a.getAttribute('href') || ''
           if (!href) continue
           const isPhp = href.includes('/profile.php?id=')
