@@ -88,7 +88,7 @@ export async function PUT(req: NextRequest) {
 
     const subscription = await prisma.subscription.findUnique({
       where: { id },
-      select: { id: true }
+      select: { id: true, keyId: true }
     })
     if (!subscription) {
       return NextResponse.json(errorResponse('الاشتراك غير موجود'), { status: 404 })
@@ -98,6 +98,22 @@ export async function PUT(req: NextRequest) {
       where: { id },
       data: updateData
     })
+
+    // CRITICAL: propagate the change to the linked activation key. The desktop app
+    // validates against activation_keys.expiresAt/status, NOT the subscription —
+    // so extending only the subscription left the key expired and the app kept
+    // rejecting it ("expired serial") even though the subscription was extended.
+    if (subscription.keyId) {
+      const keyData: { expiresAt?: Date; status?: string } = {}
+      if (updateData.expiresAt) keyData.expiresAt = updateData.expiresAt
+      if (status === 'active' || status === 'trial') keyData.status = 'active'
+      else if (status === 'expired') keyData.status = 'expired'
+      else if (status === 'cancelled' || status === 'suspended') keyData.status = 'suspended'
+      else if (updateData.expiresAt) keyData.status = 'active' // extending a date implies the key is usable again
+      if (Object.keys(keyData).length > 0) {
+        await prisma.activationKey.update({ where: { id: subscription.keyId }, data: keyData })
+      }
+    }
 
     await prisma.auditLog.create({
       data: {
