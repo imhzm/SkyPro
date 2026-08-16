@@ -1,10 +1,8 @@
 import { useAuthStore } from '../../stores/appStore'
 
 const WEB_API_URL = import.meta.env.VITE_WEB_API_URL || import.meta.env.VITE_API_URL || ''
-const SERVER_API_URL = import.meta.env.VITE_API_URL || ''
 
 if (!WEB_API_URL) console.warn('[activation] VITE_WEB_API_URL or VITE_API_URL is not set')
-if (!SERVER_API_URL) console.warn('[activation] VITE_API_URL is not set')
 
 function assertHttps(url: string): string {
   if (url && !url.startsWith('https://')) {
@@ -88,16 +86,6 @@ export interface ActivationResponse {
     deviceId?: string
     maxDevices?: number
     expiresAt?: string
-  }
-}
-
-export interface SerialRequestResponse {
-  success: boolean
-  message: string
-  data?: {
-    serial: string
-    key: string
-    expiryDate: string
   }
 }
 
@@ -206,19 +194,6 @@ export const activationApi = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, serial, deviceFingerprint, deviceInfo, code })
-      })
-      return response.json()
-    } catch {
-      return { success: false, message: 'فشل الاتصال بالخادم' }
-    }
-  },
-
-  requestActivation: async (email: string, months: number = 12): Promise<SerialRequestResponse> => {
-    try {
-      const response = await fetch(`${assertHttps(SERVER_API_URL)}/request-activation.php`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, months })
       })
       return response.json()
     } catch {
