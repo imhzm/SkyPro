@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import QRCode from 'qrcode'
 import { Shield, ShieldCheck, Copy, Check, AlertTriangle, X } from 'lucide-react'
 import { useToast } from '@/components/ui/Toaster'
 
@@ -22,6 +23,18 @@ export default function TwoFactorCard({ initialEnabled, hasPassword }: Props) {
   const [disablePassword, setDisablePassword] = useState('')
   const [disableCode, setDisableCode] = useState('')
   const [secretCopied, setSecretCopied] = useState(false)
+  const [qrDataUrl, setQrDataUrl] = useState('')
+
+  // Render the TOTP QR locally — never send the otpauth URL (which contains
+  // the 2FA secret) to a third-party QR service.
+  useEffect(() => {
+    if (!otpauthUrl) return
+    let cancelled = false
+    QRCode.toDataURL(otpauthUrl, { width: 180, margin: 1 })
+      .then((url) => { if (!cancelled) setQrDataUrl(url) })
+      .catch(() => { /* fall back to manual secret entry below */ })
+    return () => { cancelled = true }
+  }, [otpauthUrl])
 
   const startSetup = async () => {
     setSubmitting(true)
@@ -153,13 +166,12 @@ export default function TwoFactorCard({ initialEnabled, hasPassword }: Props) {
           </ol>
 
           <div className="my-5 bg-white p-3 rounded-2xl flex items-center justify-center">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=0&data=${encodeURIComponent(otpauthUrl)}`}
-              alt="QR Code"
-              width={180}
-              height={180}
-            />
+            {qrDataUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={qrDataUrl} alt="QR Code" width={180} height={180} />
+            ) : (
+              <p className="text-xs text-slate-500 p-4">جارٍ توليد رمز QR… أو استخدم المفتاح اليدوي بالأسفل</p>
+            )}
           </div>
 
           <label className="block text-xs text-slate-500 mb-1">أو أدخل المفتاح يدوياً:</label>
