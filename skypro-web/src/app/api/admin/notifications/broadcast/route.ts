@@ -11,7 +11,10 @@ const schema = z.object({
   title: z.string().trim().min(2).max(120),
   body: z.string().trim().min(2).max(2000),
   type: z.enum(['info', 'success', 'warning', 'error']).default('info'),
-  link: z.string().url().max(500).optional(),
+  link: z.string().trim().max(500).refine(
+    (v) => /^https?:\/\//i.test(v),
+    { message: 'الرابط يجب أن يبدأ بـ http:// أو https://' }
+  ).optional(),
   audience: z.enum(['all', 'specific']).default('all'),
   userIds: z.array(z.coerce.number().int().positive()).max(5000).optional(),
 })

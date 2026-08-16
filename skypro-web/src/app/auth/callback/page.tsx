@@ -19,10 +19,10 @@ export default function AuthCallbackPage() {
           if (data.success && data.data?.role === 'admin') {
             router.push('/admin')
           } else {
-            router.push('/')
+            router.push('/dashboard')
           }
         })
-        .catch(() => router.push('/'))
+        .catch(() => router.push('/dashboard'))
     }
   }, [router])
 

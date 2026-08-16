@@ -4,7 +4,7 @@ import { prisma } from '@/lib/db'
 import { verifyPassword } from '@/lib/utils'
 import { successResponse, errorResponse, getErrorMessage } from '@/lib/api'
 import { rejectCrossSite, rejectLargeJson, checkRateLimit, getClientIp, rateLimitedResponse } from '@/lib/request-security'
-import { verifyTOTP } from '@/lib/totp'
+import { checkTwoFactorCode } from '@/lib/two-factor'
 import { notifySecurityEvent } from '@/lib/security'
 
 export const dynamic = 'force-dynamic'
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
       select: {
         id: true, email: true, name: true,
         passwordHash: true,
-        twoFactorEnabled: true, twoFactorSecret: true,
+        twoFactorEnabled: true, twoFactorSecret: true, twoFactorBackupCodes: true,
       },
     })
     if (!user) {
@@ -57,20 +57,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(errorResponse('2FA غير مُفعَّل'), { status: 400 })
     }
 
-    // Validate identity: password (if has one) AND/OR TOTP
+    // Validate identity: password (if present) AND a second factor.
+    // A password alone must NOT disable 2FA — on credential compromise the
+    // attacker would otherwise strip the protection. Users who lost their
+    // device can recover via a single-use backup code or by contacting support.
     const isGoogleOnly = !user.passwordHash
     if (isGoogleOnly) {
-      if (!code || !user.twoFactorSecret || !verifyTOTP(user.twoFactorSecret, code)) {
-        return NextResponse.json(errorResponse('رمز TOTP غير صحيح'), { status: 401 })
+      if (!code || !checkTwoFactorCode(code, user.twoFactorSecret, user.twoFactorBackupCodes).ok) {
+        return NextResponse.json(errorResponse('رمز TOTP أو رمز احتياطي غير صحيح'), { status: 401 })
       }
     } else {
       if (!password || !verifyPassword(password, user.passwordHash!)) {
         return NextResponse.json(errorResponse('كلمة المرور غير صحيحة'), { status: 401 })
       }
-      // Code is OPTIONAL when using password (allows recovery if user lost device)
-      // but if they provide one, it must be valid
-      if (code && (!user.twoFactorSecret || !verifyTOTP(user.twoFactorSecret, code))) {
-        return NextResponse.json(errorResponse('رمز TOTP غير صحيح'), { status: 401 })
+      if (!code || !checkTwoFactorCode(code, user.twoFactorSecret, user.twoFactorBackupCodes).ok) {
+        return NextResponse.json(errorResponse('رمز TOTP أو رمز احتياطي مطلوب لإيقاف التحقق بخطوتين'), { status: 401 })
       }
     }
 

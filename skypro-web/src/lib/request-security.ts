@@ -28,6 +28,20 @@ function cleanHeaderValue(value: string | null): string | null {
   return cleaned.slice(0, 128)
 }
 
+/**
+ * X-Forwarded-For is a *list* (leftmost = client-supplied). Reverse proxies
+ * like nginx APPEND the real client IP last, so the last entry is the only
+ * one we can trust. Taking the first entry lets attackers spoof their IP
+ * and bypass every per-IP rate limit.
+ */
+function cleanForwardedFor(value: string | null): string | null {
+  if (!value) return null
+  const parts = value.split(',').map((p) => p.trim()).filter(Boolean)
+  const last = parts[parts.length - 1]
+  if (!last || last.toLowerCase() === 'unknown') return null
+  return last.slice(0, 128)
+}
+
 function safeOrigin(value: string | null | undefined): string | null {
   if (!value) return null
   try {
@@ -70,7 +84,7 @@ export function getClientIp(req: { headers: Headers }): string {
   if (trustProxyHeaders()) {
     return cleanHeaderValue(req.headers.get('cf-connecting-ip'))
       || cleanHeaderValue(req.headers.get('x-real-ip'))
-      || cleanHeaderValue(req.headers.get('x-forwarded-for'))
+      || cleanForwardedFor(req.headers.get('x-forwarded-for'))
       || '0.0.0.0'
   }
 

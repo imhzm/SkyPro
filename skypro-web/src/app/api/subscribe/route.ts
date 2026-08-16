@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { sendEmail } from '@/lib/email'
+import { sendEmail, escapeHtml } from '@/lib/email'
 import { successResponse, errorResponse, getErrorMessage } from '@/lib/api'
 import {
   checkRateLimit,
@@ -66,9 +66,9 @@ export async function POST(req: NextRequest) {
       html: `<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;padding:24px;background:#f8fafc;">
         <h2 style="color:#0f172a;margin:0 0 12px;">📬 مشترك جديد في النشرة البريدية</h2>
         <table style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px;width:100%;border-collapse:collapse;">
-          <tr><td style="padding:6px;color:#64748b;">البريد:</td><td style="padding:6px;color:#0f172a;font-weight:bold;">${rawEmail}</td></tr>
-          <tr><td style="padding:6px;color:#64748b;">المصدر:</td><td style="padding:6px;color:#0f172a;">${source}</td></tr>
-          <tr><td style="padding:6px;color:#64748b;">IP:</td><td style="padding:6px;color:#0f172a;">${ipAddress ?? 'غير معروف'}</td></tr>
+          <tr><td style="padding:6px;color:#64748b;">البريد:</td><td style="padding:6px;color:#0f172a;font-weight:bold;">${escapeHtml(rawEmail)}</td></tr>
+          <tr><td style="padding:6px;color:#64748b;">المصدر:</td><td style="padding:6px;color:#0f172a;">${escapeHtml(source)}</td></tr>
+          <tr><td style="padding:6px;color:#64748b;">IP:</td><td style="padding:6px;color:#0f172a;">${escapeHtml(ipAddress ?? 'غير معروف')}</td></tr>
           <tr><td style="padding:6px;color:#64748b;">التاريخ:</td><td style="padding:6px;color:#0f172a;">${new Date().toLocaleString('ar-EG')}</td></tr>
         </table>
       </div>`,

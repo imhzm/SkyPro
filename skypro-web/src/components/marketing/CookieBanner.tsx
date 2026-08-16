@@ -26,7 +26,7 @@ function readConsent(): Preferences | null {
 function writeConsent(prefs: Preferences) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs))
-    document.cookie = `cookie_consent=${prefs.analytics ? 'a' : ''}${prefs.marketing ? 'm' : ''}; max-age=${60 * 60 * 24 * 365}; path=/; samesite=lax`
+    document.cookie = `cookie_consent=${prefs.analytics ? 'a' : ''}${prefs.marketing ? 'm' : ''}; max-age=${60 * 60 * 24 * 365}; path=/; samesite=lax; secure`
     // Broadcast within the tab (storage event only fires across tabs)
     window.dispatchEvent(new CustomEvent('skypro:consent-changed', { detail: prefs }))
   } catch {

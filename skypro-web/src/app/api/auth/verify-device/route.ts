@@ -123,6 +123,13 @@ export async function POST(req: NextRequest) {
       ), { status: 403 })
     }
 
+    // Ownership check MUST run before any state mutation — activating an
+    // `available` key then failing with 403 left side effects on failed
+    // requests (audit: verify-device state-change-on-failure).
+    if (!activationKey.userId) {
+      return NextResponse.json(errorResponse('المفتاح غير مرتبط بحساب. استخدم تسجيل الدخول عبر التطبيق أولاً.'), { status: 403 })
+    }
+
     if (activationKey.status === 'available') {
       await prisma.activationKey.update({
         where: { id: activationKey.id },
@@ -132,10 +139,6 @@ export async function POST(req: NextRequest) {
           expiresAt: getActivationExpiry()
         }
       })
-    }
-
-    if (!activationKey.userId) {
-      return NextResponse.json(errorResponse('المفتاح غير مرتبط بحساب. استخدم تسجيل الدخول عبر التطبيق أولاً.'), { status: 403 })
     }
 
     const device = await prisma.device.create({

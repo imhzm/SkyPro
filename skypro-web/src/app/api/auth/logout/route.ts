@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { getClientIp } from '@/lib/request-security'
+import { getClientIp, rejectCrossSite } from '@/lib/request-security'
 
 const AUTH_COOKIE_NAMES = [
   'authjs.session-token',
@@ -70,6 +70,11 @@ export async function POST(req: NextRequest) {
  * Allows simple link-based logout from anywhere on the site.
  */
 export async function GET(req: NextRequest) {
+  // CSRF guard: an <img src="/api/auth/logout"> from a cross-site page must
+  // not be able to force-logout a victim.
+  const crossSite = rejectCrossSite(req)
+  if (crossSite) return crossSite
+
   await logAndClear(req)
 
   const baseUrl = process.env.NEXTAUTH_URL?.replace(/\/$/, '')

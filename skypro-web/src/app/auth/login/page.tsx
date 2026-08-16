@@ -84,7 +84,17 @@ function LoginContent() {
       setErrorCode(null)
 
       const callback = params.get('callbackUrl')
-      let target = callback && callback.startsWith('/') ? callback : '/dashboard'
+      // Open-redirect guard: only same-origin relative paths are allowed
+      // (`//evil.com` passes startsWith('/') but is protocol-relative).
+      let target = '/dashboard'
+      if (callback) {
+        try {
+          const u = new URL(callback, window.location.origin)
+          if (u.origin === window.location.origin) target = u.pathname + u.search
+        } catch {
+          /* malformed URL — keep /dashboard */
+        }
+      }
 
       try {
         const meRes = await fetch('/api/auth/me', { cache: 'no-store' })

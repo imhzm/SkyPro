@@ -176,7 +176,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           }
           const check = checkTwoFactorCode(code, user.twoFactorSecret, user.twoFactorBackupCodes)
           if (!check.ok) {
-            await recordFailedLogin(user.id)
+            // A wrong 2FA code must NOT count toward the password lockout —
+            // otherwise anyone knowing only the email can lock the account.
             throw new TwoFactorInvalid()
           }
           // Consume the backup code if one was used (single-use).

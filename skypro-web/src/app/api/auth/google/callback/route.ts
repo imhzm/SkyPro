@@ -134,6 +134,11 @@ export async function GET(req: NextRequest) {
   if (!profile.email) {
     return loginRedirect(req, 'بريد Google غير متاح')
   }
+  // Never create accounts from unverified Google emails, and never let an
+  // unverified email take over a passwordless (Google-only) account.
+  if (!profile.verified_email) {
+    return loginRedirect(req, 'بريد Google غير مؤكد — استخدم حساباً بريده مؤكد')
+  }
 
   // 3. Find or create user
   let user = await prisma.user.findUnique({
@@ -340,6 +345,11 @@ export async function GET(req: NextRequest) {
       picture: user.avatarUrl || undefined,
       role: user.role || 'user',
       status: 'active',
+      // Auth.js only injects `iat` in its own flows — without it the
+      // password-change session invalidation in lib/auth.ts is silently
+      // skipped for Google-issued sessions. Set it explicitly.
+      iat: Math.floor(Date.now() / 1000),
+      exp: Math.floor(Date.now() / 1000) + maxAge,
     },
     secret,
     salt: SESSION_COOKIE_NAME,
