@@ -30,6 +30,10 @@ jobs:
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
 
+      - name: Run test suite
+        working-directory: skypro-desktop
+        run: npm test
+
       - name: Build renderer + Electron package
         working-directory: skypro-desktop
         run: npm run build:desktop
