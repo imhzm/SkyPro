@@ -107,13 +107,13 @@ gh run download <run-id> --dir skypro-release
 ```bash
 cd skypro-release/desktop-release-*
 
-scp "SkyPro Setup"*.exe latest.yml *.blockmap version.json root@147.79.66.116:/var/www/downloads.skywaveads.com/skypro/
+scp "SkyPro Setup"*.exe latest.yml *.blockmap version.json root@187.124.168.251:/var/www/downloads.skywaveads.com/skypro/
 ```
 
 هيطلب منك باسورد السيرفر. بعد ما يخلص الرفع، شغّل سكريبت **التحديث + التنظيف التلقائي** (يحدّث الـ symlink ويحذف النسخ القديمة فيما عدا أحدث 2):
 
 ```bash
-ssh root@147.79.66.116 'cd /var/www/downloads.skywaveads.com/skypro && ln -sf "SkyPro Setup VERSION.exe" latest.exe && mapfile -t EXES < <(ls -t1 SkyPro\ Setup\ *.exe 2>/dev/null) && if [ "${#EXES[@]}" -gt 2 ]; then for ((i=2; i<${#EXES[@]}; i++)); do rm -f -- "${EXES[$i]}" "${EXES[$i]}.blockmap"; echo "removed: ${EXES[$i]}"; done; fi'
+ssh root@187.124.168.251 'cd /var/www/downloads.skywaveads.com/skypro && ln -sf "SkyPro Setup VERSION.exe" latest.exe && mapfile -t EXES < <(ls -t1 SkyPro\ Setup\ *.exe 2>/dev/null) && if [ "${#EXES[@]}" -gt 2 ]; then for ((i=2; i<${#EXES[@]}; i++)); do rm -f -- "${EXES[$i]}" "${EXES[$i]}.blockmap"; echo "removed: ${EXES[$i]}"; done; fi'
 ```
 
 > **مهم:** استبدل `VERSION` برقم الإصدار الفعلي (مثل `1.4.0`).
@@ -171,7 +171,7 @@ curl -sI https://downloads.skywaveads.com/skypro/latest
 **لتفقّد النسخ الموجودة دلوقتي:**
 
 ```bash
-ssh root@147.79.66.116 "ls -lh /var/www/downloads.skywaveads.com/skypro/ | grep -E 'SkyPro Setup'"
+ssh root@187.124.168.251 "ls -lh /var/www/downloads.skywaveads.com/skypro/ | grep -E 'SkyPro Setup'"
 ```
 
 ---
@@ -181,7 +181,7 @@ ssh root@147.79.66.116 "ls -lh /var/www/downloads.skywaveads.com/skypro/ | grep 
 لو التعديل كان في مجلد `skypro-web/` (الموقع)، لازم تحدّث السيرفر كمان:
 
 ```bash
-ssh root@147.79.66.116
+ssh root@187.124.168.251
 
 cd /var/www/skypro.skywaveads.com/skypro-web
 git pull origin main
@@ -227,7 +227,7 @@ curl -s https://downloads.skywaveads.com/skypro/latest.yml
 ### مستخدم مش قادر يعمل لوجن
 
 ```bash
-ssh root@147.79.66.116
+ssh root@187.124.168.251
 
 # شوف حالة المستخدم (غيّر USER_EMAIL بإيميل المستخدم)
 mysql -u skypro_app -p"$DB_PASS" skypro -e "SELECT id, email, status FROM users WHERE email='USER_EMAIL';"
@@ -244,7 +244,7 @@ mysql -u skypro_app -p"$DB_PASS" skypro -e "UPDATE activation_keys SET status='a
 ### إعادة تعيين كلمة سر مستخدم
 
 ```bash
-ssh root@147.79.66.116
+ssh root@187.124.168.251
 cd /var/www/skypro.skywaveads.com/skypro-web
 
 # غيّر USER_EMAIL و NEW_PASSWORD
@@ -268,7 +268,8 @@ main();
 
 | البيان | القيمة |
 |--------|--------|
-| IP السيرفر | `147.79.66.116` |
+| IP السيرفر | `187.124.168.251` |
+| ملاحظة مهمة | **هذا هو السيرفر الوحيد لكل شغل SkyPro** — الـ `147.79.66.116` بيستضيف مواقع عملاء أخرى وليس له أي علاقة بـ SkyPro |
 | مستخدم SSH | `root` |
 | مسار الموقع | `/var/www/skypro.skywaveads.com/skypro-web` |
 | مسار التحميلات | `/var/www/downloads.skywaveads.com/skypro/` |

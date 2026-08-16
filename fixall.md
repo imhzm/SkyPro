@@ -2,10 +2,10 @@
 
 > تاريخ الفحص: 2026-05-04
 > النطاق: skypro.skywaveads.com
-> المستضيف: 147.79.66.116
+> المستضيف: 187.124.168.251
 > GitHub (Desktop): https://github.com/imhzm/SkyPro
 > GitHub (Landing): https://github.com/imhzm/SkyProLandingPage
-> بيانات الهوست: 147.79.66.116 | root | ***REDACTED***
+> بيانات الهوست: 187.124.168.251 | root | [REDACTED — كانت كلمة مرور مكشوفة في الريبو، تم تدويرها — لا تضع أسراراً في git]
 
 ---
 
@@ -53,7 +53,7 @@
 
 **الحل**: التغيير إلى:
 ```env
-DATABASE_URL="mysql://skypro_app:[REDACTED]@147.79.66.116:3306/skypro"
+DATABASE_URL="mysql://skypro_app:[REDACTED]@187.124.168.251:3306/skypro"
 ```
 
 ---
@@ -2317,7 +2317,7 @@ if (options.stateChanging && req) {
 - ✅ `keys/activate/route.ts`: إزالة `key: activationKey.keyCode`
 
 ### 3. ✅ إصلاح DATABASE_URL
-- ✅ تحديث `skypro-web/.env` إلى: `mysql://skypro_app:[password]@147.79.66.116:3306/senderpro`
+- ✅ تحديث `skypro-web/.env` إلى: `mysql://skypro_app:[password]@187.124.168.251:3306/senderpro`
 
 ### 4. ✅ التحقق من كود Next.js
 - ✅ اجتياز `npx tsc --noEmit` بنجاح (لا توجد أخطاء TypeScript)

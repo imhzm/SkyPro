@@ -81,7 +81,7 @@ jobs:
             echo "::warning::DEPLOY_SSH_KEY secret is not set — skipping deploy"
             exit 0
           fi
-          HOST="${DEPLOY_HOST:-147.79.66.116}"
+          HOST="${DEPLOY_HOST:-187.124.168.251}"
           USER="${DEPLOY_USER:-root}"
           if [ "$USER" = "root" ]; then
             echo "::warning::Deploying as root. Create a least-privilege deploy user and set the DEPLOY_USER secret."
