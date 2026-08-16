@@ -140,7 +140,7 @@ export async function GET(req: NextRequest) {
     where: { email: profile.email },
     select: {
       id: true, email: true, name: true, avatarUrl: true,
-      role: true, status: true, passwordHash: true,
+      role: true, status: true, passwordHash: true, twoFactorEnabled: true,
     },
   })
 
@@ -158,6 +158,12 @@ export async function GET(req: NextRequest) {
     // Prevent OAuth account hijacking on unverified Google emails
     if (user.passwordHash && !profile.verified_email) {
       return loginRedirect(req, 'سجّل الدخول بكلمة المرور أولاً ثم اربط Google من الإعدادات')
+    }
+
+    // 2FA accounts must use the password flow — Google sign-in would bypass
+    // the second factor (TOTP/backup code) entirely.
+    if (user.twoFactorEnabled) {
+      return loginRedirect(req, 'حسابك مفعّل عليه التحقق بخطوتين — سجّل الدخول بكلمة المرور ورمز التحقق')
     }
   }
 
@@ -186,7 +192,7 @@ export async function GET(req: NextRequest) {
         },
         select: {
           id: true, email: true, name: true, avatarUrl: true,
-          role: true, status: true, passwordHash: true,
+          role: true, status: true, passwordHash: true, twoFactorEnabled: true,
         },
       })
       const activationKey = await tx.activationKey.create({

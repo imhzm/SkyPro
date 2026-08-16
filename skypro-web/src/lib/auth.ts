@@ -227,6 +227,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (existingUser && existingUser.status !== 'active') {
           return false
         }
+        // 2FA accounts must use the password flow — Google sign-in would
+        // bypass the second factor (TOTP/backup code) entirely.
+        if (existingUser?.twoFactorEnabled) {
+          return false
+        }
       }
 
       return true

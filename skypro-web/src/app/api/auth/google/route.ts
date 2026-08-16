@@ -46,7 +46,6 @@ export async function GET(req: NextRequest) {
     response_type: 'code',
     scope: 'openid email profile',
     state,
-    access_type: 'offline',
     prompt: 'select_account',
   })
 
