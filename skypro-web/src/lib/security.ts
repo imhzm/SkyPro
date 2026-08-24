@@ -1,6 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import crypto from 'crypto'
 import { prisma } from '@/lib/db'
+import {
+  GENESIS_HASH,
+  canonicalizeEntry,
+  hashEntry,
+  type ChainSegment,
+  type ChainedAuditInput,
+} from '@/lib/audit-chain'
 
 // ──────────────────────────────────────────────────────────────────────────────
 // CONSTANT-TIME COMPARISONS — defends against timing attacks on tokens.
@@ -66,115 +73,100 @@ export async function checkPasswordBreach(password: string, timeoutMs = 4000): P
 // AUDIT LOG HASH CHAIN — tamper-evident logging.
 // Each log entry's hash is derived from (previousHash || canonicalEntryJSON).
 // Verifying the chain proves no entry has been altered or removed.
+// Core primitives live in @/lib/audit-chain; chaining itself is enforced by
+// the prisma extension in lib/db.ts.
 // ──────────────────────────────────────────────────────────────────────────────
 
-export interface ChainedAuditInput {
-  userId: number | null
-  action: string
-  details?: any
-  ipAddress?: string | null
-}
-
-interface ChainSegment {
-  prevHash: string
-  hash: string
-}
-
-const GENESIS_HASH = 'GENESIS:' + crypto.createHash('sha256').update('skypro-audit-genesis').digest('hex')
-
-function canonicalizeEntry(input: ChainedAuditInput, createdAt: Date, prevHash: string): string {
-  // Deterministic JSON for hashing — sorted keys, no whitespace
-  return JSON.stringify({
-    prev: prevHash,
-    userId: input.userId ?? null,
-    action: input.action,
-    details: input.details ?? null,
-    ipAddress: input.ipAddress ?? null,
-    createdAt: createdAt.toISOString(),
-  })
-}
-
-function hashEntry(canonical: string): string {
-  return crypto.createHash('sha256').update(canonical).digest('hex')
-}
+// Re-exported for backwards compatibility with existing importers.
+export type { ChainedAuditInput } from '@/lib/audit-chain'
 
 /**
  * Append an audit-log entry as the next link in the hash chain.
- * Stores hash + prevHash inside `details` (avoiding a schema migration).
+ * Chaining is enforced centrally by the prisma extension in lib/db.ts, so
+ * this helper is now a thin convenience wrapper (kept for existing callers).
  */
 export async function appendAuditLog(input: ChainedAuditInput): Promise<{ id: number; hash: string }> {
-  const last = await prisma.auditLog.findFirst({
-    orderBy: { id: 'desc' },
-    select: { details: true },
-  })
-  const prevHash = (last?.details as any)?.__chain?.hash ?? GENESIS_HASH
-
-  const createdAt = new Date()
-  const canonical = canonicalizeEntry(input, createdAt, prevHash)
-  const hash = hashEntry(canonical)
-
   const entry = await prisma.auditLog.create({
     data: {
       userId: input.userId,
       action: input.action,
-      details: {
-        ...(input.details ?? {}),
-        __chain: { prevHash, hash } as ChainSegment,
-      } as any,
+      details: (input.details ?? undefined) as any,
       ipAddress: input.ipAddress ?? null,
-      createdAt,
     },
-    select: { id: true },
+    select: { id: true, details: true },
   })
 
+  const hash = (entry.details as any)?.__chain?.hash
   return { id: entry.id, hash }
 }
 
 /**
- * Walk the audit log and verify every link in the chain.
- * Returns the first divergence (if any) — useful for an admin "verify integrity"
- * endpoint that can detect any DB tampering.
+ * Walk the audit log and verify the chain.
+ *
+ * Honest about history: rows written before the auto-chaining extension
+ * (2026-08-16) have no __chain segment. They are reported as `legacyRows`
+ * and skipped — they cannot be verified, but they also don't break the
+ * chain for newer rows (the first chained row links to GENESIS).
  */
-export async function verifyAuditChain(limit = 1000): Promise<{
+export async function verifyAuditChain(pageSize = 1000, maxPages = 50): Promise<{
   ok: boolean
   total: number
+  legacyRows: number
   brokenAt: { id: number; expectedHash: string; actualHash: string } | null
 }> {
-  const rows = await prisma.auditLog.findMany({
-    orderBy: { id: 'asc' },
-    take: limit,
-    select: { id: true, userId: true, action: true, details: true, ipAddress: true, createdAt: true },
-  })
-
   let prev = GENESIS_HASH
-  for (const row of rows) {
-    const chain = (row.details as any)?.__chain
-    // Strip __chain before re-canonicalising
-    const cloneDetails = { ...(row.details as any) }
-    delete cloneDetails.__chain
+  let total = 0
+  let legacyRows = 0
+  let cursor: number | undefined = undefined
 
-    const canonical = canonicalizeEntry(
-      {
-        userId: row.userId,
-        action: row.action,
-        details: Object.keys(cloneDetails).length ? cloneDetails : undefined,
-        ipAddress: row.ipAddress,
-      },
-      row.createdAt,
-      prev
-    )
-    const expected = hashEntry(canonical)
-    if (!chain || chain.hash !== expected || chain.prevHash !== prev) {
-      return {
-        ok: false,
-        total: rows.length,
-        brokenAt: { id: row.id, expectedHash: expected, actualHash: chain?.hash ?? '(missing)' },
+  for (let page = 0; page < maxPages; page++) {
+    const rows: Array<{
+      id: number; userId: number | null; action: string; details: unknown; ipAddress: string | null; createdAt: Date
+    }> = await prisma.auditLog.findMany({
+      where: cursor ? { id: { gt: cursor } } : undefined,
+      orderBy: { id: 'asc' },
+      take: pageSize,
+      select: { id: true, userId: true, action: true, details: true, ipAddress: true, createdAt: true },
+    })
+    if (rows.length === 0) break
+
+    for (const row of rows) {
+      total++
+      const chain = (row.details as any)?.__chain as ChainSegment | undefined
+
+      if (!chain) {
+        // Pre-extension row — unverifiable, not a tamper signal.
+        legacyRows++
+        continue
       }
+
+      const cloneDetails = { ...(row.details as any) }
+      delete cloneDetails.__chain
+      const canonical = canonicalizeEntry(
+        {
+          userId: row.userId,
+          action: row.action,
+          details: Object.keys(cloneDetails).length ? cloneDetails : undefined,
+          ipAddress: row.ipAddress,
+        },
+        row.createdAt,
+        prev
+      )
+      const expected = hashEntry(canonical)
+      if (chain.hash !== expected || chain.prevHash !== prev) {
+        return {
+          ok: false,
+          total,
+          legacyRows,
+          brokenAt: { id: row.id, expectedHash: expected, actualHash: chain.hash },
+        }
+      }
+      prev = chain.hash
     }
-    prev = chain.hash
+    cursor = rows[rows.length - 1].id
   }
 
-  return { ok: true, total: rows.length, brokenAt: null }
+  return { ok: true, total, legacyRows, brokenAt: null }
 }
 
 // ──────────────────────────────────────────────────────────────────────────────

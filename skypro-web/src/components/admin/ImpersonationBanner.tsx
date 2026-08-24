@@ -13,7 +13,16 @@ export default function ImpersonationBanner() {
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
-    setActive(document.cookie.split(';').some((c) => c.trim().startsWith('sp_impersonation=') && c.split('=')[1]))
+    let cancelled = false
+    // Detect via /api/auth/me — the sp_impersonation cookie is httpOnly, so
+    // document.cookie can never see it (the old client-side check was dead).
+    fetch('/api/auth/me', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled && data?.success && data.data?.impersonating) setActive(true)
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
   }, [])
 
   const stop = async () => {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { encode } from 'next-auth/jwt'
+import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { successResponse, errorResponse, getErrorMessage } from '@/lib/api'
 import { getClientIp, requireAdmin } from '@/lib/admin-security'
@@ -76,7 +77,10 @@ export async function POST(req: NextRequest) {
         picture: target.avatarUrl || undefined,
         role: target.role || 'user',
         status: 'active',
-        impersonatedBy: adminId, // marker (not strictly enforced, just for audit)
+        // Carries the original admin's role so the proxy can authorize the
+        // restore call while the session itself is the target user's.
+        impersonatorRole: 'admin',
+        impersonatedBy: adminId,
       },
       secret,
       salt: SESSION_COOKIE,
@@ -139,13 +143,25 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json(errorResponse('جلسة الانتحال غير صالحة أو معدلة'), { status: 403 })
     }
 
-    // Best-effort audit log — uses current (impersonated) session, fine
+    // Identify actor + target for the audit trail. The current session is the
+    // impersonated one — `impersonatedBy` holds the original admin's id.
+    const currentSession = await auth()
+    const actorAdminId = Number((currentSession?.user as { impersonatedBy?: number } | undefined)?.impersonatedBy) || null
+    const targetUserId = Number(currentSession?.user?.id) || null
     const ip = getClientIp(req)
+    const startedAt = new Date(Date.now() - 30 * 60 * 1000) // upper bound; exact start time lives in the start entry
+
+    // Best-effort audit log — don't fail the restore over an insert error.
     try {
-      // Don't fail if audit insert fails
       await prisma.auditLog.create({
-        data: { userId: null, action: 'admin_impersonate_stop', ipAddress: ip },
+        data: {
+          userId: actorAdminId,
+          action: 'admin_impersonate_stop',
+          details: { targetUserId },
+          ipAddress: ip,
+        },
       })
+      void startedAt
     } catch {}
 
     const response = NextResponse.json(successResponse(

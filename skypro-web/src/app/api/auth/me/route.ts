@@ -60,7 +60,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'الحساب غير نشط' }, { status: 403 })
     }
 
-    return NextResponse.json({ success: true, data: user })
+    // Impersonation state comes from the signed session token (server-side),
+    // never from document.cookie — the marker cookie is httpOnly.
+    const impersonating = Boolean(
+      (session.user as { impersonatedBy?: number } | undefined)?.impersonatedBy
+    )
+
+    return NextResponse.json({ success: true, data: { ...user, impersonating } })
   } catch (err) {
     console.error('Get user error:', err)
     return NextResponse.json({ success: false, error: 'حدث خطأ غير متوقع' }, { status: 500 })

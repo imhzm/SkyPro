@@ -106,7 +106,14 @@ export default auth((req) => {
 
   // ── 4. /api/admin: must be authenticated admin (returns JSON 403, not redirect)
   if (pathname.startsWith('/api/admin')) {
-    if (!req.auth || req.auth.user?.role !== 'admin' || userStatus !== 'active') {
+    // Impersonation exemption (restore path): while an admin is impersonating
+    // a user, the session role is the TARGET's role. The impersonated token
+    // carries the original admin's role in `impersonatorRole`, so the restore
+    // call (DELETE /api/admin/users/impersonate) can pass this gate without
+    // weakening anything else.
+    const imp = req.auth?.user as { impersonatorRole?: string; status?: string } | undefined
+    const isImpersonatingAdmin = Boolean(imp?.impersonatorRole === 'admin')
+    if ((!req.auth || req.auth.user?.role !== 'admin' || userStatus !== 'active') && !isImpersonatingAdmin) {
       return withSecurityHeaders(
         NextResponse.json({ success: false, error: 'غير مصرح' }, { status: 403 })
       )
