@@ -22,15 +22,7 @@ const SKY_ECOSYSTEM = [
     color: '#8B5CF6',
     gradient: 'from-violet-500 to-indigo-700',
   },
-  {
-    name: 'SkyWave Pay',
-    tagline: 'بوابة الدفع الذكية لأعمالك',
-    description: 'بوابة دفع محلية تدعم فودافون كاش، إنستاباي، والمحافظ في منصة واحدة آمنة.',
-    href: 'https://payment.skywaveads.com',
-    image: '/images/app/ecosystem-skywave-pay.png',
-    color: '#06B6D4',
-    gradient: 'from-cyan-500 to-blue-700',
-  },
+
   {
     name: 'Sky CRM',
     tagline: 'واتساب CRM معتمد من Meta',
