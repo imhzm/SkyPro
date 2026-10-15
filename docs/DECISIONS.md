@@ -19,3 +19,9 @@
 - https://developers.openai.com/api/docs/bots
 
 Use crawlable, useful visible content and matching structured data. Do not use unsupported review schema or promise AI inclusion. Webmaster reports require connected accounts, which are not available in this task.
+
+## Authorized publication — 2026-10-15
+- Publish the merged GitHub SHA in a separate release, preserving the original runtime for rollback and linking its existing environment file without copying secrets locally.
+- Build on Linux with the locked dependencies; verify on loopback port 3201 before moving only PM2 skypro to port 3200. Preserve Nginx and all unrelated services.
+- PM2 startOrRestart retained the previous executable path on the first activation; automatic HTTP verification rejected the old home and restored the old process. Recreate only the named skypro process from the explicit release config for activation and rollback. The corrected activation passed SHA/path, HTTP, DB and browser checks.
+- SMTP verify connects/authenticates with TLS but sends no message and creates no customer/test account.
