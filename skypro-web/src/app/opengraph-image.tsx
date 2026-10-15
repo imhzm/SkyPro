@@ -2,7 +2,7 @@
 import { ImageResponse } from 'next/og'
 
 export const runtime = 'edge'
-export const alt = 'SkyPro — Marketing Automation for 18+ Platforms in One Click | Try Free for 2 Days'
+export const alt = 'Sky Pro — Marketing tools in one place | Try free for 2 days'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
@@ -11,10 +11,10 @@ export const contentType = 'image/png'
  * Optimized for: Facebook, X/Twitter, WhatsApp, LinkedIn, Telegram cards.
  *
  * Design rules respected:
- *  - Headline: large, prominent ("Automate Marketing on 18+ Platforms")
+ *  - Headline: marketing tools and account management in one place
  *  - CTA: visible green pill ("Try Free →")
  *  - Logo + brand name center-stage
- *  - Trust signals: "10,000+ Companies · AI-Powered · Meta Partner"
+ *  - Product facts: Windows app, Arabic interface and a two-day trial
  */
 export default async function Image() {
   const logoUrl = `${process.env.NEXTAUTH_URL || 'https://skypro.skywaveads.com'}/images/skypro-logo.png`
@@ -84,7 +84,7 @@ export default async function Image() {
             }}
           >
             <span style={{ width: 8, height: 8, background: '#38bdf8', borderRadius: 9999, display: 'flex', boxShadow: '0 0 12px #38bdf8' }} />
-            Trusted by 10,000+ Companies
+            Windows App · Arabic Interface
           </div>
 
           {/* HEADLINE (the main hero copy) */}
@@ -111,10 +111,10 @@ export default async function Image() {
                   display: 'flex',
                 }}
               >
-                18+ Platforms
+                Your Platforms
               </span>
             </span>
-            <span style={{ display: 'flex', color: '#94a3b8', fontSize: 56 }}>in One Click</span>
+            <span style={{ display: 'flex', color: '#94a3b8', fontSize: 56 }}>in One Place</span>
           </div>
 
           {/* Sub-line */}
@@ -129,7 +129,7 @@ export default async function Image() {
               display: 'flex',
             }}
           >
-            Extract leads, send bulk messages, manage multi-accounts. AI-powered, ban-safe, Arabic-first.
+            Organize data, prepare messages, and manage multiple accounts with an Arabic interface.
           </div>
 
           {/* CTA + secondary signal */}
@@ -160,7 +160,7 @@ export default async function Image() {
                 fontWeight: 600,
               }}
             >
-              <span style={{ display: 'flex' }}>✓ No credit card</span>
+              <span style={{ display: 'flex' }}>No credit card</span>
             </div>
           </div>
         </div>
@@ -231,8 +231,8 @@ export default async function Image() {
               { label: 'TT', color: '#000000' },
               { label: 'X',  color: '#1d1d1f' },
               { label: 'LI', color: '#0A66C2' },
-              { label: 'YT', color: '#FF0000' },
-              { label: '+10', color: 'rgba(255,255,255,0.10)', isLast: true },
+              { label: 'Maps', color: '#4285F4' },
+              { label: 'More', color: 'rgba(255,255,255,0.10)', isLast: true },
             ].map((p) => (
               <div
                 key={p.label}
@@ -273,11 +273,11 @@ export default async function Image() {
           }}
         >
           <div style={{ display: 'flex', gap: 18 }}>
-            <span style={{ display: 'flex' }}>5-min Setup</span>
+            <span style={{ display: 'flex' }}>2-day Free Trial</span>
             <span style={{ display: 'flex', color: '#334155' }}>·</span>
-            <span style={{ display: 'flex' }}>100% Ban-Safe</span>
+            <span style={{ display: 'flex' }}>EGP 2,000 / Year</span>
             <span style={{ display: 'flex', color: '#334155' }}>·</span>
-            <span style={{ display: 'flex' }}>Meta Verified Partner</span>
+            <span style={{ display: 'flex' }}>By Sky Wave</span>
           </div>
           <div style={{ display: 'flex', color: '#475569' }}>skypro.skywaveads.com</div>
         </div>

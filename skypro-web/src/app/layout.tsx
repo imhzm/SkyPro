@@ -4,6 +4,7 @@ import { CookieBanner } from '@/components/marketing/CookieBanner'
 import { Analytics } from '@/components/analytics/Analytics'
 import { ToastProvider } from '@/components/ui/Toaster'
 import ImpersonationBanner from '@/components/admin/ImpersonationBanner'
+import { homeOffer } from '@/data/home-theme'
 
 const SITE_URL = 'https://skypro.skywaveads.com'
 const SITE_NAME = 'SkyPro'
@@ -87,7 +88,7 @@ export const viewport: Viewport = {
     { media: '(prefers-color-scheme: light)', color: '#0A6CF1' },
     { media: '(prefers-color-scheme: dark)',  color: '#060d1b' },
   ],
-  colorScheme: 'dark',
+  colorScheme: 'light dark',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
@@ -100,17 +101,16 @@ const organizationLd = {
   name: 'Sky Wave',
   alternateName: 'Sky Wave for Digital Marketing',
   url: 'https://www.skywaveads.com',
-  logo: `${SITE_URL}/og-image.png`,
+  logo: `${SITE_URL}/images/skypro-logo.png`,
   email: 'admin@skywaveads.com',
-  telephone: '+201067894321',
+  telephone: homeOffer.phone,
   description:
-    'وكالة Sky Wave للتسويق الرقمي ومطوّر منصة SkyPro للتسويق الآلي. شريك Meta المعتمد ومتخصصون في حلول الذكاء الاصطناعي للأعمال في مصر والخليج.',
-  foundingDate: '2024',
+    'Sky Wave للتسويق الرقمي، مطوّر برنامج Sky Pro لإدارة الحسابات وأدوات التسويق.',
   areaServed: ['EG', 'SA', 'AE', 'KW', 'QA', 'OM', 'BH'],
   contactPoint: [
     {
       '@type': 'ContactPoint',
-      telephone: '+201067894321',
+      telephone: homeOffer.phone,
       contactType: 'customer support',
       email: 'admin@skywaveads.com',
       availableLanguage: ['Arabic', 'English'],
@@ -119,7 +119,7 @@ const organizationLd = {
   ],
   sameAs: [
     'https://www.skywaveads.com',
-    'https://wa.me/201067894321',
+    homeOffer.whatsapp,
   ],
 }
 
@@ -131,7 +131,7 @@ const websiteLd = {
   alternateName: 'منصة SkyPro للتسويق الآلي',
   url: SITE_URL,
   description:
-    'SkyPro — أتمت تسويقك على 18+ منصة. استخراج بيانات، بث جماعي، إدارة حسابات متعددة بضغطة واحدة.',
+    'Sky Pro لإدارة حسابات وأدوات التسويق على منصات متعددة من برنامج واحد.',
   inLanguage: 'ar-EG',
   publisher: { '@id': `${SITE_URL}#organization` },
   potentialAction: {
@@ -155,31 +155,24 @@ const softwareLd = {
   url: SITE_URL,
   downloadUrl: `${SITE_URL}/auth/register`,
   description:
-    'تطبيق SkyPro للتسويق الآلي على 18+ منصة (فيسبوك، واتساب، انستغرام، تيليجرام، لينكد إن، تيك توك، تويتر، وغيرها). استخراج بيانات، بث جماعي، إدارة حسابات متعددة، نظام حماية من الحظر.',
+    'تطبيق Sky Pro على Windows لإدارة الحسابات وأدوات التسويق على فيسبوك وواتساب وإنستجرام وخرائط جوجل ومنصات أخرى.',
   inLanguage: 'ar',
   publisher: { '@id': `${SITE_URL}#organization` },
   offers: {
     '@type': 'Offer',
-    price: '2000',
-    priceCurrency: 'EGP',
+    price: homeOffer.annualPrice,
+    priceCurrency: homeOffer.currency,
     availability: 'https://schema.org/InStock',
     description: 'اشتراك سنوي — تجربة مجانية يومين',
   },
-  aggregateRating: {
-    '@type': 'AggregateRating',
-    ratingValue: '4.9',
-    reviewCount: '10000',
-    bestRating: '5',
-    worstRating: '1',
-  },
   featureList: [
-    'استخراج بيانات العملاء من 18+ منصة',
-    'بث جماعي معتمد بدون حظر',
+    'أدوات لاستخراج البيانات وتنظيمها',
+    'أدوات لإدارة الرسائل',
     'إدارة حسابات متعددة في وقت واحد',
     'جدولة الحملات التسويقية',
     'تقارير وتحليلات تفصيلية',
     'ذكاء اصطناعي للأتمتة',
-    'دعم عربي 24/7',
+    'دعم باللغة العربية',
   ],
 }
 
@@ -189,8 +182,9 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="ar" dir="rtl">
+    <html lang="ar" dir="rtl" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('skypro-theme');document.documentElement.dataset.skyproTheme=t==='light'||t==='dark'?t:(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light')}catch(e){document.documentElement.dataset.skyproTheme='dark'}` }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://wa.me" />

@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { Mail, Phone, MessageCircle, Globe, ArrowUp, Heart, ArrowLeft, Sparkles } from 'lucide-react'
+import { Mail, Phone, MessageCircle, Globe, ArrowUp, ArrowLeft, Sparkles } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useEffect, useCallback } from 'react'
@@ -8,6 +8,7 @@ import { motion } from 'framer-motion'
 import { PlatformIcon } from '@/components/marketing/PlatformIcon'
 import { platforms } from '@/data/platforms'
 import { Logo } from '@/components/marketing/Logo'
+import { homeOffer } from '@/data/home-theme'
 
 // Sky Wave ecosystem — sibling products that ship with the same login.
 // Each entry is rendered as a glass card with the real product screenshot
@@ -43,7 +44,7 @@ const footerLinks = {
   ],
   support: [
     { label: 'مركز المساعدة', href: '#faq' },
-    { label: 'تواصل معنا', href: 'https://wa.me/201067894321' },
+    { label: 'تواصل معنا', href: homeOffer.whatsapp },
     { label: 'الشروط والأحكام', href: '/terms' },
     { label: 'سياسة الخصوصية', href: '/privacy' },
   ],
@@ -186,8 +187,8 @@ export function Footer() {
               <div className="flex items-center gap-3">
                 {[
                   { icon: Mail, href: 'mailto:admin@skywaveads.com', label: 'البريد الإلكتروني' },
-                  { icon: MessageCircle, href: 'https://wa.me/201067894321', label: 'واتساب', external: true },
-                  { icon: Phone, href: 'tel:+201067894321', label: 'اتصل بنا' },
+                  { icon: MessageCircle, href: homeOffer.whatsapp, label: 'واتساب', external: true },
+                  { icon: Phone, href: `tel:${homeOffer.phone}`, label: 'اتصل بنا' },
                   { icon: Globe, href: 'https://skypro.skywaveads.com', label: 'الموقع', external: true },
                 ].map((social, i) => (
                   <motion.a
@@ -295,9 +296,9 @@ export function Footer() {
                 &copy; {new Date().getFullYear()} SkyPro — Sky Wave Ads. جميع الحقوق محفوظة.
               </p>
               <p className="text-sm text-slate-600 flex items-center gap-1.5 flex-wrap justify-center sm:justify-start">
-                صُنع بـ <Heart className="h-3.5 w-3.5 text-rose-500 fill-rose-500 animate-pulse" /> بواسطة
+                تم التصميم بكل❤️بواسطة{' '}
                 <a
-                  href="https://www.skywaveads.com"
+                  href="https://www.skywaveads.com/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sky-400 hover:text-sky-300 font-semibold transition-colors"
