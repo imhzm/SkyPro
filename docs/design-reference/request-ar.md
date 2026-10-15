@@ -186,17 +186,17 @@
 ## 9) الأقسام المطلوبة
 الترتيب يكون قريب جدًا من الصور المرجعية، ويشمل غالبًا:
 
-1. Navbar  
-2. Hero  
-3. Stats / numbers  
-4. Supported platforms icons  
-5. Platform-specific cards / program per platform  
-6. Why choose Sky Pro / features  
-7. How it works  
-8. Testimonials  
-9. Pricing  
-10. FAQ  
-11. Final CTA  
+1. Navbar
+2. Hero
+3. Stats / numbers
+4. Supported platforms icons
+5. Platform-specific cards / program per platform
+6. Why choose Sky Pro / features
+7. How it works
+8. Testimonials
+9. Pricing
+10. FAQ
+11. Final CTA
 12. Footer
 
 ### ملاحظات:
@@ -284,5 +284,5 @@
 
 ---
 
-لو تحب، أقدر كمان أجهزلك **نسخة أقوى جدًا للإيجنت بصيغة تنفيذية step-by-step**  
+لو تحب، أقدر كمان أجهزلك **نسخة أقوى جدًا للإيجنت بصيغة تنفيذية step-by-step**
 أو أعملهالك **بأسلوب Antigravity / Codex optimized prompt** عشان يشتغل بيها مباشرة.

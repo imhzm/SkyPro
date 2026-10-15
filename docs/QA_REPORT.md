@@ -22,6 +22,8 @@ This is a local production-build review, not a production release. Existing desk
 
 ## Executed checks
 - npm ci (existing lockfile), Prisma client generation only; no migration or DB write.
+- Subsequent security audit: four affected production packages in the baseline (Next.js critical; Nodemailer, sharp and source-map-js high). Reviewed upgrades reduce the production dependency audit to zero vulnerabilities. See SECURITY_NOTES.md.
+- Full audit including development tools: 11 remaining entries (9 high, 2 moderate) in the existing Tailwind/ESLint dependency trees. No forced Tailwind major migration or ESLint downgrade was performed.
 - npx tsc --noEmit: exit 0. Production build also performs TypeScript checking.
 - npx eslint . --quiet: exit 0. Existing font configuration warning remains in non-quiet lint.
 - npm run build: exit 0; homepage statically generated. Existing Edge runtime deprecation remains for social images.
@@ -31,6 +33,7 @@ This is a local production-build review, not a production release. Existing desk
 - Browser-only response fixtures: customer desktop points to /dashboard; admin desktop/mobile points to /admin; Tab keeps the disclosure open, Escape closes it and returns focus. Light mobile profile text is rgb(18,28,66), and logout is rgb(180,35,54). Interception was removed and the real guest state restored.
 - Structured-data checks: one H1, canonical, phone/WhatsApp/signature present, annual software offer 2000 EGP, no AggregateRating.
 - /opengraph-image returns 200 image/png and was visually inspected; an unsupported checkmark glyph was removed from the inherited image template.
+- scripts/verify-mail-transport.cjs passes against a loopback SMTP server using STARTTLS and certificate validation. Two Arabic/text multipart messages are accepted locally; rejected recipients and missing settings return failures. No real provider, customer address or SMTP credentials are used.
 - Axe WCAG 2 A/AA and WCAG 2.2 AA tags: zero detected violations in both desktop and mobile themes. 16 rules passed per run. Color contrast remains incomplete for 9 desktop and 74 mobile nodes due to styled/gradient contexts; screenshots and text/background tokens were reviewed manually. This is not a complete accessibility certification.
 
 ## Evidence location
@@ -42,7 +45,7 @@ D:/SkyPro-theme-evidence-20261015 contains screenshots, final responsive JSON, H
 - The live site still has the previous home. Its exact deployed SHA has not been verified; no deployment success is claimed.
 - Two available SSH identities were rejected by the new VPS. No server files, services, DB, DNS, CRM or WhatsApp systems were changed.
 - Customer quotations with independent verification were unavailable, so the equivalent visual position contains useful product use cases. Verified quotations can replace them later.
-- Browser UI fixture checks of account states do not prove real account login, billing, activation or email delivery. Those backends were not changed.
+- Browser UI fixture checks of account states do not prove real account login, billing, activation or provider delivery. Backend routes and DB schemas were not changed; the mail dependency upgrade has separate local SMTP regression coverage.
 - The local preview does not have the production database configuration. Its health endpoint reports 503 in that environment; public-page QA does not certify database/service readiness.
 - Search Console/Bing Webmaster and field Core Web Vitals are not connected here. No p75 performance or indexing/AI-visibility guarantee is made.
 - Release after review must use the approved exact SHA and repeat live 1440x900 / 390x844 QA. Rollback is the prior verified release artifact/SHA; no database rollback is needed for this change.
