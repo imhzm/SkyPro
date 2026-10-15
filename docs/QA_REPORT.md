@@ -1,6 +1,8 @@
 # Homepage theme QA — 2026-10-15
 
 ## Scope
+Review: https://github.com/imhzm/SkyPro/pull/8. Tested web source commit: 6270918571b4f0be4e0d5f4c92d4ffc3bf715efd.
+
 Source: imhzm/SkyPro. Base: d012c831ce5e81b8141c2c056a59bdc662c3624d. Branch: feat/home-theme-20261015. Isolated checkout: D:/SkyPro-theme-20261015.
 
 This is a local production-build review, not a production release. Existing desktop recovery changes were not included.

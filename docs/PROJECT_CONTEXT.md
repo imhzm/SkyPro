@@ -15,6 +15,8 @@
 - C: is full. Worktree created on D: without changing recovery work. First two SSH identities tried against the new VPS were rejected; production is not yet verified.
 
 ## Delivery status
+Review PR: https://github.com/imhzm/SkyPro/pull/8 (draft, not merged or deployed). Tested implementation/security commit: 6270918571b4f0be4e0d5f4c92d4ffc3bf715efd. Subsequent handoff changes are documentation only.
+
 Both themes are implemented and verified locally with the production build on http://localhost:3101. The original lockfile resolved Next.js 16.3.1. A dependency audit subsequently found security advisories; reviewed versions are now Next.js/eslint-config-next 16.3.8, Nodemailer 10.0.16, sharp 0.35.5 and source-map-js 1.2.2. The production dependency audit now reports zero vulnerabilities. Review evidence is at D:/SkyPro-theme-evidence-20261015. No production deployment claimed. The live homepage was inspected and captured as a before image.
 
 - Static page sections render on the server. Only the header/theme controls, existing auth menu and screenshot dialog need client state.
