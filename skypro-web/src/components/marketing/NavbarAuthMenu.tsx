@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import Link from 'next/link'
 import { LayoutDashboard, LogOut, User as UserIcon, Shield } from 'lucide-react'
 
@@ -24,6 +24,28 @@ export function NavbarAuthMenu({ variant = 'desktop' }: { variant?: 'desktop' | 
   const [user, setUser] = useState<SessionUser | null>(null)
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
+  const menuId = useId()
+  const menuRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onPointer = (event: PointerEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) setOpen(false)
+    }
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setOpen(false)
+        triggerRef.current?.focus()
+      }
+    }
+    document.addEventListener('pointerdown', onPointer)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('pointerdown', onPointer)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
 
   useEffect(() => {
     let cancelled = false
@@ -105,7 +127,7 @@ export function NavbarAuthMenu({ variant = 'desktop' }: { variant?: 'desktop' | 
   }
 
   return (
-    <div className="relative flex items-center gap-2">
+    <div ref={menuRef} className="relative flex items-center gap-2">
       <Link
         href={dashboardHref}
         className="nav-link text-slate-300 inline-flex items-center gap-1.5"
@@ -115,10 +137,11 @@ export function NavbarAuthMenu({ variant = 'desktop' }: { variant?: 'desktop' | 
       </Link>
 
       <button
+        ref={triggerRef}
         onClick={() => setOpen((v) => !v)}
-        onBlur={() => setTimeout(() => setOpen(false), 200)}
         className="inline-flex items-center gap-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/15 px-2 py-1.5 transition-all"
-        aria-haspopup="menu"
+        aria-label="قائمة الحساب"
+        aria-controls={menuId}
         aria-expanded={open}
       >
         <div className="w-7 h-7 rounded-full bg-gradient-to-br from-sky-500 to-violet-500 flex items-center justify-center text-white text-xs font-bold">
@@ -128,7 +151,7 @@ export function NavbarAuthMenu({ variant = 'desktop' }: { variant?: 'desktop' | 
 
       {open && (
         <div
-          role="menu"
+          id={menuId}
           className="absolute top-full left-0 mt-2 w-64 rounded-2xl bg-[#0a1628] border border-white/10 shadow-2xl shadow-black/50 overflow-hidden"
         >
           <div className="px-4 py-3 border-b border-white/8 flex items-center gap-3">

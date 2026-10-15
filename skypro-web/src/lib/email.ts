@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer'
+import nodemailer, { type Transporter } from 'nodemailer'
 
 interface EmailOptions {
   to: string
@@ -87,7 +87,7 @@ function baseTextFooter() {
 /*  SMTP Connection Pooling                                           */
 /* ------------------------------------------------------------------ */
 
-let _transporter: nodemailer.Transporter | null = null
+let _transporter: Transporter | null = null
 
 function getTransporter() {
   if (_transporter) return _transporter

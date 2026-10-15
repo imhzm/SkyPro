@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MessageCircle, X } from 'lucide-react'
+import { homeOffer } from '@/data/home-theme'
 
-const WA_NUMBER = '201067894321'
 const QUICK_REPLIES = [
   'محتاج معرفة الأسعار',
   'أريد عرض ديمو',
@@ -22,7 +22,7 @@ export function WhatsAppButton() {
   }, [])
 
   const buildLink = (text: string) =>
-    `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(text)}`
+    `${homeOffer.whatsapp}?text=${encodeURIComponent(text)}`
 
   return (
     <div className="fixed bottom-6 left-6 z-50" dir="rtl">

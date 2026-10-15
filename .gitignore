@@ -36,6 +36,7 @@ skypro-desktop/runtime-data/
 # Cache
 .vite/
 .vite-temp/
+.tmp/
 
 # Release artifacts (large, regenerable — must never be committed to GitHub)
 skypro-release/
