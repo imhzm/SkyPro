@@ -18,3 +18,8 @@
 - Updated Next.js/eslint-config-next to 16.3.8, Nodemailer to 10.0.16, sharp to 0.35.5 and source-map-js to 1.2.2. Production dependency audit: zero vulnerabilities.
 - Added a loopback-only STARTTLS SMTP regression test covering actual application email templates and transport success/failure behavior, with no external delivery.
 - Corrected reduced-motion root scrolling with a CSS-module-aware selector instead of an assumed generated class name.
+
+## Production — 2026-10-15
+- User authorized hosting publication. PR #8 merged and exact SHA cfa2257b21da8820e1b123bef5bc9bd3ec3753ac deployed on the new VPS in a separate release, build ID 7AjnvkA1jSbEvyhtJ9EnK.
+- Linux build/runtime audit, production DB health, SMTP authentication without mail, public/protected routes, six widths in both themes and live desktop/mobile screenshots verified. Original runtime preserved for rollback; no migrations, Nginx/DNS or unrelated service changes.
+- See DEPLOYMENT_20261015.md for activation correction, evidence and remaining limits.

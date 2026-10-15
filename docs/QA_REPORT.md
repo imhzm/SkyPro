@@ -5,7 +5,7 @@ Review: https://github.com/imhzm/SkyPro/pull/8. Tested web source commit: 627091
 
 Source: imhzm/SkyPro. Base: d012c831ce5e81b8141c2c056a59bdc662c3624d. Branch: feat/home-theme-20261015. Isolated checkout: D:/SkyPro-theme-20261015.
 
-This is a local production-build review, not a production release. Existing desktop recovery changes were not included.
+This section records the initial local production-build review. Publication was subsequently authorized and completed at cfa2257b21da8820e1b123bef5bc9bd3ec3753ac; see DEPLOYMENT_20261015.md for production evidence. Existing desktop recovery changes were not included.
 
 ## Requirements and evidence
 | Requirement | Evidence |
@@ -44,6 +44,7 @@ D:/SkyPro-theme-evidence-20261015 contains screenshots, final responsive JSON, H
 [Before: live desktop](review/before-live-desktop.jpg) · [Light desktop](review/light-desktop-hero.jpg) · [Dark desktop](review/dark-desktop-hero.jpg) · [Light mobile](review/light-mobile-hero.jpg) · [Dark mobile](review/dark-mobile-hero.jpg)
 
 ## Limits and release status
+The following limitations describe the initial review. The deployment/SSH/DB health limitations were resolved during the authorized production release; backend end-to-end account/payment checks and field performance measurements remain outside the verified scope.
 - The live site still has the previous home. Its exact deployed SHA has not been verified; no deployment success is claimed.
 - Two available SSH identities were rejected by the new VPS. No server files, services, DB, DNS, CRM or WhatsApp systems were changed.
 - Customer quotations with independent verification were unavailable, so the equivalent visual position contains useful product use cases. Verified quotations can replace them later.
