@@ -1,38 +1,68 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import NextAuth, { CredentialsSignin } from 'next-auth'
-import Google from 'next-auth/providers/google'
-import Credentials from 'next-auth/providers/credentials'
-import { prisma } from '@/lib/db'
-import { generateApiKey, getTrialEndDate, verifyPassword } from '@/lib/utils'
-import { checkRateLimit, getClientIp } from '@/lib/request-security'
-import { checkTwoFactorCode } from '@/lib/two-factor'
-import { sendEmail, generateWelcomeEmail, generateWelcomeEmailText } from '@/lib/email'
+import NextAuth, { CredentialsSignin } from "next-auth";
+import Google from "next-auth/providers/google";
+import Credentials from "next-auth/providers/credentials";
+import { prisma } from "@/lib/db";
+import { generateApiKey, getTrialEndDate, verifyPassword } from "@/lib/utils";
+import { checkRateLimit, getClientIp } from "@/lib/request-security";
+import { checkTwoFactorCode } from "@/lib/two-factor";
+import {
+  sendEmail,
+  generateWelcomeEmail,
+  generateWelcomeEmailText,
+} from "@/lib/email";
 
 // Lightweight in-memory cache for JWT user status checks (avoids DB round trip on every request)
-const userStatusCache = new Map<number, { role: string; status: string; passwordChangedAt: number | null; fetchedAt: number }>()
-const USER_CACHE_TTL_MS = 60_000
+const userStatusCache = new Map<
+  number,
+  {
+    role: string;
+    status: string;
+    passwordChangedAt: number | null;
+    fetchedAt: number;
+  }
+>();
+const USER_CACHE_TTL_MS = 60_000;
 
 // Custom error subclasses so the login page can show precise messages
-class InvalidCredentials extends CredentialsSignin { code = 'invalid_credentials' }
-class EmailNotVerified extends CredentialsSignin { code = 'email_not_verified' }
-class AccountSuspended extends CredentialsSignin { code = 'account_suspended' }
-class AccountDeleted extends CredentialsSignin { code = 'account_deleted' }
-class TooManyAttempts extends CredentialsSignin { code = 'rate_limited' }
-class GoogleOnlyAccount extends CredentialsSignin { code = 'google_only_account' }
-class AccountLocked extends CredentialsSignin { code = 'account_locked' }
-class TwoFactorRequired extends CredentialsSignin { code = 'two_factor_required' }
-class TwoFactorInvalid extends CredentialsSignin { code = 'two_factor_invalid' }
+class InvalidCredentials extends CredentialsSignin {
+  code = "invalid_credentials";
+}
+class EmailNotVerified extends CredentialsSignin {
+  code = "email_not_verified";
+}
+class AccountSuspended extends CredentialsSignin {
+  code = "account_suspended";
+}
+class AccountDeleted extends CredentialsSignin {
+  code = "account_deleted";
+}
+class TooManyAttempts extends CredentialsSignin {
+  code = "rate_limited";
+}
+class GoogleOnlyAccount extends CredentialsSignin {
+  code = "google_only_account";
+}
+class AccountLocked extends CredentialsSignin {
+  code = "account_locked";
+}
+class TwoFactorRequired extends CredentialsSignin {
+  code = "two_factor_required";
+}
+class TwoFactorInvalid extends CredentialsSignin {
+  code = "two_factor_invalid";
+}
 
 // Lockout policy
-const MAX_FAILED_LOGINS = 5
-const LOCKOUT_DURATION_MS = 30 * 60 * 1000 // 30 minutes
+const MAX_FAILED_LOGINS = 5;
+const LOCKOUT_DURATION_MS = 30 * 60 * 1000; // 30 minutes
 
 async function recordFailedLogin(userId: number) {
   const user = await prisma.user.update({
     where: { id: userId },
     data: { failedLoginCount: { increment: 1 } },
     select: { failedLoginCount: true },
-  })
+  });
   if (user.failedLoginCount >= MAX_FAILED_LOGINS) {
     await prisma.user.update({
       where: { id: userId },
@@ -40,7 +70,7 @@ async function recordFailedLogin(userId: number) {
         lockedUntil: new Date(Date.now() + LOCKOUT_DURATION_MS),
         failedLoginCount: 0, // reset after lockout to allow next cycle
       },
-    })
+    });
   }
 }
 
@@ -53,39 +83,45 @@ async function clearFailedLoginCount(userId: number, ipAddress: string | null) {
       lastLoginAt: new Date(),
       lastLoginIp: ipAddress?.slice(0, 60) ?? null,
     },
-  })
+  });
 }
 
-async function sendWelcomeEmailDirect(subject: string, welcomeData: {
-  name?: string | null
-  email: string
-  password?: string | null
-  serial: string
-  expiryDate: string
-  planLabel?: string
-  loginMethod?: string
-}) {
+async function sendWelcomeEmailDirect(
+  subject: string,
+  welcomeData: {
+    name?: string | null;
+    email: string;
+    password?: string | null;
+    serial: string;
+    expiryDate: string;
+    planLabel?: string;
+    loginMethod?: string;
+  },
+) {
   try {
-    console.log('[WelcomeEmail] Sending to:', welcomeData.email)
+    console.log("[WelcomeEmail] Sending to:", welcomeData.email);
     const result = await sendEmail({
       to: welcomeData.email,
       subject,
       text: generateWelcomeEmailText(welcomeData),
       html: generateWelcomeEmail(welcomeData),
-    })
+    });
     if (result.success) {
-      console.log('[WelcomeEmail] Sent OK:', result.messageId)
+      console.log("[WelcomeEmail] Sent OK:", result.messageId);
     } else {
-      console.error('[WelcomeEmail] Failed:', result.error)
+      console.error("[WelcomeEmail] Failed:", result.error);
     }
   } catch (err) {
-    console.error('[WelcomeEmail] Error:', err instanceof Error ? err.message : err)
+    console.error(
+      "[WelcomeEmail] Error:",
+      err instanceof Error ? err.message : err,
+    );
   }
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
-  debug: process.env.NODE_ENV !== 'production',
+  debug: process.env.NODE_ENV !== "production",
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -93,74 +129,80 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       allowDangerousEmailAccountLinking: false,
     }),
     Credentials({
-      name: 'credentials',
+      name: "credentials",
       credentials: {
-        email: { label: 'البريد الإلكتروني', type: 'email' },
-        password: { label: 'كلمة المرور', type: 'password' },
-        code: { label: 'رمز التحقق بخطوتين', type: 'text' }
+        email: { label: "البريد الإلكتروني", type: "email" },
+        password: { label: "كلمة المرور", type: "password" },
+        code: { label: "رمز التحقق بخطوتين", type: "text" },
       },
       async authorize(credentials, request) {
         if (!credentials?.email || !credentials?.password) {
-          return null
+          return null;
         }
 
-        const ipAddress = getClientIp(request)
-        const ipLimit = checkRateLimit(`nextauth-credentials:ip:${ipAddress}`, 20, 15 * 60 * 1000)
+        const ipAddress = getClientIp(request);
+        const ipLimit = checkRateLimit(
+          `nextauth-credentials:ip:${ipAddress}`,
+          20,
+          15 * 60 * 1000,
+        );
         if (!ipLimit.allowed) {
-          return null
+          return null;
         }
 
-        const email = String(credentials.email).trim().toLowerCase()
-        const password = typeof credentials.password === 'string' ? credentials.password : ''
+        const email = String(credentials.email).trim().toLowerCase();
+        const password =
+          typeof credentials.password === "string" ? credentials.password : "";
         if (email.length > 254 || password.length > 128) {
-          return null
+          return null;
         }
 
-        const emailLimit = checkRateLimit(`nextauth-credentials:${email}`, 12, 15 * 60 * 1000)
+        const emailLimit = checkRateLimit(
+          `nextauth-credentials:${email}`,
+          12,
+          15 * 60 * 1000,
+        );
         if (!emailLimit.allowed) {
-          throw new TooManyAttempts()
+          throw new TooManyAttempts();
         }
 
         const user = await prisma.user.findUnique({
-          where: { email }
-        })
+          where: { email },
+        });
 
         if (!user) {
-          throw new InvalidCredentials()
+          throw new InvalidCredentials();
         }
 
-        if (user.status === 'suspended') {
-          throw new AccountSuspended()
+        if (user.status === "suspended") {
+          throw new AccountSuspended();
         }
 
-        if (user.status === 'deleted') {
-          throw new AccountDeleted()
+        if (user.status === "deleted") {
+          throw new AccountDeleted();
         }
 
         // Account lockout: reject if currently locked
         if (user.lockedUntil && user.lockedUntil > new Date()) {
-          throw new AccountLocked()
+          throw new AccountLocked();
         }
 
         if (!user.passwordHash) {
           // Account exists but has no password — Google OAuth only.
-          throw new GoogleOnlyAccount()
+          throw new GoogleOnlyAccount();
         }
 
-        const isValid = verifyPassword(
-          password,
-          user.passwordHash
-        )
+        const isValid = verifyPassword(password, user.passwordHash);
 
         if (!isValid) {
-          await recordFailedLogin(user.id)
-          throw new InvalidCredentials()
+          await recordFailedLogin(user.id);
+          throw new InvalidCredentials();
         }
 
         // Verify ONLY after password is confirmed (avoids leaking whether
         // an email is registered to attackers).
         if (!user.emailVerifiedAt) {
-          throw new EmailNotVerified()
+          throw new EmailNotVerified();
         }
 
         // Two-factor enforcement — only reached after the password is correct.
@@ -168,298 +210,331 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // gave a false sense of security. Now a valid TOTP or single-use backup
         // code is mandatory when the user has enabled 2FA.
         if (user.twoFactorEnabled) {
-          const code = typeof credentials.code === 'string' ? credentials.code.trim() : ''
+          const code =
+            typeof credentials.code === "string" ? credentials.code.trim() : "";
           if (!code) {
             // Password was correct but the second factor is missing — signal the
             // login UI to prompt for the code (this is NOT a failed attempt).
-            throw new TwoFactorRequired()
+            throw new TwoFactorRequired();
           }
-          const check = checkTwoFactorCode(code, user.twoFactorSecret, user.twoFactorBackupCodes)
+          const check = checkTwoFactorCode(
+            code,
+            user.twoFactorSecret,
+            user.twoFactorBackupCodes,
+          );
           if (!check.ok) {
             // A wrong 2FA code must NOT count toward the password lockout —
             // otherwise anyone knowing only the email can lock the account.
-            throw new TwoFactorInvalid()
+            throw new TwoFactorInvalid();
           }
           // Consume the backup code if one was used (single-use).
           if (check.usedBackupCode && check.remainingBackupCodes) {
             await prisma.user.update({
               where: { id: user.id },
-              data: { twoFactorBackupCodes: JSON.stringify(check.remainingBackupCodes) },
-            })
+              data: {
+                twoFactorBackupCodes: JSON.stringify(
+                  check.remainingBackupCodes,
+                ),
+              },
+            });
           }
         }
 
         // Successful login — reset failure counter, record IP/time
-        await clearFailedLoginCount(user.id, ipAddress)
+        await clearFailedLoginCount(user.id, ipAddress);
 
         await prisma.auditLog.create({
           data: {
             userId: user.id,
-            action: 'login',
-            ipAddress
-          }
-        })
+            action: "login",
+            ipAddress,
+          },
+        });
 
         return {
           id: String(user.id),
           email: user.email,
-          name: user.name || '',
+          name: user.name || "",
           role: user.role,
-          image: user.avatarUrl
-        }
-      }
-    })
+          image: user.avatarUrl,
+        };
+      },
+    }),
   ],
   session: {
-    strategy: 'jwt',
+    strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60,
   },
   pages: {
-    signIn: '/auth/login',
-    error: '/auth/login'
+    signIn: "/auth/login",
+    error: "/auth/login",
   },
   callbacks: {
     async signIn({ user, account }) {
-      if (account?.provider === 'google' && user.email) {
+      if (account?.provider === "google" && user.email) {
         const existingUser = await prisma.user.findUnique({
-          where: { email: user.email }
-        })
+          where: { email: user.email },
+        });
 
-        if (existingUser && existingUser.status !== 'active') {
-          return false
+        if (existingUser && existingUser.status !== "active") {
+          return false;
         }
         // 2FA accounts must use the password flow — Google sign-in would
         // bypass the second factor (TOTP/backup code) entirely.
         if (existingUser?.twoFactorEnabled) {
-          return false
+          return false;
         }
       }
 
-      return true
+      return true;
     },
     async jwt({ token, user, account }) {
       if (user) {
-        token.id = user.id ?? ''
-        token.role = (user as any).role || 'user'
+        token.id = user.id ?? "";
+        token.role = (user as any).role || "user";
       }
 
-      if (account?.provider === 'google' && user) {
+      if (account?.provider === "google" && user) {
         const existingUser = await prisma.user.findUnique({
-          where: { email: user.email! }
-        })
+          where: { email: user.email! },
+        });
 
         if (!existingUser) {
-          const trialDays = parseInt(process.env.DEFAULT_TRIAL_DAYS || '2', 10)
-          const trialEndsAt = getTrialEndDate()
-          const keyCode = generateApiKey()
-          const { newUser, activationKey } = await prisma.$transaction(async (tx) => {
-            const newUser = await tx.user.create({
-              data: {
-                email: user.email!,
-                name: user.name || '',
-                avatarUrl: user.image || null,
-                role: 'user',
-                status: 'active',
-                emailVerifiedAt: new Date()
-              }
-            })
+          const trialDays = parseInt(process.env.DEFAULT_TRIAL_DAYS || "2", 10);
+          const trialEndsAt = getTrialEndDate();
+          const keyCode = generateApiKey();
+          const { newUser, activationKey } = await prisma.$transaction(
+            async (tx) => {
+              const newUser = await tx.user.create({
+                data: {
+                  email: user.email!,
+                  name: user.name || "",
+                  avatarUrl: user.image || null,
+                  role: "user",
+                  status: "active",
+                  emailVerifiedAt: new Date(),
+                },
+              });
 
-            const activationKey = await tx.activationKey.create({
-              data: {
-                keyCode,
-                userId: newUser.id,
-                status: 'active',
-                plan: 'trial',
-                durationDays: trialDays,
-                maxDevices: parseInt(process.env.DEFAULT_MAX_DEVICES || '1', 10),
-                activatedAt: new Date(),
-                expiresAt: trialEndsAt
-              }
-            })
+              const activationKey = await tx.activationKey.create({
+                data: {
+                  keyCode,
+                  userId: newUser.id,
+                  status: "active",
+                  plan: "trial",
+                  durationDays: trialDays,
+                  maxDevices: parseInt(
+                    process.env.DEFAULT_MAX_DEVICES || "1",
+                    10,
+                  ),
+                  activatedAt: new Date(),
+                  expiresAt: trialEndsAt,
+                },
+              });
 
-            await tx.subscription.create({
-              data: {
-                userId: newUser.id,
-                keyId: activationKey.id,
-                status: 'trial',
-                trialEndsAt,
-                startedAt: new Date(),
-                expiresAt: trialEndsAt
-              }
-            })
+              await tx.subscription.create({
+                data: {
+                  userId: newUser.id,
+                  keyId: activationKey.id,
+                  status: "trial",
+                  trialEndsAt,
+                  startedAt: new Date(),
+                  expiresAt: trialEndsAt,
+                },
+              });
 
-            await tx.auditLog.create({
-              data: {
-                userId: newUser.id,
-                action: 'register_google',
-                details: { keyCode, trialDays },
-                ipAddress: '0.0.0.0'
-              }
-            })
+              await tx.auditLog.create({
+                data: {
+                  userId: newUser.id,
+                  action: "register_google",
+                  details: { keyCode, trialDays },
+                  ipAddress: "0.0.0.0",
+                },
+              });
 
-            return { newUser, activationKey }
-          })
+              return { newUser, activationKey };
+            },
+          );
 
-          await sendWelcomeEmailDirect('بيانات تجربة SkyPro المجانية', {
-            name: newUser.name || 'عميلنا الكريم',
+          await sendWelcomeEmailDirect("بيانات تجربة SkyPro المجانية", {
+            name: newUser.name || "عميلنا الكريم",
             email: newUser.email,
             serial: activationKey.keyCode,
-            expiryDate: trialEndsAt.toLocaleDateString('ar-EG'),
+            expiryDate: trialEndsAt.toLocaleDateString("ar-EG"),
             planLabel: `تجربة مجانية لمدة ${trialDays} يوم`,
-            loginMethod: 'Google',
-          })
+            loginMethod: "Google",
+          });
 
-          token.id = String(newUser.id)
-          token.role = 'user'
+          token.id = String(newUser.id);
+          token.role = "user";
         } else {
-          if (existingUser.status !== 'active') {
-            throw new Error('AccessDenied')
+          if (existingUser.status !== "active") {
+            throw new Error("AccessDenied");
           }
 
           const existingKey = await prisma.activationKey.findFirst({
             where: {
               userId: existingUser.id,
-              status: { in: ['active', 'available'] }
+              status: { in: ["active", "available"] },
             },
-            orderBy: { createdAt: 'desc' }
-          })
+            orderBy: { createdAt: "desc" },
+          });
 
           if (!existingKey) {
-            const trialDays = parseInt(process.env.DEFAULT_TRIAL_DAYS || '2', 10)
-            const trialEndsAt = getTrialEndDate()
-            const keyCode = generateApiKey()
+            const trialDays = parseInt(
+              process.env.DEFAULT_TRIAL_DAYS || "2",
+              10,
+            );
+            const trialEndsAt = getTrialEndDate();
+            const keyCode = generateApiKey();
 
             const activationKey = await prisma.$transaction(async (tx) => {
               await tx.user.update({
                 where: { id: existingUser.id },
                 data: {
-                  status: 'active',
-                  emailVerifiedAt: existingUser.emailVerifiedAt || new Date()
-                }
-              })
+                  status: "active",
+                  emailVerifiedAt: existingUser.emailVerifiedAt || new Date(),
+                },
+              });
 
               const activationKey = await tx.activationKey.create({
                 data: {
                   keyCode,
                   userId: existingUser.id,
-                  status: 'active',
-                  plan: 'trial',
+                  status: "active",
+                  plan: "trial",
                   durationDays: trialDays,
-                  maxDevices: parseInt(process.env.DEFAULT_MAX_DEVICES || '1', 10),
+                  maxDevices: parseInt(
+                    process.env.DEFAULT_MAX_DEVICES || "1",
+                    10,
+                  ),
                   activatedAt: new Date(),
-                  expiresAt: trialEndsAt
-                }
-              })
+                  expiresAt: trialEndsAt,
+                },
+              });
 
               await tx.subscription.create({
                 data: {
                   userId: existingUser.id,
                   keyId: activationKey.id,
-                  status: 'trial',
+                  status: "trial",
                   trialEndsAt,
                   startedAt: new Date(),
-                  expiresAt: trialEndsAt
-                }
-              })
+                  expiresAt: trialEndsAt,
+                },
+              });
 
               await tx.auditLog.create({
                 data: {
                   userId: existingUser.id,
-                  action: 'google_trial_activation_created',
+                  action: "google_trial_activation_created",
                   details: { keyCode, trialDays },
-                  ipAddress: '0.0.0.0'
-                }
-              })
+                  ipAddress: "0.0.0.0",
+                },
+              });
 
-              return activationKey
-            })
+              return activationKey;
+            });
 
-            await sendWelcomeEmailDirect('بيانات تجربة SkyPro المجانية', {
-              name: existingUser.name || 'عميلنا الكريم',
+            await sendWelcomeEmailDirect("بيانات تجربة SkyPro المجانية", {
+              name: existingUser.name || "عميلنا الكريم",
               email: existingUser.email,
               serial: activationKey.keyCode,
-              expiryDate: trialEndsAt.toLocaleDateString('ar-EG'),
+              expiryDate: trialEndsAt.toLocaleDateString("ar-EG"),
               planLabel: `تجربة مجانية لمدة ${trialDays} يوم`,
-              loginMethod: 'Google',
-            })
+              loginMethod: "Google",
+            });
           }
 
-          token.id = String(existingUser.id)
-          token.role = existingUser.role
+          token.id = String(existingUser.id);
+          token.role = existingUser.role;
 
           await prisma.auditLog.create({
             data: {
               userId: existingUser.id,
-              action: 'login_google',
-              ipAddress: '0.0.0.0'
-            }
-          })
+              action: "login_google",
+              ipAddress: "0.0.0.0",
+            },
+          });
         }
       }
 
       if (token.id) {
-        const now = Date.now()
-        const userId = Number(token.id)
-        const cached = userStatusCache.get(userId)
-        let role: string
-        let status: string
-        let passwordChangedAt: number | null
+        const now = Date.now();
+        const userId = Number(token.id);
+        const cached = userStatusCache.get(userId);
+        let role: string;
+        let status: string;
+        let passwordChangedAt: number | null;
 
-        if (cached && (now - cached.fetchedAt) < USER_CACHE_TTL_MS) {
-          role = cached.role
-          status = cached.status
-          passwordChangedAt = cached.passwordChangedAt
+        if (cached && now - cached.fetchedAt < USER_CACHE_TTL_MS) {
+          role = cached.role;
+          status = cached.status;
+          passwordChangedAt = cached.passwordChangedAt;
         } else {
           const currentUser = await prisma.user.findUnique({
             where: { id: userId },
-            select: { role: true, status: true, passwordChangedAt: true }
-          })
+            select: { role: true, status: true, passwordChangedAt: true },
+          });
 
           if (currentUser) {
-            role = currentUser.role
-            status = currentUser.status
-            passwordChangedAt = currentUser.passwordChangedAt?.getTime() ?? null
-            userStatusCache.set(userId, { role, status, passwordChangedAt, fetchedAt: now })
+            role = currentUser.role;
+            status = currentUser.status;
+            passwordChangedAt =
+              currentUser.passwordChangedAt?.getTime() ?? null;
+            userStatusCache.set(userId, {
+              role,
+              status,
+              passwordChangedAt,
+              fetchedAt: now,
+            });
           } else {
-            role = 'user'
-            status = 'deleted'
-            passwordChangedAt = null
+            role = "user";
+            status = "deleted";
+            passwordChangedAt = null;
           }
 
           // Keep cache from growing unbounded
-          if (userStatusCache.size > 10000) userStatusCache.clear()
+          if (userStatusCache.size > 10000) userStatusCache.clear();
         }
 
-        if (status !== 'active') {
-          token.role = 'blocked'
-          ;(token as any).status = status
+        if (status !== "active") {
+          token.role = "blocked";
+          (token as any).status = status;
         } else {
-          token.role = role
-          ;(token as any).status = status
+          token.role = role;
+          (token as any).status = status;
 
           // Session invalidation: if password changed AFTER token issuance,
           // force re-login. Token's `iat` is set by Auth.js automatically.
-          const tokenIatSec = (token as any).iat as number | undefined
+          const tokenIatSec = (token as any).iat as number | undefined;
           if (
             passwordChangedAt &&
             tokenIatSec &&
             Math.floor(passwordChangedAt / 1000) > tokenIatSec
           ) {
-            token.role = 'blocked'
-            ;(token as any).status = 'session_invalidated'
+            token.role = "blocked";
+            (token as any).status = "session_invalidated";
           }
         }
       }
 
-      return token
+      return token;
     },
     async session({ session, token }) {
       if (token) {
-        session.user.id = token.id as string
-        session.user.role = token.role as string
-        ;(session.user as any).status = (token as any).status as string
+        session.user.id = token.id as string;
+        session.user.role = token.role as string;
+        if (
+          token.impersonatorRole === "admin" &&
+          Number.isSafeInteger(token.impersonatedBy)
+        ) {
+          session.user.impersonatedBy = token.impersonatedBy;
+          session.user.impersonatorRole = "admin";
+        }
+        (session.user as any).status = (token as any).status as string;
       }
-      return session
-    }
-  }
-})
+      return session;
+    },
+  },
+});

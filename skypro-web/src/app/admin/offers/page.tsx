@@ -1,115 +1,140 @@
-'use client'
+"use client";
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback } from "react";
 import {
-  Plus, Save, Trash2, Eye, EyeOff, ExternalLink, Image as ImageIcon,
-  X, Loader2, CheckCircle, AlertCircle, ArrowUp, ArrowDown, Megaphone,
-} from 'lucide-react'
+  Plus,
+  Save,
+  Trash2,
+  Eye,
+  EyeOff,
+  ExternalLink,
+  Image as ImageIcon,
+  X,
+  Loader2,
+  CheckCircle,
+  AlertCircle,
+  ArrowUp,
+  ArrowDown,
+  Megaphone,
+} from "lucide-react";
 
 interface Offer {
-  id?: number
-  title?: string | null
-  description?: string | null
-  imageUrl?: string | null
-  externalUrl: string
-  badge?: string | null
-  isActive: boolean
-  sortOrder: number
-  startsAt?: string | null
-  endsAt?: string | null
-  impressionCount?: number
-  clickCount?: number
-  createdAt?: string
-  updatedAt?: string
+  id?: number;
+  title?: string | null;
+  description?: string | null;
+  imageUrl?: string | null;
+  externalUrl: string;
+  badge?: string | null;
+  isActive: boolean;
+  sortOrder: number;
+  startsAt?: string | null;
+  endsAt?: string | null;
+  impressionCount?: number;
+  clickCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 const EMPTY_FORM: Offer = {
-  title: '',
-  description: '',
-  imageUrl: '',
-  externalUrl: '',
-  badge: '',
+  title: "",
+  description: "",
+  imageUrl: "",
+  externalUrl: "",
+  badge: "",
   isActive: true,
   sortOrder: 0,
   startsAt: null,
   endsAt: null,
-}
+};
 
 /** datetime-local input expects "YYYY-MM-DDTHH:mm". */
 function toLocalInput(iso?: string | null): string {
-  if (!iso) return ''
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return ''
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 /** Convert the local datetime string back to ISO; empty means null. */
 function fromLocalInput(value: string): string | null {
-  if (!value) return null
-  const d = new Date(value)
-  return Number.isNaN(d.getTime()) ? null : d.toISOString()
+  if (!value) return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
 
 /** Compute live schedule status: 'scheduled' | 'live' | 'expired' | 'always-on'. */
-function offerStatus(offer: Offer, now = new Date()): 'scheduled' | 'live' | 'expired' | 'always-on' {
-  if (!offer.isActive) return 'expired'
-  const starts = offer.startsAt ? new Date(offer.startsAt) : null
-  const ends = offer.endsAt ? new Date(offer.endsAt) : null
-  if (!starts && !ends) return 'always-on'
-  if (starts && starts > now) return 'scheduled'
-  if (ends && ends < now) return 'expired'
-  return 'live'
+function offerStatus(
+  offer: Offer,
+  now = new Date(),
+): "scheduled" | "live" | "expired" | "always-on" {
+  if (!offer.isActive) return "expired";
+  const starts = offer.startsAt ? new Date(offer.startsAt) : null;
+  const ends = offer.endsAt ? new Date(offer.endsAt) : null;
+  if (!starts && !ends) return "always-on";
+  if (starts && starts > now) return "scheduled";
+  if (ends && ends < now) return "expired";
+  return "live";
 }
 
 export default function AdminOffersPage() {
-  const [offers, setOffers] = useState<Offer[]>([])
-  const [form, setForm] = useState<Offer>(EMPTY_FORM)
-  const [editingId, setEditingId] = useState<number | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [deletingId, setDeletingId] = useState<number | null>(null)
-  const [showForm, setShowForm] = useState(false)
-  const [message, setMessage] = useState('')
-  const [error, setError] = useState('')
+  const [offers, setOffers] = useState<Offer[]>([]);
+  const [form, setForm] = useState<Offer>(EMPTY_FORM);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
   const showMsg = (msg: string, isError = false) => {
-    if (isError) { setError(msg); setMessage('') }
-    else { setMessage(msg); setError('') }
-    setTimeout(() => { setMessage(''); setError('') }, 4500)
-  }
+    if (isError) {
+      setError(msg);
+      setMessage("");
+    } else {
+      setMessage(msg);
+      setError("");
+    }
+    setTimeout(() => {
+      setMessage("");
+      setError("");
+    }, 4500);
+  };
 
   const loadOffers = useCallback(async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const res = await fetch('/api/admin/offers', { cache: 'no-store' })
-      const data = await res.json()
+      const res = await fetch("/api/admin/offers", { cache: "no-store" });
+      const data = await res.json();
       if (data?.success && Array.isArray(data.data)) {
-        setOffers(data.data)
+        setOffers(data.data);
       }
     } catch {
-      showMsg('فشل تحميل العروض', true)
+      showMsg("فشل تحميل العروض", true);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [])
+  }, []);
 
-  useEffect(() => { loadOffers() }, [loadOffers])
+  useEffect(() => {
+    loadOffers();
+  }, [loadOffers]);
 
   const handleSubmit = async () => {
     if (!form.externalUrl.trim()) {
-      showMsg('رابط الإعلان مطلوب', true)
-      return
+      showMsg("رابط الإعلان مطلوب", true);
+      return;
     }
-    if (!form.externalUrl.startsWith('https://')) {
-      showMsg('يجب أن يبدأ الرابط بـ https://', true)
-      return
+    if (!form.externalUrl.startsWith("https://")) {
+      showMsg("يجب أن يبدأ الرابط بـ https://", true);
+      return;
     }
-    if (form.imageUrl && !form.imageUrl.startsWith('https://')) {
-      showMsg('رابط الصورة يجب أن يبدأ بـ https://', true)
-      return
+    if (form.imageUrl && !form.imageUrl.startsWith("https://")) {
+      showMsg("رابط الصورة يجب أن يبدأ بـ https://", true);
+      return;
     }
-    setSaving(true)
+    setSaving(true);
     try {
       // Convert datetime-local strings to ISO before sending.
       const payload = {
@@ -117,268 +142,343 @@ export default function AdminOffersPage() {
         id: editingId ?? undefined,
         startsAt: form.startsAt || null,
         endsAt: form.endsAt || null,
-      }
-      const res = await fetch('/api/admin/offers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      };
+      const res = await fetch("/api/admin/offers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
-      })
-      const data = await res.json()
+      });
+      const data = await res.json();
       if (!res.ok || !data?.success) {
-        showMsg(data?.error || 'فشل الحفظ', true)
+        showMsg(data?.error || "فشل الحفظ", true);
       } else {
-        showMsg(editingId ? 'تم تحديث العرض' : 'تم إضافة العرض')
-        setForm(EMPTY_FORM)
-        setEditingId(null)
-        setShowForm(false)
-        await loadOffers()
+        showMsg(editingId ? "تم تحديث العرض" : "تم إضافة العرض");
+        setForm(EMPTY_FORM);
+        setEditingId(null);
+        setShowForm(false);
+        await loadOffers();
       }
     } catch {
-      showMsg('فشل الاتصال بالخادم', true)
+      showMsg("فشل الاتصال بالخادم", true);
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   const handleEdit = (offer: Offer) => {
     setForm({
-      title: offer.title || '',
-      description: offer.description || '',
-      imageUrl: offer.imageUrl || '',
+      title: offer.title || "",
+      description: offer.description || "",
+      imageUrl: offer.imageUrl || "",
       externalUrl: offer.externalUrl,
-      badge: offer.badge || '',
+      badge: offer.badge || "",
       isActive: offer.isActive,
       sortOrder: offer.sortOrder,
       startsAt: toLocalInput(offer.startsAt),
       endsAt: toLocalInput(offer.endsAt),
-    })
-    setEditingId(offer.id ?? null)
-    setShowForm(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
+    });
+    setEditingId(offer.id ?? null);
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const handleToggle = async (offer: Offer) => {
-    if (!offer.id) return
+    if (!offer.id) return;
     try {
-      const res = await fetch('/api/admin/offers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/admin/offers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...offer, isActive: !offer.isActive }),
-      })
-      const data = await res.json()
+      });
+      const data = await res.json();
       if (data?.success) {
-        await loadOffers()
-        showMsg(offer.isActive ? 'تم إخفاء العرض' : 'تم تفعيل العرض')
+        await loadOffers();
+        showMsg(offer.isActive ? "تم إخفاء العرض" : "تم تفعيل العرض");
       } else {
-        showMsg(data?.error || 'فشل التحديث', true)
+        showMsg(data?.error || "فشل التحديث", true);
       }
     } catch {
-      showMsg('فشل الاتصال بالخادم', true)
+      showMsg("فشل الاتصال بالخادم", true);
     }
-  }
+  };
 
-  const handleReorder = async (offer: Offer, direction: 'up' | 'down') => {
-    if (!offer.id) return
-    const newOrder = direction === 'up' ? offer.sortOrder - 1 : offer.sortOrder + 1
+  const handleReorder = async (offer: Offer, direction: "up" | "down") => {
+    if (!offer.id) return;
+    const newOrder =
+      direction === "up" ? offer.sortOrder - 1 : offer.sortOrder + 1;
     try {
-      const res = await fetch('/api/admin/offers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/admin/offers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...offer, sortOrder: newOrder }),
-      })
-      const data = await res.json()
+      });
+      const data = await res.json();
       if (data?.success) {
-        await loadOffers()
+        await loadOffers();
       }
     } catch {
-      showMsg('فشل التحديث', true)
+      showMsg("فشل التحديث", true);
     }
-  }
+  };
 
   const handleDelete = async (id: number) => {
-    if (deletingId !== id) { setDeletingId(id); setTimeout(() => setDeletingId(null), 4000); return }
+    if (deletingId !== id) {
+      setDeletingId(id);
+      setTimeout(() => setDeletingId(null), 4000);
+      return;
+    }
     try {
-      const res = await fetch('/api/admin/offers', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/admin/offers", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),
-      })
-      const data = await res.json()
+      });
+      const data = await res.json();
       if (data?.success) {
-        showMsg('تم حذف العرض')
-        await loadOffers()
+        showMsg("تم حذف العرض");
+        await loadOffers();
       } else {
-        showMsg(data?.error || 'فشل الحذف', true)
+        showMsg(data?.error || "فشل الحذف", true);
       }
     } catch {
-      showMsg('فشل الاتصال بالخادم', true)
+      showMsg("فشل الاتصال بالخادم", true);
     } finally {
-      setDeletingId(null)
+      setDeletingId(null);
     }
-  }
+  };
 
   return (
     <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white"
-               style={{ background: 'linear-gradient(135deg, #ff4fd8 0%, #8b2cf5 100%)' }}>
+          <div
+            className="w-12 h-12 rounded-2xl flex items-center justify-center text-foreground"
+            style={{
+              background: "linear-gradient(135deg, #ff4fd8 0%, #8b2cf5 100%)",
+            }}
+          >
             <Megaphone size={22} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">العروض والإعلانات</h1>
-            <p className="text-sm text-slate-400 mt-0.5">
+            <h1 className="text-2xl font-bold text-foreground">
+              العروض والإعلانات
+            </h1>
+            <p className="text-sm text-muted mt-0.5">
               يظهر هذا القسم في داشبورد التطبيق على أجهزة العملاء
             </p>
           </div>
         </div>
         <button
           onClick={() => {
-            if (showForm && !editingId) { setShowForm(false); return }
-            setForm(EMPTY_FORM)
-            setEditingId(null)
-            setShowForm(true)
+            if (showForm && !editingId) {
+              setShowForm(false);
+              return;
+            }
+            setForm(EMPTY_FORM);
+            setEditingId(null);
+            setShowForm(true);
           }}
           className="admin-btn-primary flex items-center gap-2"
         >
-          {showForm && !editingId ? <><X size={18} /> إلغاء</> : <><Plus size={18} /> إضافة عرض</>}
+          {showForm && !editingId ? (
+            <>
+              <X size={18} /> إلغاء
+            </>
+          ) : (
+            <>
+              <Plus size={18} /> إضافة عرض
+            </>
+          )}
         </button>
       </div>
 
       {/* Notification */}
       {(message || error) && (
-        <div className={`mb-4 px-4 py-3 rounded-xl text-sm flex items-center gap-2 ${
-          message ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
-                  : 'bg-red-500/15 text-red-400 border border-red-500/20'
-        }`}>
+        <div
+          className={`mb-4 px-4 py-3 rounded-xl text-sm flex items-center gap-2 ${
+            message
+              ? "bg-emerald-500/15 text-positive border border-emerald-500/20"
+              : "bg-red-500/15 text-negative border border-red-500/20"
+          }`}
+        >
           {message ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
           {message || error}
         </div>
       )}
 
       {/* Aggregate stats */}
-      {offers.length > 0 && (() => {
-        const live = offers.filter((o) => offerStatus(o) === 'live').length
-        const scheduled = offers.filter((o) => offerStatus(o) === 'scheduled').length
-        const totalImpressions = offers.reduce((s, o) => s + (o.impressionCount ?? 0), 0)
-        const totalClicks = offers.reduce((s, o) => s + (o.clickCount ?? 0), 0)
-        const ctr = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0
-        return (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-            <div className="admin-card !p-3.5">
-              <div className="text-[10.5px] uppercase tracking-wider text-slate-500 font-semibold">إجمالي العروض</div>
-              <div className="mt-1 text-2xl font-bold text-white">{offers.length}</div>
-              <div className="text-[11px] text-slate-500 mt-0.5">{live} مباشر · {scheduled} مجدول</div>
+      {offers.length > 0 &&
+        (() => {
+          const live = offers.filter((o) => offerStatus(o) === "live").length;
+          const scheduled = offers.filter(
+            (o) => offerStatus(o) === "scheduled",
+          ).length;
+          const totalImpressions = offers.reduce(
+            (s, o) => s + (o.impressionCount ?? 0),
+            0,
+          );
+          const totalClicks = offers.reduce(
+            (s, o) => s + (o.clickCount ?? 0),
+            0,
+          );
+          const ctr =
+            totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
+          return (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+              <div className="admin-card !p-3.5">
+                <div className="text-[10.5px] uppercase tracking-wider text-muted font-semibold">
+                  إجمالي العروض
+                </div>
+                <div className="mt-1 text-2xl font-bold text-foreground">
+                  {offers.length}
+                </div>
+                <div className="text-[11px] text-muted mt-0.5">
+                  {live} مباشر · {scheduled} مجدول
+                </div>
+              </div>
+              <div className="admin-card !p-3.5">
+                <div className="text-[10.5px] uppercase tracking-wider text-muted font-semibold">
+                  المشاهدات
+                </div>
+                <div className="mt-1 text-2xl font-bold text-brand">
+                  {totalImpressions.toLocaleString("ar-EG")}
+                </div>
+                <div className="text-[11px] text-muted mt-0.5">من العملاء</div>
+              </div>
+              <div className="admin-card !p-3.5">
+                <div className="text-[10.5px] uppercase tracking-wider text-muted font-semibold">
+                  النقرات
+                </div>
+                <div className="mt-1 text-2xl font-bold text-positive">
+                  {totalClicks.toLocaleString("ar-EG")}
+                </div>
+                <div className="text-[11px] text-muted mt-0.5">على العروض</div>
+              </div>
+              <div className="admin-card !p-3.5">
+                <div className="text-[10.5px] uppercase tracking-wider text-muted font-semibold">
+                  معدل التفاعل (CTR)
+                </div>
+                <div className="mt-1 text-2xl font-bold text-accent">
+                  {ctr.toFixed(2)}%
+                </div>
+                <div className="text-[11px] text-muted mt-0.5">
+                  {totalClicks}/{totalImpressions}
+                </div>
+              </div>
             </div>
-            <div className="admin-card !p-3.5">
-              <div className="text-[10.5px] uppercase tracking-wider text-slate-500 font-semibold">المشاهدات</div>
-              <div className="mt-1 text-2xl font-bold text-sky-300">{totalImpressions.toLocaleString('ar-EG')}</div>
-              <div className="text-[11px] text-slate-500 mt-0.5">من العملاء</div>
-            </div>
-            <div className="admin-card !p-3.5">
-              <div className="text-[10.5px] uppercase tracking-wider text-slate-500 font-semibold">النقرات</div>
-              <div className="mt-1 text-2xl font-bold text-emerald-300">{totalClicks.toLocaleString('ar-EG')}</div>
-              <div className="text-[11px] text-slate-500 mt-0.5">على العروض</div>
-            </div>
-            <div className="admin-card !p-3.5">
-              <div className="text-[10.5px] uppercase tracking-wider text-slate-500 font-semibold">معدل التفاعل (CTR)</div>
-              <div className="mt-1 text-2xl font-bold text-violet-300">{ctr.toFixed(2)}%</div>
-              <div className="text-[11px] text-slate-500 mt-0.5">{totalClicks}/{totalImpressions}</div>
-            </div>
-          </div>
-        )
-      })()}
+          );
+        })()}
 
       {/* Form */}
       {showForm && (
         <div className="admin-card mb-6">
-          <h2 className="text-lg font-bold text-white mb-4">
-            {editingId ? 'تعديل العرض' : 'إضافة عرض جديد'}
+          <h2 className="text-lg font-bold text-foreground mb-4">
+            {editingId ? "تعديل العرض" : "إضافة عرض جديد"}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
-              <label htmlFor="offer-title" className="admin-label">العنوان</label>
+              <label htmlFor="offer-title" className="admin-label">
+                العنوان
+              </label>
               <input
                 id="offer-title"
                 type="text"
                 className="admin-input"
-                value={form.title || ''}
+                value={form.title || ""}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
                 placeholder="مثال: عرض حصري لخدمات التسويق"
                 maxLength={120}
               />
             </div>
             <div>
-              <label htmlFor="offer-badge" className="admin-label">الشارة (اختياري)</label>
+              <label htmlFor="offer-badge" className="admin-label">
+                الشارة (اختياري)
+              </label>
               <input
                 id="offer-badge"
                 type="text"
                 className="admin-input"
-                value={form.badge || ''}
+                value={form.badge || ""}
                 onChange={(e) => setForm({ ...form, badge: e.target.value })}
                 placeholder="مثال: العرض الرسمي"
                 maxLength={40}
               />
             </div>
             <div className="md:col-span-2">
-              <label htmlFor="offer-description" className="admin-label">الوصف</label>
+              <label htmlFor="offer-description" className="admin-label">
+                الوصف
+              </label>
               <textarea
                 id="offer-description"
                 className="admin-input min-h-[80px]"
-                value={form.description || ''}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                value={form.description || ""}
+                onChange={(e) =>
+                  setForm({ ...form, description: e.target.value })
+                }
                 placeholder="وصف موجز للعرض يظهر تحت العنوان"
                 maxLength={500}
               />
             </div>
             <div>
-              <label htmlFor="offer-image" className="admin-label">رابط الصورة (HTTPS)</label>
+              <label htmlFor="offer-image" className="admin-label">
+                رابط الصورة (HTTPS)
+              </label>
               <input
                 id="offer-image"
                 type="url"
                 dir="ltr"
                 className="admin-input"
-                value={form.imageUrl || ''}
+                value={form.imageUrl || ""}
                 onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
                 placeholder="https://example.com/image.jpg"
               />
-              {form.imageUrl && form.imageUrl.startsWith('https://') && (
-                <div className="mt-2 w-24 h-24 rounded-xl overflow-hidden border border-white/10">
+              {form.imageUrl && form.imageUrl.startsWith("https://") && (
+                <div className="mt-2 w-24 h-24 rounded-xl overflow-hidden border border-line">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={form.imageUrl}
                     alt="معاينة"
                     className="w-full h-full object-cover"
-                    onError={(e) => { e.currentTarget.style.display = 'none' }}
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
                   />
                 </div>
               )}
             </div>
             <div>
-              <label htmlFor="offer-url" className="admin-label">رابط الإعلان (HTTPS) *</label>
+              <label htmlFor="offer-url" className="admin-label">
+                رابط الإعلان (HTTPS) *
+              </label>
               <input
                 id="offer-url"
                 type="url"
                 dir="ltr"
                 className="admin-input"
                 value={form.externalUrl}
-                onChange={(e) => setForm({ ...form, externalUrl: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, externalUrl: e.target.value })
+                }
                 placeholder="https://www.skywaveads.com/offer"
                 required
               />
-              <p className="text-[11px] text-slate-500 mt-1">
+              <p className="text-[11px] text-muted mt-1">
                 هذا الرابط يفتح في متصفح العميل عند الضغط على العرض
               </p>
             </div>
             <div>
-              <label htmlFor="offer-order" className="admin-label">ترتيب العرض (الأصغر يظهر أولاً)</label>
+              <label htmlFor="offer-order" className="admin-label">
+                ترتيب العرض (الأصغر يظهر أولاً)
+              </label>
               <input
                 id="offer-order"
                 type="number"
                 className="admin-input"
                 value={form.sortOrder}
-                onChange={(e) => setForm({ ...form, sortOrder: parseInt(e.target.value) || 0 })}
+                onChange={(e) =>
+                  setForm({ ...form, sortOrder: parseInt(e.target.value) || 0 })
+                }
                 min={-1000}
                 max={1000}
               />
@@ -388,61 +488,87 @@ export default function AdminOffersPage() {
                 <input
                   type="checkbox"
                   checked={form.isActive}
-                  onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
+                  onChange={(e) =>
+                    setForm({ ...form, isActive: e.target.checked })
+                  }
                   className="w-4 h-4 accent-blue-500"
                 />
-                <span className="text-sm text-slate-300">العرض مفعّل ومعروض للعملاء</span>
+                <span className="text-sm text-muted">
+                  العرض مفعّل ومعروض للعملاء
+                </span>
               </label>
             </div>
           </div>
 
           {/* Scheduling */}
-          <div className="mt-4 pt-4 border-t border-white/5">
+          <div className="mt-4 pt-4 border-t border-line">
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-sm font-bold text-slate-300">جدولة العرض (اختياري)</span>
-              <span className="text-[11px] text-slate-500">— اتركها فارغة ليظهر دائماً</span>
+              <span className="text-sm font-bold text-muted">
+                جدولة العرض (اختياري)
+              </span>
+              <span className="text-[11px] text-muted">
+                — اتركها فارغة ليظهر دائماً
+              </span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="offer-starts" className="admin-label">يبدأ من</label>
+                <label htmlFor="offer-starts" className="admin-label">
+                  يبدأ من
+                </label>
                 <input
                   id="offer-starts"
                   type="datetime-local"
                   className="admin-input"
-                  value={form.startsAt || ''}
-                  onChange={(e) => setForm({ ...form, startsAt: e.target.value || null })}
+                  value={form.startsAt || ""}
+                  onChange={(e) =>
+                    setForm({ ...form, startsAt: e.target.value || null })
+                  }
                 />
               </div>
               <div>
-                <label htmlFor="offer-ends" className="admin-label">ينتهي في</label>
+                <label htmlFor="offer-ends" className="admin-label">
+                  ينتهي في
+                </label>
                 <input
                   id="offer-ends"
                   type="datetime-local"
                   className="admin-input"
-                  value={form.endsAt || ''}
-                  onChange={(e) => setForm({ ...form, endsAt: e.target.value || null })}
+                  value={form.endsAt || ""}
+                  onChange={(e) =>
+                    setForm({ ...form, endsAt: e.target.value || null })
+                  }
                 />
               </div>
             </div>
-            {form.startsAt && form.endsAt && new Date(form.endsAt) < new Date(form.startsAt) && (
-              <p className="mt-2 text-xs text-amber-400">
-                ⚠️ تاريخ الانتهاء قبل تاريخ البدء — العرض لن يظهر للعملاء
-              </p>
-            )}
+            {form.startsAt &&
+              form.endsAt &&
+              new Date(form.endsAt) < new Date(form.startsAt) && (
+                <p className="mt-2 text-xs text-caution">
+                  ⚠️ تاريخ الانتهاء قبل تاريخ البدء — العرض لن يظهر للعملاء
+                </p>
+              )}
           </div>
 
-          <div className="flex items-center gap-3 mt-5 pt-4 border-t border-white/5">
+          <div className="flex items-center gap-3 mt-5 pt-4 border-t border-line">
             <button
               onClick={handleSubmit}
               disabled={saving || !form.externalUrl.trim()}
               className="admin-btn-primary flex items-center gap-2"
             >
-              {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-              {editingId ? 'حفظ التغييرات' : 'إضافة العرض'}
+              {saving ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Save size={16} />
+              )}
+              {editingId ? "حفظ التغييرات" : "إضافة العرض"}
             </button>
             <button
-              onClick={() => { setForm(EMPTY_FORM); setEditingId(null); setShowForm(false) }}
-              className="px-4 py-2 rounded-xl bg-white/5 text-slate-300 hover:bg-white/10 text-sm"
+              onClick={() => {
+                setForm(EMPTY_FORM);
+                setEditingId(null);
+                setShowForm(false);
+              }}
+              className="px-4 py-2 rounded-xl bg-soft text-muted hover:bg-soft text-sm"
             >
               إلغاء
             </button>
@@ -453,25 +579,27 @@ export default function AdminOffersPage() {
       {/* Offers List */}
       <div className="admin-card">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-white">العروض الحالية ({offers.length})</h2>
+          <h2 className="text-lg font-bold text-foreground">
+            العروض الحالية ({offers.length})
+          </h2>
           {!loading && offers.length > 0 && (
-            <span className="text-xs text-slate-400">
-              {offers.filter(o => o.isActive).length} مفعّل
+            <span className="text-xs text-muted">
+              {offers.filter((o) => o.isActive).length} مفعّل
             </span>
           )}
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-12 text-slate-400">
+          <div className="flex items-center justify-center py-12 text-muted">
             <Loader2 size={28} className="animate-spin" />
           </div>
         ) : offers.length === 0 ? (
           <div className="text-center py-12">
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 bg-white/5">
-              <Megaphone size={32} className="text-slate-500" />
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 bg-soft">
+              <Megaphone size={32} className="text-muted" />
             </div>
-            <p className="text-slate-300 font-semibold">لا توجد عروض حالياً</p>
-            <p className="text-xs text-slate-500 mt-1.5">
+            <p className="text-muted font-semibold">لا توجد عروض حالياً</p>
+            <p className="text-xs text-muted mt-1.5">
               أضف عرضك الأول ليظهر في داشبورد التطبيق على أجهزة العملاء
             </p>
           </div>
@@ -482,62 +610,72 @@ export default function AdminOffersPage() {
                 key={offer.id}
                 className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
                   offer.isActive
-                    ? 'bg-white/[0.03] border-white/10'
-                    : 'bg-white/[0.01] border-white/5 opacity-60'
+                    ? "bg-panel border-line"
+                    : "bg-soft border-line opacity-60"
                 }`}
               >
                 {/* Image preview */}
-                <div className="w-16 h-16 rounded-lg overflow-hidden bg-white/5 border border-white/10 flex-shrink-0 flex items-center justify-center">
+                <div className="w-16 h-16 rounded-lg overflow-hidden bg-soft border border-line flex-shrink-0 flex items-center justify-center">
                   {offer.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={offer.imageUrl}
-                      alt={offer.title || ''}
+                      alt={offer.title || ""}
                       className="w-full h-full object-cover"
                       onError={(e) => {
-                        e.currentTarget.style.display = 'none'
-                        const fallback = e.currentTarget.nextElementSibling as HTMLElement | null
-                        if (fallback) fallback.style.display = 'flex'
+                        e.currentTarget.style.display = "none";
+                        const fallback = e.currentTarget
+                          .nextElementSibling as HTMLElement | null;
+                        if (fallback) fallback.style.display = "flex";
                       }}
                     />
                   ) : null}
-                  {!offer.imageUrl && <ImageIcon size={24} className="text-slate-600" />}
+                  {!offer.imageUrl && (
+                    <ImageIcon size={24} className="text-muted" />
+                  )}
                 </div>
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     {(() => {
-                      const status = offerStatus(offer)
+                      const status = offerStatus(offer);
                       const styles: Record<typeof status, string> = {
-                        live:        'bg-emerald-500/15 text-emerald-400 border-emerald-500/25',
-                        scheduled:   'bg-amber-500/15 text-amber-400 border-amber-500/25',
-                        expired:     'bg-red-500/15 text-red-400 border-red-500/25',
-                        'always-on': 'bg-sky-500/15 text-sky-400 border-sky-500/25',
-                      }
+                        live: "bg-emerald-500/15 text-positive border-emerald-500/25",
+                        scheduled:
+                          "bg-amber-500/15 text-caution border-amber-500/25",
+                        expired:
+                          "bg-red-500/15 text-negative border-red-500/25",
+                        "always-on":
+                          "bg-sky-500/15 text-brand border-sky-500/25",
+                      };
                       const labels: Record<typeof status, string> = {
-                        live: 'مباشر',
-                        scheduled: 'مجدول',
-                        expired: 'منتهي',
-                        'always-on': 'دائم',
-                      }
+                        live: "مباشر",
+                        scheduled: "مجدول",
+                        expired: "منتهي",
+                        "always-on": "دائم",
+                      };
                       return (
-                        <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold border ${styles[status]}`}>
+                        <span
+                          className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold border ${styles[status]}`}
+                        >
                           {labels[status]}
                         </span>
-                      )
+                      );
                     })()}
                     {offer.badge && (
                       <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-pink-500/15 text-pink-400 border border-pink-500/25">
                         {offer.badge}
                       </span>
                     )}
-                    <h3 className="font-semibold text-white text-sm truncate">
-                      {offer.title || 'بدون عنوان'}
+                    <h3 className="font-semibold text-foreground text-sm truncate">
+                      {offer.title || "بدون عنوان"}
                     </h3>
                   </div>
                   {offer.description && (
-                    <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{offer.description}</p>
+                    <p className="text-xs text-muted mt-0.5 line-clamp-1">
+                      {offer.description}
+                    </p>
                   )}
                   <a
                     href={offer.externalUrl}
@@ -550,15 +688,23 @@ export default function AdminOffersPage() {
                     <span className="truncate">{offer.externalUrl}</span>
                   </a>
                   {/* Engagement + schedule */}
-                  <div className="flex items-center gap-3 mt-1.5 text-[10.5px] text-slate-500">
-                    <span title="مشاهدات">👁 {(offer.impressionCount ?? 0).toLocaleString('ar-EG')}</span>
-                    <span title="نقرات">🖱 {(offer.clickCount ?? 0).toLocaleString('ar-EG')}</span>
+                  <div className="flex items-center gap-3 mt-1.5 text-[10.5px] text-muted">
+                    <span title="مشاهدات">
+                      👁 {(offer.impressionCount ?? 0).toLocaleString("ar-EG")}
+                    </span>
+                    <span title="نقرات">
+                      🖱 {(offer.clickCount ?? 0).toLocaleString("ar-EG")}
+                    </span>
                     {(offer.startsAt || offer.endsAt) && (
                       <span>
-                        ⏰{' '}
-                        {offer.startsAt ? new Date(offer.startsAt).toLocaleDateString('ar-EG') : '...'}
-                        {' → '}
-                        {offer.endsAt ? new Date(offer.endsAt).toLocaleDateString('ar-EG') : '∞'}
+                        ⏰{" "}
+                        {offer.startsAt
+                          ? new Date(offer.startsAt).toLocaleDateString("ar-EG")
+                          : "..."}
+                        {" → "}
+                        {offer.endsAt
+                          ? new Date(offer.endsAt).toLocaleDateString("ar-EG")
+                          : "∞"}
                       </span>
                     )}
                   </div>
@@ -567,18 +713,18 @@ export default function AdminOffersPage() {
                 {/* Order controls */}
                 <div className="flex flex-col gap-0.5 flex-shrink-0">
                   <button
-                    onClick={() => handleReorder(offer, 'up')}
-                    className="p-1 rounded text-slate-400 hover:bg-white/5 hover:text-white"
+                    onClick={() => handleReorder(offer, "up")}
+                    className="p-1 rounded text-muted hover:bg-soft hover:text-foreground"
                     title="تحريك للأعلى"
                   >
                     <ArrowUp size={12} />
                   </button>
-                  <span className="text-[10px] text-slate-500 text-center font-mono">
+                  <span className="text-[10px] text-muted text-center font-mono">
                     {offer.sortOrder}
                   </span>
                   <button
-                    onClick={() => handleReorder(offer, 'down')}
-                    className="p-1 rounded text-slate-400 hover:bg-white/5 hover:text-white"
+                    onClick={() => handleReorder(offer, "down")}
+                    className="p-1 rounded text-muted hover:bg-soft hover:text-foreground"
                     title="تحريك للأسفل"
                   >
                     <ArrowDown size={12} />
@@ -591,10 +737,10 @@ export default function AdminOffersPage() {
                     onClick={() => handleToggle(offer)}
                     className={`p-2 rounded-lg transition-colors ${
                       offer.isActive
-                        ? 'text-emerald-400 hover:bg-emerald-500/10'
-                        : 'text-slate-500 hover:bg-white/5'
+                        ? "text-positive hover:bg-emerald-500/10"
+                        : "text-muted hover:bg-soft"
                     }`}
-                    title={offer.isActive ? 'إخفاء' : 'تفعيل'}
+                    title={offer.isActive ? "إخفاء" : "تفعيل"}
                   >
                     {offer.isActive ? <Eye size={16} /> : <EyeOff size={16} />}
                   </button>
@@ -603,7 +749,16 @@ export default function AdminOffersPage() {
                     className="p-2 rounded-lg text-blue-400 hover:bg-blue-500/10"
                     title="تعديل"
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
                       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                     </svg>
@@ -612,10 +767,12 @@ export default function AdminOffersPage() {
                     onClick={() => offer.id && handleDelete(offer.id)}
                     className={`p-2 rounded-lg transition-colors ${
                       deletingId === offer.id
-                        ? 'bg-red-500/15 text-red-400 animate-pulse'
-                        : 'text-red-400/70 hover:bg-red-500/10 hover:text-red-400'
+                        ? "bg-red-500/15 text-negative animate-pulse"
+                        : "text-negative hover:bg-red-500/10 hover:text-negative"
                     }`}
-                    title={deletingId === offer.id ? 'اضغط مرة أخرى للتأكيد' : 'حذف'}
+                    title={
+                      deletingId === offer.id ? "اضغط مرة أخرى للتأكيد" : "حذف"
+                    }
                   >
                     <Trash2 size={16} />
                   </button>
@@ -627,15 +784,23 @@ export default function AdminOffersPage() {
       </div>
 
       {/* Help footer */}
-      <div className="mt-6 p-4 rounded-xl bg-white/[0.02] border border-white/5">
-        <h3 className="text-sm font-bold text-white mb-2">معلومات مهمة</h3>
-        <ul className="text-xs text-slate-400 space-y-1.5 list-disc pr-4">
-          <li>روابط الصور والإعلانات يجب أن تبدأ بـ <code className="text-blue-400">https://</code></li>
-          <li>يمكنك رفع الصور على CDN أو خدمة استضافة صور خارجية ولصق الرابط هنا</li>
-          <li>العميل يرى العروض المفعّلة فقط، ومرتبة حسب رقم الترتيب (الأصغر أولاً)</li>
+      <div className="mt-6 p-4 rounded-xl bg-panel border border-line">
+        <h3 className="text-sm font-bold text-foreground mb-2">معلومات مهمة</h3>
+        <ul className="text-xs text-muted space-y-1.5 list-disc pr-4">
+          <li>
+            روابط الصور والإعلانات يجب أن تبدأ بـ{" "}
+            <code className="text-blue-400">https://</code>
+          </li>
+          <li>
+            يمكنك رفع الصور على CDN أو خدمة استضافة صور خارجية ولصق الرابط هنا
+          </li>
+          <li>
+            العميل يرى العروض المفعّلة فقط، ومرتبة حسب رقم الترتيب (الأصغر
+            أولاً)
+          </li>
           <li>الحد الأقصى 50 عرض في النظام</li>
         </ul>
       </div>
     </div>
-  )
+  );
 }

@@ -1,105 +1,69 @@
-﻿import { Metadata } from 'next'
-import { platformPages, getPlatformIds } from '@/data/platform-pages'
-import { PlatformsListContent } from '@/components/marketing/PlatformsListContent'
-import { Navbar } from '@/components/marketing/Navbar'
-import { Footer } from '@/components/marketing/Footer'
-import { WhatsAppButton } from '@/components/marketing/WhatsAppButton'
-import { CosmicBackground } from '@/components/marketing/CosmicBackground'
-
-const SITE_URL = 'https://skypro.skywaveads.com'
-
+import type { Metadata } from "next";
+import { getPlatformIds, getPlatformPage } from "@/data/platform-pages";
+import { PlatformsListContent } from "@/components/marketing/PlatformsListContent";
+import { Navbar } from "@/components/marketing/Navbar";
+import { Footer } from "@/components/marketing/Footer";
+import { WhatsAppButton } from "@/components/marketing/WhatsAppButton";
+const url = "https://skypro.skywaveads.com/platforms";
+const title = "جميع المنصات والأدوات | Sky Pro";
+const description =
+  "استكشف أدوات فيسبوك وواتساب وإنستجرام وخرائط جوجل والبريد وباقي أدوات Sky Pro. صور فعلية، شرح الاستخدام، وتجربة مجانية لمدة يومين.";
 export const metadata: Metadata = {
-  title: 'المنصات المدعومة | SkyPro — 18+ منصة تسويق آلي بالذكاء الاصطناعي',
-  description:
-    'اكتشف 18+ منصة مدعومة في SkyPro لأتمتة التسويق: فيسبوك، واتساب، انستغرام، تويتر، لينكد إن، تيليجرام، تيك توك وأكثر. أدِر كل قنواتك من لوحة تحكم واحدة بسعر 2,000 ج.م/سنة.',
-  keywords: [
-    'منصات تسويق آلي', 'تسويق فيسبوك', 'تسويق واتساب', 'تسويق انستغرام',
-    'تسويق تويتر', 'تسويق لينكد إن', 'تسويق تيليجرام', 'تسويق تيك توك',
-    'تسويق سناب شات', 'تسويق ريديت', 'تسويق بنترست', 'تسويق سوشيال ميديا',
-    'SkyPro', 'Sky Wave', 'social media automation', 'multi-platform marketing',
-    'افضل برنامج تسويق سوشيال ميديا 2026', 'برنامج تسويق آلي عربي',
-  ],
-  alternates: { canonical: `${SITE_URL}/platforms` },
+  title: { absolute: title },
+  description,
+  alternates: { canonical: url },
   openGraph: {
-    title: 'المنصات المدعومة | SkyPro — 18+ منصة في تطبيق واحد',
-    description:
-      'فيسبوك، واتساب، انستغرام، تويتر، تيك توك، لينكد إن وأكثر — كلها مدعومة في SkyPro بأتمتة ذكية وحماية كاملة من الحظر.',
-    url: `${SITE_URL}/platforms`,
-    siteName: 'SkyPro — Sky Wave',
-    type: 'website',
+    title,
+    description,
+    url,
+    type: "website",
+    locale: "ar_EG",
     images: [
       {
-        url: '/images/app/skypro-multi-platform-dashboard.png',
-        width: 1920,
-        height: 1080,
-        alt: 'SkyPro — 18+ منصة تسويق في تطبيق واحد',
+        url: "/images/app/skypro-multi-platform-dashboard.png",
+        alt: "منصات وأدوات Sky Pro",
       },
     ],
-    locale: 'ar_EG',
   },
   twitter: {
-    card: 'summary_large_image',
-    site: '@skywaveads',
-    title: 'المنصات المدعومة | SkyPro — 18+ منصة في تطبيق واحد',
-    description: 'فيسبوك، واتساب، انستغرام، تويتر، تيك توك وأكثر — كلها مدعومة في SkyPro.',
-    images: ['/images/app/skypro-multi-platform-dashboard.png'],
+    card: "summary_large_image",
+    title,
+    description,
+    images: ["/images/app/skypro-multi-platform-dashboard.png"],
   },
-  other: {
-    'article:modified_time': new Date().toISOString(),
-  },
-}
-
-export default function PlatformsPage() {
-  const ids = getPlatformIds()
-  const pages = ids.map((id) => platformPages[id])
-
-  const itemListLd = {
-    '@context': 'https://schema.org',
-    '@type': 'ItemList',
-    name: 'منصات SkyPro المدعومة',
-    description: 'جميع المنصات المدعومة في SkyPro لأتمتة التسويق',
-    numberOfItems: pages.length,
-    itemListElement: pages.map((p, index) => ({
-      '@type': 'ListItem',
-      position: index + 1,
-      name: `SkyPro لـ ${p.arabicName}`,
-      url: `${SITE_URL}/platforms/${p.id}`,
+};
+export default async function PlatformsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const query = await searchParams;
+  const pages = getPlatformIds().map((id) => getPlatformPage(id)!);
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: title,
+    itemListElement: pages.map((p, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: p.arabicName,
+      url: url + "/" + p.id,
     })),
-  }
-
-  const breadcrumbsLd = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'الرئيسية', item: SITE_URL },
-      { '@type': 'ListItem', position: 2, name: 'المنصات المدعومة', item: `${SITE_URL}/platforms` },
-    ],
-  }
-
-  // CollectionPage schema (better than just ItemList for Google understanding)
-  const collectionLd = {
-    '@context': 'https://schema.org',
-    '@type': 'CollectionPage',
-    '@id': `${SITE_URL}/platforms#collection`,
-    name: 'كل منصات SkyPro المدعومة',
-    description: 'استكشف 18+ منصة تسويق آلي مدعومة في SkyPro.',
-    url: `${SITE_URL}/platforms`,
-    inLanguage: 'ar',
-    isPartOf: { '@id': `${SITE_URL}#website` },
-    mainEntity: { '@id': `${SITE_URL}/platforms#collection-list` },
-    breadcrumb: { '@id': `${SITE_URL}/platforms#breadcrumb` },
-  }
-
+  };
   return (
-    <main className="relative">
-      <CosmicBackground />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbsLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionLd) }} />
+    <>
       <Navbar />
-      <PlatformsListContent pages={pages} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      />
+      <PlatformsListContent
+        key={query.q || ""}
+        pages={pages}
+        initialSearch={(query.q || "").slice(0, 120)}
+      />
       <Footer />
       <WhatsAppButton />
-    </main>
-  )
+    </>
+  );
 }

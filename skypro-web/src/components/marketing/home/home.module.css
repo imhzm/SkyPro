@@ -1,15 +1,15 @@
 .home {
-  --bg: #030b19;
-  --card: rgba(14, 26, 48, 0.72);
-  --solid: #101c32;
-  --text: #f6f8ff;
-  --muted: #a7b5ce;
-  --border: rgba(119, 153, 233, 0.19);
-  --soft: rgba(70, 118, 234, 0.12);
-  --blue: #56aaff;
-  --violet: #ac78ff;
-  --shadow: 0 12px 38px #0003;
-  --nav: rgba(5, 13, 29, 0.94);
+  --bg: var(--sp-bg);
+  --card: var(--sp-card);
+  --solid: var(--sp-solid);
+  --text: var(--sp-text);
+  --muted: var(--sp-muted);
+  --border: var(--sp-border);
+  --soft: var(--sp-soft);
+  --blue: var(--sp-blue);
+  --violet: var(--sp-violet);
+  --shadow: var(--sp-shadow);
+  --nav: var(--sp-nav);
   isolation: isolate;
   position: relative;
   overflow: clip;
@@ -24,17 +24,17 @@
   color-scheme: dark;
 }
 :global(html[data-skypro-theme="light"]) .home {
-  --bg: #f7faff;
-  --card: rgba(255, 255, 255, 0.9);
-  --solid: #fff;
-  --text: #121c42;
-  --muted: #52617d;
-  --border: rgba(107, 142, 236, 0.18);
-  --soft: #edf2ff;
-  --blue: #225fe3;
-  --violet: #8a32da;
-  --shadow: 0 9px 28px #3f69c312;
-  --nav: rgba(248, 251, 255, 0.94);
+  --bg: var(--sp-bg);
+  --card: var(--sp-card);
+  --solid: var(--sp-solid);
+  --text: var(--sp-text);
+  --muted: var(--sp-muted);
+  --border: var(--sp-border);
+  --soft: var(--sp-soft);
+  --blue: var(--sp-blue);
+  --violet: var(--sp-violet);
+  --shadow: var(--sp-shadow);
+  --nav: var(--sp-nav);
   background:
     radial-gradient(ellipse at 90% 2%, #e4eaff, transparent 16%),
     radial-gradient(ellipse at 0 27%, #e8f5ff, transparent 18%),
@@ -460,7 +460,15 @@
   pointer-events: none;
   z-index: -1;
   overflow: hidden;
-  background: linear-gradient(90deg, #030b19ed 0%, #030b19cc 42%, #030b194d 70%, #030b1977 100%), url("/images/home-hero-wave.webp") center 65% / cover no-repeat;
+  background:
+    linear-gradient(
+      90deg,
+      #030b19ed 0%,
+      #030b19cc 42%,
+      #030b194d 70%,
+      #030b1977 100%
+    ),
+    url("/images/home-hero-wave.webp") center 65% / cover no-repeat;
   mask-image: linear-gradient(transparent, #000 25%, #000 85%, transparent);
 }
 .heroWave::before,
@@ -1301,10 +1309,18 @@
   .mobileNav :global(.text-slate-300) {
     color: var(--text);
   }
-  .mobileNav :global(.text-white) { color: var(--text); }
-  .mobileNav :global(.bg-gradient-to-br) { color: #fff; }
-  .mobileNav :global(.text-sky-300) { color: var(--blue); }
-  :global(html[data-skypro-theme='light']) .mobileNav :global(.text-red-300) { color: #b42336; }
+  .mobileNav :global(.text-white) {
+    color: var(--text);
+  }
+  .mobileNav :global(.bg-gradient-to-br) {
+    color: #fff;
+  }
+  .mobileNav :global(.text-sky-300) {
+    color: var(--blue);
+  }
+  :global(html[data-skypro-theme="light"]) .mobileNav :global(.text-red-300) {
+    color: #b42336;
+  }
   .hero {
     padding-block-start: 35px;
   }
@@ -1535,9 +1551,14 @@
     top: 320px;
   }
   .heroWave {
-    mask-image: linear-gradient(transparent 0%, transparent 40%, #000 85%, transparent 100%);
+    mask-image: linear-gradient(
+      transparent 0%,
+      transparent 40%,
+      #000 85%,
+      transparent 100%
+    );
     background-position: 60% 100%;
-    opacity: .65;
+    opacity: 0.65;
   }
   .stats {
     grid-template-columns: 1fr 1fr;
@@ -1862,10 +1883,22 @@
   }
 }
 @media (min-width: 901px) {
-  :global(html[data-skypro-theme='light']) .featuresLayout { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 18px; }
-  :global(html[data-skypro-theme='light']) .featureColumn { display: contents; }
-  :global(html[data-skypro-theme='light']) .featuresVisual { display: none; }
-  :global(html[data-skypro-theme='light']) .featureCard { flex-direction: column; text-align: center; padding: 20px 12px; min-height: 190px; }
+  :global(html[data-skypro-theme="light"]) .featuresLayout {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 18px;
+  }
+  :global(html[data-skypro-theme="light"]) .featureColumn {
+    display: contents;
+  }
+  :global(html[data-skypro-theme="light"]) .featuresVisual {
+    display: none;
+  }
+  :global(html[data-skypro-theme="light"]) .featureCard {
+    flex-direction: column;
+    text-align: center;
+    padding: 20px 12px;
+    min-height: 190px;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   :global(html):has(.home) {

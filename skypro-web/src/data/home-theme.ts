@@ -37,7 +37,7 @@ export const homePlatforms = [
   },
   {
     id: "google-maps",
-    href: "/platforms/olx",
+    href: "/platforms/google-maps",
     name: "خرائط جوجل",
     color: "#4285f4",
     mark: "maps",

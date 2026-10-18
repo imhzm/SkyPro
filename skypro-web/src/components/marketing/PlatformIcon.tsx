@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import {
   Globe,
@@ -20,7 +20,7 @@ import {
   Users,
   BarChart3,
   type LucideIcon,
-} from 'lucide-react'
+} from "lucide-react";
 
 const iconMap: Record<string, LucideIcon> = {
   facebook: Globe,
@@ -29,31 +29,37 @@ const iconMap: Record<string, LucideIcon> = {
   twitter: Megaphone,
   linkedin: Briefcase,
   telegram: Send,
+  "telegram-premium": Send,
   tiktok: Music2,
   pinterest: Pin,
   snapchat: Ghost,
   threads: Hash,
   reddit: Flame,
-  'google-maps': MapPin,
-  'send-emails': Mail,
+  "google-maps": MapPin,
+  "send-emails": Mail,
   olx: Store,
-  'auto-point': Target,
+  "auto-point": Target,
   security: Shield,
   accounts: Users,
   campaigns: BarChart3,
-}
+};
 
 interface PlatformIconProps {
-  id: string
-  className?: string
-  style?: React.CSSProperties
-  size?: number
+  id: string;
+  className?: string;
+  style?: React.CSSProperties;
+  size?: number;
 }
 
-export function PlatformIcon({ id, className, style, size = 24 }: PlatformIconProps) {
-  const Icon = iconMap[id]
-  if (!Icon) return null
-  return <Icon className={className} size={size} style={style} />
+export function PlatformIcon({
+  id,
+  className,
+  style,
+  size = 24,
+}: PlatformIconProps) {
+  const Icon = iconMap[id];
+  if (!Icon) return null;
+  return <Icon className={className} size={size} style={style} />;
 }
 
-export { iconMap }
+export { iconMap };

@@ -1,5 +1,8 @@
 # Sky Pro homepage theme
 
+## Active continuation — full-site restoration and migration
+The user supplied a new brief requiring all platform/public/auth/customer/admin pages to adopt the approved home theme. Work is isolated in feat/site-theme-migration-20261015 from 2e798e9. No new production deployment is authorized until Preview review. See SITE_THEME_MIGRATION.md for current inventory, local fixture test results and remaining acceptance gates. The production home release below remains unchanged.
+
 ## Audit — 2026-10-15
 - Main repository is imhzm/SkyPro. The separate SkyProLandingPage repository is older (last push May 2026). Main was freshly fetched and still points to d012c83.
 - Next.js 16.2.4 / React 18 / TypeScript / Tailwind / Prisma 5 / MySQL. Marketing is under src/app/(marketing), protected customer/admin areas are separate routes. Existing role-aware navbar calls /api/auth/me.
@@ -25,3 +28,7 @@ Both themes are implemented and verified locally and on https://skypro.skywavead
 - No database or customer account was modified. Authenticated navbar tests use browser-only local response fixtures; they do not authenticate to protected endpoints.
 - Shared marketing Footer/WhatsAppButton now use the supplied contact number, and the existing shared footer uses the mandatory exact Sky Wave signature. Their page layouts were retained.
 - Nodemailer was upgraded in a separate review commit, with a type-only adapter import update and no runtime or TLS setting change. A real loopback STARTTLS SMTP regression verifies trusted certificate validation, pooled authenticated delivery, Arabic multipart mail, HTML-to-text fallback, rejected recipients and missing configuration. No external email was sent.
+
+
+## Hosting authorization — 2026-10-18
+User explicitly requested «ارفع ع الهوست» for the current site theme. Complete preflight QA, then commit/push/merge and deploy the exact SHA to the new VPS, preserving the existing release for rollback. This supersedes the earlier preview-only publication restriction; fixtures remain local only.
