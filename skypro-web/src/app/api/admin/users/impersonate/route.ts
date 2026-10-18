@@ -1,22 +1,28 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
-import { encode } from 'next-auth/jwt'
-import { auth } from '@/lib/auth'
-import { prisma } from '@/lib/db'
-import { successResponse, errorResponse, getErrorMessage } from '@/lib/api'
-import { getClientIp, requireAdmin } from '@/lib/admin-security'
-import { rejectLargeJson } from '@/lib/request-security'
-import { encryptToken, decryptToken } from '@/lib/utils'
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { decode, encode } from "next-auth/jwt";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import { successResponse, errorResponse, getErrorMessage } from "@/lib/api";
+import { getClientIp, requireAdmin } from "@/lib/admin-security";
+import { rejectLargeJson, sameOrigin } from "@/lib/request-security";
+import { encryptToken, decryptToken } from "@/lib/utils";
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
-const SESSION_COOKIE = process.env.NODE_ENV === 'production'
-  ? '__Secure-authjs.session-token'
-  : 'authjs.session-token'
+// Match Auth.js' URL-based secure-cookie default, including HTTP loopback preview.
+const SECURE_COOKIES = (
+  process.env.AUTH_URL ||
+  process.env.NEXTAUTH_URL ||
+  (process.env.NODE_ENV === "production" ? "https:" : "http:")
+).startsWith("https:");
+const SESSION_COOKIE = SECURE_COOKIES
+  ? "__Secure-authjs.session-token"
+  : "authjs.session-token";
 
-const IMPERSONATION_COOKIE = 'sp_impersonation'
+const IMPERSONATION_COOKIE = "sp_impersonation";
 
-const startSchema = z.object({ userId: z.coerce.number().int().positive() })
+const startSchema = z.object({ userId: z.coerce.number().int().positive() });
 
 /**
  * POST /api/admin/users/impersonate
@@ -30,44 +36,68 @@ const startSchema = z.object({ userId: z.coerce.number().int().positive() })
  */
 export async function POST(req: NextRequest) {
   try {
-    const guard = await requireAdmin(req, { stateChanging: true })
-    if (guard.response) return guard.response
-    const largePayload = rejectLargeJson(req, 4 * 1024)
-    if (largePayload) return largePayload
+    const guard = await requireAdmin(req, { stateChanging: true });
+    if (guard.response) return guard.response;
+    const largePayload = rejectLargeJson(req, 4 * 1024);
+    if (largePayload) return largePayload;
 
-    const parsed = startSchema.safeParse(await req.json().catch(() => ({})))
+    const parsed = startSchema.safeParse(await req.json().catch(() => ({})));
     if (!parsed.success) {
-      return NextResponse.json(errorResponse('userId غير صالح'), { status: 400 })
+      return NextResponse.json(errorResponse("userId غير صالح"), {
+        status: 400,
+      });
     }
 
-    const adminId = Number(guard.session?.user.id)
+    const adminId = Number(guard.session?.user.id);
     const target = await prisma.user.findUnique({
       where: { id: parsed.data.userId },
-      select: { id: true, email: true, name: true, role: true, status: true, avatarUrl: true },
-    })
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        status: true,
+        avatarUrl: true,
+      },
+    });
     if (!target) {
-      return NextResponse.json(errorResponse('المستخدم غير موجود'), { status: 404 })
+      return NextResponse.json(errorResponse("المستخدم غير موجود"), {
+        status: 404,
+      });
     }
     if (target.id === adminId) {
-      return NextResponse.json(errorResponse('لا يمكن انتحال شخصيتك'), { status: 400 })
+      return NextResponse.json(errorResponse("لا يمكن انتحال شخصيتك"), {
+        status: 400,
+      });
     }
-    if (target.role === 'admin') {
-      return NextResponse.json(errorResponse('لا يمكن انتحال شخصية أدمن آخر'), { status: 403 })
+    if (target.role === "admin") {
+      return NextResponse.json(errorResponse("لا يمكن انتحال شخصية أدمن آخر"), {
+        status: 403,
+      });
     }
-    if (target.status !== 'active') {
-      return NextResponse.json(errorResponse('الحساب غير نشط'), { status: 400 })
+    if (target.status !== "active") {
+      return NextResponse.json(errorResponse("الحساب غير نشط"), {
+        status: 400,
+      });
     }
 
-    const secret = process.env.NEXTAUTH_SECRET
+    const secret = process.env.NEXTAUTH_SECRET;
     if (!secret) {
-      return NextResponse.json(errorResponse('NEXTAUTH_SECRET ناقص'), { status: 500 })
+      return NextResponse.json(errorResponse("NEXTAUTH_SECRET ناقص"), {
+        status: 500,
+      });
     }
 
     // Capture original admin token from current request cookie
-    const originalSessionToken = req.cookies.get(SESSION_COOKIE)?.value || ''
+    const originalSessionToken = req.cookies.get(SESSION_COOKIE)?.value || "";
+    if (!originalSessionToken) {
+      return NextResponse.json(errorResponse("جلسة الإدارة غير صالحة"), {
+        status: 403,
+      });
+    }
 
     // Issue a 30-min session token impersonating the target user
-    const maxAge = 30 * 60
+    const maxAge = 30 * 60;
     const sessionToken = await encode({
       token: {
         id: String(target.id),
@@ -75,55 +105,62 @@ export async function POST(req: NextRequest) {
         email: target.email,
         name: target.name || undefined,
         picture: target.avatarUrl || undefined,
-        role: target.role || 'user',
-        status: 'active',
+        role: target.role || "user",
+        status: "active",
         // Carries the original admin's role so the proxy can authorize the
         // restore call while the session itself is the target user's.
-        impersonatorRole: 'admin',
+        impersonatorRole: "admin",
         impersonatedBy: adminId,
       },
       secret,
       salt: SESSION_COOKIE,
       maxAge,
-    })
+    });
 
     await prisma.auditLog.create({
       data: {
         userId: adminId,
-        action: 'admin_impersonate_start',
+        action: "admin_impersonate_start",
         details: { targetUserId: target.id, targetEmail: target.email },
         ipAddress: getClientIp(req),
       },
-    })
+    });
 
-    const response = NextResponse.json(successResponse(
-      { redirectTo: '/dashboard', target: { id: target.id, email: target.email, name: target.name } },
-      `بدأ انتحال شخصية ${target.email}. الجلسة محدودة بـ 30 دقيقة.`
-    ))
+    const response = NextResponse.json(
+      successResponse(
+        {
+          redirectTo: "/dashboard",
+          target: { id: target.id, email: target.email, name: target.name },
+        },
+        `بدأ انتحال شخصية ${target.email}. الجلسة محدودة بـ 30 دقيقة.`,
+      ),
+    );
 
     // Replace session cookie with the impersonated one
     response.cookies.set(SESSION_COOKIE, sessionToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
+      secure: SECURE_COOKIES,
+      sameSite: "lax",
+      path: "/",
       maxAge,
-    })
+    });
 
     // Save the original admin session so we can restore it (encrypted with NEXTAUTH_SECRET)
-    const encrypted = encryptToken(originalSessionToken)
+    const encrypted = encryptToken(originalSessionToken);
     response.cookies.set(IMPERSONATION_COOKIE, encrypted, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
+      secure: SECURE_COOKIES,
+      sameSite: "lax",
+      path: "/",
       maxAge: 30 * 60,
-    })
+    });
 
-    return response
+    return response;
   } catch (err) {
-    console.error('Impersonate start error:', err)
-    return NextResponse.json(errorResponse(getErrorMessage(err)), { status: 500 })
+    console.error("Impersonate start error:", err);
+    return NextResponse.json(errorResponse(getErrorMessage(err)), {
+      status: 500,
+    });
   }
 }
 
@@ -133,55 +170,101 @@ export async function POST(req: NextRequest) {
  */
 export async function DELETE(req: NextRequest) {
   try {
-    const encrypted = req.cookies.get(IMPERSONATION_COOKIE)?.value || ''
+    if (!sameOrigin(req)) {
+      return NextResponse.json(errorResponse("تم رفض الطلب لأسباب أمنية"), {
+        status: 403,
+      });
+    }
+    const encrypted = req.cookies.get(IMPERSONATION_COOKIE)?.value || "";
     if (!encrypted) {
-      return NextResponse.json(errorResponse('لا يوجد جلسة انتحال نشطة'), { status: 400 })
+      return NextResponse.json(errorResponse("لا يوجد جلسة انتحال نشطة"), {
+        status: 400,
+      });
     }
 
-    const original = decryptToken(encrypted)
+    const original = decryptToken(encrypted);
     if (!original) {
-      return NextResponse.json(errorResponse('جلسة الانتحال غير صالحة أو معدلة'), { status: 403 })
+      return NextResponse.json(
+        errorResponse("جلسة الانتحال غير صالحة أو معدلة"),
+        { status: 403 },
+      );
     }
 
     // Identify actor + target for the audit trail. The current session is the
     // impersonated one — `impersonatedBy` holds the original admin's id.
-    const currentSession = await auth()
-    const actorAdminId = Number((currentSession?.user as { impersonatedBy?: number } | undefined)?.impersonatedBy) || null
-    const targetUserId = Number(currentSession?.user?.id) || null
-    const ip = getClientIp(req)
-    const startedAt = new Date(Date.now() - 30 * 60 * 1000) // upper bound; exact start time lives in the start entry
+    const currentSession = await auth();
+    const actorAdminId = currentSession?.user.impersonatedBy;
+    const secret = process.env.NEXTAUTH_SECRET;
+    if (
+      !secret ||
+      !actorAdminId ||
+      currentSession?.user.impersonatorRole !== "admin"
+    ) {
+      return NextResponse.json(errorResponse("جلسة الانتحال غير صالحة"), {
+        status: 403,
+      });
+    }
+    const originalClaims = await decode({
+      token: original,
+      secret,
+      salt: SESSION_COOKIE,
+    }).catch(() => null);
+    const originalAdmin = await prisma.user.findUnique({
+      where: { id: actorAdminId },
+      select: { role: true, status: true, passwordChangedAt: true },
+    });
+    if (
+      !originalClaims ||
+      Number(originalClaims.id) !== actorAdminId ||
+      originalAdmin?.role !== "admin" ||
+      originalAdmin.status !== "active" ||
+      (originalAdmin.passwordChangedAt &&
+        (!originalClaims.iat ||
+          Math.floor(originalAdmin.passwordChangedAt.getTime() / 1000) >
+            originalClaims.iat))
+    ) {
+      return NextResponse.json(
+        errorResponse("جلسة الإدارة الأصلية لم تعد صالحة"),
+        { status: 403 },
+      );
+    }
+    const targetUserId = Number(currentSession?.user?.id) || null;
+    const ip = getClientIp(req);
 
     // Best-effort audit log — don't fail the restore over an insert error.
     try {
       await prisma.auditLog.create({
         data: {
           userId: actorAdminId,
-          action: 'admin_impersonate_stop',
+          action: "admin_impersonate_stop",
           details: { targetUserId },
           ipAddress: ip,
         },
-      })
-      void startedAt
+      });
     } catch {}
 
-    const response = NextResponse.json(successResponse(
-      { redirectTo: '/admin' },
-      'تم إنهاء الانتحال — عُدت لحساب الأدمن'
-    ))
+    const response = NextResponse.json(
+      successResponse(
+        { redirectTo: "/admin" },
+        "تم إنهاء الانتحال — عُدت لحساب الأدمن",
+      ),
+    );
 
     // Restore original admin session, clear impersonation marker
     response.cookies.set(SESSION_COOKIE, original, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
+      secure: SECURE_COOKIES,
+      sameSite: "lax",
+      path: "/",
       maxAge: 30 * 24 * 60 * 60,
-    })
-    response.cookies.set(IMPERSONATION_COOKIE, '', { maxAge: 0, path: '/' })
+    });
+    response.cookies.set(IMPERSONATION_COOKIE, "", { maxAge: 0, path: "/" });
 
-    return response
+    return response;
   } catch (err) {
-    console.error('Impersonate stop error:', err)
-    return NextResponse.json(errorResponse(getErrorMessage(err)), { status: 500 })
+    console.error("Impersonate stop error:", err);
+    return NextResponse.json(errorResponse(getErrorMessage(err)), {
+      status: 500,
+    });
   }
 }

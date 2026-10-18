@@ -1,20 +1,14 @@
-import type { Metadata } from 'next'
-
+import type { Metadata } from "next";
 export const metadata: Metadata = {
-  title: 'تسجيل الدخول إلى SkyPro',
-  description:
-    'سجّل دخولك إلى حسابك في SkyPro — منصة التسويق الآلي #1 عربياً. أدر حملاتك على 18+ منصة من لوحة تحكم واحدة.',
-  alternates: { canonical: '/auth/login' },
-  robots: { index: true, follow: true },
-  openGraph: {
-    title: 'تسجيل الدخول | SkyPro',
-    description: 'ادخل إلى حسابك في SkyPro لإدارة حملاتك التسويقية.',
-    url: 'https://skypro.skywaveads.com/auth/login',
-    type: 'website',
-    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'SkyPro Login' }],
-  },
-}
-
-export default function LoginLayout({ children }: { children: React.ReactNode }) {
-  return children
+  title: { absolute: "تسجيل الدخول | Sky Pro" },
+  description: "تسجيل الدخول وإدارة وصولك إلى حساب Sky Pro.",
+  alternates: { canonical: "/auth/login" },
+  robots: { index: false, follow: true, nocache: true },
+};
+export default function AuthPageLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return children;
 }

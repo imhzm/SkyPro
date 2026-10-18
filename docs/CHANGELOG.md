@@ -23,3 +23,7 @@
 - User authorized hosting publication. PR #8 merged and exact SHA cfa2257b21da8820e1b123bef5bc9bd3ec3753ac deployed on the new VPS in a separate release, build ID 7AjnvkA1jSbEvyhtJ9EnK.
 - Linux build/runtime audit, production DB health, SMTP authentication without mail, public/protected routes, six widths in both themes and live desktop/mobile screenshots verified. Original runtime preserved for rollback; no migrations, Nginx/DNS or unrelated service changes.
 - See DEPLOYMENT_20261015.md for activation correction, evidence and remaining limits.
+# 2026-10-18 — site-wide theme candidate
+
+Restored missing platform routes/navigation, introduced shared light/dark surfaces for public/auth/customer/admin routes, corrected email-link access and admin restore, added isolated route/RBAC/account/admin verification. Publication is authorized; build/runtime/browser acceptance is still in progress. Details: RELEASE_SITE_THEME_20261018.md.
+

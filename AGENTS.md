@@ -1,5 +1,12 @@
 # Sky Pro project instructions
 
+## Active scope — full theme migration (2026-10-15)
+- User supplied FULL WEBSITE RESTORATION & THEME MIGRATION brief. The deployed home is the approved visual reference; preserve its composition.
+- Work in feat/site-theme-migration-20261015, based on 2e798e9. Restore navigation and Google Maps first, then platform pages, legal/public pages, authentication, customer and admin presentation. Preserve APIs, RBAC, DB schema/data and desktop source.
+- New scope requires a local Preview for review BEFORE any further production deployment. Previous hosting authorization applied to the completed home release and does not authorize this migration. No force push.
+- Inventory all 31 page files and expand actual platform IDs. Test visitor/customer/admin roles against an isolated local fixture database; never create fixture accounts in production.
+- One unified evidence ZIP, maximum 19 images/videos total. Preserve legal wording except approved contact details; report legal issues for review.
+
 ## Scope and history (2026-10-15)
 - Source of truth: https://github.com/imhzm/SkyPro, main verified at d012c831ce5e81b8141c2c056a59bdc662c3624d.
 - Current task: implement the supplied light/dark homepage references inside skypro-web. The user explicitly requests implementation of those references; use their composition as the approved direction.
@@ -20,3 +27,7 @@
 - New VPS access verified using root with existing sky_deploy key. Do not print keys or environment values.
 - PM2 skypro now runs /var/www/skypro.skywaveads.com/releases/20261015-cfa2257/skypro-web on 127.0.0.1:3200. The original checkout remains at d012c83 and is the rollback runtime and source of the unchanged .env symlink.
 - Nginx, DB schemas/data, desktop recovery and other services were not changed. Deployment and rollback evidence: docs/DEPLOYMENT_20261015.md.
+
+
+## Hosting authorization — 2026-10-18
+User explicitly requested «ارفع ع الهوست» for the current site theme. Complete preflight QA, then commit/push/merge and deploy the exact SHA to the new VPS, preserving the existing release for rollback. This supersedes the earlier preview-only publication restriction; fixtures remain local only.

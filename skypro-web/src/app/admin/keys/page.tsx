@@ -1,108 +1,130 @@
-'use client'
+"use client";
 
-import { useEffect, useState, useCallback } from 'react'
-import { Plus, Copy, Check, Download } from 'lucide-react'
-import { useToast } from '@/components/ui/Toaster'
+import { useEffect, useState, useCallback } from "react";
+import { Plus, Copy, Check, Download } from "lucide-react";
+import { useToast } from "@/components/ui/Toaster";
 
 interface ActivationKey {
-  id: number
-  keyCode: string
-  status: string
-  plan: string
-  durationDays: number
-  maxDevices: number
-  activatedAt: string | null
-  expiresAt: string | null
-  createdAt: string
-  user: { id: number; email: string; name: string | null } | null
-  devicesCount: number
+  id: number;
+  keyCode: string;
+  status: string;
+  plan: string;
+  durationDays: number;
+  maxDevices: number;
+  activatedAt: string | null;
+  expiresAt: string | null;
+  createdAt: string;
+  user: { id: number; email: string; name: string | null } | null;
+  devicesCount: number;
 }
 
 export default function AdminKeysPage() {
-  const { success, error } = useToast()
-  const [keys, setKeys] = useState<ActivationKey[]>([])
-  const [loading, setLoading] = useState(true)
-  const [statusFilter, setStatusFilter] = useState('')
-  const [page, setPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const [showGenerate, setShowGenerate] = useState(false)
-  const [generateCount, setGenerateCount] = useState(1)
-  const [generateMaxDevices, setGenerateMaxDevices] = useState(1)
-  const [copied, setCopied] = useState<string | null>(null)
-  const [generating, setGenerating] = useState(false)
+  const { success, error } = useToast();
+  const [keys, setKeys] = useState<ActivationKey[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [showGenerate, setShowGenerate] = useState(false);
+  const [generateCount, setGenerateCount] = useState(1);
+  const [generateMaxDevices, setGenerateMaxDevices] = useState(1);
+  const [copied, setCopied] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
 
   const loadKeys = useCallback(() => {
-    setLoading(true)
-    const params = new URLSearchParams({ page: String(page), limit: '20', status: statusFilter })
+    setLoading(true);
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: "20",
+      status: statusFilter,
+    });
     fetch(`/api/admin/keys?${params}`)
-      .then(res => res.json())
-      .then(data => {
+      .then((res) => res.json())
+      .then((data) => {
         if (data.success) {
-          setKeys(data.data.keys)
-          setTotalPages(data.data.totalPages)
+          setKeys(data.data.keys);
+          setTotalPages(data.data.totalPages);
         }
       })
       .catch(console.error)
-      .finally(() => setLoading(false))
-  }, [page, statusFilter])
+      .finally(() => setLoading(false));
+  }, [page, statusFilter]);
 
   useEffect(() => {
-    loadKeys()
-  }, [loadKeys])
+    loadKeys();
+  }, [loadKeys]);
 
   const handleGenerate = async () => {
-    setGenerating(true)
+    setGenerating(true);
     try {
-      const res = await fetch('/api/admin/keys', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ count: generateCount, maxDevices: generateMaxDevices })
-      })
-      const data = await res.json()
+      const res = await fetch("/api/admin/keys", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          count: generateCount,
+          maxDevices: generateMaxDevices,
+        }),
+      });
+      const data = await res.json();
       if (data.success) {
-        setShowGenerate(false)
-        success(`تم إنشاء ${generateCount} مفتاح بنجاح`)
-        loadKeys()
+        setShowGenerate(false);
+        success(`تم إنشاء ${generateCount} مفتاح بنجاح`);
+        loadKeys();
       } else {
-        error(data.error || 'فشل إنشاء المفاتيح')
+        error(data.error || "فشل إنشاء المفاتيح");
       }
     } catch {
-      error('فشل الاتصال بالخادم')
+      error("فشل الاتصال بالخادم");
     } finally {
-      setGenerating(false)
+      setGenerating(false);
     }
-  }
+  };
 
   const copyKey = (keyCode: string) => {
-    navigator.clipboard.writeText(keyCode)
-    setCopied(keyCode)
-    setTimeout(() => setCopied(null), 2000)
-  }
+    navigator.clipboard.writeText(keyCode);
+    setCopied(keyCode);
+    setTimeout(() => setCopied(null), 2000);
+  };
 
   const statusLabel = (status: string) => {
-    const map: Record<string, string> = { available: 'متاح', assigned: 'مخصص', active: 'مفعّل', expired: 'منتهي', revoked: 'ملغى' }
-    return map[status] || status
-  }
+    const map: Record<string, string> = {
+      available: "متاح",
+      assigned: "مخصص",
+      active: "مفعّل",
+      expired: "منتهي",
+      revoked: "ملغى",
+    };
+    return map[status] || status;
+  };
 
   const statusClass = (status: string) => {
-    const map: Record<string, string> = { available: 'admin-badge-info', assigned: 'admin-badge-warning', active: 'admin-badge-success', expired: 'admin-badge-danger', revoked: 'admin-badge-danger' }
-    return map[status] || 'admin-badge'
-  }
+    const map: Record<string, string> = {
+      available: "admin-badge-info",
+      assigned: "admin-badge-warning",
+      active: "admin-badge-success",
+      expired: "admin-badge-danger",
+      revoked: "admin-badge-danger",
+    };
+    return map[status] || "admin-badge";
+  };
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
-        <h1 className="text-2xl font-bold text-white">إدارة المفاتيح</h1>
+        <h1 className="text-2xl font-bold text-foreground">إدارة المفاتيح</h1>
         <div className="flex flex-wrap gap-2">
           <a
-            href={`/api/admin/export?type=keys${statusFilter ? `&status=${statusFilter}` : ''}`}
+            href={`/api/admin/export?type=keys${statusFilter ? `&status=${statusFilter}` : ""}`}
             className="admin-btn-secondary"
             download
           >
             <Download size={16} />
             تصدير CSV
           </a>
-          <button onClick={() => setShowGenerate(true)} className="admin-btn-primary">
+          <button
+            onClick={() => setShowGenerate(true)}
+            className="admin-btn-primary"
+          >
             <Plus size={18} />
             إنشاء مفاتيح
           </button>
@@ -111,35 +133,84 @@ export default function AdminKeysPage() {
 
       {showGenerate && (
         <div className="admin-card mb-6 !border-sky-500/30 !border">
-          <h3 className="text-lg font-bold text-white mb-4">إنشاء مفاتيح جديدة</h3>
+          <h3 className="text-lg font-bold text-foreground mb-4">
+            إنشاء مفاتيح جديدة
+          </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="admin-label">عدد المفاتيح</label>
-              <input type="number" min="1" max="100" value={generateCount} onChange={(e) => setGenerateCount(parseInt(e.target.value) || 1)} className="admin-input" />
+              <label
+                htmlFor="src-app-admin-keys-page-tsx-1"
+                className="admin-label"
+              >
+                عدد المفاتيح
+              </label>
+              <input
+                id="src-app-admin-keys-page-tsx-1"
+                type="number"
+                min="1"
+                max="100"
+                value={generateCount}
+                onChange={(e) =>
+                  setGenerateCount(parseInt(e.target.value) || 1)
+                }
+                className="admin-input"
+              />
             </div>
             <div>
-              <label className="admin-label">الحد الأقصى للأجهزة لكل مفتاح</label>
-              <input type="number" min="1" max="10" value={generateMaxDevices} onChange={(e) => setGenerateMaxDevices(parseInt(e.target.value) || 1)} className="admin-input" />
+              <label
+                htmlFor="src-app-admin-keys-page-tsx-2"
+                className="admin-label"
+              >
+                الحد الأقصى للأجهزة لكل مفتاح
+              </label>
+              <input
+                id="src-app-admin-keys-page-tsx-2"
+                type="number"
+                min="1"
+                max="10"
+                value={generateMaxDevices}
+                onChange={(e) =>
+                  setGenerateMaxDevices(parseInt(e.target.value) || 1)
+                }
+                className="admin-input"
+              />
             </div>
           </div>
           <div className="flex gap-2">
-            <button onClick={handleGenerate} disabled={generating} className="admin-btn-success">
-              {generating ? 'جارٍ الإنشاء...' : 'إنشاء'}
+            <button
+              onClick={handleGenerate}
+              disabled={generating}
+              className="admin-btn-success"
+            >
+              {generating ? "جارٍ الإنشاء..." : "إنشاء"}
             </button>
-            <button onClick={() => setShowGenerate(false)} className="admin-btn-secondary">إلغاء</button>
+            <button
+              onClick={() => setShowGenerate(false)}
+              className="admin-btn-secondary"
+            >
+              إلغاء
+            </button>
           </div>
         </div>
       )}
 
       <div className="admin-card mb-4">
         <div className="flex flex-wrap gap-2 mb-4">
-          {['', 'available', 'active', 'expired', 'revoked'].map((s) => (
+          {["", "available", "active", "expired", "revoked"].map((s) => (
             <button
               key={s}
-              onClick={() => { setStatusFilter(s); setPage(1); loadKeys(); }}
-              className={statusFilter === s ? 'admin-filter-btn-active' : 'admin-filter-btn-inactive'}
+              onClick={() => {
+                setStatusFilter(s);
+                setPage(1);
+                loadKeys();
+              }}
+              className={
+                statusFilter === s
+                  ? "admin-filter-btn-active"
+                  : "admin-filter-btn-inactive"
+              }
             >
-              {s === '' ? 'الكل' : statusLabel(s)}
+              {s === "" ? "الكل" : statusLabel(s)}
             </button>
           ))}
         </div>
@@ -169,18 +240,39 @@ export default function AdminKeysPage() {
                   <tr key={key.id}>
                     <td>
                       <div className="flex items-center gap-1">
-                        <code className="text-xs bg-white/5 border border-white/10 px-2 py-1 rounded font-mono text-slate-300">{key.keyCode}</code>
-                        <button onClick={() => copyKey(key.keyCode)} className="p-1 text-slate-500 hover:text-sky-400 transition-colors">
-                          {copied === key.keyCode ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+                        <code className="text-xs bg-soft border border-line px-2 py-1 rounded font-mono text-muted">
+                          {key.keyCode}
+                        </code>
+                        <button
+                          onClick={() => copyKey(key.keyCode)}
+                          className="p-1 text-muted hover:text-brand transition-colors"
+                        >
+                          {copied === key.keyCode ? (
+                            <Check size={14} className="text-positive" />
+                          ) : (
+                            <Copy size={14} />
+                          )}
                         </button>
                       </div>
                     </td>
-                    <td><span className={statusClass(key.status)}>{statusLabel(key.status)}</span></td>
-                    <td className="font-medium text-white">{key.plan}</td>
-                    <td className="text-slate-300">{key.devicesCount}/{key.maxDevices}</td>
-                    <td className="text-slate-400">{key.user?.email || '—'}</td>
-                    <td className="text-slate-500">{key.expiresAt ? new Date(key.expiresAt).toLocaleDateString('ar-EG') : '—'}</td>
-                    <td className="text-slate-500">{new Date(key.createdAt).toLocaleDateString('ar-EG')}</td>
+                    <td>
+                      <span className={statusClass(key.status)}>
+                        {statusLabel(key.status)}
+                      </span>
+                    </td>
+                    <td className="font-medium text-foreground">{key.plan}</td>
+                    <td className="text-muted">
+                      {key.devicesCount}/{key.maxDevices}
+                    </td>
+                    <td className="text-muted">{key.user?.email || "—"}</td>
+                    <td className="text-muted">
+                      {key.expiresAt
+                        ? new Date(key.expiresAt).toLocaleDateString("ar-EG")
+                        : "—"}
+                    </td>
+                    <td className="text-muted">
+                      {new Date(key.createdAt).toLocaleDateString("ar-EG")}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -190,12 +282,26 @@ export default function AdminKeysPage() {
 
         {totalPages > 1 && (
           <div className="flex items-center justify-center gap-2 mt-4">
-            <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page === 1} className="admin-btn-secondary !py-1.5 !px-3 disabled:opacity-50">السابق</button>
-            <span className="text-sm text-slate-500">{page} من {totalPages}</span>
-            <button onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page === totalPages} className="admin-btn-secondary !py-1.5 !px-3 disabled:opacity-50">التالي</button>
+            <button
+              onClick={() => setPage(Math.max(1, page - 1))}
+              disabled={page === 1}
+              className="admin-btn-secondary !py-1.5 !px-3 disabled:opacity-50"
+            >
+              السابق
+            </button>
+            <span className="text-sm text-muted">
+              {page} من {totalPages}
+            </span>
+            <button
+              onClick={() => setPage(Math.min(totalPages, page + 1))}
+              disabled={page === totalPages}
+              className="admin-btn-secondary !py-1.5 !px-3 disabled:opacity-50"
+            >
+              التالي
+            </button>
           </div>
         )}
       </div>
     </div>
-  )
+  );
 }

@@ -1,4 +1,6 @@
-import type { Metadata } from 'next'
+import { SiteHeader } from "@/components/site/SiteHeader";
+import { SiteFooter } from "@/components/site/SiteFooter";
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   robots: {
@@ -6,8 +8,18 @@ export const metadata: Metadata = {
     follow: true,
     nocache: true,
   },
-}
+};
 
-export default function AuthLayout({ children }: { children: React.ReactNode }) {
-  return children
+export default function AuthLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="auth-shell">
+      <SiteHeader />
+      <main>{children}</main>
+      <SiteFooter />
+    </div>
+  );
 }

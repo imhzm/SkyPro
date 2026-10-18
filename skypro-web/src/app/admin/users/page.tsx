@@ -1,6 +1,6 @@
-'use client'
+"use client";
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Ban,
   Check,
@@ -20,387 +20,446 @@ import {
   Trash2,
   UserCheck,
   Users,
-  X
-} from 'lucide-react'
-import { useToast } from '@/components/ui/Toaster'
+  X,
+} from "lucide-react";
+import { useToast } from "@/components/ui/Toaster";
 
 interface LatestKey {
-  keyCode: string
-  status: string
-  expiresAt: string | null
-  maxDevices: number
+  keyCode: string;
+  status: string;
+  expiresAt: string | null;
+  maxDevices: number;
 }
 
 interface Subscription {
-  status?: string
-  trialEndsAt?: string | null
-  expiresAt?: string | null
+  status?: string;
+  trialEndsAt?: string | null;
+  expiresAt?: string | null;
 }
 
 interface User {
-  id: number
-  email: string
-  name: string | null
-  role: string
-  status: string
-  emailVerifiedAt: string | null
-  createdAt: string
-  keysCount: number
-  devicesCount: number
-  subscription: Subscription | null
-  latestKey: LatestKey | null
+  id: number;
+  email: string;
+  name: string | null;
+  role: string;
+  status: string;
+  emailVerifiedAt: string | null;
+  createdAt: string;
+  keysCount: number;
+  devicesCount: number;
+  subscription: Subscription | null;
+  latestKey: LatestKey | null;
 }
 
 interface NewUser {
-  email: string
-  name: string
-  sendEmail: boolean
-  emailSent?: boolean
-  emailError?: string
-  password?: string
-  serial?: string
+  email: string;
+  name: string;
+  sendEmail: boolean;
+  emailSent?: boolean;
+  emailError?: string;
+  password?: string;
+  serial?: string;
 }
 
 interface Notice {
-  type: 'success' | 'error' | 'warning'
-  message: string
+  type: "success" | "error" | "warning";
+  message: string;
 }
 
 const statusLabel: Record<string, string> = {
-  active: 'نشط',
-  suspended: 'محظور',
-  deleted: 'محذوف',
-  available: 'متاح',
-  assigned: 'مخصص',
-  expired: 'منتهي',
-  revoked: 'ملغي',
-  trial: 'تجريبي',
-  cancelled: 'ملغي'
-}
+  active: "نشط",
+  suspended: "محظور",
+  deleted: "محذوف",
+  available: "متاح",
+  assigned: "مخصص",
+  expired: "منتهي",
+  revoked: "ملغي",
+  trial: "تجريبي",
+  cancelled: "ملغي",
+};
 
 function badgeClass(status: string) {
-  if (status === 'active' || status === 'available' || status === 'trial') return 'admin-badge-success'
-  if (status === 'suspended' || status === 'deleted' || status === 'revoked' || status === 'cancelled') return 'admin-badge-danger'
-  if (status === 'expired') return 'admin-badge-warning'
-  return 'admin-badge-info'
+  if (status === "active" || status === "available" || status === "trial")
+    return "admin-badge-success";
+  if (
+    status === "suspended" ||
+    status === "deleted" ||
+    status === "revoked" ||
+    status === "cancelled"
+  )
+    return "admin-badge-danger";
+  if (status === "expired") return "admin-badge-warning";
+  return "admin-badge-info";
 }
 
 function formatDate(value?: string | null) {
-  if (!value) return 'غير محدد'
-  return new Date(value).toLocaleDateString('ar-EG')
+  if (!value) return "غير محدد";
+  return new Date(value).toLocaleDateString("ar-EG");
 }
 
 export default function AdminUsersPage() {
-  const { success: toastSuccess, error: toastError } = useToast()
-  const [users, setUsers] = useState<User[]>([])
-  const [statusCounts, setStatusCounts] = useState<Record<string, number>>({})
-  const [loading, setLoading] = useState(true)
-  const [searchInput, setSearchInput] = useState('')
-  const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState('')
-  const [roleFilter, setRoleFilter] = useState('')
-  const [page, setPage] = useState(1)
-  const [total, setTotal] = useState(0)
-  const [totalPages, setTotalPages] = useState(1)
-  const [reloadToken, setReloadToken] = useState(0)
+  const { success: toastSuccess, error: toastError } = useToast();
+  const [users, setUsers] = useState<User[]>([]);
+  const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(true);
+  const [searchInput, setSearchInput] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [roleFilter, setRoleFilter] = useState("");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [reloadToken, setReloadToken] = useState(0);
 
-  const [showAdd, setShowAdd] = useState(false)
-  const [newEmail, setNewEmail] = useState('')
-  const [newName, setNewName] = useState('')
-  const [sendEmail, setSendEmail] = useState(true)
-  const [creating, setCreating] = useState(false)
-  const [createdUser, setCreatedUser] = useState<NewUser | null>(null)
-  const [copied, setCopied] = useState('')
-  const [notice, setNotice] = useState<Notice | null>(null)
+  const [showAdd, setShowAdd] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [newName, setNewName] = useState("");
+  const [sendEmail, setSendEmail] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [createdUser, setCreatedUser] = useState<NewUser | null>(null);
+  const [copied, setCopied] = useState("");
+  const [notice, setNotice] = useState<Notice | null>(null);
 
-  const [pendingBanUser, setPendingBanUser] = useState<User | null>(null)
-  const [pendingDeleteUser, setPendingDeleteUser] = useState<User | null>(null)
-  const [deleteConfirmText, setDeleteConfirmText] = useState('')
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
-  const [bulkLoading, setBulkLoading] = useState(false)
-  const [suspensionReason, setSuspensionReason] = useState('')
-  const [actionUserId, setActionUserId] = useState<number | null>(null)
+  const [pendingBanUser, setPendingBanUser] = useState<User | null>(null);
+  const [pendingDeleteUser, setPendingDeleteUser] = useState<User | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [suspensionReason, setSuspensionReason] = useState("");
+  const [actionUserId, setActionUserId] = useState<number | null>(null);
 
   const loadUsers = useCallback(() => {
-    setLoading(true)
+    setLoading(true);
     const params = new URLSearchParams({
       page: String(page),
-      limit: '20',
+      limit: "20",
       search: searchTerm,
       status: statusFilter,
-      role: roleFilter
-    })
+      role: roleFilter,
+    });
 
     fetch(`/api/admin/users?${params}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          setUsers(data.data.users)
-          setStatusCounts(data.data.statusCounts || {})
-          setTotal(data.data.total)
-          setTotalPages(data.data.totalPages)
+          setUsers(data.data.users);
+          setStatusCounts(data.data.statusCounts || {});
+          setTotal(data.data.total);
+          setTotalPages(data.data.totalPages);
         } else {
-          setNotice({ type: 'error', message: data.error || 'فشل تحميل المستخدمين' })
+          setNotice({
+            type: "error",
+            message: data.error || "فشل تحميل المستخدمين",
+          });
         }
       })
-      .catch(() => setNotice({ type: 'error', message: 'فشل الاتصال بالخادم' }))
-      .finally(() => setLoading(false))
-  }, [page, searchTerm, statusFilter, roleFilter])
+      .catch(() => setNotice({ type: "error", message: "فشل الاتصال بالخادم" }))
+      .finally(() => setLoading(false));
+  }, [page, searchTerm, statusFilter, roleFilter]);
 
   useEffect(() => {
-    loadUsers()
-  }, [loadUsers, reloadToken])
+    loadUsers();
+  }, [loadUsers, reloadToken]);
 
   // Live refresh every 20s when the tab is visible so admin sees status
   // updates without manual reload.
   useEffect(() => {
     const tick = () => {
-      if (!document.hidden) setReloadToken((value) => value + 1)
-    }
-    const handle = setInterval(tick, 20_000)
-    return () => clearInterval(handle)
-  }, [])
+      if (!document.hidden) setReloadToken((value) => value + 1);
+    };
+    const handle = setInterval(tick, 20_000);
+    return () => clearInterval(handle);
+  }, []);
 
   const summaryCards = useMemo(() => {
-    const active = statusCounts.active || 0
-    const suspended = statusCounts.suspended || 0
-    const deleted = statusCounts.deleted || 0
-    const all = Object.values(statusCounts).reduce((sum, count) => sum + count, 0)
+    const active = statusCounts.active || 0;
+    const suspended = statusCounts.suspended || 0;
+    const deleted = statusCounts.deleted || 0;
+    const all = Object.values(statusCounts).reduce(
+      (sum, count) => sum + count,
+      0,
+    );
 
     return [
-      { label: 'كل المستخدمين', value: all, icon: Users, className: 'text-sky-400 bg-sky-500/10 border-sky-500/20' },
-      { label: 'نشط', value: active, icon: ShieldCheck, className: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
-      { label: 'محظور', value: suspended, icon: ShieldAlert, className: 'text-red-400 bg-red-500/10 border-red-500/20' },
-      { label: 'محذوف', value: deleted, icon: Ban, className: 'text-amber-400 bg-amber-500/10 border-amber-500/20' }
-    ]
-  }, [statusCounts])
+      {
+        label: "كل المستخدمين",
+        value: all,
+        icon: Users,
+        className: "text-brand bg-sky-500/10 border-sky-500/20",
+      },
+      {
+        label: "نشط",
+        value: active,
+        icon: ShieldCheck,
+        className: "text-positive bg-emerald-500/10 border-emerald-500/20",
+      },
+      {
+        label: "محظور",
+        value: suspended,
+        icon: ShieldAlert,
+        className: "text-negative bg-red-500/10 border-red-500/20",
+      },
+      {
+        label: "محذوف",
+        value: deleted,
+        icon: Ban,
+        className: "text-caution bg-amber-500/10 border-amber-500/20",
+      },
+    ];
+  }, [statusCounts]);
 
   const runSearch = () => {
-    setPage(1)
-    setSearchTerm(searchInput.trim())
-    setReloadToken((value) => value + 1)
-  }
+    setPage(1);
+    setSearchTerm(searchInput.trim());
+    setReloadToken((value) => value + 1);
+  };
 
-  const refreshUsers = () => setReloadToken((value) => value + 1)
+  const refreshUsers = () => setReloadToken((value) => value + 1);
 
   const toggleSelect = (id: number) => {
     setSelectedIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const toggleSelectAll = () => {
     if (selectedIds.size === users.length) {
-      setSelectedIds(new Set())
+      setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(users.map((u) => u.id)))
+      setSelectedIds(new Set(users.map((u) => u.id)));
     }
-  }
+  };
 
-  const runBulkAction = async (action: 'suspend' | 'activate' | 'delete' | 'force_logout') => {
+  const runBulkAction = async (
+    action: "suspend" | "activate" | "delete" | "force_logout",
+  ) => {
     if (selectedIds.size === 0) {
-      toastError('اختر مستخدمين أولاً')
-      return
+      toastError("اختر مستخدمين أولاً");
+      return;
     }
-    const ids = Array.from(selectedIds)
-    if (action === 'delete' && !confirm(`حذف ${ids.length} مستخدم؟ لا يمكن التراجع.`)) return
+    const ids = Array.from(selectedIds);
+    if (
+      action === "delete" &&
+      !confirm(`حذف ${ids.length} مستخدم؟ لا يمكن التراجع.`)
+    )
+      return;
 
-    setBulkLoading(true)
+    setBulkLoading(true);
     try {
-      const res = await fetch('/api/admin/users/bulk', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/admin/users/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ids, action }),
-      })
-      const data = await res.json()
+      });
+      const data = await res.json();
       if (data.success) {
-        toastSuccess(data.message)
-        setSelectedIds(new Set())
-        refreshUsers()
+        toastSuccess(data.message);
+        setSelectedIds(new Set());
+        refreshUsers();
       } else {
-        toastError(data.error || 'فشلت العملية')
+        toastError(data.error || "فشلت العملية");
       }
     } catch {
-      toastError('فشل الاتصال')
+      toastError("فشل الاتصال");
     } finally {
-      setBulkLoading(false)
+      setBulkLoading(false);
     }
-  }
+  };
 
   const impersonate = async (user: User) => {
-    if (!confirm(`بدء انتحال شخصية ${user.email}؟ كل الإجراءات ستُسجَّل.`)) return
-    setActionUserId(user.id)
+    if (!confirm(`بدء انتحال شخصية ${user.email}؟ كل الإجراءات ستُسجَّل.`))
+      return;
+    setActionUserId(user.id);
     try {
-      const res = await fetch('/api/admin/users/impersonate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/admin/users/impersonate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: user.id }),
-      })
-      const data = await res.json()
+      });
+      const data = await res.json();
       if (data.success) {
-        toastSuccess(data.message)
-        setTimeout(() => { window.location.href = data.data?.redirectTo || '/dashboard' }, 600)
+        toastSuccess(data.message);
+        setTimeout(() => {
+          window.location.href = data.data?.redirectTo || "/dashboard";
+        }, 600);
       } else {
-        toastError(data.error || 'فشل')
+        toastError(data.error || "فشل");
       }
     } catch {
-      toastError('فشل الاتصال')
+      toastError("فشل الاتصال");
     } finally {
-      setActionUserId(null)
+      setActionUserId(null);
     }
-  }
+  };
 
   const resendWelcome = async (user: User) => {
-    setActionUserId(user.id)
+    setActionUserId(user.id);
     try {
-      const res = await fetch('/api/admin/users/resend-welcome', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/admin/users/resend-welcome", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: user.id }),
-      })
-      const data = await res.json()
-      if (data.success) toastSuccess(data.message || 'تم الإرسال')
-      else toastError(data.error || 'فشل الإرسال')
+      });
+      const data = await res.json();
+      if (data.success) toastSuccess(data.message || "تم الإرسال");
+      else toastError(data.error || "فشل الإرسال");
     } catch {
-      toastError('فشل الاتصال')
+      toastError("فشل الاتصال");
     } finally {
-      setActionUserId(null)
+      setActionUserId(null);
     }
-  }
+  };
 
   const forceLogout = async (user: User) => {
-    setActionUserId(user.id)
+    setActionUserId(user.id);
     try {
-      const res = await fetch('/api/admin/users/force-logout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/admin/users/force-logout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: user.id }),
-      })
-      const data = await res.json()
+      });
+      const data = await res.json();
       if (data.success) {
-        toastSuccess(data.message || 'تم إنهاء الجلسات')
+        toastSuccess(data.message || "تم إنهاء الجلسات");
       } else {
-        toastError(data.error || 'فشلت العملية')
+        toastError(data.error || "فشلت العملية");
       }
     } catch {
-      toastError('فشل الاتصال بالخادم')
+      toastError("فشل الاتصال بالخادم");
     } finally {
-      setActionUserId(null)
+      setActionUserId(null);
     }
-  }
+  };
 
   const deleteUser = async (user: User, hard = false) => {
-    setActionUserId(user.id)
-    setNotice(null)
+    setActionUserId(user.id);
+    setNotice(null);
 
     try {
-      const qs = hard ? `id=${user.id}&hard=true` : `id=${user.id}`
-      const res = await fetch(`/api/admin/users?${qs}`, { method: 'DELETE' })
-      const data = await res.json()
+      const qs = hard ? `id=${user.id}&hard=true` : `id=${user.id}`;
+      const res = await fetch(`/api/admin/users?${qs}`, { method: "DELETE" });
+      const data = await res.json();
 
       if (data.success) {
         setNotice({
-          type: 'success',
-          message: data.message || (hard ? 'تم الحذف النهائي بنجاح' : 'تم حذف المستخدم بنجاح'),
-        })
-        setPendingDeleteUser(null)
-        setDeleteConfirmText('')
-        refreshUsers()
+          type: "success",
+          message:
+            data.message ||
+            (hard ? "تم الحذف النهائي بنجاح" : "تم حذف المستخدم بنجاح"),
+        });
+        setPendingDeleteUser(null);
+        setDeleteConfirmText("");
+        refreshUsers();
       } else {
-        setNotice({ type: 'error', message: data.error || 'فشل حذف المستخدم' })
+        setNotice({ type: "error", message: data.error || "فشل حذف المستخدم" });
       }
     } catch {
-      setNotice({ type: 'error', message: 'فشل الاتصال بالخادم' })
+      setNotice({ type: "error", message: "فشل الاتصال بالخادم" });
     } finally {
-      setActionUserId(null)
+      setActionUserId(null);
     }
-  }
+  };
 
-  const updateStatus = async (user: User, status: 'active' | 'suspended', reason?: string) => {
-    setActionUserId(user.id)
-    setNotice(null)
+  const updateStatus = async (
+    user: User,
+    status: "active" | "suspended",
+    reason?: string,
+  ) => {
+    setActionUserId(user.id);
+    setNotice(null);
 
     try {
-      const res = await fetch('/api/admin/users', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: user.id, status, suspensionReason: reason })
-      })
-      const data = await res.json()
+      const res = await fetch("/api/admin/users", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: user.id, status, suspensionReason: reason }),
+      });
+      const data = await res.json();
 
       if (data.success) {
         setNotice({
-          type: data.data?.emailSent === false ? 'warning' : 'success',
-          message: data.message || 'تم تحديث المستخدم بنجاح'
-        })
-        setPendingBanUser(null)
-        setSuspensionReason('')
-        refreshUsers()
+          type: data.data?.emailSent === false ? "warning" : "success",
+          message: data.message || "تم تحديث المستخدم بنجاح",
+        });
+        setPendingBanUser(null);
+        setSuspensionReason("");
+        refreshUsers();
       } else {
-        setNotice({ type: 'error', message: data.error || 'فشلت العملية' })
+        setNotice({ type: "error", message: data.error || "فشلت العملية" });
       }
     } catch {
-      setNotice({ type: 'error', message: 'فشل الاتصال بالخادم' })
+      setNotice({ type: "error", message: "فشل الاتصال بالخادم" });
     } finally {
-      setActionUserId(null)
+      setActionUserId(null);
     }
-  }
+  };
 
   const handleCreate = async () => {
-    if (!newEmail.trim()) return
-    setCreating(true)
-    setNotice(null)
+    if (!newEmail.trim()) return;
+    setCreating(true);
+    setNotice(null);
 
     try {
-      const res = await fetch('/api/admin/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: newEmail.trim(), name: newName.trim(), sendEmail })
-      })
-      const data = await res.json()
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: newEmail.trim(),
+          name: newName.trim(),
+          sendEmail,
+        }),
+      });
+      const data = await res.json();
 
       if (data.success) {
         setCreatedUser({
           email: data.data.user.email,
-          name: data.data.user.name || '',
+          name: data.data.user.name || "",
           password: data.data.password,
           serial: data.data.serial,
           sendEmail,
           emailSent: data.data.emailSent,
-          emailError: data.data.emailError
-        })
+          emailError: data.data.emailError,
+        });
         setNotice({
-          type: data.data.emailSent === false ? 'warning' : 'success',
-          message: data.message || 'تم إنشاء المستخدم بنجاح'
-        })
-        setNewEmail('')
-        setNewName('')
-        refreshUsers()
+          type: data.data.emailSent === false ? "warning" : "success",
+          message: data.message || "تم إنشاء المستخدم بنجاح",
+        });
+        setNewEmail("");
+        setNewName("");
+        refreshUsers();
       } else {
-        setNotice({ type: 'error', message: data.error || 'فشل إنشاء المستخدم' })
+        setNotice({
+          type: "error",
+          message: data.error || "فشل إنشاء المستخدم",
+        });
       }
     } catch {
-      setNotice({ type: 'error', message: 'فشل الاتصال بالخادم' })
+      setNotice({ type: "error", message: "فشل الاتصال بالخادم" });
     } finally {
-      setCreating(false)
+      setCreating(false);
     }
-  }
+  };
 
   const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text)
-    setCopied(label)
-    setTimeout(() => setCopied(''), 2000)
-  }
+    navigator.clipboard.writeText(text);
+    setCopied(label);
+    setTimeout(() => setCopied(""), 2000);
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">إدارة المستخدمين</h1>
-          <p className="mt-1 text-sm text-slate-400">إدارة الحسابات، الحظر، السيريالات، والأجهزة المرتبطة بالبرنامج.</p>
+          <h1 className="text-2xl font-bold text-foreground">
+            إدارة المستخدمين
+          </h1>
+          <p className="mt-1 text-sm text-muted">
+            إدارة الحسابات، الحظر، السيريالات، والأجهزة المرتبطة بالبرنامج.
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button onClick={refreshUsers} className="admin-btn-secondary">
@@ -408,41 +467,56 @@ export default function AdminUsersPage() {
             تحديث
           </button>
           <a
-            href={`/api/admin/export?type=users${statusFilter ? `&status=${statusFilter}` : ''}${searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : ''}`}
+            href={`/api/admin/export?type=users${statusFilter ? `&status=${statusFilter}` : ""}${searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : ""}`}
             className="admin-btn-secondary"
             download
           >
             <Download size={16} />
             CSV
           </a>
-          <button onClick={() => { setShowAdd(!showAdd); setCreatedUser(null) }} className="admin-btn-primary">
+          <button
+            onClick={() => {
+              setShowAdd(!showAdd);
+              setCreatedUser(null);
+            }}
+            className="admin-btn-primary"
+          >
             <Plus size={18} />
-            {showAdd ? 'إغلاق الإضافة' : 'إضافة مستخدم'}
+            {showAdd ? "إغلاق الإضافة" : "إضافة مستخدم"}
           </button>
         </div>
       </div>
 
       {notice && (
-        <div className={`rounded-xl border px-4 py-3 text-sm ${
-          notice.type === 'success'
-            ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300'
-            : notice.type === 'warning'
-              ? 'border-amber-500/20 bg-amber-500/10 text-amber-300'
-              : 'border-red-500/20 bg-red-500/10 text-red-300'
-        }`}>
+        <div
+          className={`rounded-xl border px-4 py-3 text-sm ${
+            notice.type === "success"
+              ? "border-emerald-500/20 bg-emerald-500/10 text-positive"
+              : notice.type === "warning"
+                ? "border-amber-500/20 bg-amber-500/10 text-caution"
+                : "border-red-500/20 bg-red-500/10 text-negative"
+          }`}
+        >
           {notice.message}
         </div>
       )}
 
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         {summaryCards.map((card) => (
-          <div key={card.label} className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+          <div
+            key={card.label}
+            className="rounded-xl border border-line bg-panel p-4"
+          >
             <div className="flex items-center justify-between gap-3">
               <div>
-                <div className="text-sm text-slate-400">{card.label}</div>
-                <div className="mt-1 text-2xl font-bold text-white">{card.value.toLocaleString('ar-EG')}</div>
+                <div className="text-sm text-muted">{card.label}</div>
+                <div className="mt-1 text-2xl font-bold text-foreground">
+                  {card.value.toLocaleString("ar-EG")}
+                </div>
               </div>
-              <div className={`flex h-10 w-10 items-center justify-center rounded-lg border ${card.className}`}>
+              <div
+                className={`flex h-10 w-10 items-center justify-center rounded-lg border ${card.className}`}
+              >
                 <card.icon size={20} />
               </div>
             </div>
@@ -453,15 +527,27 @@ export default function AdminUsersPage() {
       {showAdd && (
         <div className="admin-card !border !border-sky-500/30">
           <div className="mb-4 flex items-center justify-between gap-3">
-            <h2 className="text-lg font-bold text-white">إضافة مستخدم جديد</h2>
-            <button onClick={() => setShowAdd(false)} className="text-slate-400 hover:text-white" aria-label="إغلاق">
+            <h2 className="text-lg font-bold text-foreground">
+              إضافة مستخدم جديد
+            </h2>
+            <button
+              onClick={() => setShowAdd(false)}
+              className="text-muted hover:text-foreground"
+              aria-label="إغلاق"
+            >
               <X size={18} />
             </button>
           </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <label className="admin-label">البريد الإلكتروني *</label>
+              <label
+                htmlFor="src-app-admin-users-page-tsx-1"
+                className="admin-label"
+              >
+                البريد الإلكتروني *
+              </label>
               <input
+                id="src-app-admin-users-page-tsx-1"
                 type="email"
                 value={newEmail}
                 onChange={(e) => setNewEmail(e.target.value)}
@@ -471,8 +557,14 @@ export default function AdminUsersPage() {
               />
             </div>
             <div>
-              <label className="admin-label">الاسم</label>
+              <label
+                htmlFor="src-app-admin-users-page-tsx-2"
+                className="admin-label"
+              >
+                الاسم
+              </label>
               <input
+                id="src-app-admin-users-page-tsx-2"
                 type="text"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
@@ -482,7 +574,10 @@ export default function AdminUsersPage() {
             </div>
           </div>
           <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <label htmlFor="sendEmail" className="flex cursor-pointer items-center gap-2 text-sm text-slate-300">
+            <label
+              htmlFor="sendEmail"
+              className="flex cursor-pointer items-center gap-2 text-sm text-muted"
+            >
               <input
                 type="checkbox"
                 id="sendEmail"
@@ -498,23 +593,47 @@ export default function AdminUsersPage() {
               disabled={creating || !newEmail.trim()}
               className="admin-btn-success disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {creating ? 'جارٍ الإنشاء...' : 'إنشاء مستخدم وسيريال'}
+              {creating ? "جارٍ الإنشاء..." : "إنشاء مستخدم وسيريال"}
             </button>
           </div>
 
           {createdUser && (
             <div className="mt-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4">
-              <h3 className="mb-3 font-bold text-emerald-300">تم الإنشاء بنجاح</h3>
+              <h3 className="mb-3 font-bold text-positive">تم الإنشاء بنجاح</h3>
               <div className="grid gap-3 text-sm md:grid-cols-3">
-                <CredentialValue label="البريد" value={createdUser.email} copied={copied} copyKey="email" onCopy={copyToClipboard} />
-                {createdUser.password && <CredentialValue label="كلمة المرور" value={createdUser.password} copied={copied} copyKey="pass" onCopy={copyToClipboard} />}
-                {createdUser.serial && <CredentialValue label="السيريال" value={createdUser.serial} copied={copied} copyKey="serial" onCopy={copyToClipboard} />}
+                <CredentialValue
+                  label="البريد"
+                  value={createdUser.email}
+                  copied={copied}
+                  copyKey="email"
+                  onCopy={copyToClipboard}
+                />
+                {createdUser.password && (
+                  <CredentialValue
+                    label="كلمة المرور"
+                    value={createdUser.password}
+                    copied={copied}
+                    copyKey="pass"
+                    onCopy={copyToClipboard}
+                  />
+                )}
+                {createdUser.serial && (
+                  <CredentialValue
+                    label="السيريال"
+                    value={createdUser.serial}
+                    copied={copied}
+                    copyKey="serial"
+                    onCopy={copyToClipboard}
+                  />
+                )}
               </div>
               {createdUser.sendEmail && (
-                <p className={`mt-3 text-xs ${createdUser.emailSent ? 'text-emerald-300' : 'text-amber-300'}`}>
+                <p
+                  className={`mt-3 text-xs ${createdUser.emailSent ? "text-positive" : "text-caution"}`}
+                >
                   {createdUser.emailSent
-                    ? 'تم إرسال الإيميل بنجاح.'
-                    : `تم إنشاء الحساب لكن فشل إرسال الإيميل.${createdUser.emailError ? ` (${createdUser.emailError})` : ''}`}
+                    ? "تم إرسال الإيميل بنجاح."
+                    : `تم إنشاء الحساب لكن فشل إرسال الإيميل.${createdUser.emailError ? ` (${createdUser.emailError})` : ""}`}
                 </p>
               )}
             </div>
@@ -524,41 +643,41 @@ export default function AdminUsersPage() {
 
       {selectedIds.size > 0 && (
         <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-sky-500/25 bg-sky-500/[0.05] px-4 py-3">
-          <span className="text-sm text-sky-300 font-semibold ml-auto">
+          <span className="text-sm text-brand font-semibold ml-auto">
             تم اختيار {selectedIds.size} مستخدم
           </span>
           <button
             onClick={() => setSelectedIds(new Set())}
             disabled={bulkLoading}
-            className="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-lg bg-white/5 disabled:opacity-50"
+            className="text-xs text-muted hover:text-foreground px-3 py-1.5 rounded-lg bg-soft disabled:opacity-50"
           >
             إلغاء الاختيار
           </button>
           <button
-            onClick={() => runBulkAction('activate')}
+            onClick={() => runBulkAction("activate")}
             disabled={bulkLoading}
-            className="text-xs text-emerald-300 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25 hover:bg-emerald-500/20 disabled:opacity-50"
+            className="text-xs text-positive px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25 hover:bg-emerald-500/20 disabled:opacity-50"
           >
             تنشيط
           </button>
           <button
-            onClick={() => runBulkAction('force_logout')}
+            onClick={() => runBulkAction("force_logout")}
             disabled={bulkLoading}
-            className="text-xs text-amber-300 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/25 hover:bg-amber-500/20 disabled:opacity-50"
+            className="text-xs text-caution px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/25 hover:bg-amber-500/20 disabled:opacity-50"
           >
             إنهاء الجلسات
           </button>
           <button
-            onClick={() => runBulkAction('suspend')}
+            onClick={() => runBulkAction("suspend")}
             disabled={bulkLoading}
-            className="text-xs text-red-300 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/25 hover:bg-red-500/20 disabled:opacity-50"
+            className="text-xs text-negative px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/25 hover:bg-red-500/20 disabled:opacity-50"
           >
             حظر
           </button>
           <button
-            onClick={() => runBulkAction('delete')}
+            onClick={() => runBulkAction("delete")}
             disabled={bulkLoading}
-            className="text-xs text-red-300 px-3 py-1.5 rounded-lg bg-red-500/15 border border-red-500/40 hover:bg-red-500/25 disabled:opacity-50"
+            className="text-xs text-negative px-3 py-1.5 rounded-lg bg-red-500/15 border border-red-500/40 hover:bg-red-500/25 disabled:opacity-50"
           >
             حذف نهائي
           </button>
@@ -568,19 +687,22 @@ export default function AdminUsersPage() {
       <div className="admin-card">
         <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_180px_180px_auto]">
           <div className="relative">
-            <Search className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
+            <Search className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
             <input
               type="text"
               placeholder="بحث بالاسم أو البريد..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               className="admin-input pr-10"
-              onKeyDown={(e) => e.key === 'Enter' && runSearch()}
+              onKeyDown={(e) => e.key === "Enter" && runSearch()}
             />
           </div>
           <select
             value={statusFilter}
-            onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(1);
+            }}
             className="admin-select"
           >
             <option value="">كل الحالات</option>
@@ -590,7 +712,10 @@ export default function AdminUsersPage() {
           </select>
           <select
             value={roleFilter}
-            onChange={(e) => { setRoleFilter(e.target.value); setPage(1) }}
+            onChange={(e) => {
+              setRoleFilter(e.target.value);
+              setPage(1);
+            }}
             className="admin-select"
           >
             <option value="">كل الصلاحيات</option>
@@ -606,8 +731,12 @@ export default function AdminUsersPage() {
 
       <div className="admin-card">
         <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-          <h2 className="text-lg font-bold text-white">قائمة المستخدمين</h2>
-          <span className="text-sm text-slate-500">النتائج الحالية: {total.toLocaleString('ar-EG')}</span>
+          <h2 className="text-lg font-bold text-foreground">
+            قائمة المستخدمين
+          </h2>
+          <span className="text-sm text-muted">
+            النتائج الحالية: {total.toLocaleString("ar-EG")}
+          </span>
         </div>
 
         {loading ? (
@@ -615,7 +744,7 @@ export default function AdminUsersPage() {
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-sky-500 border-t-transparent" />
           </div>
         ) : users.length === 0 ? (
-          <div className="rounded-xl border border-white/10 bg-white/[0.02] py-12 text-center text-slate-400">
+          <div className="rounded-xl border border-line bg-panel py-12 text-center text-muted">
             لا توجد نتائج مطابقة.
           </div>
         ) : (
@@ -626,7 +755,9 @@ export default function AdminUsersPage() {
                   <th className="!w-10">
                     <input
                       type="checkbox"
-                      checked={users.length > 0 && selectedIds.size === users.length}
+                      checked={
+                        users.length > 0 && selectedIds.size === users.length
+                      }
                       onChange={toggleSelectAll}
                       aria-label="اختر الكل"
                       className="w-4 h-4 accent-sky-500"
@@ -643,65 +774,102 @@ export default function AdminUsersPage() {
               </thead>
               <tbody>
                 {users.map((user) => (
-                  <tr key={user.id} className={selectedIds.has(user.id) ? 'bg-sky-500/[0.05]' : ''}>
+                  <tr
+                    key={user.id}
+                    className={
+                      selectedIds.has(user.id) ? "bg-sky-500/[0.05]" : ""
+                    }
+                  >
                     <td>
                       <input
                         type="checkbox"
                         checked={selectedIds.has(user.id)}
                         onChange={() => toggleSelect(user.id)}
-                        disabled={user.role === 'admin'}
+                        disabled={user.role === "admin"}
                         aria-label={`اختر ${user.email}`}
                         className="w-4 h-4 accent-sky-500 disabled:opacity-30"
                       />
                     </td>
                     <td>
-                      <div className="font-medium text-white">{user.name || 'بدون اسم'}</div>
-                      <div className="mt-1 text-xs text-slate-400" dir="ltr">{user.email}</div>
+                      <div className="font-medium text-foreground">
+                        {user.name || "بدون اسم"}
+                      </div>
+                      <div className="mt-1 text-xs text-muted" dir="ltr">
+                        {user.email}
+                      </div>
                     </td>
                     <td>
                       <div className="flex flex-col items-start gap-1">
-                        <span className={badgeClass(user.status)}>{statusLabel[user.status] || user.status}</span>
-                        <span className={user.role === 'admin' ? 'admin-badge-info' : 'admin-badge-warning'}>
-                          {user.role === 'admin' ? 'أدمن' : 'مستخدم'}
+                        <span className={badgeClass(user.status)}>
+                          {statusLabel[user.status] || user.status}
+                        </span>
+                        <span
+                          className={
+                            user.role === "admin"
+                              ? "admin-badge-info"
+                              : "admin-badge-warning"
+                          }
+                        >
+                          {user.role === "admin" ? "أدمن" : "مستخدم"}
                         </span>
                       </div>
                     </td>
                     <td>
                       {user.latestKey ? (
                         <div className="space-y-1">
-                          <div className="flex items-center gap-2 text-xs text-slate-300">
+                          <div className="flex items-center gap-2 text-xs text-muted">
                             <Key size={14} />
                             <code dir="ltr">{user.latestKey.keyCode}</code>
                           </div>
                           <div className="flex flex-wrap gap-2">
-                            <span className={badgeClass(user.latestKey.status)}>{statusLabel[user.latestKey.status] || user.latestKey.status}</span>
-                            <span className="text-xs text-slate-500">حتى {formatDate(user.latestKey.expiresAt)}</span>
+                            <span className={badgeClass(user.latestKey.status)}>
+                              {statusLabel[user.latestKey.status] ||
+                                user.latestKey.status}
+                            </span>
+                            <span className="text-xs text-muted">
+                              حتى {formatDate(user.latestKey.expiresAt)}
+                            </span>
                           </div>
                         </div>
                       ) : (
-                        <span className="text-slate-500">لا يوجد</span>
+                        <span className="text-muted">لا يوجد</span>
                       )}
                     </td>
                     <td>
                       {user.subscription?.status ? (
                         <div className="space-y-1">
-                          <span className={badgeClass(user.subscription.status)}>{statusLabel[user.subscription.status] || user.subscription.status}</span>
-                          <div className="text-xs text-slate-500">حتى {formatDate(user.subscription.expiresAt || user.subscription.trialEndsAt)}</div>
+                          <span
+                            className={badgeClass(user.subscription.status)}
+                          >
+                            {statusLabel[user.subscription.status] ||
+                              user.subscription.status}
+                          </span>
+                          <div className="text-xs text-muted">
+                            حتى{" "}
+                            {formatDate(
+                              user.subscription.expiresAt ||
+                                user.subscription.trialEndsAt,
+                            )}
+                          </div>
                         </div>
                       ) : (
-                        <span className="text-slate-500">لا يوجد</span>
+                        <span className="text-muted">لا يوجد</span>
                       )}
                     </td>
                     <td>
-                      <div className="flex flex-col gap-1 text-xs text-slate-300">
-                        <span className="flex items-center gap-2"><Monitor size={14} /> {user.devicesCount} جهاز</span>
-                        <span className="flex items-center gap-2"><Key size={14} /> {user.keysCount} مفتاح</span>
+                      <div className="flex flex-col gap-1 text-xs text-muted">
+                        <span className="flex items-center gap-2">
+                          <Monitor size={14} /> {user.devicesCount} جهاز
+                        </span>
+                        <span className="flex items-center gap-2">
+                          <Key size={14} /> {user.keysCount} مفتاح
+                        </span>
                       </div>
                     </td>
-                    <td className="text-slate-500">{formatDate(user.createdAt)}</td>
+                    <td className="text-muted">{formatDate(user.createdAt)}</td>
                     <td>
                       <div className="flex flex-wrap gap-2">
-                        {user.status === 'active' && (
+                        {user.status === "active" && (
                           <button
                             onClick={() => setPendingBanUser(user)}
                             disabled={actionUserId === user.id}
@@ -712,9 +880,9 @@ export default function AdminUsersPage() {
                             حظر
                           </button>
                         )}
-                        {user.status === 'suspended' && (
+                        {user.status === "suspended" && (
                           <button
-                            onClick={() => updateStatus(user, 'active')}
+                            onClick={() => updateStatus(user, "active")}
                             disabled={actionUserId === user.id}
                             className="admin-btn-success !px-3 !py-2 disabled:cursor-not-allowed disabled:opacity-50"
                             title="فك الحظر"
@@ -723,7 +891,7 @@ export default function AdminUsersPage() {
                             فك الحظر
                           </button>
                         )}
-                        {user.status === 'active' && (
+                        {user.status === "active" && (
                           <button
                             onClick={() => forceLogout(user)}
                             disabled={actionUserId === user.id}
@@ -743,7 +911,7 @@ export default function AdminUsersPage() {
                           <Send size={15} />
                           إرسال بياناته
                         </button>
-                        {user.role !== 'admin' && user.status === 'active' && (
+                        {user.role !== "admin" && user.status === "active" && (
                           <button
                             onClick={() => impersonate(user)}
                             disabled={actionUserId === user.id}
@@ -754,9 +922,12 @@ export default function AdminUsersPage() {
                             انتحال
                           </button>
                         )}
-                        {user.role !== 'admin' && user.status !== 'deleted' && (
+                        {user.role !== "admin" && user.status !== "deleted" && (
                           <button
-                            onClick={() => { setPendingDeleteUser(user); setDeleteConfirmText('') }}
+                            onClick={() => {
+                              setPendingDeleteUser(user);
+                              setDeleteConfirmText("");
+                            }}
                             disabled={actionUserId === user.id}
                             className="admin-btn-danger !px-3 !py-2 disabled:cursor-not-allowed disabled:opacity-50"
                             title="حذف نهائي"
@@ -783,7 +954,9 @@ export default function AdminUsersPage() {
             >
               السابق
             </button>
-            <span className="text-sm text-slate-500">{page} من {totalPages}</span>
+            <span className="text-sm text-muted">
+              {page} من {totalPages}
+            </span>
             <button
               onClick={() => setPage(Math.min(totalPages, page + 1))}
               disabled={page === totalPages}
@@ -800,19 +973,38 @@ export default function AdminUsersPage() {
           <div className="w-full max-w-lg rounded-xl border border-red-500/20 bg-slate-950 p-5 shadow-2xl">
             <div className="mb-4 flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-lg font-bold text-white">حظر المستخدم</h2>
-                <p className="mt-1 text-sm text-slate-400">سيتم تعطيل السيريالات والأجهزة والجلسات، وإرسال رسالة واضحة على الإيميل.</p>
+                <h2 className="text-lg font-bold text-foreground">
+                  حظر المستخدم
+                </h2>
+                <p className="mt-1 text-sm text-muted">
+                  سيتم تعطيل السيريالات والأجهزة والجلسات، وإرسال رسالة واضحة
+                  على الإيميل.
+                </p>
               </div>
-              <button onClick={() => setPendingBanUser(null)} className="text-slate-400 hover:text-white" aria-label="إغلاق">
+              <button
+                onClick={() => setPendingBanUser(null)}
+                className="text-muted hover:text-foreground"
+                aria-label="إغلاق"
+              >
                 <X size={18} />
               </button>
             </div>
-            <div className="mb-4 rounded-xl border border-white/10 bg-white/[0.03] p-3 text-sm">
-              <div className="font-medium text-white">{pendingBanUser.name || 'بدون اسم'}</div>
-              <div className="mt-1 text-slate-400" dir="ltr">{pendingBanUser.email}</div>
+            <div className="mb-4 rounded-xl border border-line bg-panel p-3 text-sm">
+              <div className="font-medium text-foreground">
+                {pendingBanUser.name || "بدون اسم"}
+              </div>
+              <div className="mt-1 text-muted" dir="ltr">
+                {pendingBanUser.email}
+              </div>
             </div>
-            <label className="admin-label">سبب الحظر الظاهر في الإيميل</label>
+            <label
+              htmlFor="src-app-admin-users-page-tsx-3"
+              className="admin-label"
+            >
+              سبب الحظر الظاهر في الإيميل
+            </label>
             <textarea
+              id="src-app-admin-users-page-tsx-3"
               value={suspensionReason}
               onChange={(e) => setSuspensionReason(e.target.value)}
               className="admin-input min-h-28 resize-none"
@@ -820,11 +1012,20 @@ export default function AdminUsersPage() {
               placeholder="مثال: تم رصد استخدام مخالف لشروط الخدمة."
             />
             <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <button onClick={() => setPendingBanUser(null)} className="admin-btn-secondary">
+              <button
+                onClick={() => setPendingBanUser(null)}
+                className="admin-btn-secondary"
+              >
                 إلغاء
               </button>
               <button
-                onClick={() => updateStatus(pendingBanUser, 'suspended', suspensionReason.trim())}
+                onClick={() =>
+                  updateStatus(
+                    pendingBanUser,
+                    "suspended",
+                    suspensionReason.trim(),
+                  )
+                }
                 disabled={actionUserId === pendingBanUser.id}
                 className="admin-btn-danger disabled:cursor-not-allowed disabled:opacity-50"
               >
@@ -841,32 +1042,54 @@ export default function AdminUsersPage() {
           <div className="w-full max-w-lg rounded-xl border border-red-500/40 bg-slate-950 p-5 shadow-2xl shadow-red-500/10">
             <div className="mb-4 flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Trash2 className="text-red-400" size={18} />
+                <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+                  <Trash2 className="text-negative" size={18} />
                   حذف المستخدم نهائياً
                 </h2>
-                <p className="mt-1 text-sm text-slate-400">
-                  حذف ناعم: الحساب يُعلَّم كـ <strong>deleted</strong>، السيريالات تُلغى، الأجهزة تُفصل،
-                  والاشتراكات تُلغى. الإجراء لا يمكن التراجع عنه من الواجهة.
+                <p className="mt-1 text-sm text-muted">
+                  حذف ناعم: الحساب يُعلَّم كـ <strong>deleted</strong>،
+                  السيريالات تُلغى، الأجهزة تُفصل، والاشتراكات تُلغى. الإجراء لا
+                  يمكن التراجع عنه من الواجهة.
                 </p>
               </div>
-              <button onClick={() => { setPendingDeleteUser(null); setDeleteConfirmText('') }} className="text-slate-400 hover:text-white" aria-label="إغلاق">
+              <button
+                onClick={() => {
+                  setPendingDeleteUser(null);
+                  setDeleteConfirmText("");
+                }}
+                className="text-muted hover:text-foreground"
+                aria-label="إغلاق"
+              >
                 <X size={18} />
               </button>
             </div>
             <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/[0.05] p-3 text-sm">
-              <div className="font-medium text-white">{pendingDeleteUser.name || 'بدون اسم'}</div>
-              <div className="mt-1 text-slate-400" dir="ltr">{pendingDeleteUser.email}</div>
-              <div className="mt-2 flex flex-wrap gap-3 text-xs text-slate-500">
+              <div className="font-medium text-foreground">
+                {pendingDeleteUser.name || "بدون اسم"}
+              </div>
+              <div className="mt-1 text-muted" dir="ltr">
+                {pendingDeleteUser.email}
+              </div>
+              <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted">
                 <span>{pendingDeleteUser.keysCount} مفتاح</span>
                 <span>{pendingDeleteUser.devicesCount} جهاز</span>
-                <span>دور: {pendingDeleteUser.role === 'admin' ? 'أدمن' : 'مستخدم'}</span>
+                <span>
+                  دور: {pendingDeleteUser.role === "admin" ? "أدمن" : "مستخدم"}
+                </span>
               </div>
             </div>
-            <label className="admin-label">
-              اكتب <code className="rounded bg-red-500/15 px-1.5 py-0.5 font-mono text-xs text-red-300">DELETE</code> للتأكيد
+            <label
+              htmlFor="src-app-admin-users-page-tsx-4"
+              className="admin-label"
+            >
+              اكتب{" "}
+              <code className="rounded bg-red-500/15 px-1.5 py-0.5 font-mono text-xs text-negative">
+                DELETE
+              </code>{" "}
+              للتأكيد
             </label>
             <input
+              id="src-app-admin-users-page-tsx-4"
               type="text"
               value={deleteConfirmText}
               onChange={(e) => setDeleteConfirmText(e.target.value)}
@@ -877,14 +1100,20 @@ export default function AdminUsersPage() {
             />
             <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <button
-                onClick={() => { setPendingDeleteUser(null); setDeleteConfirmText('') }}
+                onClick={() => {
+                  setPendingDeleteUser(null);
+                  setDeleteConfirmText("");
+                }}
                 className="admin-btn-secondary"
               >
                 إلغاء
               </button>
               <button
                 onClick={() => deleteUser(pendingDeleteUser, false)}
-                disabled={deleteConfirmText !== 'DELETE' || actionUserId === pendingDeleteUser.id}
+                disabled={
+                  deleteConfirmText !== "DELETE" ||
+                  actionUserId === pendingDeleteUser.id
+                }
                 className="admin-btn-danger disabled:cursor-not-allowed disabled:opacity-50"
                 title="إخفاء المستخدم (يحتفظ بالبيانات في قاعدة البيانات)"
               >
@@ -893,9 +1122,12 @@ export default function AdminUsersPage() {
               </button>
               <button
                 onClick={() => deleteUser(pendingDeleteUser, true)}
-                disabled={deleteConfirmText !== 'DELETE' || actionUserId === pendingDeleteUser.id}
-                className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50 flex items-center gap-2"
-                style={{ boxShadow: '0 4px 14px rgba(220, 38, 38, 0.40)' }}
+                disabled={
+                  deleteConfirmText !== "DELETE" ||
+                  actionUserId === pendingDeleteUser.id
+                }
+                className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-foreground transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50 flex items-center gap-2"
+                style={{ boxShadow: "0 4px 14px rgba(220, 38, 38, 0.40)" }}
                 title="حذف نهائي مع جميع البيانات المرتبطة من قاعدة البيانات"
               >
                 <Trash2 size={16} />
@@ -906,7 +1138,7 @@ export default function AdminUsersPage() {
         </div>
       )}
     </div>
-  )
+  );
 }
 
 function CredentialValue({
@@ -914,23 +1146,33 @@ function CredentialValue({
   value,
   copied,
   copyKey,
-  onCopy
+  onCopy,
 }: {
-  label: string
-  value: string
-  copied: string
-  copyKey: string
-  onCopy: (text: string, label: string) => void
+  label: string;
+  value: string;
+  copied: string;
+  copyKey: string;
+  onCopy: (text: string, label: string) => void;
 }) {
   return (
-    <div className="rounded-lg border border-white/10 bg-slate-950/30 p-3">
-      <div className="mb-1 text-xs text-slate-400">{label}</div>
+    <div className="rounded-lg border border-line bg-slate-950/30 p-3">
+      <div className="mb-1 text-xs text-muted">{label}</div>
       <div className="flex items-center justify-between gap-2">
-        <code className="min-w-0 truncate text-sm text-white" dir="ltr">{value}</code>
-        <button onClick={() => onCopy(value, copyKey)} className="shrink-0 text-slate-400 hover:text-white" aria-label={`نسخ ${label}`}>
-          {copied === copyKey ? <Check size={15} className="text-emerald-300" /> : <Copy size={15} />}
+        <code className="min-w-0 truncate text-sm text-foreground" dir="ltr">
+          {value}
+        </code>
+        <button
+          onClick={() => onCopy(value, copyKey)}
+          className="shrink-0 text-muted hover:text-foreground"
+          aria-label={`نسخ ${label}`}
+        >
+          {copied === copyKey ? (
+            <Check size={15} className="text-positive" />
+          ) : (
+            <Copy size={15} />
+          )}
         </button>
       </div>
     </div>
-  )
+  );
 }

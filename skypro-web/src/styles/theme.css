@@ -1,0 +1,285 @@
+/* Shared Sky Pro tokens. The approved home and application surfaces consume
+   these variables; neither surface imports the other's CSS module. */
+:root {
+  --sp-bg: #030b19;
+  --sp-card: rgba(14, 26, 48, 0.88);
+  --sp-solid: #101c32;
+  --sp-text: #f6f8ff;
+  --sp-muted: #a7b5ce;
+  --sp-border: rgba(119, 153, 233, 0.23);
+  --sp-soft: rgba(70, 118, 234, 0.12);
+  --sp-blue: #56aaff;
+  --sp-violet: #ac78ff;
+  --sp-shadow: 0 12px 38px #0003;
+  --sp-nav: rgba(5, 13, 29, 0.96);
+  --sp-control-border: #667eac;
+  --sp-success: #6ee7b7;
+  --sp-danger: #fca5a5;
+  --sp-warning: #fcd34d;
+  --sp-gradient: linear-gradient(100deg, #086bda, #6540e8 70%, #9230ce);
+  --sp-radius: 22px;
+  --sp-background:
+    radial-gradient(ellipse at 90% 0, #142859, transparent 32%), var(--sp-bg);
+  color-scheme: dark;
+}
+html[data-skypro-theme="light"] {
+  --sp-bg: #f7faff;
+  --sp-card: rgba(255, 255, 255, 0.94);
+  --sp-solid: #fff;
+  --sp-text: #121c42;
+  --sp-muted: #52617d;
+  --sp-border: rgba(107, 142, 236, 0.24);
+  --sp-soft: #edf2ff;
+  --sp-blue: #225fe3;
+  --sp-violet: #8030c5;
+  --sp-shadow: 0 9px 28px #3f69c312;
+  --sp-nav: rgba(248, 251, 255, 0.96);
+  --sp-control-border: #7687a7;
+  --sp-success: #076444;
+  --sp-danger: #b42336;
+  --sp-warning: #875000;
+  --sp-background:
+    radial-gradient(ellipse at 90% 0, #e4eaff, transparent 32%), var(--sp-bg);
+  color-scheme: light;
+}
+body {
+  background: var(--sp-bg);
+  color: var(--sp-text);
+}
+:where(a, button, input, select, textarea, summary):focus-visible {
+  outline: 3px solid var(--sp-blue);
+  outline-offset: 3px;
+}
+input,
+select,
+textarea {
+  color-scheme: inherit;
+}
+main h1 {
+  scroll-margin-block-start: 110px;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+.auth-shell {
+  background: var(--sp-background);
+}
+.auth-screen {
+  min-height: calc(100svh - 76px);
+  padding-block: 42px;
+}
+.auth-screen > .absolute {
+  pointer-events: none;
+}
+.auth-screen .gradient-border {
+  border-radius: 24px;
+  box-shadow: var(--sp-shadow);
+}
+.admin-card,
+.glass-card,
+.gradient-border {
+  background: var(--sp-card);
+  border: 1px solid var(--sp-border);
+  box-shadow: var(--sp-shadow);
+}
+.glass-card:hover {
+  background: var(--sp-solid);
+  border-color: var(--sp-blue);
+}
+.admin-input,
+.admin-select {
+  background-color: var(--sp-solid);
+  border-color: var(--sp-control-border);
+  color: var(--sp-text);
+  font-size: 16px;
+}
+.admin-input::placeholder {
+  color: var(--sp-muted);
+}
+.admin-input:focus,
+.admin-select:focus {
+  background-color: var(--sp-solid);
+  border-color: var(--sp-blue);
+}
+.admin-select option {
+  background: var(--sp-solid);
+  color: var(--sp-text);
+}
+.admin-label {
+  color: var(--sp-muted);
+  font-size: 15px;
+}
+.admin-table thead th {
+  color: var(--sp-muted);
+  background: var(--sp-soft);
+  border-color: var(--sp-border);
+  white-space: nowrap;
+}
+.admin-table tbody td {
+  border-color: var(--sp-border);
+}
+.admin-table tbody tr:hover {
+  background: var(--sp-soft);
+}
+.admin-table-container {
+  max-width: 100%;
+}
+.admin-btn-primary,
+.btn-primary {
+  color: #fff;
+  background: var(--sp-gradient);
+}
+.admin-btn-secondary,
+.btn-secondary,
+.btn-ghost,
+.nav-link {
+  background: var(--sp-soft);
+  color: var(--sp-text);
+  border-color: var(--sp-border);
+}
+.admin-btn-secondary:hover,
+.btn-secondary:hover,
+.btn-ghost:hover,
+.nav-link:hover {
+  background: var(--sp-soft);
+  border-color: var(--sp-blue);
+  color: var(--sp-blue);
+}
+.admin-badge-success,
+.admin-btn-success {
+  color: var(--sp-success);
+}
+.admin-badge-danger,
+.admin-btn-danger {
+  color: var(--sp-danger);
+}
+.admin-badge-warning {
+  color: var(--sp-warning);
+}
+.admin-badge-info,
+.admin-filter-btn-active {
+  color: var(--sp-blue);
+}
+.admin-filter-btn-inactive {
+  color: var(--sp-muted);
+  background: var(--sp-soft);
+}
+.workspace {
+  background: var(--sp-background);
+  min-height: 100svh;
+}
+.workspace-main {
+  min-width: 0;
+  transition: margin 0.2s;
+}
+.serial-value {
+  font-size: clamp(13px, 1.05vw, 16px);
+  letter-spacing: 0.01em;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  min-width: 0;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+.workspace-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 14px;
+  margin-block-end: 24px;
+}
+.workspace-toolbar > a {
+  font-size: 13px;
+  color: var(--sp-blue);
+}
+.workspace-signature {
+  border-block-start: 1px solid var(--sp-border);
+  padding-block: 20px;
+  margin-block-start: 28px;
+  color: var(--sp-muted);
+  font-size: 12px;
+}
+.workspace-signature a {
+  color: var(--sp-blue);
+  font-weight: 700;
+}
+.prose-legal {
+  color: var(--sp-muted);
+  font-size: 16px;
+  line-height: 1.9;
+}
+.prose-legal :is(h1, h2, h3, strong) {
+  color: var(--sp-text);
+}
+.prose-legal :is(p, li) {
+  font-size: 16px;
+  line-height: 1.9;
+}
+.prose-legal a {
+  color: var(--sp-blue);
+}
+.prose-legal :is(.callout-info, .callout-warning) {
+  color: var(--sp-text);
+  background: var(--sp-soft);
+  border-color: var(--sp-border);
+}
+.prose-legal th,
+.prose-legal td {
+  border-color: var(--sp-border);
+}
+.prose-legal th {
+  background: var(--sp-soft);
+  color: var(--sp-text);
+}
+@media (min-width: 1024px) {
+  .workspace:has(aside[data-collapsed="true"]) .workspace-main {
+    margin-inline-start: 4rem;
+  }
+}
+@media (max-width: 1023px) {
+  .workspace aside[data-drawer-open="false"] {
+    visibility: hidden;
+  }
+  .workspace-toolbar {
+    display: none;
+  }
+  .workspace-toolbar > a {
+    padding: 8px 12px;
+    background: var(--sp-solid);
+    border: 1px solid var(--sp-border);
+    border-radius: 99px;
+  }
+}
+@media (max-width: 600px) {
+  .auth-screen {
+    min-height: calc(100svh - 68px);
+    padding-block: 32px;
+  }
+  .auth-screen .gradient-border {
+    padding: 24px;
+  }
+  .workspace .admin-card {
+    padding: 18px;
+  }
+}
+::selection {
+  background: #627dee55;
+  color: var(--sp-text);
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto !important;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

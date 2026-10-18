@@ -25,3 +25,7 @@ Use crawlable, useful visible content and matching structured data. Do not use u
 - Build on Linux with the locked dependencies; verify on loopback port 3201 before moving only PM2 skypro to port 3200. Preserve Nginx and all unrelated services.
 - PM2 startOrRestart retained the previous executable path on the first activation; automatic HTTP verification rejected the old home and restored the old process. Recreate only the named skypro process from the explicit release config for activation and rollback. The corrected activation passed SHA/path, HTTP, DB and browser checks.
 - SMTP verify connects/authenticates with TLS but sends no message and creates no customer/test account.
+# 2026-10-18 — site-wide theme candidate
+
+The user's explicit hosting request authorizes this migration after QA. Preserve the current live release until candidate checks pass. Use shared theme tokens and original product screenshots; preserve legal copy and desktop API contracts. Fix the demonstrated email confirmation and impersonation restore failures with narrowly scoped authorization checks. Fixture secrets/outbox stay outside Git and production. See RELEASE_SITE_THEME_20261018.md for current evidence and remaining gates.
+

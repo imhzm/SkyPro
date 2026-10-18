@@ -1,75 +1,91 @@
-﻿'use client'
+﻿"use client";
 
-import { useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import Link from 'next/link'
-import { Eye, EyeOff, Lock } from 'lucide-react'
-import { Logo } from '@/components/marketing/Logo'
+import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { Eye, EyeOff, Lock } from "lucide-react";
+import { Logo } from "@/components/marketing/Logo";
 
 export default function ResetPasswordForm() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const token = searchParams.get('token') || ''
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState(false)
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const token = searchParams.get("token") || "";
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
+    e.preventDefault();
+    setError("");
 
     if (password !== confirmPassword) {
-      setError('كلمة المرور غير متطابقة')
-      return
+      setError("كلمة المرور غير متطابقة");
+      return;
     }
 
-    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{10,128}$/.test(password)) {
-      setError('كلمة المرور يجب أن تكون 10 أحرف على الأقل وتحتوي على حرف كبير وصغير ورقم ورمز خاص')
-      return
+    if (
+      !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{10,128}$/.test(
+        password,
+      )
+    ) {
+      setError(
+        "كلمة المرور يجب أن تكون 10 أحرف على الأقل وتحتوي على حرف كبير وصغير ورقم ورمز خاص",
+      );
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
 
     try {
-      const res = await fetch('/api/auth/reset-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password, confirmPassword, token })
-      })
-      const data = await res.json()
+      const res = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password, confirmPassword, token }),
+      });
+      const data = await res.json();
 
       if (data.success) {
-        setSuccess(true)
-        setTimeout(() => router.push('/auth/login'), 3000)
+        setSuccess(true);
+        setTimeout(() => router.push("/auth/login"), 3000);
       } else {
-        setError(data.error || 'فشل إعادة التعيين')
+        setError(data.error || "فشل إعادة التعيين");
       }
     } catch {
-      setError('فشل الاتصال بالخادم')
+      setError("فشل الاتصال بالخادم");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#060d1b] px-4" dir="rtl">
+      <div
+        className="auth-screen flex items-center justify-center bg-page px-4"
+        dir="rtl"
+      >
         <div className="gradient-border p-8 text-center max-w-md w-full">
           <div className="w-16 h-16 bg-emerald-500/15 border border-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-3xl text-emerald-400">✓</span>
+            <span className="text-3xl text-positive">✓</span>
           </div>
-          <h2 className="text-xl font-bold text-white mb-2">تم إعادة التعيين بنجاح</h2>
-          <p className="text-slate-400">يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة</p>
+          <h1 className="text-xl font-bold text-foreground mb-2">
+            تم إعادة التعيين بنجاح
+          </h1>
+          <p className="text-muted">
+            يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة
+          </p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#060d1b] px-4" dir="rtl">
+    <div
+      className="auth-screen flex items-center justify-center bg-page px-4"
+      dir="rtl"
+    >
       <div className="absolute inset-0">
         <div className="absolute top-1/4 right-1/4 w-[400px] h-[400px] bg-sky-500/5 rounded-full blur-[120px]" />
       </div>
@@ -78,25 +94,33 @@ export default function ResetPasswordForm() {
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2.5">
             <Logo size={44} priority />
-            <span className="text-2xl font-bold gradient-text-brand">SkyPro</span>
+            <span className="text-2xl font-bold gradient-text-brand">
+              SkyPro
+            </span>
           </Link>
-          <p className="text-slate-400 mt-3">إعادة تعيين كلمة المرور</p>
+          <p className="text-muted mt-3">إعادة تعيين كلمة المرور</p>
         </div>
 
         <div className="gradient-border p-8">
           {error && (
-            <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl mb-4 text-sm">
+            <div className="bg-red-500/10 border border-red-500/20 text-negative px-4 py-3 rounded-xl mb-4 text-sm">
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="admin-label">كلمة المرور الجديدة</label>
+              <label
+                htmlFor="reset-password-ResetPasswordForm-tsx-field-1"
+                className="admin-label"
+              >
+                كلمة المرور الجديدة
+              </label>
               <div className="relative">
-                <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted" />
                 <input
-                  type={showPassword ? 'text' : 'password'}
+                  id="reset-password-ResetPasswordForm-tsx-field-1"
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="admin-input pr-10 pl-10"
@@ -105,9 +129,12 @@ export default function ResetPasswordForm() {
                   minLength={10}
                 />
                 <button
+                  aria-label={
+                    showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"
+                  }
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted hover:text-muted"
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -115,10 +142,16 @@ export default function ResetPasswordForm() {
             </div>
 
             <div>
-              <label className="admin-label">تأكيد كلمة المرور</label>
+              <label
+                htmlFor="reset-password-ResetPasswordForm-tsx-field-2"
+                className="admin-label"
+              >
+                تأكيد كلمة المرور
+              </label>
               <div className="relative">
-                <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted" />
                 <input
+                  id="reset-password-ResetPasswordForm-tsx-field-2"
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
@@ -134,11 +167,11 @@ export default function ResetPasswordForm() {
               disabled={loading}
               className="btn-primary w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'جارٍ إعادة التعيين...' : 'إعادة تعيين كلمة المرور'}
+              {loading ? "جارٍ إعادة التعيين..." : "إعادة تعيين كلمة المرور"}
             </button>
           </form>
         </div>
       </div>
     </div>
-  )
+  );
 }
