@@ -17,7 +17,7 @@ export function useMobileDrawer(open: boolean, close: () => void) {
         (e) =>
           e.getBoundingClientRect().width > 0 && !e.hasAttribute("disabled"),
       );
-    focusable()[0]?.focus();
+    const initialFocus = requestAnimationFrame(() => focusable()[0]?.focus());
     const key = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         close();
@@ -27,7 +27,10 @@ export function useMobileDrawer(open: boolean, close: () => void) {
         const items = focusable();
         const first = items[0],
           last = items[items.length - 1];
-        if (event.shiftKey && document.activeElement === first) {
+        if (!drawer.current?.contains(document.activeElement)) {
+          event.preventDefault();
+          (event.shiftKey ? last : first)?.focus();
+        } else if (event.shiftKey && document.activeElement === first) {
           event.preventDefault();
           last?.focus();
         } else if (!event.shiftKey && document.activeElement === last) {
@@ -38,6 +41,7 @@ export function useMobileDrawer(open: boolean, close: () => void) {
     };
     document.addEventListener("keydown", key);
     return () => {
+      cancelAnimationFrame(initialFocus);
       document.removeEventListener("keydown", key);
       document.body.style.overflow = previous;
       returnTarget?.focus();

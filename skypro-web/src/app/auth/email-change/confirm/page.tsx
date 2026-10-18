@@ -43,7 +43,7 @@ function Inner() {
   }, [token]);
 
   return (
-    <main
+    <div
       className="min-h-screen bg-page flex items-center justify-center px-4"
       dir="rtl"
     >
@@ -94,7 +94,7 @@ function Inner() {
           </>
         )}
       </div>
-    </main>
+    </div>
   );
 }
 

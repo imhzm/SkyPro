@@ -691,6 +691,7 @@ export default function AdminUsersPage() {
             <input
               type="text"
               placeholder="بحث بالاسم أو البريد..."
+              aria-label="البحث بالاسم أو البريد الإلكتروني"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               className="admin-input pr-10"
@@ -699,6 +700,7 @@ export default function AdminUsersPage() {
           </div>
           <select
             value={statusFilter}
+            aria-label="تصفية حسب حالة الحساب"
             onChange={(e) => {
               setStatusFilter(e.target.value);
               setPage(1);
@@ -712,6 +714,7 @@ export default function AdminUsersPage() {
           </select>
           <select
             value={roleFilter}
+            aria-label="تصفية حسب الصلاحيات"
             onChange={(e) => {
               setRoleFilter(e.target.value);
               setPage(1);

@@ -180,6 +180,7 @@ export default function AdminPaymentsPage() {
               dir="rtl"
               className="admin-input pr-9"
               placeholder="بحث بالبريد أو رقم الفاتورة..."
+              aria-label="البحث في المدفوعات بالبريد أو رقم الفاتورة"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />

@@ -17,9 +17,11 @@ export default function AuthCallbackPage() {
         .then((res) => res.json())
         .then((data) => {
           if (data.success && data.data?.role === "admin") {
-            router.push("/admin");
+            router.replace("/admin");
+          } else if (!data.success) {
+            router.replace("/auth/login");
           } else {
-            router.push("/dashboard");
+            router.replace("/dashboard");
           }
         })
         .catch(() => router.push("/dashboard"));
@@ -33,7 +35,8 @@ export default function AuthCallbackPage() {
     >
       <div className="text-center">
         <div className="animate-spin w-8 h-8 border-4 border-sky-500 border-t-transparent rounded-full mx-auto mb-4" />
-        <p className="text-muted">جارٍ تسجيل الدخول...</p>
+        <h1 className="text-xl font-bold text-foreground mb-3">استكمال تسجيل الدخول</h1>
+        <p role="status" className="text-muted">جارٍ التحقق من الجلسة...</p>
       </div>
     </div>
   );

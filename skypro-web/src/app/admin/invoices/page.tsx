@@ -596,6 +596,7 @@ export default function AdminInvoicesPage() {
               dir="rtl"
               className="admin-input pr-9"
               placeholder="بحث برقم الفاتورة أو البريد..."
+              aria-label="البحث برقم الفاتورة أو البريد الإلكتروني"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />

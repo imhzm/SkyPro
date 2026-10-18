@@ -20,3 +20,11 @@ Two functional regressions were demonstrated in local tests and repaired: the si
 ## Remaining gates at this commit
 
 Linux production build; final built-runtime route/API regressions; browser audit of all route families, themes, viewport widths and accessibility; reviewed evidence package (maximum 19 images/videos); PR/merge/exact-SHA activation and live visual/HTTP/PM2 verification. Keep the existing cfa2257 runtime available for rollback. Never use production fixture accounts or run database migrations.
+
+## Candidate verification update
+
+7f790abe9fd840469ecd6cc2843e680a9a925e28 built successfully on Linux; build ID QRNWzDfBe4BoOzYyVllo1. The built output was transferred by SHA-256 for local fixture runtime checks. A stale Windows route-cache initially served previous static pages; an empty build directory resolved it. Linux release directories always start empty.
+
+Final built-runtime checks passed: 147 page responses, 50 API checks, six form checks, all 18 platform metadata/media/link checks, 14 account flows, 20 admin flows and 44 admin mutation denials. Restore also rejects a cross-site request, tampered original cookie and unrelated admin mutation while impersonating. Local HTTPS test proxy uses the fixture CA with certificate validation enabled; fixture email never leaves loopback.
+
+Browser review found five missing accessible search/filter names in administration, a focus-entry issue in the mobile drawer and nested main landmarks in email confirmation. These are corrected in the follow-up; callback now directs unauthenticated visitors straight to login and supplies a status heading. Browser review and evidence packaging remain in progress. Final lint passes with 19 warnings, zero errors; TypeScript passes.
