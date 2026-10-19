@@ -110,7 +110,12 @@ export default function AuditLogPage() {
             <div className="animate-spin w-8 h-8 border-4 border-sky-500 border-t-transparent rounded-full" />
           </div>
         ) : (
-          <div className="admin-table-container">
+          <div
+            className="admin-table-container"
+            role="region"
+            aria-label="جدول سجل الأحداث"
+            tabIndex={0}
+          >
             <table className="admin-table">
               <thead>
                 <tr>

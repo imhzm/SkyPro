@@ -194,7 +194,12 @@ export default async function BillingPage() {
             sub="اشتراكاتك السابقة والحالية ستظهر هنا."
           />
         ) : (
-          <div className="overflow-x-auto bg-panel border border-line rounded-2xl">
+          <div
+            className="overflow-x-auto bg-panel border border-line rounded-2xl"
+            role="region"
+            aria-label="جدول الاشتراكات"
+            tabIndex={0}
+          >
             <table className="w-full text-sm">
               <thead className="bg-panel text-muted text-xs">
                 <tr>
@@ -251,7 +256,12 @@ export default async function BillingPage() {
             sub="بعد دفع اشتراكك ستظهر فواتيرك هنا للتحميل."
           />
         ) : (
-          <div className="overflow-x-auto bg-panel border border-line rounded-2xl">
+          <div
+            className="overflow-x-auto bg-panel border border-line rounded-2xl"
+            role="region"
+            aria-label="جدول الفواتير"
+            tabIndex={0}
+          >
             <table className="w-full text-sm">
               <thead className="bg-panel text-muted text-xs">
                 <tr>
