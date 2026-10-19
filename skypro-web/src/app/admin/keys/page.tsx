@@ -244,8 +244,14 @@ export default function AdminKeysPage() {
                           {key.keyCode}
                         </code>
                         <button
+                          type="button"
+                          aria-label={
+                            copied === key.keyCode
+                              ? "تم نسخ مفتاح التفعيل"
+                              : "نسخ مفتاح التفعيل"
+                          }
                           onClick={() => copyKey(key.keyCode)}
-                          className="p-1 text-muted hover:text-brand transition-colors"
+                          className="p-2 text-muted hover:text-brand transition-colors"
                         >
                           {copied === key.keyCode ? (
                             <Check size={14} className="text-positive" />

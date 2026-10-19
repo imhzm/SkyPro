@@ -142,14 +142,14 @@ function PwdField({
           onChange={(e) => onChange(e.target.value)}
           autoComplete={autoComplete}
           dir="ltr"
-          className="w-full bg-soft border border-line rounded-xl px-3 py-2.5 pr-10 text-sm text-foreground outline-none focus:border-sky-500/50 focus:ring-1 focus:ring-sky-500/30"
+          className="w-full bg-soft border border-line rounded-xl px-3 py-2.5 pl-12 pr-10 text-sm text-foreground outline-none focus:border-sky-500/50 focus:ring-1 focus:ring-sky-500/30"
         />
         {onToggle && (
           <button
             type="button"
             onClick={onToggle}
             aria-label={show ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted hover:text-muted"
+            className="absolute left-0 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-lg text-muted hover:text-foreground"
           >
             {show ? <EyeOff size={16} /> : <Eye size={16} />}
           </button>

@@ -1,5 +1,11 @@
 # Sky Pro project instructions
 
+## Current published state — 2026-10-18
+- User explicitly authorized the site-wide migration deployment with «ارفع ع الهوست». PR #10 merged; deployed e3778186c132cbfebf183d7007ba9ea016fd3683, web tree 8f5f4bb89fda37e75640422650a9914b0dcfd034, build M-jusBxFJa2qBtbI6hM8F.
+- PM2 skypro runs releases/20261018-e377818/skypro-web on loopback 3200; the previous cfa2257 release remains available for rollback. No DB migrations or production fixture writes. Other 20 services retained their PIDs.
+- Build/TypeScript/lint, built fixture route/account/admin tests and 50 live route checks pass. Full browser acceptance and the unified evidence ZIP remain in progress; do not mark the whole goal complete yet. See docs/DEPLOYMENT_20261018.md.
+- Earlier preview-only restrictions below are historical and superseded by the current explicit hosting authorization. Desktop recovery and CRM remain out of scope.
+
 ## Active scope — full theme migration (2026-10-15)
 - User supplied FULL WEBSITE RESTORATION & THEME MIGRATION brief. The deployed home is the approved visual reference; preserve its composition.
 - Work in feat/site-theme-migration-20261015, based on 2e798e9. Restore navigation and Google Maps first, then platform pages, legal/public pages, authentication, customer and admin presentation. Preserve APIs, RBAC, DB schema/data and desktop source.

@@ -295,7 +295,7 @@ export default function RegisterPage() {
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="admin-input pr-10 pl-10"
+                    className="admin-input pr-10 pl-12"
                     placeholder="10 أحرف مع رقم ورمز"
                     required
                     minLength={10}
@@ -306,7 +306,7 @@ export default function RegisterPage() {
                     }
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted hover:text-muted"
+                    className="absolute left-0 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-lg text-muted hover:text-foreground"
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>

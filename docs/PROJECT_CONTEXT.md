@@ -32,3 +32,7 @@ Both themes are implemented and verified locally and on https://skypro.skywavead
 
 ## Hosting authorization — 2026-10-18
 User explicitly requested «ارفع ع الهوست» for the current site theme. Complete preflight QA, then commit/push/merge and deploy the exact SHA to the new VPS, preserving the existing release for rollback. This supersedes the earlier preview-only publication restriction; fixtures remain local only.
+# Current deployment — 2026-10-18
+
+The owner authorized hosting publication. PR #10 merged and e3778186c132cbfebf183d7007ba9ea016fd3683 is live at skypro.skywaveads.com. Exact source/build/PM2, rollback and verification evidence: DEPLOYMENT_20261018.md. Browser acceptance and the single maximum-19-image ZIP are still being finalized; publication does not imply the full goal is complete. Keep all fixture writes local and preserve the previous cfa2257 runtime.
+

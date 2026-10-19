@@ -27,3 +27,7 @@
 
 Restored missing platform routes/navigation, introduced shared light/dark surfaces for public/auth/customer/admin routes, corrected email-link access and admin restore, added isolated route/RBAC/account/admin verification. Publication is authorized; build/runtime/browser acceptance is still in progress. Details: RELEASE_SITE_THEME_20261018.md.
 
+# 2026-10-18 — published site-wide theme
+
+PR #10 merged; deployed e3778186c132cbfebf183d7007ba9ea016fd3683 after clean Linux build and source-hash/route checks. Public live QA passed 50 routes and guest API guards; 20 other PM2 services unchanged. Browser acceptance/evidence ZIP remains in progress. See DEPLOYMENT_20261018.md.
+

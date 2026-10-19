@@ -329,7 +329,12 @@ export default function AdminDashboard() {
               آخر المستخدمين
             </h2>
           </div>
-          <div className="admin-table-container">
+          <div
+            className="admin-table-container"
+            role="region"
+            aria-label="جدول آخر المستخدمين"
+            tabIndex={0}
+          >
             <table className="admin-table">
               <thead>
                 <tr>
