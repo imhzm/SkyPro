@@ -31,3 +31,11 @@ Restored missing platform routes/navigation, introduced shared light/dark surfac
 
 PR #10 merged; deployed e3778186c132cbfebf183d7007ba9ea016fd3683 after clean Linux build and source-hash/route checks. Public live QA passed 50 routes and guest API guards; 20 other PM2 services unchanged. Browser acceptance/evidence ZIP remains in progress. See DEPLOYMENT_20261018.md.
 
+
+## 2026-10-20 — full-site migration published
+- PR #10: shared tokens/navigation, 18 platform pages and restored destinations, public/auth/customer/admin themes, metadata and isolated regression harness. Corrected logged-out email confirmation and signed impersonation restoration without broadening other admin access.
+- PR #11: 44px password visibility targets, named key copy controls and keyboard-accessible scrolling tables.
+- PR #12: legal hero and loading-state colors use shared theme tokens; legal content invariance passes.
+- Exact production SHA 425ee34858ad995f555f9ec6be4ed75018005f61, build mCCE6DWU1BEkwJGjOqmLU. Build/TypeScript pass; lint 0 errors / 20 warnings. Live 50-route check and 291-file source identity pass. See DEPLOYMENT_20261020.md and SITE_THEME_MIGRATION.md.
+
+- PR #13 contains oversized auth glows within their positioned screen, clips only decorative layers and gives the reset form a semantic h1. Strict mobile checks compare scrollWidth to clientWidth.

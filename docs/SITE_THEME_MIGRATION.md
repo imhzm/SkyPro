@@ -1,18 +1,43 @@
-# Full-site theme migration — active preview work
+# SkyPro full-site migration — 2026-10-20
 
-## Scope
-User brief: attachment 4f8ac920-819d-4949-9aa7-ddc93320c934/pasted-text-1.txt. Approved home is the visual reference. Complete platform/public/auth/customer/admin theme migration with real functionality and local three-role verification. Preview review is required before any additional production deployment; the existing cfa2257 home release remains live.
+The approved home is the visual reference. The user's later «ارفع ع الهوست» authorized this full migration. Source: imhzm/SkyPro; isolated checkout D:/SkyPro-theme-20261015. Desktop recovery and CRM remain separate and unchanged. Current deployment identity and rollback: DEPLOYMENT_20261020.md.
 
-Branch: feat/site-theme-migration-20261015, based on 2e798e9. Workspace: D:/SkyPro-theme-20261015. Isolated local MySQL-compatible fixture database and loopback STARTTLS outbox; no production fixtures, mail or data writes. Evidence: D:/SkyPro-site-theme-evidence-20261015. Preview: http://localhost:3102.
+## Inventory and causes
 
-## Completed verification so far
-- Baseline: 31 page files, 45 expanded pages, 54 API route files. Production visitor audit: 28 rendered public/auth pages and 17 protected redirects; four referenced platform destinations were missing (Google Maps, Google alias, email, Auto Point).
-- Google Maps, email and Auto Point existed in historical commit 75e883c and lost their data in 9ef0a6b. Restored IDs with current module-source review and corrected unsupported historical copy. OLX is independent. Google alias returns HTTP 308 to Google Maps.
-- Shared tokens, header/footer and cross-page anchors. No other surface imports the home's CSS module. Both approved home themes consume the shared variables.
-- Platform gate: 18 real IDs, all images present, all detail pages/canonicals/FAQ schemas verified, catalog exposes all IDs, unknown ID returns 404. Unverified ratings/testimonials/statistics/comparisons removed.
-- Found a broken legal-policy link to /security/hall-of-fame. Added a truthful empty acknowledgements page and sitemap entry; no invented researcher identities or altered legal promises.
-- Current local inventory: 32 page files, 49 expanded pages. Real HTTP/session tests: 147 page responses across visitor/customer/admin and 50 API authorization/read checks passed. Credentials login, suspended/wrong-password rejection, invoice ownership, profile persistence, settings validation/save and CSRF rejection passed. SMTP and additional form journeys, browser-wide audit and final production build are still pending.
-- Initial TypeScript checks pass. Final build/lint/TypeScript results will be recorded after all presentation fixes.
+| Issue | Established cause | Delivered behavior |
+| --- | --- | --- |
+| Google Maps | Historical platform definition removed; home linked Maps to OLX | Independent /platforms/google-maps; /platforms/google redirects 308; OLX retains its own route |
+| Email / Auto Point | Missing definitions prevented generated destinations | Restore /platforms/send-emails and /platforms/auto-point with real media |
+| Acknowledgements | Existing link had no page | /security/hall-of-fame renders an honest empty state |
+| Inner-page navigation | Home-only anchors | Root-qualified anchors, catalog and shared help/legal links |
+| Inconsistent themes | Home-scoped colors and hardcoded backgrounds | Shared --sp tokens, prepaint persistence/sync, header/footer/toolbar |
+| Logged-out email confirmation | Account proxy blocked token flow | Exact POST exception; expiry, single-use and origin checks retained |
+| Impersonation restore 403 | Admin proxy rejected impersonated USER | Exact DELETE validates signed original admin cookie, identity/status/password timestamp; unrelated admin APIs remain denied |
+| Password/copy/tables | Small targets, unnamed controls, inaccessible scrolling | 44px eye controls, named copy actions and named focusable table regions |
+| Legal hero / loading | Dark background mixed with light-theme text | Shared tokens; legal prose invariant except approved phone |
+| Confirmation mobile width | Decorative 400px glow expanded layout viewport | Positioned auth screen and clipped decorative layer; compare scrollWidth with clientWidth |
 
-## In progress and acceptance gates
-Review legal wording invariance/contact update, all auth flow states, form labels, mobile drawers/focus and tables. Exercise local registration/verification/reset/account/admin forms. Check all page renders, links, images, hydration, both themes, RTL and responsive behavior. Capture each page type in desktop/mobile light/dark and package a single ZIP with at most 19 images/videos. Create a reviewable PR and Preview, with explicit remaining limits; do not deploy this migration before review approval.
+Before: 31 page files / 45 expanded pages / 54 APIs. After: 32 page files / 49 expanded pages / 54 APIs. Expected versus actual has no missing/unexpected page files. Four restored destinations explain expansion; Google alias makes 50 live route responses. Unknown platform returns 404.
+
+Migrated: home token integration; catalog and 18 platform pages; privacy/terms/security policy/acknowledgements; eight auth pages and states; five customer pages; twelve admin pages; loading/not-found/error boundaries and shared navigation/footer. Exact migrated file list, inventories and Git diff are packaged.
+
+## Content and SEO
+
+Official logo and existing product captures; EGP2000 annually / two-day trial verified. Maps media shows its real menu, not fabricated extraction results. Removed invented ratings/testimonials/performance promises. Phone/WhatsApp +201029934356. Footer: «تم التصميم بكل❤️بواسطة Sky Wave», only Sky Wave links to https://www.skywaveads.com/.
+
+Legal prose/link AST invariance against 2e798e9 passes except approved phone substitution. This preserves wording rather than certifying legacy legal assertions. Public unique metadata/canonical/social data/matching schema checked; sitemap contains 24 public indexable URLs, excluding auth/private. Thirty unique internal links checked without broken destinations. Public crawler permissions retained; no ranking/indexing/AI citation guarantees.
+
+## Verification
+
+- Linux build includes TypeScript and passes. Full ESLint: 0 errors, 20 warnings. Recorded runtime dependency audit: 0 vulnerabilities.
+- Attested isolated MariaDB/STARTTLS SMTP: 147 role/page responses, 50 APIs, six form checks, 14 account journeys and 20 admin journeys pass. Includes registration/email/reset/token reuse, API keys, 2FA/backups, email change, disposable soft deletion, user/key/access/subscription/invoice/dummy-payment/offer/notification/device/bulk/impersonation/export/audit endpoints. Forty-four visitor/customer mutation denials pass.
+- Fixture isolation rejects conflicting environment, inherited datasource/Node injection and direct writes; exact socket/grants attested, zero canary contacts. No production fixture or test-mail writes.
+- Browser: all 32 public/auth routes in two sizes and themes on live release; five customer routes (20 combinations) and twelve admin routes (48) on synthetic local fixture. Representative families checked at 320/390/768/1024/1440/1920. Compare document scrollWidth/clientWidth; expected desktop scrollbar gutters are not defects. Auth Suspense states are rerun after hydration.
+- Real axe findings and corrected-page reruns retained. Customer drawer focus entry/wrapping/Escape/return/body-lock cleanup and password visibility exercised. Incomplete gradient contrast checks received visual/CSS review; no blanket WCAG certification.
+- Final live deployment verifies 50 route states, 18 platforms/media, alias308/unknown404, guest401/403, database health, public build ID and tracked source hashes, plus unchanged 20 unrelated service PIDs.
+
+## Evidence and remaining limits
+
+One ZIP contains 19 PNGs: 12 contact sheets joining native desktop1440×900/mobile390×844 for six families in both themes, four raw catalog frames, two genuine before frames and one Facebook after. Private frames clearly say LOCAL SYNTHETIC FIXTURE. Source pixels are retained, with no AI generation or UI retouching. Provenance/hashes distinguish older identical component captures from final publication.
+
+External Google OAuth, real production account/payment mutations, field p75 CWV and Search Console/Bing account reports were not exercised. Local force_logout test establishes the request and stored timestamp, not immediate revocation of an existing JWT. Audit test exercises its report endpoint, not complete chain integrity. Desktop extraction/recovery is outside scope. Legacy legal assertions remain unverified substantively; lint warnings remain. Route/browser checks and representative images complement each other rather than claiming every possible state was photographed.

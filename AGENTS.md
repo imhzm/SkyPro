@@ -1,15 +1,15 @@
 # Sky Pro project instructions
 
-## Current published state — 2026-10-18
-- User explicitly authorized the site-wide migration deployment with «ارفع ع الهوست». PR #10 merged; deployed e3778186c132cbfebf183d7007ba9ea016fd3683, web tree 8f5f4bb89fda37e75640422650a9914b0dcfd034, build M-jusBxFJa2qBtbI6hM8F.
-- PM2 skypro runs releases/20261018-e377818/skypro-web on loopback 3200; the previous cfa2257 release remains available for rollback. No DB migrations or production fixture writes. Other 20 services retained their PIDs.
-- Build/TypeScript/lint, built fixture route/account/admin tests and 50 live route checks pass. Full browser acceptance and the unified evidence ZIP remain in progress; do not mark the whole goal complete yet. See docs/DEPLOYMENT_20261018.md.
-- Earlier preview-only restrictions below are historical and superseded by the current explicit hosting authorization. Desktop recovery and CRM remain out of scope.
+## Current published state — 2026-10-20
+- User explicitly authorized this migration with «ارفع ع الهوست». PRs #10, #11, #12 and #13 merged. Live source SHA: 425ee34858ad995f555f9ec6be4ed75018005f61; web tree: 173c77f0a291c4dca29fbed58e886a7bb6830aa7; Next build: mCCE6DWU1BEkwJGjOqmLU.
+- PM2 skypro runs releases/20261020-425ee34/skypro-web on loopback 3200, PID 395933 and zero restarts at activation. Previous b159a77 release is the rollback target. No DB migration or production fixture writes; 20 unrelated services retained their PIDs.
+- Full build/TypeScript and lint passed (0 errors, 20 warnings). Exact source verification covered 291 files; public build ID matched. Live 50-route verification passed; local fixture tests cover 147 role/page responses, 50 APIs, 14 account journeys and 20 admin journeys including impersonation restoration.
+- Scope, browser evidence, limitations and the unified 19-image review package are documented in docs/SITE_THEME_MIGRATION.md and docs/DEPLOYMENT_20261020.md. Earlier preview-only restrictions are historical and superseded by the user's hosting request. Desktop recovery and CRM remain out of scope.
 
 ## Active scope — full theme migration (2026-10-15)
 - User supplied FULL WEBSITE RESTORATION & THEME MIGRATION brief. The deployed home is the approved visual reference; preserve its composition.
 - Work in feat/site-theme-migration-20261015, based on 2e798e9. Restore navigation and Google Maps first, then platform pages, legal/public pages, authentication, customer and admin presentation. Preserve APIs, RBAC, DB schema/data and desktop source.
-- New scope requires a local Preview for review BEFORE any further production deployment. Previous hosting authorization applied to the completed home release and does not authorize this migration. No force push.
+- Historical gate: a local Preview preceded publication. The later explicit hosting authorization below applies to this migration. No force push.
 - Inventory all 31 page files and expand actual platform IDs. Test visitor/customer/admin roles against an isolated local fixture database; never create fixture accounts in production.
 - One unified evidence ZIP, maximum 19 images/videos total. Preserve legal wording except approved contact details; report legal issues for review.
 

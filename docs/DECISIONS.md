@@ -29,3 +29,11 @@ Use crawlable, useful visible content and matching structured data. Do not use u
 
 The user's explicit hosting request authorizes this migration after QA. Preserve the current live release until candidate checks pass. Use shared theme tokens and original product screenshots; preserve legal copy and desktop API contracts. Fix the demonstrated email confirmation and impersonation restore failures with narrowly scoped authorization checks. Fixture secrets/outbox stay outside Git and production. See RELEASE_SITE_THEME_20261018.md for current evidence and remaining gates.
 
+
+## 2026-10-20 — migration release closure
+- The user's explicit hosting request authorizes this migration; preview-only restrictions in earlier dated decisions are superseded.
+- Shared root tokens replace home-only theming. Restore Google Maps independently from OLX and retain existing route IDs/API contracts.
+- Keep legal prose invariant except the approved phone; token-based legal hero/loading backgrounds fix light-theme readability without rewriting the policies.
+- Use local attested fixture/SMTP only for write journeys. Production verification is read-only outside the named SkyPro release activation.
+- Preserve exact-SHA rollback. Documentation-only follow-up does not require redeploying unchanged web source.
+- Deliver one ZIP with 19 images: 12 native-pixel desktop/mobile contact sheets, four raw catalog captures, two genuine before captures and one matching Facebook after capture. No generated product evidence.

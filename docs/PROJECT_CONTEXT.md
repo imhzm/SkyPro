@@ -1,7 +1,10 @@
 # Sky Pro homepage theme
 
-## Active continuation — full-site restoration and migration
-The user supplied a new brief requiring all platform/public/auth/customer/admin pages to adopt the approved home theme. Work is isolated in feat/site-theme-migration-20261015 from 2e798e9. No new production deployment is authorized until Preview review. See SITE_THEME_MIGRATION.md for current inventory, local fixture test results and remaining acceptance gates. The production home release below remains unchanged.
+## Current published state — 2026-10-20
+- User explicitly authorized this migration with «ارفع ع الهوست». PRs #10, #11, #12 and #13 merged. Live source SHA: 425ee34858ad995f555f9ec6be4ed75018005f61; web tree: 173c77f0a291c4dca29fbed58e886a7bb6830aa7; Next build: mCCE6DWU1BEkwJGjOqmLU.
+- PM2 skypro runs releases/20261020-425ee34/skypro-web on loopback 3200, PID 395933 and zero restarts at activation. Previous b159a77 release is the rollback target. No DB migration or production fixture writes; 20 unrelated services retained their PIDs.
+- Full build/TypeScript and lint passed (0 errors, 20 warnings). Exact source verification covered 291 files; public build ID matched. Live 50-route verification passed; local fixture tests cover 147 role/page responses, 50 APIs, 14 account journeys and 20 admin journeys including impersonation restoration.
+- Scope, browser evidence, limitations and the unified 19-image review package are documented in docs/SITE_THEME_MIGRATION.md and docs/DEPLOYMENT_20261020.md. Earlier preview-only restrictions are historical and superseded by the user's hosting request. Desktop recovery and CRM remain out of scope.
 
 ## Audit — 2026-10-15
 - Main repository is imhzm/SkyPro. The separate SkyProLandingPage repository is older (last push May 2026). Main was freshly fetched and still points to d012c83.
