@@ -110,7 +110,7 @@ export default function PrivacyPage() {
 
       {/* Hero */}
       <section className="relative pt-32 pb-12 lg:pt-40 lg:pb-16 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-[#060d1b] via-[#0a1938] to-[#060d1b]" />
+        <div className="absolute inset-0 bg-page" />
         <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-violet-500/10 rounded-full blur-[120px]" />
         <div className="relative z-10 section-shell text-center">
           <motion.div
