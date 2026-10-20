@@ -98,7 +98,9 @@ export default function ResetPasswordForm() {
               SkyPro
             </span>
           </Link>
-          <p className="text-muted mt-3">إعادة تعيين كلمة المرور</p>
+          <h1 className="text-base font-normal text-muted mt-3">
+            إعادة تعيين كلمة المرور
+          </h1>
         </div>
 
         <div className="gradient-border p-8">
