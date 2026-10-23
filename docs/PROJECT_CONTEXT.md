@@ -6,6 +6,10 @@
 - Full build/TypeScript and lint passed (0 errors, 20 warnings). Exact source verification covered 291 files; public build ID matched. Live 50-route verification passed; local fixture tests cover 147 role/page responses, 50 APIs, 14 account journeys and 20 admin journeys including impersonation restoration.
 - Scope, browser evidence, limitations and the unified 19-image review package are documented in docs/SITE_THEME_MIGRATION.md and docs/DEPLOYMENT_20261020.md. Earlier preview-only restrictions are historical and superseded by the user's hosting request. Desktop recovery and CRM remain out of scope.
 
+## Active recovery — 2026-10-22
+
+The owner approved the six product boards and explicitly approved revised guide V2 on Oct23. The product hero/catalog/details/gallery, 18-platform copy, 29 lossless media derivatives and consent-aware events are implemented. /guides and 20 original articles (about 9,342 words) are enabled in candidate Preview, not production. Phase-I checks pass on 45 public pages, 51 internal links and 8 noindex auth pages; 252 guide responsive cases pass in addition to the earlier 240 product-page cases. Five legacy screenshots with license/result/metric content were moved outside public; final phase-J runtime rejection checks are pending. Research includes 47 seed terms with explicit unverified metrics, 41 intent destinations and an honest outreach tracker with zero messages/links acquired. Final evidence/review and publication approval remain required. See [WEB_RECOVERY_20261022.md](WEB_RECOVERY_20261022.md). Oct20 production is unchanged.
+
 ## Audit — 2026-10-15
 - Main repository is imhzm/SkyPro. The separate SkyProLandingPage repository is older (last push May 2026). Main was freshly fetched and still points to d012c83.
 - Next.js 16.2.4 / React 18 / TypeScript / Tailwind / Prisma 5 / MySQL. Marketing is under src/app/(marketing), protected customer/admin areas are separate routes. Existing role-aware navbar calls /api/auth/me.
@@ -38,4 +42,8 @@ User explicitly requested «ارفع ع الهوست» for the current site them
 # Current deployment — 2026-10-18
 
 The owner authorized hosting publication. PR #10 merged and e3778186c132cbfebf183d7007ba9ea016fd3683 is live at skypro.skywaveads.com. Exact source/build/PM2, rollback and verification evidence: DEPLOYMENT_20261018.md. Browser acceptance and the single maximum-19-image ZIP are still being finalized; publication does not imply the full goal is complete. Keep all fixture writes local and preserve the previous cfa2257 runtime.
+
+## Latest web recovery state — 2026-10-24 Cairo
+
+Approved product direction and guide V2 are implemented in isolated Preview at http://localhost:3102/ and /guides. Draft PR #15 is open. Tested source 66b51a83f980adfaabc1750b45771f9122061360, web tree cea8e3f07d6725d2b04b5dfcbe1b2c8826b9c969. No new merge/deploy; final review/publication approval is still required for this substantial release. Current detailed results and explicit limits supersede historical notes below: WEB_RECOVERY_20261022.md, current Oct24 checkpoint. Delivery on D: contains 19 report categories, 20 full articles, 18 screenshot sheets and one actual website/gallery walkthrough. Production baseline remains the separate Oct20 release. Preserve APIs/auth/RBAC/DB/payment/Desktop/CRM/ERP and other projects.
 

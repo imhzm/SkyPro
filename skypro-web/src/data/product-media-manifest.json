@@ -1,0 +1,648 @@
+{
+  "version": 1,
+  "sourceReview": "2026-10-22",
+  "processing": "Lossless WebP; only explicit crop rectangles; no generated or reconstructed UI. Full source files retained.",
+  "shots": {
+    "facebook-marketing-tools": {
+      "id": "facebook-marketing-tools",
+      "platform": "facebook",
+      "src": "/images/product/facebook-marketing-tools-0d3f0c7999.webp",
+      "width": 1597,
+      "height": 975,
+      "alt": "قائمة أدوات فيسبوك",
+      "title": "قائمة أدوات فيسبوك",
+      "caption": "قائمة أدوات فيسبوك — لقطة من واجهة البرنامج، وليست إثباتًا لنتيجة تشغيل.",
+      "kind": "menu",
+      "source": "/images/app/facebook-marketing-tools.png",
+      "sourceSha256": "1e0daf00b58da3351b21d3438cadae36ea93f5e9b268d72696b3f50f8442233b",
+      "sha256": "0d3f0c7999edfa7546af978239f1900a9adfb3b0e76e3f5e45789da0aad071b5",
+      "privacyReview": "No customer identity or licence values visible in selected source"
+    },
+    "whatsapp-marketing-tools-grid": {
+      "id": "whatsapp-marketing-tools-grid",
+      "platform": "whatsapp",
+      "src": "/images/product/whatsapp-marketing-tools-grid-21e20f2d52.webp",
+      "width": 1571,
+      "height": 909,
+      "alt": "قائمة أدوات واتساب",
+      "title": "قائمة أدوات واتساب",
+      "caption": "قائمة أدوات واتساب — لقطة من واجهة البرنامج، وليست إثباتًا لنتيجة تشغيل.",
+      "kind": "menu",
+      "source": "/images/app/whatsapp-marketing-tools-grid.png",
+      "sourceSha256": "56d342bfb851ff39d12598fba4e354cf7c07632dd71526bc24df4d9d95cdcff3",
+      "sha256": "21e20f2d5215c0f2f29440aa43adff934c4fb520473c8840e1f5fad09abf41e8",
+      "privacyReview": "No customer identity or licence values visible in selected source"
+    },
+    "instagram-marketing-tools": {
+      "id": "instagram-marketing-tools",
+      "platform": "instagram",
+      "src": "/images/product/instagram-marketing-tools-3fa8e8007b.webp",
+      "width": 1563,
+      "height": 903,
+      "alt": "قائمة أدوات إنستجرام",
+      "title": "قائمة أدوات إنستجرام",
+      "caption": "قائمة أدوات إنستجرام — لقطة من واجهة البرنامج، وليست إثباتًا لنتيجة تشغيل.",
+      "kind": "menu",
+      "source": "/images/app/instagram-marketing-tools.png",
+      "sourceSha256": "15175c7f115b11b413c72b16de5944069de5474de0d069210301fdce273027d2",
+      "sha256": "3fa8e8007b0f9a0957b9752762ca20431e359e8f38dcaff7d85819e2f650bb38",
+      "privacyReview": "No customer identity or licence values visible in selected source"
+    },
+    "twitter-x-marketing-tools": {
+      "id": "twitter-x-marketing-tools",
+      "platform": "twitter",
+      "src": "/images/product/twitter-x-marketing-tools-128358650b.webp",
+      "width": 1566,
+      "height": 903,
+      "alt": "قائمة أدوات إكس",
+      "title": "قائمة أدوات إكس",
+      "caption": "قائمة أدوات إكس — لقطة من واجهة البرنامج، وليست إثباتًا لنتيجة تشغيل.",
+      "kind": "menu",
+      "source": "/images/app/twitter-x-marketing-tools.png",
+      "sourceSha256": "1b3c3b5919015b2a23049e853389aa89aeb3d6c710f7b8bf35afc5d1c448e0aa",
+      "sha256": "128358650b13ffeefe174934589a1275f5585dec01bbac9b77ab46ed7bb7aee2",
+      "privacyReview": "No customer identity or licence values visible in selected source"
+    },
+    "twitter-menu-detail": {
+      "id": "twitter-menu-detail",
+      "platform": "twitter",
+      "src": "/images/product/twitter-menu-detail-0fba53e567.webp",
+      "width": 1276,
+      "height": 307,
+      "alt": "تفاصيل قائمة قائمة أدوات إكس",
+      "title": "تفاصيل قائمة قائمة أدوات إكس",
+      "caption": "تكبير موثّق من لقطة القائمة الأصلية؛ ليس شاشة تشغيل إضافية.",
+      "kind": "detail",
+      "source": "/images/app/twitter-x-marketing-tools.png",
+      "sourceSha256": "1b3c3b5919015b2a23049e853389aa89aeb3d6c710f7b8bf35afc5d1c448e0aa",
+      "sha256": "0fba53e56787d5ab540cdddf7851a8fe2937a2a313b65d9afe57c4454d5af357",
+      "crop": {
+        "left": 23,
+        "top": 289,
+        "width": 1276,
+        "height": 307
+      },
+      "privacyReview": "No customer identity or licence values visible in selected source"
+    },
+    "linkedin-b2b-tools-grid": {
+      "id": "linkedin-b2b-tools-grid",
+      "platform": "linkedin",
+      "src": "/images/product/linkedin-b2b-tools-grid-ba3f8a0109.webp",
+      "width": 1570,
+      "height": 897,
+      "alt": "قائمة أدوات لينكدإن",
+      "title": "قائمة أدوات لينكدإن",
+      "caption": "قائمة أدوات لينكدإن — لقطة من واجهة البرنامج، وليست إثباتًا لنتيجة تشغيل.",
+      "kind": "menu",
+      "source": "/images/app/linkedin-b2b-tools-grid.png",
+      "sourceSha256": "eadcc81f0a5e2a0a8e029914fc9c7807528e92b7c6cca7f820d466a566c8d740",
+      "sha256": "ba3f8a0109b8b9d36a16f1a4781b0878ee2825e45cfe8de723e30e208f0d589b",
+      "privacyReview": "No customer identity or licence values visible in selected source"
+    },
+    "linkedin-menu-detail": {
+      "id": "linkedin-menu-detail",
+      "platform": "linkedin",
+      "src": "/images/product/linkedin-menu-detail-75ec539142.webp",
+      "width": 1280,
+      "height": 305,
+      "alt": "تفاصيل قائمة قائمة أدوات لينكدإن",
+      "title": "تفاصيل قائمة قائمة أدوات لينكدإن",
+      "caption": "تكبير موثّق من لقطة القائمة الأصلية؛ ليس شاشة تشغيل إضافية.",
+      "kind": "detail",
+      "source": "/images/app/linkedin-b2b-tools-grid.png",
+      "sourceSha256": "eadcc81f0a5e2a0a8e029914fc9c7807528e92b7c6cca7f820d466a566c8d740",
+      "sha256": "75ec539142055c6a39df7eadcf6504190e8eb66f5d066d9a6526676553f4da6f",
+      "crop": {
+        "left": 24,
+        "top": 287,
+        "width": 1280,
+        "height": 305
+      },
+      "privacyReview": "No customer identity or licence values visible in selected source"
+    },
+    "telegram-marketing-suite": {
+      "id": "telegram-marketing-suite",
+      "platform": "telegram",
+      "src": "/images/product/telegram-marketing-suite-effae68b53.webp",
+      "width": 1566,
+      "height": 909,
+      "alt": "قائمة أدوات تيليجرام",
+      "title": "قائمة أدوات تيليجرام",
+      "caption": "قائمة أدوات تيليجرام — لقطة من واجهة البرنامج، وليست إثباتًا لنتيجة تشغيل.",
+      "kind": "menu",
+      "source": "/images/app/telegram-marketing-suite.png",
+      "sourceSha256": "8abdbeba1a87fa02283196c8f58e63844e33a060aa64ce060b1136e292bdefb7",
+      "sha256": "effae68b53bb2addcf147c05997dfbf5745c9e70d749e9fae6586e058682369c",
+      "privacyReview": "No customer identity or licence values visible in selected source"
+    },
+    "telegram-menu-detail": {
+      "id": "telegram-menu-detail",
+      "platform": "telegram",
+      "src": "/images/product/telegram-menu-detail-c59c3f59e0.webp",
+      "width": 1276,
+      "height": 309,
+      "alt": "تفاصيل قائمة قائمة أدوات تيليجرام",
+      "title": "تفاصيل قائمة قائمة أدوات تيليجرام",
+      "caption": "تكبير موثّق من لقطة القائمة الأصلية؛ ليس شاشة تشغيل إضافية.",
+      "kind": "detail",
+      "source": "/images/app/telegram-marketing-suite.png",
+      "sourceSha256": "8abdbeba1a87fa02283196c8f58e63844e33a060aa64ce060b1136e292bdefb7",
+      "sha256": "c59c3f59e0a0fa84c62d82eec03ef9774797f414fbe57a1eb46d9cac740e778d",
+      "crop": {
+        "left": 23,
+        "top": 291,
+        "width": 1276,
+        "height": 309
+      },
+      "privacyReview": "No customer identity or licence values visible in selected source"
+    },
+    "telegram-premium-exclusive-tools": {
+      "id": "telegram-premium-exclusive-tools",
+      "platform": "telegram-premium",
+      "src": "/images/product/telegram-premium-exclusive-tools-37f276307f.webp",
+      "width": 1570,
+      "height": 907,
+      "alt": "قائمة أدوات تيليجرام بريميم",
+      "title": "قائمة أدوات تيليجرام بريميم",
+      "caption": "قائمة أدوات تيليجرام بريميم — لقطة من واجهة البرنامج، وليست إثباتًا لنتيجة تشغيل.",
+      "kind": "menu",
+      "source": "/images/app/telegram-premium-exclusive-tools.png",
+      "sourceSha256": "96769de4b2968f4f405986f9669dcf0f25a03a2cef851047955d6d44904257f5",
+      "sha256": "37f276307f57364aebca6f736aaf60e2fd79950da21e2a448e5c5fa0b32a929e",
+      "privacyReview": "No customer identity or licence values visible in selected source"
+    },
+    "telegram-premium-menu-detail": {
+      "id": "telegram-premium-menu-detail",
+      "platform": "telegram-premium",
+      "src": "/images/product/telegram-premium-menu-detail-c96215ef57.webp",
+      "width": 1280,
+      "height": 308,
+      "alt": "تفاصيل قائمة قائمة أدوات تيليجرام بريميم",
+      "title": "تفاصيل قائمة قائمة أدوات تيليجرام بريميم",
+      "caption": "تكبير موثّق من لقطة القائمة الأصلية؛ ليس شاشة تشغيل إضافية.",
+      "kind": "detail",
+      "source": "/images/app/telegram-premium-exclusive-tools.png",
+      "sourceSha256": "96769de4b2968f4f405986f9669dcf0f25a03a2cef851047955d6d44904257f5",
+      "sha256": "c96215ef574e14043e4def924f8fa6f8cf1b4c99ee6033ecc88dde81c3c14a38",
+      "crop": {
+        "left": 24,
+        "top": 290,
+        "width": 1280,
+        "height": 308
+      },
+      "privacyReview": "No customer identity or licence values visible in selected source"
+    },
+    "snapchat-marketing-tools": {
+      "id": "snapchat-marketing-tools",
+      "platform": "snapchat",
+      "src": "/images/product/snapchat-marketing-tools-da40e60a1c.webp",
+      "width": 1576,
+      "height": 901,
+      "alt": "قائمة أدوات سناب شات",
+      "title": "قائمة أدوات سناب شات",
+      "caption": "قائمة أدوات سناب شات — لقطة من واجهة البرنامج، وليست إثباتًا لنتيجة تشغيل.",
+      "kind": "menu",
+      "source": "/images/app/snapchat-marketing-tools.png",
+      "sourceSha256": "43fa8c905f23a5507a2a645704fb818ed1fbdfa97d092c56557d8a919dd00e86",
+      "sha256": "da40e60a1c6faaaa51e5b137c497203e92d12f63803c2b04269095d167207d06",
+      "privacyReview": "No customer identity or licence values visible in selected source"
+    },
+    "snapchat-menu-detail": {
+      "id": "snapchat-menu-detail",
+      "platform": "snapchat",
+      "src": "/images/product/snapchat-menu-detail-211d17b756.webp",
+      "width": 1284,
+      "height": 306,
+      "alt": "تفاصيل قائمة قائمة أدوات سناب شات",
+      "title": "تفاصيل قائمة قائمة أدوات سناب شات",
+      "caption": "تكبير موثّق من لقطة القائمة الأصلية؛ ليس شاشة تشغيل إضافية.",
+      "kind": "detail",
+      "source": "/images/app/snapchat-marketing-tools.png",
+      "sourceSha256": "43fa8c905f23a5507a2a645704fb818ed1fbdfa97d092c56557d8a919dd00e86",
+      "sha256": "211d17b756c9678f33a359ba62225c7600e1153918629f66bc8615a1518f0295",
+      "crop": {
+        "left": 24,
+        "top": 288,
+        "width": 1284,
+        "height": 306
+      },
+      "privacyReview": "No customer identity or licence values visible in selected source"
+    },
+    "pinterest-marketing-tools": {
+      "id": "pinterest-marketing-tools",
+      "platform": "pinterest",
+      "src": "/images/product/pinterest-marketing-tools-4f51a2857a.webp",
+      "width": 1570,
+      "height": 904,
+      "alt": "قائمة أدوات بنترست",
+      "title": "قائمة أدوات بنترست",
+      "caption": "قائمة أدوات بنترست — لقطة من واجهة البرنامج، وليست إثباتًا لنتيجة تشغيل.",
+      "kind": "menu",
+      "source": "/images/app/pinterest-marketing-tools.png",
+      "sourceSha256": "e816f947697fdd7587cbd375fe5bb11caad35bb75b2b0cea865c075802fcec0b",
+      "sha256": "4f51a2857a3a1222ac5df3f8297949398987333d9cb82f40ee28e73bbeb3402d",
+      "privacyReview": "No customer identity or licence values visible in selected source"
+    },
+    "pinterest-menu-detail": {
+      "id": "pinterest-menu-detail",
+      "platform": "pinterest",
+      "src": "/images/product/pinterest-menu-detail-7d1859e3aa.webp",
+      "width": 1280,
+      "height": 307,
+      "alt": "تفاصيل قائمة قائمة أدوات بنترست",
+      "title": "تفاصيل قائمة قائمة أدوات بنترست",
+      "caption": "تكبير موثّق من لقطة القائمة الأصلية؛ ليس شاشة تشغيل إضافية.",
+      "kind": "detail",
+      "source": "/images/app/pinterest-marketing-tools.png",
+      "sourceSha256": "e816f947697fdd7587cbd375fe5bb11caad35bb75b2b0cea865c075802fcec0b",
+      "sha256": "7d1859e3aa6c0d11ea813e8d2280205cce331523a0435cb3b0412f9d01f99531",
+      "crop": {
+        "left": 24,
+        "top": 289,
+        "width": 1280,
+        "height": 307
+      },
+      "privacyReview": "No customer identity or licence values visible in selected source"
+    },
+    "reddit-community-marketing": {
+      "id": "reddit-community-marketing",
+      "platform": "reddit",
+      "src": "/images/product/reddit-community-marketing-f4f941e3fa.webp",
+      "width": 1572,
+      "height": 902,
+      "alt": "قائمة أدوات ريديت",
+      "title": "قائمة أدوات ريديت",
+      "caption": "قائمة أدوات ريديت — لقطة من واجهة البرنامج، وليست إثباتًا لنتيجة تشغيل.",
+      "kind": "menu",
+      "source": "/images/app/reddit-community-marketing.png",
+      "sourceSha256": "d8a5f64f207304facd227d8cf7cd87e1962e1eaf55aa90c25f3dac2e029d277b",
+      "sha256": "f4f941e3fa3f7dc5a1714fb22fd74e41f23ad766efe77ee4128b18eccef30e40",
+      "privacyReview": "No customer identity or licence values visible in selected source"
+    },
+    "reddit-menu-detail": {
+      "id": "reddit-menu-detail",
+      "platform": "reddit",
+      "src": "/images/product/reddit-menu-detail-d3e27ee45a.webp",
+      "width": 1281,
+      "height": 307,
+      "alt": "تفاصيل قائمة قائمة أدوات ريديت",
+      "title": "تفاصيل قائمة قائمة أدوات ريديت",
+      "caption": "تكبير موثّق من لقطة القائمة الأصلية؛ ليس شاشة تشغيل إضافية.",
+      "kind": "detail",
+      "source": "/images/app/reddit-community-marketing.png",
+      "sourceSha256": "d8a5f64f207304facd227d8cf7cd87e1962e1eaf55aa90c25f3dac2e029d277b",
+      "sha256": "d3e27ee45a400de15f7c0f1b3c6f219bc0953762818b4d85f414af8e6ed491ad",
+      "crop": {
+        "left": 24,
+        "top": 289,
+        "width": 1281,
+        "height": 307
+      },
+      "privacyReview": "No customer identity or licence values visible in selected source"
+    },
+    "threads-marketing-tools": {
+      "id": "threads-marketing-tools",
+      "platform": "threads",
+      "src": "/images/product/threads-marketing-tools-42f8ec450f.webp",
+      "width": 1574,
+      "height": 901,
+      "alt": "قائمة أدوات ثريدز",
+      "title": "قائمة أدوات ثريدز",
+      "caption": "قائمة أدوات ثريدز — لقطة من واجهة البرنامج، وليست إثباتًا لنتيجة تشغيل.",
+      "kind": "menu",
+      "source": "/images/app/threads-marketing-tools.png",
+      "sourceSha256": "ebf8cbfa6f94dafe855a7dafabdf32fb68893a5b3f8a6476e0ddceb08e56b15d",
+      "sha256": "42f8ec450fa91433c99691a09041ccd36595fef16844e2a9d90ff890fb014898",
+      "privacyReview": "No customer identity or licence values visible in selected source"
+    },
+    "threads-menu-detail": {
+      "id": "threads-menu-detail",
+      "platform": "threads",
+      "src": "/images/product/threads-menu-detail-25094cfa04.webp",
+      "width": 1283,
+      "height": 306,
+      "alt": "تفاصيل قائمة قائمة أدوات ثريدز",
+      "title": "تفاصيل قائمة قائمة أدوات ثريدز",
+      "caption": "تكبير موثّق من لقطة القائمة الأصلية؛ ليس شاشة تشغيل إضافية.",
+      "kind": "detail",
+      "source": "/images/app/threads-marketing-tools.png",
+      "sourceSha256": "ebf8cbfa6f94dafe855a7dafabdf32fb68893a5b3f8a6476e0ddceb08e56b15d",
+      "sha256": "25094cfa04d10191a6d2c0b534fa19ec95645c89ca039c88896f9961658f9904",
+      "crop": {
+        "left": 24,
+        "top": 288,
+        "width": 1283,
+        "height": 306
+      },
+      "privacyReview": "No customer identity or licence values visible in selected source"
+    },
+    "tiktok-marketing-automation": {
+      "id": "tiktok-marketing-automation",
+      "platform": "tiktok",
+      "src": "/images/product/tiktok-marketing-automation-1011bd4b48.webp",
+      "width": 1568,
+      "height": 899,
+      "alt": "قائمة أدوات تيك توك",
+      "title": "قائمة أدوات تيك توك",
+      "caption": "قائمة أدوات تيك توك — لقطة من واجهة البرنامج، وليست إثباتًا لنتيجة تشغيل.",
+      "kind": "menu",
+      "source": "/images/app/tiktok-marketing-automation.png",
+      "sourceSha256": "1185c5a9a7d7899501221fe65d49951d6d0519d4f531f68d3a19a57cb5fa85f2",
+      "sha256": "1011bd4b48cd466650bf9a56924aebb21842af6f530c3018ccb73111ab5b645d",
+      "privacyReview": "No customer identity or licence values visible in selected source"
+    },
+    "tiktok-menu-detail": {
+      "id": "tiktok-menu-detail",
+      "platform": "tiktok",
+      "src": "/images/product/tiktok-menu-detail-80838cacf7.webp",
+      "width": 1278,
+      "height": 306,
+      "alt": "تفاصيل قائمة قائمة أدوات تيك توك",
+      "title": "تفاصيل قائمة قائمة أدوات تيك توك",
+      "caption": "تكبير موثّق من لقطة القائمة الأصلية؛ ليس شاشة تشغيل إضافية.",
+      "kind": "detail",
+      "source": "/images/app/tiktok-marketing-automation.png",
+      "sourceSha256": "1185c5a9a7d7899501221fe65d49951d6d0519d4f531f68d3a19a57cb5fa85f2",
+      "sha256": "80838cacf77458ee3eb4bedccaa2117c7541d0735114a2e37318608fbbf9b9f5",
+      "crop": {
+        "left": 24,
+        "top": 288,
+        "width": 1278,
+        "height": 306
+      },
+      "privacyReview": "No customer identity or licence values visible in selected source"
+    },
+    "google-tools-menu": {
+      "id": "google-tools-menu",
+      "platform": "google-maps",
+      "src": "/images/product/google-tools-menu-5f3e60ed40.webp",
+      "width": 1567,
+      "height": 904,
+      "alt": "قائمة Google ومدخل خرائط جوجل",
+      "title": "قائمة Google ومدخل خرائط جوجل",
+      "caption": "قائمة Google ومدخل خرائط جوجل — لقطة من واجهة البرنامج، وليست إثباتًا لنتيجة تشغيل.",
+      "kind": "menu",
+      "source": "/images/app/google-maps-data-extraction.png",
+      "sourceSha256": "a56d8610d61ca7d50d33d2664d09ca7b75ca4792aabf30f199f947e976bf2e71",
+      "sha256": "5f3e60ed40a7fb4931f0d3f7b5dcfc5ca8302b2bac706002030f2cf598fe401c",
+      "privacyReview": "No customer identity or licence values visible in selected source"
+    },
+    "skypro-send-emails-smtp-tools": {
+      "id": "skypro-send-emails-smtp-tools",
+      "platform": "send-emails",
+      "src": "/images/product/skypro-send-emails-smtp-tools-7b7b63a59a.webp",
+      "width": 1572,
+      "height": 901,
+      "alt": "قائمة البريد: إعدادات SMTP وكتابة الرسالة والإرسال",
+      "title": "قائمة البريد: إعدادات SMTP وكتابة الرسالة والإرسال",
+      "caption": "قائمة البريد: إعدادات SMTP وكتابة الرسالة والإرسال — لقطة من واجهة البرنامج، وليست إثباتًا لنتيجة تشغيل.",
+      "kind": "menu",
+      "source": "/images/app/skypro-send-emails-smtp-tools.png",
+      "sourceSha256": "69b46ab003eaafc77aa49eed9e77e81f0c4ed09d38b2fc6822fef7b3ba9e99c0",
+      "sha256": "7b7b63a59a357907125f842f8d8a1ff96e8fd7c982649a7743243a49d4a85de1",
+      "privacyReview": "No customer identity or licence values visible in selected source"
+    },
+    "skypro-auto-point-automation": {
+      "id": "skypro-auto-point-automation",
+      "platform": "auto-point",
+      "src": "/images/product/skypro-auto-point-automation-7bbabe2d98.webp",
+      "width": 1566,
+      "height": 907,
+      "alt": "مدخلا مهام Auto Point في البرنامج",
+      "title": "مدخلا مهام Auto Point في البرنامج",
+      "caption": "مدخلا مهام Auto Point في البرنامج — لقطة من واجهة البرنامج، وليست إثباتًا لنتيجة تشغيل.",
+      "kind": "menu",
+      "source": "/images/app/skypro-auto-point-automation.png",
+      "sourceSha256": "0aadcc5e337d06e0fc24eb65ca3fe4b15b776ee9631bb58e4356d511a1b6bf7d",
+      "sha256": "7bbabe2d98409bd1a39167c13bb7ca3a3f8f87151e45d4d5aff92d7a4d668a61",
+      "privacyReview": "No customer identity or licence values visible in selected source"
+    },
+    "skypro-saved-accounts-manager": {
+      "id": "skypro-saved-accounts-manager",
+      "platform": "accounts",
+      "src": "/images/product/skypro-saved-accounts-manager-ce4fa6600f.webp",
+      "width": 1599,
+      "height": 977,
+      "alt": "واجهة إضافة حسابات المنصات دون بيانات محفوظة",
+      "title": "واجهة إضافة حسابات المنصات دون بيانات محفوظة",
+      "caption": "واجهة إضافة حسابات المنصات دون بيانات محفوظة — لقطة من واجهة البرنامج، وليست إثباتًا لنتيجة تشغيل.",
+      "kind": "menu",
+      "source": "/images/app/skypro-saved-accounts-manager.png",
+      "sourceSha256": "31d13a41bf903fbda4841952fc9f07d638d0eec8f9f637b9fad8ae788ee77cad",
+      "sha256": "ce4fa6600f46147a772fc4863ebf742abf4f0a20265b187784729cabe12ee6f7",
+      "privacyReview": "No customer identity or licence values visible in selected source"
+    },
+    "skypro-security-presets-config": {
+      "id": "skypro-security-presets-config",
+      "platform": "security",
+      "src": "/images/product/skypro-security-presets-config-cebe529f3a.webp",
+      "width": 895,
+      "height": 262,
+      "alt": "خيارات إعداد الجلسة الظاهرة في البرنامج",
+      "title": "خيارات إعداد الجلسة الظاهرة في البرنامج",
+      "caption": "خيارات إعداد الجلسة الظاهرة في البرنامج — لقطة من واجهة البرنامج، وليست إثباتًا لنتيجة تشغيل.",
+      "kind": "menu",
+      "source": "/images/app/skypro-security-presets-config.png",
+      "sourceSha256": "c050e29af99ed03c7ed8b8e4450f167ce54c5d3067fdeffcca0a20108dcd2511",
+      "sha256": "cebe529f3a40764e7b7932298a033e6e7759716a7b611102859c08afc075bcce",
+      "privacyReview": "No customer identity or licence values visible in selected source"
+    },
+    "facebook-task-setup": {
+      "id": "facebook-task-setup",
+      "platform": "facebook",
+      "src": "/images/product/facebook-task-setup-d1e94bdefd.webp",
+      "width": 764,
+      "height": 930,
+      "alt": "خيارات إعداد مهمة فيسبوك",
+      "title": "خيارات إعداد مهمة فيسبوك",
+      "caption": "واجهة إعداد فارغة؛ لا تتضمن بيانات عملاء أو نتائج تشغيل.",
+      "kind": "setup",
+      "source": "/images/app/facebook-extract-data-panel.png",
+      "sourceSha256": "d4f3c6685d067b3f012e18aae232dc5f2a0a7952b49862d3fcfd8e7f193652f3",
+      "sha256": "d1e94bdefd3760b626829d29f960527203fce58de46d882d8144497f81979959",
+      "crop": {
+        "left": 834,
+        "top": 45,
+        "width": 764,
+        "height": 930
+      },
+      "privacyReview": "No customer identity or licence values visible in selected source"
+    },
+    "instagram-task-setup": {
+      "id": "instagram-task-setup",
+      "platform": "instagram",
+      "src": "/images/product/instagram-task-setup-683e6f724d.webp",
+      "width": 753,
+      "height": 859,
+      "alt": "خيارات إعداد مهمة إنستجرام",
+      "title": "خيارات إعداد مهمة إنستجرام",
+      "caption": "واجهة إعداد فارغة؛ لا تتضمن بيانات عملاء أو نتائج تشغيل.",
+      "kind": "setup",
+      "source": "/images/app/instagram-extract-data-panel.png",
+      "sourceSha256": "86549d8f6a8310ae851edadc2632fbf443a3db3fc9d7711833f345836180deb5",
+      "sha256": "683e6f724daf458231e504a65138ddcdc5a30d81a378865f00687e0c9f892f92",
+      "crop": {
+        "left": 815,
+        "top": 45,
+        "width": 753,
+        "height": 859
+      },
+      "privacyReview": "No customer identity or licence values visible in selected source"
+    },
+    "whatsapp-contacts-setup": {
+      "id": "whatsapp-contacts-setup",
+      "platform": "whatsapp",
+      "src": "/images/product/whatsapp-contacts-setup-fb95cb5251.webp",
+      "width": 753,
+      "height": 857,
+      "alt": "إعداد قائمة جهات الاتصال في واتساب",
+      "title": "إعداد قائمة جهات الاتصال في واتساب",
+      "caption": "واجهة إعداد فارغة؛ لا تتضمن بيانات عملاء أو نتائج تشغيل.",
+      "kind": "setup",
+      "source": "/images/app/whatsapp-session-launcher.png",
+      "sourceSha256": "8af2a6869d61d37efe047543cf1f691eb5aab96e9130088154c0f8c7ac78fb40",
+      "sha256": "fb95cb5251b373dfb9245e616e32ef1af4664d9df19313da15c14000e4735282",
+      "crop": {
+        "left": 816,
+        "top": 45,
+        "width": 753,
+        "height": 857
+      },
+      "privacyReview": "No customer identity or licence values visible in selected source"
+    }
+  },
+  "platforms": {
+    "facebook": {
+      "hero": "facebook-marketing-tools",
+      "gallery": [
+        "facebook-task-setup"
+      ],
+      "caption": "قائمة أدوات فيسبوك — لقطة من واجهة البرنامج، وليست إثباتًا لنتيجة تشغيل.",
+      "status": "captured"
+    },
+    "whatsapp": {
+      "hero": "whatsapp-marketing-tools-grid",
+      "gallery": [
+        "whatsapp-contacts-setup"
+      ],
+      "caption": "قائمة أدوات واتساب — لقطة من واجهة البرنامج، وليست إثباتًا لنتيجة تشغيل.",
+      "status": "captured"
+    },
+    "instagram": {
+      "hero": "instagram-marketing-tools",
+      "gallery": [
+        "instagram-task-setup"
+      ],
+      "caption": "قائمة أدوات إنستجرام — لقطة من واجهة البرنامج، وليست إثباتًا لنتيجة تشغيل.",
+      "status": "captured"
+    },
+    "twitter": {
+      "hero": "twitter-x-marketing-tools",
+      "gallery": [
+        "twitter-menu-detail"
+      ],
+      "caption": "قائمة أدوات إكس — لقطة من واجهة البرنامج، وليست إثباتًا لنتيجة تشغيل.",
+      "status": "captured"
+    },
+    "linkedin": {
+      "hero": "linkedin-b2b-tools-grid",
+      "gallery": [
+        "linkedin-menu-detail"
+      ],
+      "caption": "قائمة أدوات لينكدإن — لقطة من واجهة البرنامج، وليست إثباتًا لنتيجة تشغيل.",
+      "status": "captured"
+    },
+    "telegram": {
+      "hero": "telegram-marketing-suite",
+      "gallery": [
+        "telegram-menu-detail"
+      ],
+      "caption": "قائمة أدوات تيليجرام — لقطة من واجهة البرنامج، وليست إثباتًا لنتيجة تشغيل.",
+      "status": "captured"
+    },
+    "telegram-premium": {
+      "hero": "telegram-premium-exclusive-tools",
+      "gallery": [
+        "telegram-premium-menu-detail"
+      ],
+      "caption": "قائمة أدوات تيليجرام بريميم — لقطة من واجهة البرنامج، وليست إثباتًا لنتيجة تشغيل.",
+      "status": "captured"
+    },
+    "snapchat": {
+      "hero": "snapchat-marketing-tools",
+      "gallery": [
+        "snapchat-menu-detail"
+      ],
+      "caption": "قائمة أدوات سناب شات — لقطة من واجهة البرنامج، وليست إثباتًا لنتيجة تشغيل.",
+      "status": "captured"
+    },
+    "pinterest": {
+      "hero": "pinterest-marketing-tools",
+      "gallery": [
+        "pinterest-menu-detail"
+      ],
+      "caption": "قائمة أدوات بنترست — لقطة من واجهة البرنامج، وليست إثباتًا لنتيجة تشغيل.",
+      "status": "captured"
+    },
+    "reddit": {
+      "hero": "reddit-community-marketing",
+      "gallery": [
+        "reddit-menu-detail"
+      ],
+      "caption": "قائمة أدوات ريديت — لقطة من واجهة البرنامج، وليست إثباتًا لنتيجة تشغيل.",
+      "status": "captured"
+    },
+    "threads": {
+      "hero": "threads-marketing-tools",
+      "gallery": [
+        "threads-menu-detail"
+      ],
+      "caption": "قائمة أدوات ثريدز — لقطة من واجهة البرنامج، وليست إثباتًا لنتيجة تشغيل.",
+      "status": "captured"
+    },
+    "tiktok": {
+      "hero": "tiktok-marketing-automation",
+      "gallery": [
+        "tiktok-menu-detail"
+      ],
+      "caption": "قائمة أدوات تيك توك — لقطة من واجهة البرنامج، وليست إثباتًا لنتيجة تشغيل.",
+      "status": "captured"
+    },
+    "google-maps": {
+      "hero": "google-tools-menu",
+      "gallery": [],
+      "caption": "قائمة Google ومدخل خرائط جوجل — لقطة من واجهة البرنامج، وليست إثباتًا لنتيجة تشغيل.",
+      "status": "captured"
+    },
+    "send-emails": {
+      "hero": "skypro-send-emails-smtp-tools",
+      "gallery": [],
+      "caption": "قائمة البريد: إعدادات SMTP وكتابة الرسالة والإرسال — لقطة من واجهة البرنامج، وليست إثباتًا لنتيجة تشغيل.",
+      "status": "captured"
+    },
+    "auto-point": {
+      "hero": "skypro-auto-point-automation",
+      "gallery": [],
+      "caption": "مدخلا مهام Auto Point في البرنامج — لقطة من واجهة البرنامج، وليست إثباتًا لنتيجة تشغيل.",
+      "status": "captured"
+    },
+    "accounts": {
+      "hero": "skypro-saved-accounts-manager",
+      "gallery": [],
+      "caption": "واجهة إضافة حسابات المنصات دون بيانات محفوظة — لقطة من واجهة البرنامج، وليست إثباتًا لنتيجة تشغيل.",
+      "status": "captured"
+    },
+    "security": {
+      "hero": "skypro-security-presets-config",
+      "gallery": [],
+      "caption": "خيارات إعداد الجلسة الظاهرة في البرنامج — لقطة من واجهة البرنامج، وليست إثباتًا لنتيجة تشغيل.",
+      "status": "captured"
+    },
+    "olx": {
+      "hero": null,
+      "gallery": [],
+      "status": "missing-independent-capture",
+      "caption": "لقطة مستقلة لأداة OLX لم تتوفر للمراجعة. لا نعرض قائمة Google باعتبارها واجهة OLX، ولم نوثّق نتائج تشغيل الأداة."
+    }
+  }
+}

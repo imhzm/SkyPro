@@ -1,5 +1,17 @@
 # Change log
 
+## 2026-10-23 — approved guide V2 candidate
+
+The owner approved the revised guide/article boards. Implemented /guides and 20 original articles with genuine framed product images, interactive full-size zoom, search/category filters, article TOC, labelled examples, tables, primary sources, related/product links, truthful team author, candidate dates and Article/Breadcrumb schema. Added navigation/footer discovery and article sitemap entries with actual content revision dates. TypeScript passes; coherent production build and rendered/visual QA are in progress. Production remains unchanged.
+
+Phase-J checkpoint: production build/TypeScript and 12 negative tests pass; source lint 0 errors/20 warnings; 45-page SEO and 39 browser/SSR comparisons pass. All 79 public rasters and both dynamic social images decode. Five sensitive/unverified legacy originals are retained outside public; 15 direct/optimizer rejection checks pass. Full guide responsive matrix: 252 cases; targeted current-build guide checks: 8 cases. Final evidence package and new production approval remain open.
+
+## 2026-10-22 — web recovery Preview in progress
+
+Added twenty original article body drafts (about 9,342 words) and a registry that excludes drafts from public retrieval. Added content/reference/media/metadata audits and updated the platform verifier to use the actual media manifest, exact H1s and strict HTTP 404. All 18 platform checks pass. Captured 240 valid responsive media cases and after-state rendered content (153 comparisons, no pair >=80%). Full local site/account/admin phase-D regressions pass. Guide UI V1 was rejected; revised V2 awaits owner approval, so no guide frontend has been implemented or published.
+
+Implemented the approved real-product hero/catalog/details/gallery; 29 traceable lossless images; reviewed 18-platform copy; honest OLX missing-media state; corrected auth/social images and alt text; consent-aware product events; omitted artificial sitemap build dates. Fixed mobile gallery toolbar and added explicit focus wrapping after a real reverse-Tab failure. Build/TypeScript and six source-media/analytics tests pass; full browser, articles, SEO and release acceptance remain active. No production deployment for this phase.
+
 ## 2026-10-15 — audit
 - Restored a clean, isolated homepage worktree from verified GitHub main.
 - Recorded scope, actual pricing/assets, design direction and production access limitations.
@@ -39,3 +51,10 @@ PR #10 merged; deployed e3778186c132cbfebf183d7007ba9ea016fd3683 after clean Lin
 - Exact production SHA 425ee34858ad995f555f9ec6be4ed75018005f61, build mCCE6DWU1BEkwJGjOqmLU. Build/TypeScript pass; lint 0 errors / 20 warnings. Live 50-route check and 291-file source identity pass. See DEPLOYMENT_20261020.md and SITE_THEME_MIGRATION.md.
 
 - PR #13 contains oversized auth glows within their positioned screen, clips only decorative layers and gives the reset form a semantic h1. Strict mobile checks compare scrollWidth to clientWidth.
+## 2026-10-24 — authentic product media, guides and review package (Preview only)
+
+- Implemented approved real-product hero/catalog, 18 independent platform descriptions and accessible fit/original/zoom gallery; corrected misleading asset identities and OLX fallback. Added 29 traceable lossless derivatives and excluded five restricted originals from public serving.
+- Implemented approved guide V2 and 20 complete Arabic articles with sources, examples, real captions, filters, TOC, tables, related/product links and Article schema. Added consent-aware product conversion events without form/query secrets.
+- Added country keyword/URL and intent overlap review, factual press kit and research-only authority tracker. No acquired links or connected analytics metrics claimed.
+- Fixed legal light-theme contrast/reduced-motion visibility and gallery group semantics. Current production build/TypeScript, 231-file lint (0 errors/20 existing warnings), 12 negative tests, 45-page SEO crawl and 79-image static audit pass. Broader role/responsive checks retain their earlier phase scope.
+- Prepared one review package with 19 report categories, complete article exports, 18 screenshot sheets and one actual website/gallery MP4. No merge or deployment; final owner review/publication and live exact-SHA QA remain pending.

@@ -220,11 +220,15 @@ button:disabled {
   color: var(--sp-text);
 }
 .prose-legal :is(p, li) {
+  color: var(--sp-muted);
   font-size: 16px;
   line-height: 1.9;
 }
 .prose-legal a {
   color: var(--sp-blue);
+}
+.prose-legal :is(ul, ol) > li {
+  color: var(--sp-muted);
 }
 .prose-legal :is(.callout-info, .callout-warning) {
   color: var(--sp-text);
@@ -234,6 +238,7 @@ button:disabled {
 .prose-legal th,
 .prose-legal td {
   border-color: var(--sp-border);
+  color: var(--sp-muted);
 }
 .prose-legal th {
   background: var(--sp-soft);
@@ -275,6 +280,10 @@ button:disabled {
   color: var(--sp-text);
 }
 @media (prefers-reduced-motion: reduce) {
+  .prose-legal section {
+    opacity: 1 !important;
+    transform: none !important;
+  }
   html {
     scroll-behavior: auto !important;
   }

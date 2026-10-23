@@ -1,0 +1,63 @@
+{
+  "reviewDate": "2026-10-23",
+  "scope": "Research and prepared assets only. No account creation, external message, submission, paid placement, review or backlink acquired.",
+  "verifiedNewLinks": 0,
+  "opportunities": [
+    {
+      "organization": "Product Hunt",
+      "type": "Software launch directory",
+      "source": "https://help.producthunt.com/en/articles/479557-how-to-post-a-product",
+      "sourceReview": "Official instructions reviewed: maker can post the product; listing needs a direct product URL, accurate pricing status and real gallery assets.",
+      "status": "IDENTIFIED",
+      "decision": "Consider after production release and owner-approved launch materials. Confirm whether English product/support coverage is sufficient before committing to a launch audience.",
+      "asset": "Accurate product description, official logo, genuine product media and public guide URLs",
+      "contactedAt": null,
+      "publishedUrl": null,
+      "linkLiveVerifiedAt": null,
+      "ownerAuthorizationRequired": "External launch submission and any account/terms steps"
+    },
+    {
+      "organization": "AlternativeTo",
+      "type": "Software alternatives directory",
+      "source": "https://alternativeto.net/faq/",
+      "sourceReview": "Official FAQ reviewed. Applications need review; English support and regional eligibility rules apply. Paid queue priority does not buy approval or rank.",
+      "status": "IDENTIFIED",
+      "decision": "HOLD: current web/product evidence is Arabic-first; English application support is not verified. Do not submit an ineligible app or disguise language/availability.",
+      "asset": "Product functionality and supported-language evidence would be needed first",
+      "contactedAt": null,
+      "publishedUrl": null,
+      "linkLiveVerifiedAt": null,
+      "ownerAuthorizationRequired": "Any future external submission"
+    },
+    {
+      "organization": "Capterra",
+      "type": "Software review directory candidate",
+      "source": "https://www.capterra.com/vendors",
+      "sourceReview": "Discovery incomplete: guessed /vendors/sign-up returned 404; /vendors could not be read through the research tool. No eligibility, free-listing or contact-path claim.",
+      "status": "IDENTIFIED",
+      "decision": "HOLD_FOR_PRIMARY_SOURCE_REVIEW: verify current vendor program and eligibility before preparing a submission.",
+      "asset": null,
+      "contactedAt": null,
+      "publishedUrl": null,
+      "linkLiveVerifiedAt": null,
+      "ownerAuthorizationRequired": "Any external contact, submission or spend"
+    },
+    {
+      "organization": "Wamda",
+      "type": "MENA editorial candidate",
+      "source": "https://www.wamda.com/contact",
+      "sourceReview": "Primary contact page was inaccessible to the research tool. No editor identity or invitation to submit was verified.",
+      "status": "IDENTIFIED",
+      "decision": "HOLD: needs a real newsworthy angle and a verified current editorial route. A generic backlink request is not appropriate.",
+      "asset": "Potential angle: an original Arabic task-evaluation checklist, only if editorial fit is established",
+      "contactedAt": null,
+      "publishedUrl": null,
+      "linkLiveVerifiedAt": null,
+      "ownerAuthorizationRequired": "Any external pitch"
+    }
+  ],
+  "excludedMethods": ["PBN", "link farms", "spam comments", "fabricated reviews", "purchased ranking links", "bulk unsolicited messages"],
+  "competitorBacklinks": "NOT_VERIFIED: no backlink dataset or connected authority tool available",
+  "unlinkedBrandMentions": "NOT_VERIFIED: no confirmed third-party unlinked mention identified",
+  "statusRules": ["IDENTIFIED means research only", "CONTACTED requires an actual authorized message", "ACCEPTED requires evidence from the destination", "PUBLISHED requires an actual URL", "LIVE_VERIFIED requires checking the live mention/link"]
+}

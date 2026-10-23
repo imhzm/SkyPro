@@ -1,0 +1,203 @@
+{
+  "status": "TWENTY_COMPLETE_ARTICLE_CANDIDATES_IMPLEMENTED_AND_PREVIEW_TESTED",
+  "publicationGate": "Complete original body, practical example, primary sources, truthful media/captions, unique intent, internal links and editorial review before publication. A title or template does not count as an article.",
+  "articles": [
+    {
+      "slug": "software-or-social-media-agency",
+      "title": "برنامج سوشيال ميديا ولا شركة إدارة حسابات: إيه المناسب لشغلك؟",
+      "intent": "Compare buying software with hiring a service",
+      "cluster": "اختيار البرنامج",
+      "productLinks": [
+        "/",
+        "/platforms"
+      ]
+    },
+    {
+      "slug": "windows-or-cloud-marketing-tool",
+      "title": "أداة تسويق على Windows ولا خدمة سحابية: أسئلة المقارنة قبل الشراء",
+      "intent": "Evaluate device and workflow requirements",
+      "cluster": "اختيار البرنامج",
+      "productLinks": [
+        "/",
+        "/platforms/accounts"
+      ]
+    },
+    {
+      "slug": "two-day-trial-checklist",
+      "title": "خطة عملية لتقييم برنامج تسويق خلال تجربة يومين",
+      "intent": "Run an evidence-based trial without fake success metrics",
+      "cluster": "اختيار البرنامج",
+      "productLinks": [
+        "/auth/register",
+        "/platforms"
+      ]
+    },
+    {
+      "slug": "name-and-add-platform-accounts",
+      "title": "إزاي تسمّي حسابات المنصات وتراجعها قبل تشغيل مهمة؟",
+      "intent": "Prepare account naming and selection",
+      "cluster": "الحسابات",
+      "productLinks": [
+        "/platforms/accounts"
+      ]
+    },
+    {
+      "slug": "session-problem-support-brief",
+      "title": "جلسة الحساب مش جاهزة: إيه اللي تراجعه وإزاي توصف المشكلة للدعم؟",
+      "intent": "Document a session problem without exposing credentials",
+      "cluster": "الحسابات",
+      "productLinks": [
+        "/platforms/accounts",
+        "/platforms/security"
+      ]
+    },
+    {
+      "slug": "facebook-task-inputs",
+      "title": "نوع المهمة والرابط وحد النتائج: قراءة إعدادات مهمة فيسبوك",
+      "intent": "Understand the actual Facebook setup fields",
+      "cluster": "فيسبوك",
+      "productLinks": [
+        "/platforms/facebook"
+      ]
+    },
+    {
+      "slug": "instagram-task-brief",
+      "title": "قبل استخدام أداة إنستجرام: جهّز مهمة محتوى واضحة",
+      "intent": "Prepare a content-task brief",
+      "cluster": "إنستجرام",
+      "productLinks": [
+        "/platforms/instagram"
+      ]
+    },
+    {
+      "slug": "whatsapp-message-test",
+      "title": "رسالة واتساب تجريبية: راجع الحساب والمحتوى والمرفق قبل الإرسال",
+      "intent": "Test a consented message with an owned recipient",
+      "cluster": "واتساب",
+      "productLinks": [
+        "/platforms/whatsapp"
+      ]
+    },
+    {
+      "slug": "contact-list-quality-check",
+      "title": "مراجعة قائمة تواصل: التكرار ومصدر البيانات وصلاحية الاستخدام",
+      "intent": "Evaluate a legitimate contact list before use",
+      "cluster": "واتساب",
+      "productLinks": [
+        "/platforms/whatsapp",
+        "/platforms/send-emails"
+      ]
+    },
+    {
+      "slug": "smtp-test-message-checklist",
+      "title": "من إعداد SMTP لرسالة الاختبار: قائمة مراجعة عملية",
+      "intent": "Prepare mail provider settings and assess an owned test message",
+      "cluster": "البريد",
+      "productLinks": [
+        "/platforms/send-emails"
+      ]
+    },
+    {
+      "slug": "telegram-group-channel-task",
+      "title": "مجموعة ولا قناة تيليجرام: حدد المهمة والصلاحيات الأول",
+      "intent": "Distinguish group and channel task requirements",
+      "cluster": "تيليجرام",
+      "productLinks": [
+        "/platforms/telegram",
+        "/platforms/telegram-premium"
+      ]
+    },
+    {
+      "slug": "linkedin-outreach-brief",
+      "title": "رسالة لينكدإن المهنية: جهّز سبب التواصل قبل اختيار الأداة",
+      "intent": "Prepare relevant professional outreach",
+      "cluster": "لينكدإن",
+      "productLinks": [
+        "/platforms/linkedin"
+      ]
+    },
+    {
+      "slug": "tiktok-video-task-checklist",
+      "title": "قبل تجربة أداة تيك توك: راجع الفيديو والحساب وحقوق المحتوى",
+      "intent": "Prepare one specific video-related task",
+      "cluster": "تيك توك",
+      "productLinks": [
+        "/platforms/tiktok"
+      ]
+    },
+    {
+      "slug": "x-search-or-message-task",
+      "title": "بحث ولا منشور ولا رسالة على إكس: إزاي تختار مدخل المهمة؟",
+      "intent": "Choose among different X task types",
+      "cluster": "إكس",
+      "productLinks": [
+        "/platforms/twitter"
+      ]
+    },
+    {
+      "slug": "pinterest-board-content-brief",
+      "title": "لوحة بنترست لمتجرك: نموذج لتجهيز الصور والروابط",
+      "intent": "Prepare a visual-board content brief",
+      "cluster": "بنترست",
+      "productLinks": [
+        "/platforms/pinterest"
+      ]
+    },
+    {
+      "slug": "reddit-community-checklist",
+      "title": "قبل المشاركة في ريديت: اقرأ قواعد المجتمع وجهّز محتوى مناسبًا",
+      "intent": "Evaluate community relevance and participation rules",
+      "cluster": "ريديت",
+      "productLinks": [
+        "/platforms/reddit"
+      ]
+    },
+    {
+      "slug": "threads-account-task-review",
+      "title": "مراجعة مهمة ثريدز بشكل مستقل عن إنستجرام",
+      "intent": "Review Threads-specific account and task requirements",
+      "cluster": "ثريدز",
+      "productLinks": [
+        "/platforms/threads",
+        "/platforms/instagram"
+      ]
+    },
+    {
+      "slug": "maps-data-task-evaluation",
+      "title": "قبل اختيار أداة خرائط جوجل: حدد البيانات والغرض ودليل التشغيل",
+      "intent": "Evaluate a Maps-related task without promising extraction",
+      "cluster": "البيانات",
+      "productLinks": [
+        "/platforms/google-maps"
+      ]
+    },
+    {
+      "slug": "olx-demo-questions",
+      "title": "محتاج أداة OLX؟ أسئلة العرض التجريبي قبل الاشتراك",
+      "intent": "Request verifiable feature availability for a specific market",
+      "cluster": "البيانات",
+      "productLinks": [
+        "/platforms/olx"
+      ]
+    },
+    {
+      "slug": "multi-account-work-handover",
+      "title": "تسليم شغل حسابات متعددة: سجل المهام والحساب والنتيجة من غير كلمات مرور",
+      "intent": "Prepare a practical account-work handover record",
+      "cluster": "الحسابات",
+      "productLinks": [
+        "/platforms/accounts",
+        "/platforms/security"
+      ]
+    }
+  ],
+  "completedBodyDrafts": 20,
+  "published": 0,
+  "normalizedBodyWords": 9342,
+  "acceptedArticles": 0,
+  "candidatePublicArticles": 20,
+  "productionPublishedInThisPhase": 0,
+  "designApproval": "V2 explicitly approved Oct23",
+  "frontend": "/guides plus 20 static article routes",
+  "acceptanceGate": "Final owner review and production release approval remain open"
+}

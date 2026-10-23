@@ -9,11 +9,21 @@ function loadData(file) {
   const mod = new Module(filename, module);
   mod.filename = filename;
   mod.paths = Module._nodeModulePaths(path.dirname(filename));
+  const normalRequire = Module.createRequire(filename);
+  mod.require = (request) => {
+    if (request.startsWith(".")) {
+      const candidate = path.resolve(path.dirname(filename), request);
+      for (const target of [candidate, candidate + ".ts"])
+        if (target.endsWith(".ts") && fs.existsSync(target)) return loadData(target);
+    }
+    return normalRequire(request);
+  };
   mod._compile(
     ts.transpileModule(fs.readFileSync(filename, "utf8"), {
       compilerOptions: {
         module: ts.ModuleKind.CommonJS,
         target: ts.ScriptTarget.ES2022,
+        esModuleInterop: true,
       },
     }).outputText,
     filename,
@@ -24,6 +34,8 @@ const expected = [
   "/",
   "/platforms",
   "/platforms/[id]",
+  "/guides",
+  "/guides/[slug]",
   "/privacy",
   "/terms",
   "/security/policy",
@@ -89,10 +101,13 @@ async function inventory() {
   const missing = expected.filter((r) => !actual.includes(r));
   const unexpected = actual.filter((r) => !expected.includes(r));
   const ids = loadData("src/data/platform-pages.ts").getPlatformIds();
+  const guides = loadData("src/data/articles/index.ts").publishedGuides;
   const expanded = pages.flatMap((p) =>
     p.route.includes("[id]")
       ? ids.map((id) => ({ ...p, route: p.route.replace("[id]", id) }))
-      : [p],
+      : p.route.includes("[slug]")
+        ? guides.map(article => ({ ...p, route: p.route.replace("[slug]", article.slug) }))
+        : [p],
   );
   const apis = scan("src/app", "route.ts").map((f) => ({
     file: f.replaceAll("\\", "/"),

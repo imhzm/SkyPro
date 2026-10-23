@@ -1,0 +1,98 @@
+{
+  "reviewDate": "2026-10-22",
+  "status": "RESEARCH_IN_PROGRESS_NOT_A_RANKING_BASELINE",
+  "method": "Google browser observations for three country-hinted queries, additional web discovery, and direct primary vendor-page review. Country hints do not prove geolocated rankings or search demand. AI overview statements are excluded.",
+  "measurement": {
+    "searchVolume": "NOT_VERIFIED",
+    "keywordDifficulty": "NOT_VERIFIED",
+    "organicRank": "NOT_VERIFIED",
+    "clicks": "NOT_VERIFIED",
+    "impressions": "NOT_VERIFIED",
+    "conversions": "NOT_VERIFIED",
+    "gscConnected": false,
+    "bingConnected": false,
+    "ga4ConfiguredOnLiveBaseline": false
+  },
+  "observations": [
+    {
+      "country": "EG",
+      "query": "برنامج إدارة حسابات التواصل الاجتماعي مصر",
+      "rawEvidence": "D:/SkyPro-web-recovery-evidence-20261022/serp-before.json",
+      "intentReview": "Mixed software, agency and unrelated accounting/app results in this observation. A generic account-management phrase is ambiguous; use explicit social platform, Windows and product-task wording where supported.",
+      "destination": "/",
+      "countryPageDecision": "Do not create a copied Egypt page; the existing Arabic product page has the actual EGP offer and supplied Egyptian contact."
+    },
+    {
+      "country": "SA",
+      "query": "برنامج إدارة حسابات التواصل الاجتماعي السعودية",
+      "rawEvidence": "D:/SkyPro-web-recovery-evidence-20261022/serp-before.json",
+      "intentReview": "Agency and software intent mix. Direct primary review of Retm confirms a Saudi-positioned publishing/collaboration product. Its vendor claims do not establish a local rank or equivalent SkyPro functions.",
+      "destination": "/",
+      "countryPageDecision": "No Saudi doorway page or invented SAR tier; do not claim a Saudi office, support location or tested local compatibility."
+    },
+    {
+      "country": "AE",
+      "query": "برنامج إدارة حسابات التواصل الاجتماعي الإمارات",
+      "rawEvidence": "D:/SkyPro-web-recovery-evidence-20261022/serp-before.json",
+      "intentReview": "Government, telecom and agency results appear in the observation. Distinguish buying Windows software from hiring a content-management service. No verified UAE vendor rank or local demand number.",
+      "destination": "/",
+      "countryPageDecision": "No copied UAE page, invented AED pricing, office or country-specific delivery claim."
+    }
+  ],
+  "primaryVendorReview": [
+    {
+      "name": "Zoho Social",
+      "url": "https://www.zoho.com/ar/social/",
+      "observedTopics": ["publishing and scheduling", "content calendar", "monitoring", "reports", "agency collaboration"],
+      "scope": "Vendor describes its own product. These are comparison dimensions, not verified equivalent SkyPro features or regional ranking evidence."
+    },
+    {
+      "name": "Retm",
+      "url": "https://www.retmplat.sa/ar",
+      "observedTopics": ["Saudi product positioning", "publishing", "approvals", "team roles", "analytics"],
+      "scope": "Direct primary page reviewed. Customer counts, market-leadership language and vendor success claims are not independently verified or copied."
+    },
+    {
+      "name": "Sada",
+      "url": "https://live.com.eg/sada/",
+      "observedTopics": ["content preparation", "publishing", "approval via WhatsApp", "comment replies"],
+      "scope": "Primary Egyptian-domain vendor page; no verified search rank, performance or actual customer outcomes."
+    },
+    {
+      "name": "RADAAR",
+      "url": "https://www.radaar.io/ar/",
+      "observedTopics": ["publishing", "inbox", "monitoring", "analysis"],
+      "scope": "Arabic primary vendor page. Cloud publishing intent is not assumed to match every SkyPro Windows tool."
+    }
+  ],
+  "sharedIntentRules": [
+    "Home owns the overall SkyPro product and actual annual/trial offer. The catalog owns discovery and platform filtering.",
+    "Each platform detail owns that platform's visible tools, requirements and honest availability. Search-demand validation remains separate from the product-derived candidate map.",
+    "Articles answer practical evaluation or setup questions and link to the relevant product detail; do not repeat the same commercial landing page under a new slug.",
+    "No country pages unless original localized product/service value and verifiable business facts exist. No hreflang for nonexistent language alternates.",
+    "Do not target scheduling, official integration, anti-ban, private-data access or successful extraction as verified SkyPro capabilities without operation evidence."
+  ],
+  "additionalReview20261023": {
+    "method": "Country-worded web searches, not geolocated Google ranks. Selected primary pages opened directly; all vendor functionality remains a vendor claim, not an independently tested outcome or a SkyPro feature.",
+    "queries": [
+      {"country":"EG","query":"برنامج تسويق إلكتروني للكمبيوتر مصر إدارة حسابات السوشيال ميديا","selectedPrimaryResults":["https://rawwij.com/","https://live.com.eg/billing/","https://www.redoctopuseg.com/ar/services/social-media"],"finding":"Software, managed agency services and unrelated accounting intent mix. Rawwij appearing in the query is not proof it is an Egyptian vendor."},
+      {"country":"SA","query":"برنامج إدارة حسابات التواصل الاجتماعي للشركات السعودية","selectedPrimaryResults":["https://consys.com.sa/pricing/","https://framework.sa/services/social"],"finding":"Software governance and managed-service intent coexist. Consys pricing URL currently redirects to its demo page; do not repeat the search snippet as a verified current free-plan price."},
+      {"country":"AE","query":"Arabic social media management software UAE","selectedPrimaryResults":["https://mindcat.ai/apps/social","https://nexby.app/","https://wsheet.com/en/arabic-social-media-scheduler"],"finding":"Bilingual/cloud publishing and agency workflows are prominent in selected results; this does not establish rankings, deployment location or equivalent Windows functionality."}
+    ],
+    "directPrimaryReview": [
+      {"url":"https://rawwij.com/","topics":["publishing calendar","team roles","reports"],"implication":"Compare only requested dimensions; do not promise them in SkyPro without evidence."},
+      {"url":"https://consys.com.sa/demo/","topics":["governance","demo booking","external approvals"],"implication":"A demo-led enterprise workflow is a different buying need from evaluating a one-device Windows task."},
+      {"url":"https://mindcat.ai/apps/social","topics":["Arabic/English agency positioning","publishing","client approvals"],"implication":"English-language UAE queries need separate demand/product-language validation; no English or regional doorway page was fabricated."}
+    ],
+    "mapping": "keyword-url-map-20261023.json",
+    "backlinks": "NOT_VERIFIED: no connected backlink index",
+    "searchMetrics": "NOT_VERIFIED: no GSC, Keyword Planner or geolocated rank dataset"
+  },
+  "sourceGuidance": [
+    "https://developers.google.com/search/docs/appearance/google-images",
+    "https://developers.google.com/search/docs/crawling-indexing/canonicalization",
+    "https://developers.google.com/search/docs/specialty/international/localized-versions",
+    "https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap",
+    "https://developers.google.com/search/docs/appearance/core-web-vitals"
+  ]
+}

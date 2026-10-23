@@ -14,6 +14,7 @@
 
 import Script from 'next/script'
 import { useEffect, useState } from 'react'
+import { ProductEvents } from './ProductEvents'
 
 const CONSENT_KEY = 'skypro_cookie_consent_v1'
 
@@ -60,6 +61,7 @@ export function Analytics() {
 
   return (
     <>
+      <ProductEvents />
       {/* Plausible — privacy-friendly, cookieless. Loads always (no PII / consent needed). */}
       {plausibleDomain && (
         <Script
@@ -91,7 +93,10 @@ export function Analytics() {
               gtag('config', '${gaId}', {
                 anonymize_ip: true,
                 cookie_flags: 'SameSite=Lax;Secure',
+                page_location: location.origin + location.pathname,
+                page_referrer: document.referrer.split('?')[0].split('#')[0],
               });
+              window.dispatchEvent(new Event('skypro:analytics-ready'));
             `}
           </Script>
         </>

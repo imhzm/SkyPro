@@ -4,6 +4,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { ArrowLeft, Check, Sparkles } from "lucide-react";
 import { Logo } from "../Logo";
 import { homePlatforms } from "@/data/home-theme";
+import { getProductShot } from "@/data/platform-media";
 import { platformMarks } from "@/data/platform-marks";
 import styles from "./home.module.css";
 export function SectionHeading({
@@ -110,6 +111,7 @@ export function TrustLine() {
 }
 
 export function ProductScreen({ compact = false }: { compact?: boolean }) {
+  const shot = getProductShot(compact ? "facebook-task-setup" : "skypro-saved-accounts-manager");
   return (
     <div className={compact ? styles.compactScreen : styles.productScreen}>
       <div className={styles.screenChrome}>
@@ -119,10 +121,11 @@ export function ProductScreen({ compact = false }: { compact?: boolean }) {
         <b dir="ltr">Sky Pro</b>
       </div>
       <Image
-        src="/images/app/skypro-main-dashboard-live-data.png"
-        alt="لقطة فعلية من لوحة Sky Pro: المنصات والحسابات والسجلات المستخرجة"
-        width={1592}
-        height={974}
+        src={shot.src}
+        alt={shot.alt}
+        width={shot.width}
+        height={shot.height}
+        quality={90}
         priority={!compact}
         loading={compact ? "lazy" : "eager"}
         sizes={

@@ -26,23 +26,10 @@ export const metadata: Metadata = {
     "أدوات Sky Pro لإدارة حسابات المنصات وتنظيم البيانات والرسائل من برنامج Windows بواجهة عربية. جرّب البرنامج مجانًا لمدة يومين.",
   keywords: [
     "SkyPro",
-    "تسويق آلي",
-    "سوشيال ميديا",
-    "فيسبوك",
-    "واتساب",
-    "انستغرام",
-    "تويتر",
-    "لينكد إن",
-    "تيليجرام",
-    "تيك توك",
-    "استخراج بيانات",
-    "بث جماعي",
-    "إدارة حسابات",
-    "حملات تسويقية",
+    "برنامج Windows بواجهة عربية",
+    "أدوات المنصات",
+    "إدارة حسابات المنصات",
     "Sky Wave",
-    "تسويق رقمي",
-    "أتمتة التسويق",
-    "AI marketing",
   ],
   authors: [{ name: "Sky Wave", url: "https://www.skywaveads.com" }],
   creator: PUBLISHER,
@@ -121,15 +108,13 @@ const organizationLd = {
   telephone: homeOffer.phone,
   description:
     "Sky Wave للتسويق الرقمي، مطوّر برنامج Sky Pro لإدارة الحسابات وأدوات التسويق.",
-  areaServed: ["EG", "SA", "AE", "KW", "QA", "OM", "BH"],
   contactPoint: [
     {
       "@type": "ContactPoint",
       telephone: homeOffer.phone,
       contactType: "customer support",
       email: "admin@skywaveads.com",
-      availableLanguage: ["Arabic", "English"],
-      areaServed: ["EG", "SA", "AE"],
+      availableLanguage: ["Arabic"],
     },
   ],
   sameAs: ["https://www.skywaveads.com", homeOffer.whatsapp],
@@ -154,37 +139,6 @@ const websiteLd = {
     },
     "query-input": "required name=search_term_string",
   },
-};
-
-const softwareLd = {
-  "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  "@id": `${SITE_URL}#software`,
-  name: "SkyPro",
-  applicationCategory: "BusinessApplication",
-  applicationSubCategory: "Marketing Automation",
-  operatingSystem: "Windows 10/11",
-  url: SITE_URL,
-  downloadUrl: `${SITE_URL}/auth/register`,
-  description:
-    "تطبيق Sky Pro على Windows لإدارة الحسابات وأدوات التسويق على فيسبوك وواتساب وإنستجرام وخرائط جوجل ومنصات أخرى.",
-  inLanguage: "ar",
-  publisher: { "@id": `${SITE_URL}#organization` },
-  offers: {
-    "@type": "Offer",
-    price: homeOffer.annualPrice,
-    priceCurrency: homeOffer.currency,
-    availability: "https://schema.org/InStock",
-    description: "اشتراك سنوي — تجربة مجانية يومين",
-  },
-  featureList: [
-    "أدوات لاستخراج البيانات وتنظيمها",
-    "أدوات لإدارة الرسائل",
-    "إدارة حسابات متعددة في وقت واحد",
-    "جدولة الحملات التسويقية",
-    "تقارير وتحليلات تفصيلية",
-    "دعم باللغة العربية",
-  ],
 };
 
 export default function RootLayout({
@@ -218,10 +172,6 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteLd) }}
-        />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareLd) }}
         />
       </head>
       <body className="font-cairo antialiased min-h-screen">

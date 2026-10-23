@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import { ArrowLeft, Check, ChevronDown, Layers3 } from "lucide-react";
 import { PlatformIcon } from "../marketing/PlatformIcon";
 import {
@@ -8,14 +7,16 @@ import {
   type PlatformPageData,
 } from "@/data/platform-pages";
 import {
-  platformImage,
+  getProductShot,
   platformMedia,
   platformCategory,
 } from "@/data/platform-media";
 import { homeOffer } from "@/data/home-theme";
 import styles from "./platforms.module.css";
+import { ProductGallery } from "@/components/product/ProductGallery";
 export function PlatformPageContent({ data }: { data: PlatformPageData }) {
   const media = platformMedia[data.id];
+  const images = [media.hero, ...media.gallery].filter((id): id is string => !!id).map(getProductShot);
   const others = getPlatformIds()
     .filter((id) => id !== data.id)
     .sort(
@@ -41,11 +42,7 @@ export function PlatformPageContent({ data }: { data: PlatformPageData }) {
               <PlatformIcon id={data.id} size={19} />
               أدوات {data.name}
             </span>
-            <h1>
-              {data.arabicName}
-              <br />
-              <span className={styles.gradient}>من داخل Sky Pro</span>
-            </h1>
+            <h1>{data.heroTitle || data.arabicName}</h1>
             <p>{data.heroDescription}</p>
             <div className={styles.actions}>
               <Link href="/auth/register" className={styles.primary}>
@@ -70,29 +67,19 @@ export function PlatformPageContent({ data }: { data: PlatformPageData }) {
               </li>
             </ul>
           </div>
-          <figure className={styles.heroScreen}>
-            <div>
-              <span />
-              <span />
-              <span />
-              <b dir="ltr">Sky Pro · {data.name}</b>
-            </div>
-            <Image
-              src={platformImage(data.id)}
-              alt={`لقطة فعلية من موديول ${data.arabicName} في Sky Pro`}
-              width={1567}
-              height={904}
-              priority
-              sizes="(max-width:900px) 100vw,60vw"
-            />
-            {media.caption && <figcaption>{media.caption}</figcaption>}
-          </figure>
+          {images.length ? <ProductGallery images={images} layout="hero" priority label={`صور ${data.arabicName}`} /> :
+            <aside className={styles.mediaUnavailable} aria-label="حالة توثيق الوسائط">
+              <PlatformIcon id={data.id} size={44} />
+              <h2>صورة الأداة المستقلة غير متاحة حاليًا</h2>
+              <p>{media.caption}</p>
+              <a href={homeOffer.whatsapp} className={styles.secondary}>اطلب توضيحًا من الدعم</a>
+            </aside>}
         </div>
       </section>
       <section id="tools" className={`${styles.shell} ${styles.section}`}>
         <div className={styles.sectionHeading}>
           <span className={styles.eyebrow}>تعرف على الأدوات</span>
-          <h2>إيه المتاح في {data.arabicName}؟</h2>
+          <h2>دليل أدوات {data.arabicName}</h2>
           <p>{data.longDescription}</p>
         </div>
         <div className={styles.toolsGrid}>
@@ -121,22 +108,7 @@ export function PlatformPageContent({ data }: { data: PlatformPageData }) {
             <span className={styles.eyebrow}>شوف البرنامج بنفسك</span>
             <h2>صور فعلية للأدوات</h2>
           </div>
-          <div className={styles.gallery}>
-            {media.gallery.map((file, i) => (
-              <figure key={file}>
-                <Image
-                  src={`/images/app/${file}.png`}
-                  alt={`شاشة ${i + 1} من أدوات ${data.arabicName} في Sky Pro`}
-                  width={1440}
-                  height={900}
-                  sizes="(max-width:900px) 100vw,50vw"
-                />
-                <figcaption>
-                  واجهة {data.arabicName} — لقطة من البرنامج
-                </figcaption>
-              </figure>
-            ))}
-          </div>
+          <ProductGallery images={media.gallery.map(getProductShot)} label={`تفاصيل ${data.arabicName}`} />
         </section>
       )}
       <section className={`${styles.shell} ${styles.section}`}>
@@ -155,6 +127,11 @@ export function PlatformPageContent({ data }: { data: PlatformPageData }) {
             </li>
           ))}
         </ol>
+      </section>
+      <section className={`${styles.shell} ${styles.section} ${styles.requirements}`} aria-label="الملاءمة والمتطلبات">
+        <div><h2>لمن تناسب {data.arabicName}؟</h2><p>{data.audience}</p>
+          <h3>قبل التجربة</h3><ul>{data.requirements?.map(item => <li key={item}>{item}</li>)}</ul></div>
+        <div><h2>حدود الوظيفة</h2><ul>{data.limits?.map(item => <li key={item}>{item}</li>)}</ul></div>
       </section>
       {!!data.useCases.length && (
         <section className={`${styles.shell} ${styles.section}`}>

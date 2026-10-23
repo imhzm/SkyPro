@@ -15,7 +15,7 @@ export const homePlatforms = [
     color: "#1877f2",
     mark: "f",
     image: "facebook-marketing-tools",
-    description: "أدوات النشر في الجروبات وإدارة الرسائل واستخراج البيانات.",
+    description: "قوائم النشر والرسائل والبحث، مع إعداد مستقل للمهمة.",
   },
   {
     id: "instagram",
@@ -24,7 +24,7 @@ export const homePlatforms = [
     color: "#df287c",
     mark: "◎",
     image: "instagram-marketing-tools",
-    description: "تنظيم الرسائل والوصول لبيانات المتابعين من واجهة واحدة.",
+    description: "مداخل المحتوى والرسائل وإعداد نوع بيانات المهمة.",
   },
   {
     id: "whatsapp",
@@ -33,7 +33,7 @@ export const homePlatforms = [
     color: "#14b866",
     mark: "◉",
     image: "whatsapp-marketing-tools-dashboard",
-    description: "إدارة جلسات واتساب وتجهيز الرسائل وتصفية الأرقام.",
+    description: "قوائم الرسائل والوسائط وفلترة الأرقام وجهات الاتصال.",
   },
   {
     id: "google-maps",
@@ -42,7 +42,7 @@ export const homePlatforms = [
     color: "#4285f4",
     mark: "maps",
     image: "google-maps-data-extraction",
-    description: "البحث عن الأنشطة التجارية وتنظيم بيانات الاتصال المتاحة.",
+    description: "راجع حالة البحث أو التصدير المطلوب مع الدعم قبل الاشتراك.",
   },
   {
     id: "telegram",
@@ -60,7 +60,7 @@ export const homePlatforms = [
     color: "#0a66c2",
     mark: "in",
     image: "linkedin-b2b-marketing-tools",
-    description: "البحث عن الشركات وتنظيم التواصل المهني والبيانات.",
+    description: "مداخل بحث الأشخاص والشركات والرسائل المهنية.",
   },
   {
     id: "tiktok",
@@ -69,7 +69,7 @@ export const homePlatforms = [
     color: "#16151e",
     mark: "♪",
     image: "tiktok-marketing-automation",
-    description: "أدوات متابعة الحسابات واستخراج بيانات المتابعين.",
+    description: "قائمة للبحث والفيديوهات وخيارات الحساب.",
   },
   {
     id: "twitter",
@@ -78,7 +78,7 @@ export const homePlatforms = [
     color: "#15181e",
     mark: "𝕏",
     image: "twitter-x-marketing-tools",
-    description: "تنظيم التغريدات والجدولة وبيانات الحسابات.",
+    description: "مداخل البحث والمنشورات والرسائل وخيارات الملف.",
   },
   {
     id: "pinterest",
@@ -87,7 +87,7 @@ export const homePlatforms = [
     color: "#e60023",
     mark: "P",
     image: "pinterest-marketing-tools",
-    description: "أدوات تثبيت المحتوى وتنظيم بيانات بنترست.",
+    description: "مداخل البحث واللوحات والصور والحسابات.",
   },
   {
     id: "threads",
@@ -96,7 +96,7 @@ export const homePlatforms = [
     color: "#16151e",
     mark: "@",
     image: "threads-marketing-tools",
-    description: "تجهيز المنشورات وإدارة بيانات المتابعين.",
+    description: "قائمة مستقلة للمنشورات والتواصل وبيانات الحساب.",
   },
 ] as const;
 

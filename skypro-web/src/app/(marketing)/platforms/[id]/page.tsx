@@ -22,6 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: "المنصة غير موجودة",
       robots: { index: false, follow: true },
     };
+  const image = platformImage(id);
   return {
     title: { absolute: data.metaTitle },
     description: data.metaDescription,
@@ -33,18 +34,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: data.metaTitle,
       description: data.metaDescription,
       url: origin + "/platforms/" + id,
-      images: [
+      images: image ? [
         {
-          url: platformImage(id),
+          url: image,
           alt: "واجهة " + data.arabicName + " في Sky Pro",
         },
-      ],
+      ] : [],
     },
     twitter: {
       card: "summary_large_image",
       title: data.metaTitle,
       description: data.metaDescription,
-      images: [platformImage(id)],
+      images: image ? [image] : [],
     },
   };
 }
