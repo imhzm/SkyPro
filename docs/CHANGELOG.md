@@ -58,4 +58,3 @@ PR #10 merged; deployed e3778186c132cbfebf183d7007ba9ea016fd3683 after clean Lin
 - Added country keyword/URL and intent overlap review, factual press kit and research-only authority tracker. No acquired links or connected analytics metrics claimed.
 - Fixed legal light-theme contrast/reduced-motion visibility and gallery group semantics. Current production build/TypeScript, 231-file lint (0 errors/20 existing warnings), 12 negative tests, 45-page SEO crawl and 79-image static audit pass. Broader role/responsive checks retain their earlier phase scope.
 - Prepared one review package with 19 report categories, complete article exports, 18 screenshot sheets and one actual website/gallery MP4. No merge or deployment; final owner review/publication and live exact-SHA QA remain pending.
-

@@ -68,4 +68,3 @@ The user's explicit hosting request authorizes this migration after QA. Preserve
 - Keep historical fixture, responsive and SSR snapshot reports scoped to the exact phase. Match subsequent documentation-only commits by the tested web tree before deployment.
 - Exactly 19 delivery media are allowed. Use native-pixel contact sheets and one continuous actual-browser walkthrough; exclude restricted legacy source captures and private fixture configuration.
 - No invented country metrics, English/local-office claims, bought links or external messages. Unconnected GSC/Bing/GA4/Planner and unavailable field CWV remain explicit measurement gaps.
-
