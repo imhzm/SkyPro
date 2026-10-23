@@ -1,5 +1,26 @@
 # SkyPro web recovery — 2026-10-22
 
+## Current checkpoint — 2026-10-24 Cairo (supersedes historical checkpoints below)
+
+Implemented and tested in the isolated production-build Preview. Draft PR #15 is open; no merge or new production deployment. Both owner design approvals are recorded in AGENTS.md. Final Preview/publication approval is the remaining owner release gate.
+
+- Tested code SHA: `66b51a83f980adfaabc1750b45771f9122061360`; web tree `cea8e3f07d6725d2b04b5dfcbe1b2c8826b9c969`.
+- Phase L build/TypeScript pass; full source lint 231 files, 0 errors / 20 existing warnings. Twelve negative tests pass. Legal wording and links are unchanged except the earlier approved phone substitution.
+- Phase L media: 79 public rasters, 0 HTTP/decode/hash/mapping failures. All 29 lossless source-pixel tests pass. Five restricted originals retained outside public; 15 direct/optimizer rejection checks pass. Both generated social images were independently decoded in phase J.
+- Phase L SEO: 45 public pages, 51 internal destinations, 8 noindex auth pages, 39 saved actual-DOM/SSR comparisons. Zero reported metadata/schema/link/indexability errors. Current route inventory: 34 page files, 70 expanded pages, 54 API routes; 53 public states, 17 guest protected redirects and one alias redirect.
+- Responsive scope: 240 valid product cases (phase D), 252 guide cases (phase I), 88 later-build targeted cases (phase J). Each has its own revision scope; do not call these a repeated full phase-L matrix. All valid records have no document overflow, unloaded images or decode failures. One prior wrong-route harness row is retained separately as diagnostic.
+- All 18 platform contact sheets independently inspected on desktop/mobile in both themes. Final home captures include hero, platform section, features, pricing, FAQ and footer; mobile annual-price capture and exact footer signature are explicitly visible. Guide catalog/article/table and original-size gallery are included. Contact sheets place unaltered browser pixels below labels.
+- Accessibility: phase K covers 90 public theme cases with zero automatic violations; incomplete ARIA results revealed missing gallery group semantics. Phase L fixes group semantics and legal muted colors plus reduced-motion visibility. Twenty representative desktop/mobile/theme cases rerun with zero violations and no remaining incomplete ARIA rule. Contrast over gradients/images remains manual judgement, not an AA certificate. Reduced-motion test confirms all 14 privacy sections visible without transforms.
+- Final gallery test: original 1599px source renders at 1599px in all four desktop/mobile theme cases, locks body scroll, closes with Escape and restores focus. Earlier guide search/filter/empty/reset/theme persistence/TOC/table checks are retained with their dates.
+- Functional scope: phase-D isolated fixture passed 147 pages, 50 APIs, 6 forms, 14 account journeys, 20 admin journeys and 44 mutation denials. No production fixture, real payment or external mail. Final changes after that suite do not alter API/auth/RBAC/payment source; retained results are not mislabelled as a final-revision rerun.
+- Twenty full original articles (~9,342 words) are enabled in Preview with sources, original examples, real captions, metadata/Article schema and related/product links. Full bodies and intent plan are exported in the package. Forty-seven country keyword records, 41 intent destinations and 10 reviewed overlap groups are documented separately from text similarity.
+- Six local short-load samples: observed LCP candidates 140–388ms, initial shift sums 0–0.0062. Warm cache and no throttling; not Lighthouse, field p75, full-session CLS or INP. PSI returned HTTP429 twice. Search Console/Bing/GA4/Planner remain unconnected; no fabricated rank/demand/traffic/conversion data.
+- Authority research and factual press kit prepared; no messages/submissions/paid placements or acquired backlinks. A 16.4-second continuous actual website/gallery capture is packaged; no Windows operation demo is available or claimed.
+- Delivery: `D:/SkyPro-web-recovery-evidence-20261022/delivery-working`, 19 report categories, 20 complete article exports, one file-hash manifest, screenshot/video provenance. Exactly 19 media: 18 image sheets and one MP4. One image is a clearly labelled fresh live-baseline comparison. Restricted media, fixture credentials/outbox/env and raw binary Git payloads are excluded.
+- Remaining truthful gaps: OLX standalone capture, six supporting galleries, Windows operation recording, connected search/field metrics and actual outreach/link acquisition. No invented replacement is used. Production release requires final owner approval, exact merged SHA, isolated deployment/rollback and fresh live desktop/mobile/source/build QA.
+
+## Historical implementation ledger (older pending statements below retain their original checkpoint scope)
+
 Status: implemented candidate in isolated Preview; final delivery/release review still open. The completed Oct20 release is the baseline, not completion evidence for this new goal.
 
 ## Authority and scope

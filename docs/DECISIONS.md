@@ -60,3 +60,12 @@ The user's explicit hosting request authorizes this migration after QA. Preserve
 - Add /guides and 20 article routes to the candidate sitemap, with real content revision dates. The existing page timestamps remain omitted. No country doorway pages or fabricated language alternates.
 - Add the guide link to desktop/mobile navigation and footer. Keep FAQ accessible through Help. Preserve auth, consent and all existing APIs/data.
 - Final runtime build, rendered SEO/schema/internal links, responsive/browser review and final release approval remain required.
+## 2026-10-24 — recovery candidate ready for final owner review
+
+- Product design and revised editorial V2 are approved; do not re-ask those design questions. Final substantial-release publication approval remains separate, required after the tested Preview/evidence are reviewable.
+- Preserve honest missing independent OLX/supporting-gallery/operation-video evidence. The recorded MP4 shows the website and gallery, not Windows operation results.
+- Fix actual legal contrast and gallery group semantics without legal-copy or auth changes. Test by full scroll visitation, correct pre-navigation theme persistence and a post-fix representative matrix; do not count transition-opacity scan artifacts or incomplete contrast as a WCAG certificate.
+- Keep historical fixture, responsive and SSR snapshot reports scoped to the exact phase. Match subsequent documentation-only commits by the tested web tree before deployment.
+- Exactly 19 delivery media are allowed. Use native-pixel contact sheets and one continuous actual-browser walkthrough; exclude restricted legacy source captures and private fixture configuration.
+- No invented country metrics, English/local-office claims, bought links or external messages. Unconnected GSC/Bing/GA4/Planner and unavailable field CWV remain explicit measurement gaps.
+

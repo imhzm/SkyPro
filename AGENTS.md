@@ -1,5 +1,15 @@
 # Sky Pro project instructions
 
+## Current recovery checkpoint — 2026-10-24 Cairo
+- Product direction and revised guide V2 are approved. Implementation is complete in isolated Preview, not merged/deployed. Final owner review/publication approval is still required by the Oct22 brief; earlier hosting permissions cover the earlier migration only.
+- Tested web source: 66b51a83f980adfaabc1750b45771f9122061360; web tree cea8e3f07d6725d2b04b5dfcbe1b2c8826b9c969. Draft PR #15: https://github.com/imhzm/SkyPro/pull/15. Recheck current HEAD/tree before any deployment; documentation commits can follow the tested source without changing the web tree.
+- Phase L build/TypeScript pass; full source lint 231 files, 0 errors, 20 existing warnings. Current crawl: 45 public pages, 51 internal destinations, 8 noindex auth pages, 39 saved DOM/SSR comparisons; 79 public rasters and 12 negative tests pass. Retained phase-D account/admin evidence has its own revision scope and is not a repeated latest-revision suite.
+- Accessibility: 90 phase-K theme cases found no automated violations, but manual review of incomplete results found missing gallery group semantics. Corrected these and legal contrast/reduced-motion handling; 20 phase-L desktop/mobile theme cases pass with only contrast-in-image/gradient incomplete cases remaining. Do not claim blanket WCAG certification.
+- All 18 platform hero/contact sheets independently reviewed; 20 complete articles and guide UI implemented. OLX independent capture and six supporting galleries remain genuinely unavailable and explicitly disclosed. Do not substitute or fabricate screenshots/results.
+- Delivery root D:/SkyPro-web-recovery-evidence-20261022/delivery-working has all 19 report categories, full article exports, hashes, 18 image sheets and one 16.4-second actual website/gallery walkthrough (19 media total). It is not a Windows operation demo. Final ZIP and package integrity record accompany this checkpoint.
+- GSC/Bing/GA4/Planner are not connected; rank/volume/traffic/conversion/backlink metrics remain unverified. PSI returned 429 twice. Six warm-cache local load samples are not field p75/Lighthouse/INP. No external messages, submissions or acquired links.
+- Continue with final owner review, then approved exact-merged-SHA deployment, rollback preservation and live source/build/route/desktop/mobile QA. Production DB/env/DNS/payment and other projects remain out of scope. Goal remains active until these gates are proven.
+
 ## Current published state — 2026-10-20
 - User explicitly authorized this migration with «ارفع ع الهوست». PRs #10, #11, #12 and #13 merged. Live source SHA: 425ee34858ad995f555f9ec6be4ed75018005f61; web tree: 173c77f0a291c4dca29fbed58e886a7bb6830aa7; Next build: mCCE6DWU1BEkwJGjOqmLU.
 - PM2 skypro runs releases/20261020-425ee34/skypro-web on loopback 3200, PID 395933 and zero restarts at activation. Previous b159a77 release is the rollback target. No DB migration or production fixture writes; 20 unrelated services retained their PIDs.

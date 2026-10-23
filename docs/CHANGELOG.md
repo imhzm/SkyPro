@@ -51,3 +51,11 @@ PR #10 merged; deployed e3778186c132cbfebf183d7007ba9ea016fd3683 after clean Lin
 - Exact production SHA 425ee34858ad995f555f9ec6be4ed75018005f61, build mCCE6DWU1BEkwJGjOqmLU. Build/TypeScript pass; lint 0 errors / 20 warnings. Live 50-route check and 291-file source identity pass. See DEPLOYMENT_20261020.md and SITE_THEME_MIGRATION.md.
 
 - PR #13 contains oversized auth glows within their positioned screen, clips only decorative layers and gives the reset form a semantic h1. Strict mobile checks compare scrollWidth to clientWidth.
+## 2026-10-24 — authentic product media, guides and review package (Preview only)
+
+- Implemented approved real-product hero/catalog, 18 independent platform descriptions and accessible fit/original/zoom gallery; corrected misleading asset identities and OLX fallback. Added 29 traceable lossless derivatives and excluded five restricted originals from public serving.
+- Implemented approved guide V2 and 20 complete Arabic articles with sources, examples, real captions, filters, TOC, tables, related/product links and Article schema. Added consent-aware product conversion events without form/query secrets.
+- Added country keyword/URL and intent overlap review, factual press kit and research-only authority tracker. No acquired links or connected analytics metrics claimed.
+- Fixed legal light-theme contrast/reduced-motion visibility and gallery group semantics. Current production build/TypeScript, 231-file lint (0 errors/20 existing warnings), 12 negative tests, 45-page SEO crawl and 79-image static audit pass. Broader role/responsive checks retain their earlier phase scope.
+- Prepared one review package with 19 report categories, complete article exports, 18 screenshot sheets and one actual website/gallery MP4. No merge or deployment; final owner review/publication and live exact-SHA QA remain pending.
+

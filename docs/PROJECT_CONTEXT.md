@@ -43,3 +43,7 @@ User explicitly requested «ارفع ع الهوست» for the current site them
 
 The owner authorized hosting publication. PR #10 merged and e3778186c132cbfebf183d7007ba9ea016fd3683 is live at skypro.skywaveads.com. Exact source/build/PM2, rollback and verification evidence: DEPLOYMENT_20261018.md. Browser acceptance and the single maximum-19-image ZIP are still being finalized; publication does not imply the full goal is complete. Keep all fixture writes local and preserve the previous cfa2257 runtime.
 
+## Latest web recovery state — 2026-10-24 Cairo
+
+Approved product direction and guide V2 are implemented in isolated Preview at http://localhost:3102/ and /guides. Draft PR #15 is open. Tested source 66b51a83f980adfaabc1750b45771f9122061360, web tree cea8e3f07d6725d2b04b5dfcbe1b2c8826b9c969. No new merge/deploy; final review/publication approval is still required for this substantial release. Current detailed results and explicit limits supersede historical notes below: WEB_RECOVERY_20261022.md, current Oct24 checkpoint. Delivery on D: contains 19 report categories, 20 full articles, 18 screenshot sheets and one actual website/gallery walkthrough. Production baseline remains the separate Oct20 release. Preserve APIs/auth/RBAC/DB/payment/Desktop/CRM/ERP and other projects.
+
