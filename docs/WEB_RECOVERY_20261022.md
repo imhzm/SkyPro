@@ -1,6 +1,14 @@
 # SkyPro web recovery — 2026-10-22
 
-## Current checkpoint — 2026-10-24 Cairo (supersedes historical checkpoints below)
+## Published checkpoint — 2026-10-24 Cairo
+
+Owner approved publication with «اعتماد النشر». PR #15 merged and exact SHA a8a3560430c40d357d1a5c4c37776454f4accc97 is live. Its web tree equals the reviewed candidate: cea8e3f07d6725d2b04b5dfcbe1b2c8826b9c969. Linux build qU1VvtZiTP5PhvRyshPUg; all 351 tracked web source files match. Full deployment/rollback and explicit limits: DEPLOYMENT_20261024.md.
+
+Live checks pass for 45 public pages, 51 internal destinations, 8 noindex auth routes and 45 actual-DOM/SSR comparisons. Browser matrix covers all 45 routes at 1440/390 in both themes (180 cases), with no document overflow, unloaded image or decode failure. Original-size gallery, Escape/opener focus, reverse/forward Tab trapping, navigation disclosure and persisted actual theme switch pass. All 79 live raster checks and 15 restricted-media rejection checks pass. All 20 guides are published. Production contact sheets and the live website/gallery MP4 replace the pre-release after-images within the same 19-media limit.
+
+Linux lint has 0 errors/21 warnings versus Windows 0/20; the additional warning is an unused pre-existing opengraph eslint-disable. No code rule was suppressed. All 20 other PM2 services retained PID/status at activation. No DB/env/DNS/payment or other project changes. Current runtime remains stable at 0 restarts; previous runtime retained for rollback. This supersedes pending release statements below. Measurement/media/outreach limitations are unchanged and reported.
+
+## Pre-release checkpoint — 2026-10-24 Cairo
 
 Implemented and tested in the isolated production-build Preview. Draft PR #15 is open; no merge or new production deployment. Both owner design approvals are recorded in AGENTS.md. Final Preview/publication approval is the remaining owner release gate.
 
