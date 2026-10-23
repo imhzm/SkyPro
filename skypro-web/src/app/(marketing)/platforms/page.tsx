@@ -4,6 +4,8 @@ import { PlatformsListContent } from "@/components/marketing/PlatformsListConten
 import { Navbar } from "@/components/marketing/Navbar";
 import { Footer } from "@/components/marketing/Footer";
 import { WhatsAppButton } from "@/components/marketing/WhatsAppButton";
+import { getProductShot } from "@/data/platform-media";
+const accountShot = getProductShot("skypro-saved-accounts-manager");
 const url = "https://skypro.skywaveads.com/platforms";
 const title = "جميع المنصات والأدوات | Sky Pro";
 const description =
@@ -20,8 +22,10 @@ export const metadata: Metadata = {
     locale: "ar_EG",
     images: [
       {
-        url: "/images/app/skypro-multi-platform-dashboard.png",
-        alt: "منصات وأدوات Sky Pro",
+        url: accountShot.src,
+        alt: accountShot.alt,
+        width: accountShot.width,
+        height: accountShot.height,
       },
     ],
   },
@@ -29,7 +33,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title,
     description,
-    images: ["/images/app/skypro-multi-platform-dashboard.png"],
+    images: [accountShot.src],
   },
 };
 export default async function PlatformsPage({

@@ -2,9 +2,9 @@ import type { MetadataRoute } from 'next'
 
 const SITE_URL = 'https://skypro.skywaveads.com'
 
-// AEO (Answer Engine Optimization) — explicitly opt-in to every major
-// AI search/answer crawler so SkyPro shows up in ChatGPT search,
-// Perplexity, Claude, Gemini, You.com, Bing Copilot, Brave Search, etc.
+// Existing owner crawl policy allows these agents on public content.
+// Search discovery and model-training controls are distinct; permission does
+// not guarantee crawling, indexing, ranking or inclusion in an AI answer.
 const AI_CRAWLERS = [
   'GPTBot',               // OpenAI
   'OAI-SearchBot',        // OpenAI search index
@@ -57,7 +57,7 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
       // Explicit allowlist for AI/answer engines — same restrictions but
-      // listing them gives them clear permission to index our public content
+      // listing them records the existing crawl preference for public content
       {
         userAgent: AI_CRAWLERS,
         allow: '/',

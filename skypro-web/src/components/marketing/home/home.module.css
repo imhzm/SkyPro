@@ -1912,3 +1912,15 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Approved Oct22 product presentation: uniform, readable platform previews. */
+.platformGrid { grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;direction:rtl; }
+.platformCard,.largePlatform { grid-column:auto;padding:18px;border-radius:22px; }
+.platformPreview>img { object-fit:contain;aspect-ratio:16/10;background:var(--solid);border-radius:14px; }
+.platformCard h3 { font-size:23px;line-height:1.5; }
+.platformCard p { font-size:16px;line-height:1.85;margin-block:10px 20px; }
+.platformCard .cardLink { font-size:15px;min-height:44px; }
+.featuresVisual { transform:none; }
+.compactScreen { border:1px solid var(--border);background:var(--solid);box-shadow:var(--shadow);padding:6px; }
+@media(max-width:1024px){.platformGrid{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media(max-width:600px){.platformGrid{grid-template-columns:1fr;}.platformCard,.largePlatform{grid-column:auto;padding:18px;}.platformCard h3{font-size:23px;}.platformCard p{font-size:16px;}.platformCard .cardLink{font-size:15px;}}

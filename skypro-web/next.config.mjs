@@ -84,6 +84,15 @@ const nextConfig = {
   reactStrictMode: true,
   compress: true,
   images: {
+    qualities: [75, 90, 100],
+    // Only reviewed product derivatives and normal branding/uploads may be
+    // optimized. Legacy app originals must not reappear through cached URLs.
+    localPatterns: [
+      { pathname: "/images/product/**" },
+      { pathname: "/images/*" },
+      { pathname: "/uploads/**" },
+      { pathname: "/_next/static/media/**" },
+    ],
     remotePatterns: [
       // Allow Google avatar images (for OAuth profiles)
       { protocol: "https", hostname: "lh3.googleusercontent.com" },

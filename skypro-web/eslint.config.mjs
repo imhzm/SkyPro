@@ -2,6 +2,8 @@ import nextCoreWebVitals from 'eslint-config-next/core-web-vitals'
 import nextTypescript from 'eslint-config-next/typescript'
 
 const config = [
+  // Local fixture/build snapshots are generated output, not source files.
+  { ignores: ['.tmp/**'] },
   ...nextCoreWebVitals,
   ...nextTypescript,
   {

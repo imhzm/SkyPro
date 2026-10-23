@@ -1,5 +1,17 @@
 # Change log
 
+## 2026-10-23 — approved guide V2 candidate
+
+The owner approved the revised guide/article boards. Implemented /guides and 20 original articles with genuine framed product images, interactive full-size zoom, search/category filters, article TOC, labelled examples, tables, primary sources, related/product links, truthful team author, candidate dates and Article/Breadcrumb schema. Added navigation/footer discovery and article sitemap entries with actual content revision dates. TypeScript passes; coherent production build and rendered/visual QA are in progress. Production remains unchanged.
+
+Phase-J checkpoint: production build/TypeScript and 12 negative tests pass; source lint 0 errors/20 warnings; 45-page SEO and 39 browser/SSR comparisons pass. All 79 public rasters and both dynamic social images decode. Five sensitive/unverified legacy originals are retained outside public; 15 direct/optimizer rejection checks pass. Full guide responsive matrix: 252 cases; targeted current-build guide checks: 8 cases. Final evidence package and new production approval remain open.
+
+## 2026-10-22 — web recovery Preview in progress
+
+Added twenty original article body drafts (about 9,342 words) and a registry that excludes drafts from public retrieval. Added content/reference/media/metadata audits and updated the platform verifier to use the actual media manifest, exact H1s and strict HTTP 404. All 18 platform checks pass. Captured 240 valid responsive media cases and after-state rendered content (153 comparisons, no pair >=80%). Full local site/account/admin phase-D regressions pass. Guide UI V1 was rejected; revised V2 awaits owner approval, so no guide frontend has been implemented or published.
+
+Implemented the approved real-product hero/catalog/details/gallery; 29 traceable lossless images; reviewed 18-platform copy; honest OLX missing-media state; corrected auth/social images and alt text; consent-aware product events; omitted artificial sitemap build dates. Fixed mobile gallery toolbar and added explicit focus wrapping after a real reverse-Tab failure. Build/TypeScript and six source-media/analytics tests pass; full browser, articles, SEO and release acceptance remain active. No production deployment for this phase.
+
 ## 2026-10-15 — audit
 - Restored a clean, isolated homepage worktree from verified GitHub main.
 - Recorded scope, actual pricing/assets, design direction and production access limitations.

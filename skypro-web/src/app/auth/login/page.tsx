@@ -7,6 +7,9 @@ import Link from "next/link";
 import Image from "next/image";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { Logo } from "@/components/marketing/Logo";
+import { getProductShot } from "@/data/platform-media";
+
+const accountShot = getProductShot("skypro-saved-accounts-manager");
 
 const ERROR_MESSAGES: Record<string, string> = {
   invalid_credentials: "بيانات الدخول غير صحيحة",
@@ -335,11 +338,11 @@ function LoginContent() {
 
           <div className="mt-5 overflow-hidden rounded-2xl border border-line">
             <Image
-              src="/images/app/skypro-main-dashboard-live-data.png"
-              alt="الواجهة الرئيسية الفعلية لبرنامج Sky Pro"
-              width={1200}
-              height={288}
-              className="h-24 w-full object-cover opacity-70"
+              src={accountShot.src}
+              alt={accountShot.alt}
+              width={accountShot.width}
+              height={accountShot.height}
+              className="h-auto w-full object-contain"
               loading="lazy"
             />
           </div>

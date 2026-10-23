@@ -4,19 +4,23 @@ const { loadData } = require("./route-inventory.cjs");
 const { platformPages, getPlatformIds } = loadData(
   "src/data/platform-pages.ts",
 );
-const { platformMedia } = loadData("src/data/platform-media.ts");
+const { platformMedia, getProductShot } = loadData("src/data/platform-media.ts");
 (async () => {
   const origin = process.env.CHECK_ORIGIN || "http://localhost:3102";
   const results = [];
   for (const id of getPlatformIds()) {
     const data = platformPages[id],
       media = platformMedia[id];
-    assert(media, `No real media for ${id}`);
-    for (const image of [media.hero, ...media.gallery])
-      assert(
-        fs.existsSync(`public/images/app/${image}.png`),
-        `Missing image ${image}`,
-      );
+    assert(media, `No media decision for ${id}`);
+    assert.equal(new Set([media.hero, ...media.gallery].filter(Boolean)).size,
+      [media.hero, ...media.gallery].filter(Boolean).length, `Repeated hero/gallery ${id}`);
+    if (!media.hero) assert.equal(media.status, "missing-independent-capture", id);
+    for (const image of [media.hero, ...media.gallery].filter(Boolean)) {
+      const shot = getProductShot(image);
+      assert(fs.existsSync(`public${shot.src}`), `Missing image ${image}`);
+      assert(shot.width > 0 && shot.height > 0, `Missing dimensions ${image}`);
+      assert.equal(shot.platform, id, `Wrong platform image ${id}/${image}`);
+    }
     const r = await fetch(origin + "/platforms/" + id);
     const html = await r.text();
     const title = html.match(/<title>(.*?)<\/title>/)?.[1];
@@ -42,7 +46,7 @@ const { platformMedia } = loadData("src/data/platform-media.ts");
     results.push(entry);
     assert.equal(r.status, 200, id);
     assert.equal(title, data.metaTitle, id);
-    assert(h1?.includes(data.arabicName), id);
+    assert.equal(h1, data.heroTitle, id);
     assert(entry.canonical && entry.noRatings && entry.faq === 1, id);
   }
   const alias = await fetch(origin + "/platforms/google", {
@@ -53,10 +57,8 @@ const { platformMedia } = loadData("src/data/platform-media.ts");
   const absent = await fetch(origin + "/platforms/does-not-exist", {
     redirect: "manual",
   });
-  const absentHtml = await absent.text();
-  assert(
-    absent.status === 404 || /<title>[^<]*(غير موجودة|404)/.test(absentHtml),
-  );
+  await absent.text();
+  assert.equal(absent.status, 404, "Unknown platform must return a real HTTP 404");
   const list = await (await fetch(origin + "/platforms")).text();
   for (const id of getPlatformIds())
     assert(list.includes(`href="/platforms/${id}"`), `Undiscoverable ${id}`);

@@ -13,9 +13,10 @@ const links = [
   { label: "أدوات المنصات", href: "/#platforms" },
   { label: "جميع المنصات", href: "/platforms" },
   { label: "الأسعار", href: "/#pricing" },
-  { label: "الأسئلة الشائعة", href: "/#faq" },
+  { label: "أدلة الاستخدام", href: "/guides" },
 ];
 const help = [
+  { label: "الأسئلة الشائعة", href: "/#faq" },
   { label: "سياسة الخصوصية", href: "/privacy" },
   { label: "الشروط والأحكام", href: "/terms" },
   { label: "سياسة الأمان", href: "/security/policy" },
@@ -63,7 +64,7 @@ export function SiteHeader() {
             <Link
               key={l.href}
               href={l.href}
-              aria-current={pathname === l.href ? "page" : undefined}
+              aria-current={pathname === l.href || (l.href === "/guides" && pathname.startsWith("/guides/")) ? "page" : undefined}
             >
               {l.label}
             </Link>

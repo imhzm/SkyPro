@@ -46,7 +46,7 @@ export function WhatsAppButton() {
                 <p className="text-foreground text-sm font-bold">دعم SkyPro</p>
                 <p className="text-emerald-100 text-[11px] flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse" />
-                  متاح الآن — يرد خلال دقائق
+                  تواصل مع فريق الدعم
                 </p>
               </div>
               <button
@@ -133,10 +133,6 @@ export function WhatsAppButton() {
         className="group relative flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 via-emerald-500 to-green-600 shadow-2xl shadow-emerald-500/40 transition-all duration-300 hover:shadow-emerald-500/60 hover:scale-105"
         aria-label={open ? "إغلاق محادثة الدعم" : "فتح محادثة الدعم"}
       >
-        {/* Outer pulse rings */}
-        <span className="absolute inset-0 rounded-full bg-emerald-400/30 animate-ping" />
-        <span className="absolute inset-[-6px] rounded-full bg-emerald-500/15 animate-[ping_2.5s_cubic-bezier(0,0,0.2,1)_infinite]" />
-
         {/* Inner glow */}
         <span className="absolute inset-1 rounded-full bg-gradient-to-tr from-white/20 to-transparent" />
 

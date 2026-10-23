@@ -1,0 +1,1572 @@
+{
+  "reviewDate": "2026-10-23",
+  "status": "EDITORIAL_MAPPING_WITH_EXPLICIT_MEASUREMENT_GAPS",
+  "markets": [
+    "EG",
+    "SA",
+    "AE"
+  ],
+  "measurement": {
+    "GSC": "NOT_CONNECTED",
+    "KeywordPlanner": "NOT_CONNECTED",
+    "GA4": "NOT_CONFIGURED_ON_LIVE_BASELINE",
+    "Trends": "NOT_VERIFIED",
+    "internalSearchLogs": "NOT_AVAILABLE",
+    "actualConversions": "NOT_VERIFIED"
+  },
+  "methods": [
+    "Three saved Google browser country-hint observations",
+    "Additional country-worded web searches and primary vendor page inspection",
+    "Owner seed terms and actual product/content intent review"
+  ],
+  "keywords": [
+    {
+      "keyword": "برنامج إدارة حسابات السوشيال ميديا",
+      "country": "EG",
+      "language": "ar",
+      "searchIntent": "Commercial investigation; software/service ambiguity must be filtered",
+      "targetUrl": "/",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P1_PRODUCT_FIT",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Understand product requirements, inspect genuine images, then evaluate trial",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "برنامج تسويق إلكتروني للكمبيوتر",
+      "country": "EG",
+      "language": "ar",
+      "searchIntent": "Commercial investigation; software/service ambiguity must be filtered",
+      "targetUrl": "/",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P1_PRODUCT_FIT",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Understand product requirements, inspect genuine images, then evaluate trial",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "برنامج إدارة حسابات التواصل الاجتماعي",
+      "country": "EG",
+      "language": "ar",
+      "searchIntent": "Commercial investigation; software/service ambiguity must be filtered",
+      "targetUrl": "/",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P1_PRODUCT_FIT",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Understand product requirements, inspect genuine images, then evaluate trial",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "برنامج إدارة أكثر من حساب سوشيال ميديا",
+      "country": "EG",
+      "language": "ar",
+      "searchIntent": "Commercial investigation; software/service ambiguity must be filtered",
+      "targetUrl": "/",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P1_PRODUCT_FIT",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Understand product requirements, inspect genuine images, then evaluate trial",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "أدوات التسويق الإلكتروني",
+      "country": "EG",
+      "language": "ar",
+      "searchIntent": "Commercial investigation; software/service ambiguity must be filtered",
+      "targetUrl": "/platforms",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Broad or accounting/service intent can dilute fit; use explicit social platform and Windows context",
+      "priority": "P3_VALIDATE_FIT",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Understand product requirements, inspect genuine images, then evaluate trial",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "برنامج إدارة فيسبوك من الكمبيوتر",
+      "country": "EG",
+      "language": "ar",
+      "searchIntent": "Commercial investigation; software/service ambiguity must be filtered",
+      "targetUrl": "/platforms/facebook",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P1_PRODUCT_FIT",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Understand product requirements, inspect genuine images, then evaluate trial",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "برنامج إدارة حسابات إنستجرام",
+      "country": "EG",
+      "language": "ar",
+      "searchIntent": "Commercial investigation; software/service ambiguity must be filtered",
+      "targetUrl": "/platforms/instagram",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P1_PRODUCT_FIT",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Understand product requirements, inspect genuine images, then evaluate trial",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "برنامج إدارة حسابات متعددة",
+      "country": "EG",
+      "language": "ar",
+      "searchIntent": "Commercial investigation; software/service ambiguity must be filtered",
+      "targetUrl": "/platforms/accounts",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Broad or accounting/service intent can dilute fit; use explicit social platform and Windows context",
+      "priority": "P3_VALIDATE_FIT",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Understand product requirements, inspect genuine images, then evaluate trial",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "برنامج تسويق إلكتروني عربي",
+      "country": "EG",
+      "language": "ar",
+      "searchIntent": "Commercial investigation; software/service ambiguity must be filtered",
+      "targetUrl": "/",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P1_PRODUCT_FIT",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Understand product requirements, inspect genuine images, then evaluate trial",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "برنامج سوشيال ميديا للويندوز",
+      "country": "EG",
+      "language": "ar",
+      "searchIntent": "Commercial investigation; software/service ambiguity must be filtered",
+      "targetUrl": "/",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P1_PRODUCT_FIT",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي"
+      ],
+      "conversionIntent": "Understand product requirements, inspect genuine images, then evaluate trial",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "برنامج إدارة حسابات التواصل الاجتماعي للشركات",
+      "country": "SA",
+      "language": "ar",
+      "searchIntent": "Commercial investigation; software/service ambiguity must be filtered",
+      "targetUrl": "/",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P1_PRODUCT_FIT",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Understand product requirements, inspect genuine images, then evaluate trial",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "برنامج إدارة السوشيال ميديا السعودية",
+      "country": "SA",
+      "language": "ar",
+      "searchIntent": "Commercial investigation; software/service ambiguity must be filtered",
+      "targetUrl": "/",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P1_PRODUCT_FIT",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Understand product requirements, inspect genuine images, then evaluate trial",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "أدوات التسويق الإلكتروني للشركات السعودية",
+      "country": "SA",
+      "language": "ar",
+      "searchIntent": "Commercial investigation; software/service ambiguity must be filtered",
+      "targetUrl": "/platforms",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P1_PRODUCT_FIT",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Understand product requirements, inspect genuine images, then evaluate trial",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "برنامج تسويق إلكتروني عربي",
+      "country": "SA",
+      "language": "ar",
+      "searchIntent": "Commercial investigation; software/service ambiguity must be filtered",
+      "targetUrl": "/",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P1_PRODUCT_FIT",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Understand product requirements, inspect genuine images, then evaluate trial",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "برنامج إدارة حسابات التواصل للشركات",
+      "country": "SA",
+      "language": "ar",
+      "searchIntent": "Commercial investigation; software/service ambiguity must be filtered",
+      "targetUrl": "/",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P1_PRODUCT_FIT",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Understand product requirements, inspect genuine images, then evaluate trial",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "برنامج إدارة عدة حسابات تواصل اجتماعي",
+      "country": "SA",
+      "language": "ar",
+      "searchIntent": "Commercial investigation; software/service ambiguity must be filtered",
+      "targetUrl": "/",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P1_PRODUCT_FIT",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Understand product requirements, inspect genuine images, then evaluate trial",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "برنامج تسويق للكمبيوتر",
+      "country": "SA",
+      "language": "ar",
+      "searchIntent": "Commercial investigation; software/service ambiguity must be filtered",
+      "targetUrl": "/",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P1_PRODUCT_FIT",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Understand product requirements, inspect genuine images, then evaluate trial",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "أدوات تنظيم التسويق عبر المنصات",
+      "country": "SA",
+      "language": "ar",
+      "searchIntent": "Commercial investigation; software/service ambiguity must be filtered",
+      "targetUrl": "/platforms",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P1_PRODUCT_FIT",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Understand product requirements, inspect genuine images, then evaluate trial",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "برنامج إدارة حسابات التواصل الاجتماعي الإمارات",
+      "country": "AE",
+      "language": "ar",
+      "searchIntent": "Commercial investigation; software/service ambiguity must be filtered",
+      "targetUrl": "/",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P1_PRODUCT_FIT",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Understand product requirements, inspect genuine images, then evaluate trial",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "برنامج إدارة السوشيال ميديا للشركات",
+      "country": "AE",
+      "language": "ar",
+      "searchIntent": "Commercial investigation; software/service ambiguity must be filtered",
+      "targetUrl": "/",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P1_PRODUCT_FIT",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Understand product requirements, inspect genuine images, then evaluate trial",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "برنامج تسويق إلكتروني عربي",
+      "country": "AE",
+      "language": "ar",
+      "searchIntent": "Commercial investigation; software/service ambiguity must be filtered",
+      "targetUrl": "/",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P1_PRODUCT_FIT",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Understand product requirements, inspect genuine images, then evaluate trial",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "أدوات إدارة منصات التواصل الاجتماعي",
+      "country": "AE",
+      "language": "ar",
+      "searchIntent": "Commercial investigation; software/service ambiguity must be filtered",
+      "targetUrl": "/platforms",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P1_PRODUCT_FIT",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Understand product requirements, inspect genuine images, then evaluate trial",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "برنامج إدارة حسابات التواصل للكمبيوتر",
+      "country": "AE",
+      "language": "ar",
+      "searchIntent": "Commercial investigation; software/service ambiguity must be filtered",
+      "targetUrl": "/",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P1_PRODUCT_FIT",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Understand product requirements, inspect genuine images, then evaluate trial",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "Arabic social media management software",
+      "country": "AE",
+      "language": "en",
+      "searchIntent": "Commercial investigation; software/service ambiguity must be filtered",
+      "targetUrl": "/",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "No English landing page or verified English support; validate demand and scope before translation",
+      "priority": "P3_VALIDATE_FIT",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "Arabic social media management software",
+        "Windows social media management tool"
+      ],
+      "conversionIntent": "Understand product requirements, inspect genuine images, then evaluate trial",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "Windows social media management tool",
+      "country": "AE",
+      "language": "en",
+      "searchIntent": "Commercial investigation; software/service ambiguity must be filtered",
+      "targetUrl": "/",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "No English landing page or verified English support; validate demand and scope before translation",
+      "priority": "P3_VALIDATE_FIT",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "Arabic social media management software",
+        "Windows social media management tool"
+      ],
+      "conversionIntent": "Understand product requirements, inspect genuine images, then evaluate trial",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "Social media tools for businesses UAE",
+      "country": "AE",
+      "language": "en",
+      "searchIntent": "Commercial investigation; software/service ambiguity must be filtered",
+      "targetUrl": "/",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "No English landing page or verified English support; validate demand and scope before translation",
+      "priority": "P3_VALIDATE_FIT",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "Arabic social media management software",
+        "Windows social media management tool"
+      ],
+      "conversionIntent": "Understand product requirements, inspect genuine images, then evaluate trial",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "كيفية إدارة عدة حسابات تواصل اجتماعي من برنامج واحد",
+      "country": "EG",
+      "language": "ar",
+      "searchIntent": "Informational evaluation/setup",
+      "targetUrl": "/guides/name-and-add-platform-accounts",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P2_SUPPORTING_GUIDE",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Read useful guide, then evaluate related product task",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "أفضل طريقة لتنظيم حسابات التواصل لفريق تسويق",
+      "country": "EG",
+      "language": "ar",
+      "searchIntent": "Informational evaluation/setup",
+      "targetUrl": "/guides/multi-account-work-handover",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P2_SUPPORTING_GUIDE",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Read useful guide, then evaluate related product task",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "برنامج عربي لإدارة أدوات التسويق من الكمبيوتر",
+      "country": "EG",
+      "language": "ar",
+      "searchIntent": "Commercial investigation; software/service ambiguity must be filtered",
+      "targetUrl": "/",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P1_PRODUCT_FIT",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Understand product requirements, inspect genuine images, then evaluate trial",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "برنامج إدارة حسابات التواصل للشركات الصغيرة",
+      "country": "EG",
+      "language": "ar",
+      "searchIntent": "Commercial investigation; software/service ambiguity must be filtered",
+      "targetUrl": "/",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P1_PRODUCT_FIT",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Understand product requirements, inspect genuine images, then evaluate trial",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "كيفية اختيار برنامج إدارة حسابات التواصل الاجتماعي",
+      "country": "EG",
+      "language": "ar",
+      "searchIntent": "Informational evaluation/setup",
+      "targetUrl": "/guides/software-or-social-media-agency",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P2_SUPPORTING_GUIDE",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Read useful guide, then evaluate related product task",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "مقارنة برامج إدارة أدوات السوشيال ميديا",
+      "country": "EG",
+      "language": "ar",
+      "searchIntent": "Informational evaluation/setup",
+      "targetUrl": "/guides/windows-or-cloud-marketing-tool",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P2_SUPPORTING_GUIDE",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Read useful guide, then evaluate related product task",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "أدوات إدارة حسابات التواصل للويندوز",
+      "country": "EG",
+      "language": "ar",
+      "searchIntent": "Commercial investigation; software/service ambiguity must be filtered",
+      "targetUrl": "/platforms",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P1_PRODUCT_FIT",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Understand product requirements, inspect genuine images, then evaluate trial",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "كيفية إدارة عدة حسابات تواصل اجتماعي من برنامج واحد",
+      "country": "SA",
+      "language": "ar",
+      "searchIntent": "Informational evaluation/setup",
+      "targetUrl": "/guides/name-and-add-platform-accounts",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P2_SUPPORTING_GUIDE",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Read useful guide, then evaluate related product task",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "أفضل طريقة لتنظيم حسابات التواصل لفريق تسويق",
+      "country": "SA",
+      "language": "ar",
+      "searchIntent": "Informational evaluation/setup",
+      "targetUrl": "/guides/multi-account-work-handover",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P2_SUPPORTING_GUIDE",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Read useful guide, then evaluate related product task",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "برنامج عربي لإدارة أدوات التسويق من الكمبيوتر",
+      "country": "SA",
+      "language": "ar",
+      "searchIntent": "Commercial investigation; software/service ambiguity must be filtered",
+      "targetUrl": "/",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P1_PRODUCT_FIT",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Understand product requirements, inspect genuine images, then evaluate trial",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "برنامج إدارة حسابات التواصل للشركات الصغيرة",
+      "country": "SA",
+      "language": "ar",
+      "searchIntent": "Commercial investigation; software/service ambiguity must be filtered",
+      "targetUrl": "/",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P1_PRODUCT_FIT",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Understand product requirements, inspect genuine images, then evaluate trial",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "كيفية اختيار برنامج إدارة حسابات التواصل الاجتماعي",
+      "country": "SA",
+      "language": "ar",
+      "searchIntent": "Informational evaluation/setup",
+      "targetUrl": "/guides/software-or-social-media-agency",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P2_SUPPORTING_GUIDE",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Read useful guide, then evaluate related product task",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "مقارنة برامج إدارة أدوات السوشيال ميديا",
+      "country": "SA",
+      "language": "ar",
+      "searchIntent": "Informational evaluation/setup",
+      "targetUrl": "/guides/windows-or-cloud-marketing-tool",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P2_SUPPORTING_GUIDE",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Read useful guide, then evaluate related product task",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "أدوات إدارة حسابات التواصل للويندوز",
+      "country": "SA",
+      "language": "ar",
+      "searchIntent": "Commercial investigation; software/service ambiguity must be filtered",
+      "targetUrl": "/platforms",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P1_PRODUCT_FIT",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Understand product requirements, inspect genuine images, then evaluate trial",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "كيفية إدارة عدة حسابات تواصل اجتماعي من برنامج واحد",
+      "country": "AE",
+      "language": "ar",
+      "searchIntent": "Informational evaluation/setup",
+      "targetUrl": "/guides/name-and-add-platform-accounts",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P2_SUPPORTING_GUIDE",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Read useful guide, then evaluate related product task",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "أفضل طريقة لتنظيم حسابات التواصل لفريق تسويق",
+      "country": "AE",
+      "language": "ar",
+      "searchIntent": "Informational evaluation/setup",
+      "targetUrl": "/guides/multi-account-work-handover",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P2_SUPPORTING_GUIDE",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Read useful guide, then evaluate related product task",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "برنامج عربي لإدارة أدوات التسويق من الكمبيوتر",
+      "country": "AE",
+      "language": "ar",
+      "searchIntent": "Commercial investigation; software/service ambiguity must be filtered",
+      "targetUrl": "/",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P1_PRODUCT_FIT",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Understand product requirements, inspect genuine images, then evaluate trial",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "برنامج إدارة حسابات التواصل للشركات الصغيرة",
+      "country": "AE",
+      "language": "ar",
+      "searchIntent": "Commercial investigation; software/service ambiguity must be filtered",
+      "targetUrl": "/",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P1_PRODUCT_FIT",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Understand product requirements, inspect genuine images, then evaluate trial",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "كيفية اختيار برنامج إدارة حسابات التواصل الاجتماعي",
+      "country": "AE",
+      "language": "ar",
+      "searchIntent": "Informational evaluation/setup",
+      "targetUrl": "/guides/software-or-social-media-agency",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P2_SUPPORTING_GUIDE",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Read useful guide, then evaluate related product task",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "مقارنة برامج إدارة أدوات السوشيال ميديا",
+      "country": "AE",
+      "language": "ar",
+      "searchIntent": "Informational evaluation/setup",
+      "targetUrl": "/guides/windows-or-cloud-marketing-tool",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P2_SUPPORTING_GUIDE",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Read useful guide, then evaluate related product task",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    },
+    {
+      "keyword": "أدوات إدارة حسابات التواصل للويندوز",
+      "country": "AE",
+      "language": "ar",
+      "searchIntent": "Commercial investigation; software/service ambiguity must be filtered",
+      "targetUrl": "/platforms",
+      "currentRank": "NOT_VERIFIED",
+      "searchVolume": "NOT_VERIFIED",
+      "keywordDifficulty": "NOT_VERIFIED",
+      "competitiveSERP": {
+        "status": "NOT_VERIFIED_FOR_THIS_EXACT_KEYWORD",
+        "relatedMarketEvidence": "organic-markets-20261022.json",
+        "caveat": "Related query observations are not exact-keyword rankings or geolocated tracking"
+      },
+      "opportunity": "Match the actual Windows product/task and direct the reader to one canonical destination",
+      "priority": "P1_PRODUCT_FIT",
+      "priorityBasis": "Editorial fit and conversion proximity only; no invented traffic, volume, difficulty or rank score",
+      "relatedKeywords": [
+        "برنامج تسويق إلكتروني عربي",
+        "برنامج سوشيال ميديا للويندوز"
+      ],
+      "conversionIntent": "Understand product requirements, inspect genuine images, then evaluate trial",
+      "validationStatus": "OWNER_SEED_CANDIDATE_NOT_MEASURED_DEMAND"
+    }
+  ],
+  "urlMap": [
+    {
+      "url": "/",
+      "primaryIntent": "Overall Sky Pro Windows product and actual trial/annual offer",
+      "type": "Commercial product",
+      "ownership": "One shared Arabic product page; no copied country pages"
+    },
+    {
+      "url": "/platforms",
+      "primaryIntent": "Discover and filter currently documented platform tools",
+      "type": "Commercial catalog",
+      "ownership": "Catalog discovery, not a copy of each detail page"
+    },
+    {
+      "url": "/platforms/facebook",
+      "primaryIntent": "أدوات فيسبوك للبحث وتجهيز المهام",
+      "type": "Platform product detail",
+      "ownership": "Current visible tools, requirements and genuine platform media; no assumed operation outcome"
+    },
+    {
+      "url": "/platforms/whatsapp",
+      "primaryIntent": "أدوات واتساب للرسائل وجهات الاتصال",
+      "type": "Platform product detail",
+      "ownership": "Current visible tools, requirements and genuine platform media; no assumed operation outcome"
+    },
+    {
+      "url": "/platforms/instagram",
+      "primaryIntent": "أدوات إنستجرام للحساب والمحتوى",
+      "type": "Platform product detail",
+      "ownership": "Current visible tools, requirements and genuine platform media; no assumed operation outcome"
+    },
+    {
+      "url": "/platforms/twitter",
+      "primaryIntent": "أدوات إكس للبحث والمنشورات والرسائل",
+      "type": "Platform product detail",
+      "ownership": "Current visible tools, requirements and genuine platform media; no assumed operation outcome"
+    },
+    {
+      "url": "/platforms/snapchat",
+      "primaryIntent": "سناب شات: الأصدقاء والرسائل",
+      "type": "Platform product detail",
+      "ownership": "Current visible tools, requirements and genuine platform media; no assumed operation outcome"
+    },
+    {
+      "url": "/platforms/telegram",
+      "primaryIntent": "أدوات تيليجرام للمجموعات والقنوات",
+      "type": "Platform product detail",
+      "ownership": "Current visible tools, requirements and genuine platform media; no assumed operation outcome"
+    },
+    {
+      "url": "/platforms/telegram-premium",
+      "primaryIntent": "وحدة تيليجرام بريميم ومتطلبات استخدامها",
+      "type": "Platform product detail",
+      "ownership": "Current visible tools, requirements and genuine platform media; no assumed operation outcome"
+    },
+    {
+      "url": "/platforms/linkedin",
+      "primaryIntent": "أدوات لينكدإن للبحث والتواصل المهني",
+      "type": "Platform product detail",
+      "ownership": "Current visible tools, requirements and genuine platform media; no assumed operation outcome"
+    },
+    {
+      "url": "/platforms/pinterest",
+      "primaryIntent": "أدوات بنترست للوحات والمحتوى البصري",
+      "type": "Platform product detail",
+      "ownership": "Current visible tools, requirements and genuine platform media; no assumed operation outcome"
+    },
+    {
+      "url": "/platforms/reddit",
+      "primaryIntent": "أدوات ريديت للبحث والمشاركة بالمجتمعات",
+      "type": "Platform product detail",
+      "ownership": "Current visible tools, requirements and genuine platform media; no assumed operation outcome"
+    },
+    {
+      "url": "/platforms/tiktok",
+      "primaryIntent": "أدوات تيك توك للبحث والفيديوهات",
+      "type": "Platform product detail",
+      "ownership": "Current visible tools, requirements and genuine platform media; no assumed operation outcome"
+    },
+    {
+      "url": "/platforms/threads",
+      "primaryIntent": "أدوات ثريدز للمنشورات والحساب",
+      "type": "Platform product detail",
+      "ownership": "Current visible tools, requirements and genuine platform media; no assumed operation outcome"
+    },
+    {
+      "url": "/platforms/olx",
+      "primaryIntent": "أداة OLX: اسأل عن المهمة قبل الاشتراك",
+      "type": "Platform product detail",
+      "ownership": "Current visible tools, requirements and genuine platform media; no assumed operation outcome"
+    },
+    {
+      "url": "/platforms/security",
+      "primaryIntent": "إعدادات الجلسة وفواصل التشغيل",
+      "type": "Platform product detail",
+      "ownership": "Current visible tools, requirements and genuine platform media; no assumed operation outcome"
+    },
+    {
+      "url": "/platforms/accounts",
+      "primaryIntent": "مدير الحسابات: اختار المنصة والحساب بوضوح",
+      "type": "Platform product detail",
+      "ownership": "Current visible tools, requirements and genuine platform media; no assumed operation outcome"
+    },
+    {
+      "url": "/platforms/google-maps",
+      "primaryIntent": "أداة خرائط جوجل: المتطلبات وحالة الإتاحة",
+      "type": "Platform product detail",
+      "ownership": "Current visible tools, requirements and genuine platform media; no assumed operation outcome"
+    },
+    {
+      "url": "/platforms/send-emails",
+      "primaryIntent": "أدوات البريد: من إعداد SMTP لرسالة الاختبار",
+      "type": "Platform product detail",
+      "ownership": "Current visible tools, requirements and genuine platform media; no assumed operation outcome"
+    },
+    {
+      "url": "/platforms/auto-point",
+      "primaryIntent": "Auto Point: الوظائف والمتطلبات قبل التجربة",
+      "type": "Platform product detail",
+      "ownership": "Current visible tools, requirements and genuine platform media; no assumed operation outcome"
+    },
+    {
+      "url": "/guides",
+      "primaryIntent": "Discover practical evaluation and preparation guides",
+      "type": "Editorial catalog",
+      "ownership": "Article discovery rather than broad product claims"
+    },
+    {
+      "url": "/guides/software-or-social-media-agency",
+      "primaryIntent": "مقارنة شراء برنامج بتنفيذ خدمة إدارة حسابات، قبل البحث عن منتج أو وكالة",
+      "primaryKeyword": "برنامج سوشيال ميديا ولا شركة إدارة حسابات",
+      "type": "Informational guide",
+      "productDestinations": [
+        "/platforms"
+      ],
+      "ownership": "Answer the practical question; link to commercial detail instead of repeating its landing copy"
+    },
+    {
+      "url": "/guides/windows-or-cloud-marketing-tool",
+      "primaryIntent": "تقييم مكان تشغيل الأداة ومتطلبات الفريق والجهاز",
+      "primaryKeyword": "برنامج تسويق Windows ولا خدمة سحابية",
+      "type": "Informational guide",
+      "productDestinations": [
+        "/platforms/accounts"
+      ],
+      "ownership": "Answer the practical question; link to commercial detail instead of repeating its landing copy"
+    },
+    {
+      "url": "/guides/two-day-trial-checklist",
+      "primaryIntent": "تخطيط تجربة محددة وقياس ملاءمة الوظيفة قبل الاشتراك",
+      "primaryKeyword": "تجربة Sky Pro يومين",
+      "type": "Informational guide",
+      "productDestinations": [
+        "/platforms"
+      ],
+      "ownership": "Answer the practical question; link to commercial detail instead of repeating its landing copy"
+    },
+    {
+      "url": "/guides/name-and-add-platform-accounts",
+      "primaryIntent": "تجهيز تسمية الحساب واختياره قبل المهمة",
+      "primaryKeyword": "تنظيم حسابات المنصات",
+      "type": "Informational guide",
+      "productDestinations": [
+        "/platforms/accounts"
+      ],
+      "ownership": "Answer the practical question; link to commercial detail instead of repeating its landing copy"
+    },
+    {
+      "url": "/guides/session-problem-support-brief",
+      "primaryIntent": "تجهيز وصف قابل للتكرار لمشكلة جلسة حساب",
+      "primaryKeyword": "مشكلة جلسة الحساب",
+      "type": "Informational guide",
+      "productDestinations": [
+        "/platforms/accounts",
+        "/platforms/security"
+      ],
+      "ownership": "Answer the practical question; link to commercial detail instead of repeating its landing copy"
+    },
+    {
+      "url": "/guides/multi-account-work-handover",
+      "primaryIntent": "تجهيز سجل تسليم عمل للحسابات المتعددة",
+      "primaryKeyword": "تسليم شغل حسابات السوشيال ميديا",
+      "type": "Informational guide",
+      "productDestinations": [
+        "/platforms/accounts"
+      ],
+      "ownership": "Answer the practical question; link to commercial detail instead of repeating its landing copy"
+    },
+    {
+      "url": "/guides/whatsapp-message-test",
+      "primaryIntent": "مراجعة رسالة اختبار متوقعة ومأذون بها",
+      "primaryKeyword": "اختبار رسالة واتساب",
+      "type": "Informational guide",
+      "productDestinations": [
+        "/platforms/whatsapp"
+      ],
+      "ownership": "Answer the practical question; link to commercial detail instead of repeating its landing copy"
+    },
+    {
+      "url": "/guides/contact-list-quality-check",
+      "primaryIntent": "فحص جودة قائمة مأذون بها قبل استخدامها في التواصل",
+      "primaryKeyword": "مراجعة قائمة تواصل",
+      "type": "Informational guide",
+      "productDestinations": [
+        "/platforms/whatsapp",
+        "/platforms/send-emails"
+      ],
+      "ownership": "Answer the practical question; link to commercial detail instead of repeating its landing copy"
+    },
+    {
+      "url": "/guides/smtp-test-message-checklist",
+      "primaryIntent": "تجهيز مزود SMTP وفحص رسالة اختبار مملوكة",
+      "primaryKeyword": "إعداد SMTP ورسالة اختبار",
+      "type": "Informational guide",
+      "productDestinations": [
+        "/platforms/send-emails"
+      ],
+      "ownership": "Answer the practical question; link to commercial detail instead of repeating its landing copy"
+    },
+    {
+      "url": "/guides/facebook-task-inputs",
+      "primaryIntent": "فهم حقول شاشة إعداد مهمة فيسبوك المعروضة",
+      "primaryKeyword": "إعداد مهمة فيسبوك",
+      "type": "Informational guide",
+      "productDestinations": [
+        "/platforms/facebook"
+      ],
+      "ownership": "Answer the practical question; link to commercial detail instead of repeating its landing copy"
+    },
+    {
+      "url": "/guides/instagram-task-brief",
+      "primaryIntent": "صياغة موجز مهمة محتوى لإنستجرام قبل اختيار الأداة",
+      "primaryKeyword": "تجهيز مهمة إنستجرام",
+      "type": "Informational guide",
+      "productDestinations": [
+        "/platforms/instagram"
+      ],
+      "ownership": "Answer the practical question; link to commercial detail instead of repeating its landing copy"
+    },
+    {
+      "url": "/guides/telegram-group-channel-task",
+      "primaryIntent": "تحديد نوع وجهة تيليجرام وصلاحية المهمة",
+      "primaryKeyword": "الفرق بين مجموعة وقناة تيليجرام",
+      "type": "Informational guide",
+      "productDestinations": [
+        "/platforms/telegram",
+        "/platforms/telegram-premium"
+      ],
+      "ownership": "Answer the practical question; link to commercial detail instead of repeating its landing copy"
+    },
+    {
+      "url": "/guides/linkedin-outreach-brief",
+      "primaryIntent": "تجهيز موجز تواصل مهني ذي صلة قبل اختيار وسيلة التنفيذ",
+      "primaryKeyword": "رسالة لينكدإن المهنية",
+      "type": "Informational guide",
+      "productDestinations": [
+        "/platforms/linkedin"
+      ],
+      "ownership": "Answer the practical question; link to commercial detail instead of repeating its landing copy"
+    },
+    {
+      "url": "/guides/tiktok-video-task-checklist",
+      "primaryIntent": "تجهيز مادة فيديو ومهمة محددة لتقييم وظيفة تيك توك",
+      "primaryKeyword": "تجهيز مهمة تيك توك",
+      "type": "Informational guide",
+      "productDestinations": [
+        "/platforms/tiktok"
+      ],
+      "ownership": "Answer the practical question; link to commercial detail instead of repeating its landing copy"
+    },
+    {
+      "url": "/guides/x-search-or-message-task",
+      "primaryIntent": "تمييز أنواع مهام إكس ومتطلبات كل نوع قبل اختيار الأداة",
+      "primaryKeyword": "اختيار مهمة إكس",
+      "type": "Informational guide",
+      "productDestinations": [
+        "/platforms/twitter"
+      ],
+      "ownership": "Answer the practical question; link to commercial detail instead of repeating its landing copy"
+    },
+    {
+      "url": "/guides/pinterest-board-content-brief",
+      "primaryIntent": "تجهيز موجز لوحة بصرية وروابط منتجات متطابقة",
+      "primaryKeyword": "تجهيز لوحة بنترست للمتجر",
+      "type": "Informational guide",
+      "productDestinations": [
+        "/platforms/pinterest"
+      ],
+      "ownership": "Answer the practical question; link to commercial detail instead of repeating its landing copy"
+    },
+    {
+      "url": "/guides/reddit-community-checklist",
+      "primaryIntent": "تقييم ملاءمة مشاركة لمجتمع ريديت وقواعده",
+      "primaryKeyword": "قواعد المشاركة في ريديت",
+      "type": "Informational guide",
+      "productDestinations": [
+        "/platforms/reddit"
+      ],
+      "ownership": "Answer the practical question; link to commercial detail instead of repeating its landing copy"
+    },
+    {
+      "url": "/guides/threads-account-task-review",
+      "primaryIntent": "مراجعة وجهة وحساب مهمة ثريدز بصورة مستقلة",
+      "primaryKeyword": "مراجعة مهمة ثريدز",
+      "type": "Informational guide",
+      "productDestinations": [
+        "/platforms/threads",
+        "/platforms/instagram"
+      ],
+      "ownership": "Answer the practical question; link to commercial detail instead of repeating its landing copy"
+    },
+    {
+      "url": "/guides/maps-data-task-evaluation",
+      "primaryIntent": "تقييم مهمة بيانات أماكن ومصدر الوصول قبل شراء أداة",
+      "primaryKeyword": "تقييم أداة خرائط جوجل",
+      "type": "Informational guide",
+      "productDestinations": [
+        "/platforms/google-maps"
+      ],
+      "ownership": "Answer the practical question; link to commercial detail instead of repeating its landing copy"
+    },
+    {
+      "url": "/guides/olx-demo-questions",
+      "primaryIntent": "صياغة طلب عرض تجريبي مستقل لوظيفة OLX في سوق محدد",
+      "primaryKeyword": "تقييم أداة OLX",
+      "type": "Informational guide",
+      "productDestinations": [
+        "/platforms/olx"
+      ],
+      "ownership": "Answer the practical question; link to commercial detail instead of repeating its landing copy"
+    }
+  ],
+  "intentReviews": [
+    {
+      "pages": [
+        "/",
+        "/platforms"
+      ],
+      "classification": "Legitimate Separate Page",
+      "reason": "Overall product/offer versus platform discovery/filtering"
+    },
+    {
+      "pages": [
+        "/platforms/google",
+        "/platforms/google-maps"
+      ],
+      "classification": "Duplicate URL",
+      "decision": "Existing 308 alias verified; retain canonical Google Maps route"
+    },
+    {
+      "pages": [
+        "/platforms/google-maps",
+        "/platforms/olx"
+      ],
+      "classification": "Legitimate Separate Page",
+      "reason": "Different services/tasks; independent missing-OLX state, no shared Google screenshot"
+    },
+    {
+      "pages": [
+        "/platforms/telegram",
+        "/platforms/telegram-premium"
+      ],
+      "classification": "Intent Overlap",
+      "decision": "Keep distinct product units and explicitly explain Premium requirements; never imply a paid Telegram subscription is supplied"
+    },
+    {
+      "pages": [
+        "/platforms/instagram",
+        "/platforms/threads"
+      ],
+      "classification": "Legitimate Separate Page",
+      "reason": "Different product units, account/task context and source images"
+    },
+    {
+      "pages": [
+        "/platforms/accounts",
+        "/platforms/security"
+      ],
+      "classification": "Legitimate Separate Page",
+      "reason": "Account naming/input form versus session interval settings; no invented security certification"
+    },
+    {
+      "pages": [
+        "/guides/name-and-add-platform-accounts",
+        "/guides/multi-account-work-handover"
+      ],
+      "classification": "Legitimate Separate Page",
+      "reason": "Choose/name an account before a task versus transfer evidence/status between people"
+    },
+    {
+      "pages": [
+        "/guides/whatsapp-message-test",
+        "/guides/contact-list-quality-check",
+        "/guides/smtp-test-message-checklist"
+      ],
+      "classification": "Legitimate Separate Page",
+      "reason": "Single consented WhatsApp message, list provenance/quality and SMTP-provider test are different workflows"
+    },
+    {
+      "pages": [
+        "/guides/software-or-social-media-agency",
+        "/guides/windows-or-cloud-marketing-tool",
+        "/guides/two-day-trial-checklist"
+      ],
+      "classification": "Legitimate Separate Page",
+      "reason": "Buy a tool versus hire work; device/team requirements; actual trial evaluation plan"
+    },
+    {
+      "pages": [
+        "All platform details",
+        "Their related guides"
+      ],
+      "classification": "Intentional Shared Component",
+      "reason": "Product pages document tool availability; guides provide preparation/evaluation worksheets. Shared navigation and product-image references are intentional, not evidence of duplicate main text."
+    }
+  ],
+  "policy": [
+    "One primary destination per intent cluster",
+    "Do not claim cloud scheduling/team approval as SkyPro features",
+    "English keywords are validation gaps, not English pages",
+    "No country offices, SAR/AED offers or hreflang alternates invented",
+    "Do not infer keyword cannibalization from text similarity alone"
+  ],
+  "ongoingVerification": "Use authorized GSC/Bing/analytics data after connection to revise priorities and compare impressions, clicks, actual trials and qualified registrations by country; no ranking guarantee"
+}

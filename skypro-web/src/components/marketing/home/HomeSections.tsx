@@ -17,6 +17,7 @@ import {
   Users,
 } from "lucide-react";
 import { homeFaqs, homeOffer, homePlatforms } from "@/data/home-theme";
+import { getProductShot, platformMedia } from "@/data/platform-media";
 import { Action, PlatformMark, ProductScreen, SectionHeading } from "./shared";
 import styles from "./home.module.css";
 const platformStrip = [
@@ -36,8 +37,8 @@ export function Platforms() {
   return (
     <>
       <section className={`${styles.shell} ${styles.platformsIntro}`}>
-        <SectionHeading label="منصات متعددة" title="جميع منصاتك المفضلة مدعومة">
-          أدوات لكل منصة، مجتمعة في برنامج واحد.
+        <SectionHeading label="منصات متعددة" title="ابدأ بالمنصة اللي بتشتغل عليها">
+          راجع الأدوات ومتطلباتها قبل اختيار المهمة.
         </SectionHeading>
         <div className={styles.platformStrip}>
           {platformStrip.map((platform) => (
@@ -53,34 +54,33 @@ export function Platforms() {
           اختار منصتك وشوف أدواتها من داخل Sky Pro.
         </SectionHeading>
         <div className={styles.platformGrid}>
-          {homePlatforms.map((platform, index) => (
+          {homePlatforms.map((platform) => {
+            const shot = getProductShot(platformMedia[platform.id].hero!);
+            return (
             <Link
               key={platform.id}
               href={platform.href}
-              className={`${styles.platformCard} ${index < 4 ? styles.largePlatform : ""}`}
+              className={styles.platformCard}
               style={{ "--platform": platform.color } as CSSProperties}
             >
               <div className={styles.platformPreview}>
                 <Image
-                  src={`/images/app/${platform.image}.png`}
-                  alt={`واجهة أدوات ${platform.name} الفعلية في Sky Pro`}
-                  width={1592}
-                  height={974}
-                  sizes={
-                    index < 4
-                      ? "(max-width: 600px) 90vw, (max-width: 1024px) 45vw, 300px"
-                      : "(max-width: 600px) 43vw, (max-width: 1024px) 30vw, 210px"
-                  }
+                  src={shot.src}
+                  alt={shot.alt}
+                  width={shot.width}
+                  height={shot.height}
+                  quality={90}
+                  sizes="(max-width: 600px) 92vw, (max-width: 1024px) 45vw, 400px"
                 />
                 <PlatformMark platform={platform} />
               </div>
-              <h3>إدارة {platform.name}</h3>
+              <h3>{platform.name}</h3>
               <p>{platform.description}</p>
               <span className={styles.cardLink}>
                 معاينة المنصة <ArrowLeft size={13} />
               </span>
             </Link>
-          ))}
+          );})}
         </div>
       </section>
     </>
@@ -90,23 +90,23 @@ export function Platforms() {
 const features = [
   {
     icon: Users,
-    title: "إدارة موحدة",
-    text: "رتّب حساباتك وأدوات منصاتك داخل برنامج واحد.",
+    title: "حسابات مميزة بالاسم",
+    text: "ابدأ من مدير الحسابات واختار المنصة والحساب المقصودين.",
   },
   {
     icon: ShieldCheck,
-    title: "إعدادات للجلسات",
-    text: "إدارة جلسات الحسابات وخيارات البروكسي لكل جلسة.",
+    title: "خيارات للجلسة",
+    text: "راجع إعدادات الجلسة، من غير اعتبارها ضمانًا ضد تقييد الحساب.",
   },
   {
     icon: CalendarClock,
-    title: "جدولة الحملات",
-    text: "جهّز المحتوى وحدد مواعيد النشر من أدوات الجدولة.",
+    title: "اختصار لكل وظيفة",
+    text: "قوائم منفصلة تساعدك تميز البحث عن المحتوى والرسائل.",
   },
   {
     icon: BarChart3,
-    title: "بيانات منظمة",
-    text: "راجع السجلات المستخرجة وصدّرها لمتابعة شغلك.",
+    title: "إعداد قبل التشغيل",
+    text: "راجع الحقول ونوع المهمة وحدودها قبل ما تختبرها.",
   },
   {
     icon: Monitor,
@@ -227,8 +227,8 @@ export function UseCases() {
     },
     {
       icon: BarChart3,
-      title: "لتطوير الأعمال",
-      text: "ابحث عن الأنشطة التجارية على خرائط جوجل ونظّم بيانات الاتصال المتاحة.",
+      title: "لتقييم الأدوات",
+      text: "حدد الوظيفة المطلوبة لنشاطك وراجع متطلباتها خلال التجربة قبل الاشتراك.",
     },
   ];
   return (
@@ -274,7 +274,7 @@ export function Pricing() {
         "جميع أدوات المنصات المتاحة",
         "تفعيل البرنامج على جهاز واحد",
         "إدارة حسابات متعددة",
-        "جدولة الحملات والتصدير",
+        "قوائم أدوات منفصلة لكل منصة",
         "تحديثات خلال مدة الاشتراك",
         "دعم فني باللغة العربية",
       ],

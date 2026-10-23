@@ -1,3 +1,5 @@
+import { platformEditorial } from "./platform-editorial";
+
 export interface PlatformFeature {
   title: string;
   description: string;
@@ -27,10 +29,14 @@ export interface PlatformPageData {
   schemaDescription: string;
   schemaCategory: string;
   schemaPrice: string;
+  heroTitle?: string;
+  audience?: string;
+  requirements?: string[];
+  limits?: string[];
 }
 
 // Restored IDs from 75e883c; current module UI/source reviewed on 2026-10-15.
-export const platformPages: Record<string, PlatformPageData> = {
+const legacyPlatformPages: Record<string, PlatformPageData> = {
   facebook: {
     id: "facebook",
     name: "Facebook",
@@ -2307,6 +2313,34 @@ export const platformPages: Record<string, PlatformPageData> = {
     highlights: ["إعداد المهمة", "متابعة التشغيل"],
   },
 };
+
+export const platformPages: Record<string, PlatformPageData> = Object.fromEntries(
+  Object.entries(legacyPlatformPages).map(([id, data]) => {
+    const copy = platformEditorial[id];
+    if (!copy) throw new Error(`Missing reviewed platform copy: ${id}`);
+    return [id, {
+      ...data,
+      heroTitle: copy.heading,
+      metaTitle: `${copy.heading} | Sky Pro`,
+      metaDescription: copy.description,
+      metaKeywords: "",
+      heroDescription: copy.description,
+      longDescription: copy.overview,
+      features: copy.tools.map(tool => ({ ...tool, details: [] })),
+      howItWorks: copy.workflow,
+      faq: copy.faq,
+      useCases: [],
+      audience: copy.audience,
+      requirements: copy.requirements,
+      limits: copy.limits,
+      schemaDescription: copy.description,
+      stats: [],
+      highlights: copy.tools.map(tool => tool.title),
+      comparison: undefined,
+      testimonial: undefined,
+    }];
+  }),
+);
 
 export function getPlatformIds(): string[] {
   return Object.keys(platformPages);

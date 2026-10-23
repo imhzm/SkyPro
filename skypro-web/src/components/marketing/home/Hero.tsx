@@ -1,137 +1,29 @@
 "use client";
 import { useRef } from "react";
-import {
-  CalendarClock,
-  Headphones,
-  Layers3,
-  Monitor,
-  Play,
-  X,
-  Zap,
-} from "lucide-react";
-import { Action, ProductScreen, TrustLine } from "./shared";
-import styles from "./home.module.css";
+import { Expand, Monitor, Layers3 } from "lucide-react";
+import { Action, TrustLine } from "./shared";
+import { getProductShot } from "@/data/platform-media";
+import { ProductGallery, type ProductGalleryHandle } from "@/components/product/ProductGallery";
+import styles from "./hero-premium.module.css";
+
+const images = ["skypro-saved-accounts-manager", "facebook-task-setup", "whatsapp-contacts-setup", "instagram-task-setup"].map(getProductShot);
 export function Hero() {
-  const dialog = useRef<HTMLDialogElement>(null);
-  const trigger = useRef<HTMLButtonElement>(null);
-  return (
-    <section className={styles.hero} aria-labelledby="home-title">
-      <div className={styles.heroWave} aria-hidden="true" />
-      <div className={`${styles.shell} ${styles.heroLayout}`}>
-        <div className={styles.heroCopy}>
-          <span className={styles.eyebrow}>
-            <Zap size={13} />
-            كل أدواتك في مكان واحد
-          </span>
-          <h1 id="home-title">
-            إدارة وتسويق حساباتك
-            <br />
-            <span>
-              في كل المنصات
-              <br />
-              من مكان واحد
-            </span>
-          </h1>
-          <p>
-            Sky Pro يجمع أدوات التسويق وإدارة الحسابات في برنامج واحد. نظّم
-            بياناتك، جهّز رسائلك، وتابع شغلك من واجهة عربية واضحة.
-          </p>
-          <div className={styles.heroActions}>
-            <Action />
-            <button
-              ref={trigger}
-              className={styles.secondaryButton}
-              onClick={() => dialog.current?.showModal()}
-            >
-              <Play size={17} aria-hidden="true" />
-              شاهد البرنامج
-            </button>
-          </div>
-          <TrustLine />
-        </div>
-        <div className={styles.heroVisual}>
-          <span className={styles.handNote}>
-            حساباتك وأدواتك
-            <br />
-            في مكان واحد <span>⤵</span>
-          </span>
-          <div className={styles.laptop}>
-            <ProductScreen />
-            <div className={styles.laptopBase} />
-          </div>
-          <div className={`${styles.floatingCard} ${styles.scheduleCard}`}>
-            <span className={styles.featureIcon}>
-              <CalendarClock />
-            </span>
-            <div>
-              <b>خطّط لشغلك</b>
-              <small>أدوات لتنظيم حملاتك</small>
-            </div>
-          </div>
-          <div className={`${styles.floatingCard} ${styles.platformsCard}`}>
-            <span className={styles.featureIcon}>
-              <Layers3 />
-            </span>
-            <div>
-              <b>منصات متعددة</b>
-              <small>واجهة واحدة تجمع أدواتك</small>
-            </div>
-          </div>
-        </div>
+  const gallery = useRef<ProductGalleryHandle>(null);
+  return <section className={styles.hero} aria-labelledby="home-title">
+    <div className={styles.copy}>
+      <span className={styles.eyebrow}><Monitor size={16} /> برنامج Windows <span>·</span> واجهة عربية <span>·</span> أدوات منصات متعددة</span>
+      <h1 id="home-title">أدوات تسويقك، <span>بواجهة عربية واحدة.</span></h1>
+      <p>شوف الشاشات الحقيقية، وافهم وظيفة كل أداة قبل ما تبدأ. اختار المنصة، راجع متطلبات حسابك، وحدد المهمة اللي عايز تجربها.</p>
+      <div className={styles.actions}>
+        <Action>ابدأ تجربة يومين</Action>
+        <button onClick={() => gallery.current?.open()}><Expand size={18} /> استكشف صور البرنامج</button>
       </div>
-      <div className={`${styles.shell} ${styles.stats}`}>
-        <div>
-          <Layers3 />
-          <span>
-            <strong>10+</strong>
-            <small>منصات تسويق</small>
-          </span>
-        </div>
-        <div>
-          <CalendarClock />
-          <span>
-            <strong>يومين</strong>
-            <small>تجربة مجانية</small>
-          </span>
-        </div>
-        <div>
-          <Monitor />
-          <span>
-            <strong>Windows</strong>
-            <small>تطبيق للكمبيوتر</small>
-          </span>
-        </div>
-        <div>
-          <Headphones />
-          <span>
-            <strong>بالعربي</strong>
-            <small>واجهة ودعم فني</small>
-          </span>
-        </div>
-      </div>
-      <dialog
-        ref={dialog}
-        className={styles.previewDialog}
-        aria-labelledby="preview-title"
-        onClick={(event) => {
-          if (event.target === event.currentTarget) dialog.current?.close();
-        }}
-        onClose={() => trigger.current?.focus()}
-      >
-        <div className={styles.dialogHeader}>
-          <h2 id="preview-title">شوف Sky Pro من الداخل</h2>
-          <button
-            className={styles.iconButton}
-            aria-label="إغلاق معاينة البرنامج"
-            onClick={() => dialog.current?.close()}
-          >
-            <X />
-          </button>
-        </div>
-        <ProductScreen compact />
-        <p>لقطة فعلية من التطبيق. جرّب الأدوات بنفسك خلال التجربة المجانية.</p>
-        <Action />
-      </dialog>
-    </section>
-  );
+      <TrustLine />
+    </div>
+    <div className={styles.visual} id="product-preview">
+      <ProductGallery ref={gallery} images={images} layout="hero" priority label="شوف Sky Pro من الداخل" />
+      <aside className={styles.rightNote}><Layers3 size={20} /><b>اختار حسابك</b><span>قبل تشغيل الأداة</span></aside>
+      <aside className={styles.leftNote}><Expand size={20} /><b>افتح الصورة</b><span>وشوف التفاصيل</span></aside>
+    </div>
+  </section>;
 }

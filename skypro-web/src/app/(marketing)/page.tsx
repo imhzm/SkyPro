@@ -34,6 +34,21 @@ export const metadata: Metadata = {
 const structuredData = [
   {
     "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "@id": `${SITE_URL}#software`,
+    name: "Sky Pro",
+    applicationCategory: "BusinessApplication",
+    operatingSystem: "Windows",
+    url: SITE_URL,
+    description: "تطبيق Sky Pro على Windows لإدارة حسابات المنصات وأدوات التسويق بواجهة عربية.",
+    inLanguage: "ar",
+    publisher: { "@id": `${SITE_URL}#organization` },
+    offers: { "@type": "Offer", price: homeOffer.annualPrice, priceCurrency: homeOffer.currency,
+      availability: "https://schema.org/InStock", description: "اشتراك سنوي، مع تجربة مجانية يومين" },
+    featureList: ["تطبيق Windows بواجهة عربية", "قوائم أدوات مستقلة للمنصات", "نموذج لإضافة حسابات المنصات وتسميتها"],
+  },
+  {
+    "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "الرئيسية", item: SITE_URL },

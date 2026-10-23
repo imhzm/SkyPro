@@ -5,7 +5,7 @@ import { useId, useMemo, useState } from "react";
 import { ArrowLeft, Search, Check } from "lucide-react";
 import { PlatformIcon } from "../marketing/PlatformIcon";
 import type { PlatformPageData } from "@/data/platform-pages";
-import { platformCategory, platformImage } from "@/data/platform-media";
+import { getProductShot, platformCategory, platformMedia } from "@/data/platform-media";
 import styles from "./platforms.module.css";
 const categories = [
   { id: "all", label: "الكل" },
@@ -49,13 +49,12 @@ export function PlatformsListContent({
           {pages.length} منصة وأداة في برنامج واحد
         </span>
         <h1>
-          اختار منصتك.
+          اختار المهمة،
           <br />
-          <span className={styles.gradient}>كل أدواتك أقرب.</span>
+          <span className={styles.gradient}>وشوف أدواتها.</span>
         </h1>
         <p>
-          استكشف أدوات Sky Pro، وشوف صورها الحقيقية وطريقة استخدامها قبل ما
-          تبدأ.
+          صور مستقلة لكل منصة، وشرح للوظيفة ومتطلباتها قبل التسجيل.
         </p>
         <div className={styles.search}>
           <label htmlFor={searchId}>ابحث عن منصة أو أداة</label>
@@ -91,20 +90,24 @@ export function PlatformsListContent({
           {filtered.length} منصة وأداة
         </p>
         <div className={styles.grid}>
-          {filtered.map((p) => (
+          {filtered.map((p) => {
+            const heroId = platformMedia[p.id].hero;
+            const shot = heroId ? getProductShot(heroId) : null;
+            return (
             <Link
               key={p.id}
               href={`/platforms/${p.id}`}
               className={styles.platformCard}
             >
               <div className={styles.cardImage}>
-                <Image
-                  src={platformImage(p.id)}
-                  alt={`واجهة ${p.arabicName} الفعلية داخل Sky Pro`}
-                  width={900}
-                  height={520}
+                {shot ? <Image
+                  src={shot.src}
+                  alt={shot.alt}
+                  width={shot.width}
+                  height={shot.height}
+                  quality={90}
                   sizes="(max-width:600px) 100vw,(max-width:1000px) 50vw,33vw"
-                />
+                /> : <div className={styles.cardMissing}><b>{p.name}</b><span>الصورة المستقلة غير متاحة</span></div>}
                 <span className={styles.mark}>
                   <PlatformIcon id={p.id} size={25} />
                 </span>
@@ -125,7 +128,7 @@ export function PlatformsListContent({
                 </span>
               </div>
             </Link>
-          ))}
+          );})}
         </div>
         {!filtered.length && (
           <div className={styles.empty}>

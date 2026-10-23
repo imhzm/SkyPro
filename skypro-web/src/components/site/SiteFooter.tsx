@@ -24,6 +24,7 @@ export function SiteFooter() {
         <div>
           <h3>المنتج</h3>
           <Link href="/platforms">جميع المنصات</Link>
+          <Link href="/guides">أدلة الاستخدام</Link>
           <Link href="/#features">المميزات</Link>
           <Link href="/#pricing">الأسعار</Link>
           <Link href="/#how-it-works">كيف يعمل</Link>

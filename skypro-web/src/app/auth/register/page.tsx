@@ -15,6 +15,11 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { Logo } from "@/components/marketing/Logo";
+import { trackProductEvent } from "@/lib/product-analytics";
+import { getProductShot } from "@/data/platform-media";
+
+const accountShot = getProductShot("skypro-saved-accounts-manager");
+const setupShot = getProductShot("facebook-task-setup");
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -58,6 +63,7 @@ export default function RegisterPage() {
       const data = await res.json();
 
       if (data.success) {
+        trackProductEvent("complete_registration");
         if (data.data?.emailSent === false) {
           setError(
             data.message ||
@@ -356,21 +362,21 @@ export default function RegisterPage() {
             <div className="mt-5 grid grid-cols-2 gap-3">
               <div className="overflow-hidden rounded-xl border border-line">
                 <Image
-                  src="/images/app/skypro-saved-accounts-manager.png"
-                  alt="فريق التسويق يعمل على حملات العملاء"
-                  width={900}
-                  height={320}
-                  className="h-20 w-full object-cover opacity-75"
+                  src={accountShot.src}
+                  alt={accountShot.alt}
+                  width={accountShot.width}
+                  height={accountShot.height}
+                  className="h-40 w-full object-contain"
                   loading="lazy"
                 />
               </div>
               <div className="overflow-hidden rounded-xl border border-line">
                 <Image
-                  src="/images/app/skypro-main-dashboard-live-data.png"
-                  alt="تحليل أداء الحملات التسويقية"
-                  width={900}
-                  height={320}
-                  className="h-20 w-full object-cover opacity-75"
+                  src={setupShot.src}
+                  alt={setupShot.alt}
+                  width={setupShot.width}
+                  height={setupShot.height}
+                  className="h-40 w-full object-contain"
                   loading="lazy"
                 />
               </div>

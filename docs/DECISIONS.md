@@ -1,3 +1,11 @@
+# 2026-10-22 — approved web recovery
+
+- The six displayed design boards are approved for implementation in isolated Preview; new production approval follows final QA.
+- Match screenshot identity to visible content; retain originals and declare lossless crops. No Google-as-OLX substitute, invented operation proof or customer/licence data in new selected media.
+- Public copy explains actual tasks; source-audit narration belongs in evidence. Preserve limits that affect the purchase/use decision.
+- Unknown sitemap revision dates stay omitted. No copied country pages or invented search metrics. Consent-aware events exclude form data and URL queries.
+- See [WEB_RECOVERY_20261022.md](WEB_RECOVERY_20261022.md) for implemented changes, the gallery keyboard defect/fix and remaining acceptance gates.
+
 # Decisions — 2026-10-15
 
 - Treat both user-provided references as the requested art direction. Build one semantic homepage with CSS variables for light/dark, not duplicate page trees.
@@ -37,3 +45,18 @@ The user's explicit hosting request authorizes this migration after QA. Preserve
 - Use local attested fixture/SMTP only for write journeys. Production verification is read-only outside the named SkyPro release activation.
 - Preserve exact-SHA rollback. Documentation-only follow-up does not require redeploying unchanged web source.
 - Deliver one ZIP with 19 images: 12 native-pixel desktop/mobile contact sheets, four raw catalog captures, two genuine before captures and one matching Facebook after capture. No generated product evidence.
+# Editorial review checkpoint — 2026-10-22
+
+- The owner's earlier six-board approval covers product hero/platform/catalog/gallery. It does not approve the newly proposed guide frontend.
+- Guide V1 was rejected. Revised V2 uses large genuine product captures and separate cover compositions; five boards are awaiting the owner's answer. Frontend implementation remains pending; content work continues independently.
+- Twenty complete body drafts now have distinct intents, original practical examples, registered real-image covers and captions, primary sources, related articles and product destinations. They remain drafts, without fabricated publication dates or automatic public exposure. Data contracts and TypeScript pass; this is not publication or rendered SEO acceptance.
+- Content similarity after implementation: 18 rendered platform pages, 153 comparisons, zero pairs at or above 80%, 18 unique H1s. Search intent/cannibalization remains an independent review.
+- Responsive image matrix: 240 valid cases across 20 public pages and 6 widths/two themes. One wrong-route harness record is retained and explicitly excluded from acceptance. All valid cases have matching themes, zero overflow/unloaded images/decode failures. Theme-button behavior and final contact sheets are separate gates.
+
+## 2026-10-23 — guide V2 approved and implemented in candidate Preview
+
+- Owner explicitly approved V2: «اعتماد النسخة المطوّرة». This supersedes the pending editorial UI gate above. Implement the approved large-photo covers, featured trial guide, catalog filters, article hero/zoom, TOC and practical examples in the shared light/dark design system.
+- Twenty articles have complete authored bodies (about 9,342 words). Editorial review separates their intents and removes unsupported operation/result claims; all have original labelled examples, registered real-image covers, sources and related/product destinations. They are enabled in the candidate public registry with the actual candidate publication date 2026-10-23. They are not live on production.
+- Add /guides and 20 article routes to the candidate sitemap, with real content revision dates. The existing page timestamps remain omitted. No country doorway pages or fabricated language alternates.
+- Add the guide link to desktop/mobile navigation and footer. Keep FAQ accessible through Help. Preserve auth, consent and all existing APIs/data.
+- Final runtime build, rendered SEO/schema/internal links, responsive/browser review and final release approval remain required.
