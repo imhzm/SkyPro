@@ -58,7 +58,7 @@ export const ProductGallery = forwardRef<ProductGalleryHandle, Props>(function P
   }
   const visible = layout === "hero" ? images.slice(0, 1) : images;
   return (
-    <div className={`${styles.gallery} ${layout === "hero" ? styles.hero : styles.grid}`} aria-label={label}>
+    <div className={`${styles.gallery} ${layout === "hero" ? styles.hero : styles.grid}`} role="group" aria-label={label}>
       {visible.map((shot, index) => (
         <figure className={styles.figure} key={shot.id}>
           <div className={styles.chrome} aria-hidden="true"><span>● ● ●</span><b>Sky Pro</b></div>
@@ -112,7 +112,7 @@ export const ProductGallery = forwardRef<ProductGalleryHandle, Props>(function P
         <p className={styles.caption}>{current.caption}</p>
         {images.length > 1 && <div className={styles.navigation}>
           <button onClick={() => step(-1)} aria-label="الصورة السابقة"><ChevronRight /><span>السابقة</span></button>
-          <div className={styles.thumbnails} aria-label="اختيار صورة">
+          <div className={styles.thumbnails} role="group" aria-label="اختيار صورة">
             {images.map((shot, index) => <button key={shot.id} onClick={() => { setActive(index); setFit(true); setZoom(1); }}
               aria-label={shot.title} aria-current={index === active ? "true" : undefined}>
               <Image src={shot.src} alt="" width={96} height={60} sizes="96px" />
