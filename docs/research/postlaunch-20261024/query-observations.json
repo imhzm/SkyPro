@@ -1,0 +1,308 @@
+{
+  "reviewDate": "2026-10-24",
+  "timeZone": "Africa/Cairo",
+  "method": "Web search with explicit country names in query text; selected result URLs opened on their primary vendor/publication domains; separate unauthenticated live HTTP metadata checks in primary-http-evidence.json. This is search discovery, not a geolocated Google rank tracker.",
+  "geolocatedRank": false,
+  "googleCountryDeviceSessionVerified": false,
+  "resultSelection": "Results saved as returned discovery candidates; order is not a rank. Irrelevant accounting/agency/government pages retained to make ambiguous intent visible. Vendor product pages were reviewed selectively; a result being returned does not imply eligibility or a feature match.",
+  "metrics": {
+    "searchVolume": "NOT_VERIFIED",
+    "keywordDifficulty": "NOT_VERIFIED",
+    "currentPosition": "NOT_VERIFIED",
+    "gscPerformance": "NOT_CONNECTED_IN_THIS_RESEARCH_SESSION",
+    "earnedLinks": 0
+  },
+  "queries": [
+    {
+      "id": "Q1",
+      "date": "2026-10-24",
+      "country": "EG",
+      "query": "برنامج تسويق للكمبيوتر مصر إدارة حسابات متعددة",
+      "method": "Country-worded search; no country IP, city, Google gl/hl, or personalization control",
+      "selectedResults": [
+        {
+          "url": "https://zad-book.com/mini-erp/",
+          "sourceTitle": "Mini ERP — شغلك أوضح. إدارتك أبسط.",
+          "rank": null
+        },
+        {
+          "url": "https://www.cutme.org/ar/faq",
+          "sourceTitle": "الأسئلة الشائعة عن برامج Cutme | Cutme",
+          "rank": null
+        },
+        {
+          "url": "https://www.redtch.com/",
+          "sourceTitle": "RedERP | برنامج حسابات وإدارة أعمال من ريد تك REDTCH",
+          "rank": null
+        },
+        {
+          "url": "https://aelestra.com/social-media-management-ar",
+          "sourceTitle": "برنامج إدارة التواصل الاجتماعي | خطط، انشر، ونمِّ أعمالك | ايليسترا",
+          "rank": null
+        },
+        {
+          "url": "https://ayaapps.com/solutions/desktop-accounting/",
+          "sourceTitle": "برنامج حسابات للكمبيوتر – AYA Apps",
+          "rank": null
+        },
+        {
+          "url": "https://www.engix-egy.com/ar/program/27",
+          "sourceTitle": "إنجيكس - Engix | برنامج الهايبر والسوبر ماركت",
+          "rank": null
+        },
+        {
+          "url": "https://cutme.org/ar/accounting",
+          "sourceTitle": "برنامج حسابات ومحاسبة في مصر | Cutme",
+          "rank": null
+        },
+        {
+          "url": "https://haykaly.com/",
+          "sourceTitle": "هيكلي ERP | أفضل برنامج ERP لإدارة المؤسسات والشركات – Haykaly",
+          "rank": null
+        },
+        {
+          "url": "https://www.abtechinternational.com/metallic/",
+          "sourceTitle": "Metallic ERP | برنامج ERP للحسابات والمصانع",
+          "rank": null
+        },
+        {
+          "url": "https://www.mega-cash.net/",
+          "sourceTitle": "برنامج حسابات للشركات والمصانع - ميجا كاش",
+          "rank": null
+        },
+        {
+          "url": "https://khamsat.com/programming/desktop-app/3918116-%D8%A8%D8%B1%D9%86%D8%A7%D9%85%D8%AC-%D8%A5%D8%AF%D8%A7%D8%B1%D8%A9-%D8%AD%D8%B3%D8%A7%D8%A8%D8%A7%D8%AA-%D8%A7%D9%84%D8%B9%D9%85%D9%84%D8%A7%D8%A1",
+          "sourceTitle": "برنامج إدارة حسابات العملاء - خمسات",
+          "rank": null
+        },
+        {
+          "url": "https://www.cutme.org/ar",
+          "sourceTitle": "برنامج حسابات وبرنامج مخازن للشركات في مصر | Cutme",
+          "rank": null
+        },
+        {
+          "url": "https://www.itda.gov.eg/TMD/948/New%20App%201.pdf",
+          "sourceTitle": "<4D6963726F736F667420576F7264202D204A544D20C7E1E4D4D120DAE420DEC8E6E120C7E1DAE1C7E3C92E646F63>",
+          "rank": null
+        }
+      ]
+    },
+    {
+      "id": "Q2",
+      "date": "2026-10-24",
+      "country": "SA",
+      "query": "برنامج إدارة حسابات التواصل الاجتماعي للكمبيوتر السعودية",
+      "method": "Country-worded search; no country IP, city, Google gl/hl, or personalization control",
+      "selectedResults": [
+        {
+          "url": "https://attaa.mcit.gov.sa/library/view/2079",
+          "sourceTitle": "كيفية إدارة حسابات التواصل الاجتماعي | مبادرة العطاء الرقمي",
+          "rank": null
+        },
+        {
+          "url": "https://www.4jawaly.com/social-media-management/",
+          "sourceTitle": "إدارة حسابات التواصل الاجتماعي - سوشيال ميديا - فورجوالي",
+          "rank": null
+        },
+        {
+          "url": "https://consys.com.sa/free-social-media-management-tool/",
+          "sourceTitle": "برنامج إدارة سوشيال ميديا مجاني: جرّب كونسس 7 أيام | كونسس",
+          "rank": null
+        },
+        {
+          "url": "https://rawwij.com/",
+          "sourceTitle": "برنامج جدولة منشورات السوشيال ميديا - روّج",
+          "rank": null
+        },
+        {
+          "url": "https://consys.com.sa/pricing/",
+          "sourceTitle": "برنامج إدارة سوشيال ميديا مجاني — Consys",
+          "rank": null
+        },
+        {
+          "url": "https://growthksa.com/ar/services/social-media-management/",
+          "sourceTitle": "إدارة حسابات التواصل الاجتماعي في السعودية | قروث للتسويق",
+          "rank": null
+        },
+        {
+          "url": "https://cdn.nca.gov.sa/api/public/cms/files/fbe2838d-b9ee-4319-84d2-169090568e0d_%D8%AF%D9%84%D9%8A%D9%84-%D8%AD%D9%85%D8%A7%D9%8A%D8%A9-%D8%AD%D8%B3%D8%A7%D8%A8%D8%A7%D8%AA-%D8%A7%D9%84%D8%AA%D9%88%D8%A7%D8%B5%D9%84-%D8%A7%D9%84%D8%A7%D8%AC%D8%AA%D9%85%D8%A7%D8%B9%D9%8A-.pdf",
+          "sourceTitle": "دليل حماية حسابات التواصل الاجتماعي",
+          "rank": null
+        },
+        {
+          "url": "https://consys.com.sa/blog/best-social-media-tools-saudi/",
+          "sourceTitle": "أفضل أدوات إدارة السوشيال ميديا في السعودية 2026 | كونسس",
+          "rank": null
+        },
+        {
+          "url": "https://proxyinstitute.com/ar/software/uniinstagram",
+          "sourceTitle": "UniInstagram — برامج وأدوات · ProxyInstitute",
+          "rank": null
+        },
+        {
+          "url": "https://consys.com.sa/features/",
+          "sourceTitle": "منصة إدارة حسابات التواصل الاجتماعي — Consys",
+          "rank": null
+        },
+        {
+          "url": "https://www.chrome.com.sa/%D8%A7%D8%AF%D8%A7%D8%B1%D8%A9-%D8%AD%D8%B3%D8%A7%D8%A8%D8%A7%D8%AA-%D8%A7%D9%84%D8%AA%D9%88%D8%A7%D8%B5%D9%84-%D8%A7%D9%84%D8%A7%D8%AC%D8%AA%D9%85%D8%A7%D8%B9%D9%8A/",
+          "sourceTitle": "ادارة حسابات التواصل الاجتماعي - ‫كروم",
+          "rank": null
+        },
+        {
+          "url": "https://www.retmplat.sa/ar",
+          "sourceTitle": "رتم | المنصة السعودية الأولى لإدارة محتوى منصات التواصل الاجتماعي",
+          "rank": null
+        },
+        {
+          "url": "https://ncnp.gov.sa/sites/default/files/2023-11/%D8%A8%D9%86%D9%83%20%D8%A7%D9%84%D9%81%D8%B1%D8%B5%20%D8%A7%D9%84%D8%A7%D8%AD%D8%AA%D8%B1%D8%A7%D9%81%D9%8A%D8%A9%202.1%20%282%29.pdf",
+          "sourceTitle": "إدارة حسابات التواصل الاجتماعي للمنظمة",
+          "rank": null
+        },
+        {
+          "url": "https://www.retmplat.sa/ar/faq",
+          "sourceTitle": "الأسئلة الشائعة - منصة رتم",
+          "rank": null
+        },
+        {
+          "url": "https://pr.psau.edu.sa/sitesuploads/pr/2025-09/%D8%B3%D9%8A%D8%A7%D8%B3%D8%A9%20%D8%A7%D8%B3%D8%AA%D8%AE%D8%AF%D8%A7%D9%85%20%D8%AD%D8%B3%D8%A7%D8%A8%D8%A7%D8%AA%20%D8%A7%D9%84%D8%AA%D9%88%D8%A7%D8%B5%D9%84%20%D8%A7%D9%84%D8%A7%D8%AC%D8%AA%D9%85%D8%A7%D8%B9%D9%8A.pdf",
+          "sourceTitle": "سياسة استخدام حسابات التواصل الاجتماعي",
+          "rank": null
+        }
+      ]
+    },
+    {
+      "id": "Q3",
+      "date": "2026-10-24",
+      "country": "AE",
+      "query": "WhatsApp marketing software Windows UAE",
+      "method": "Country-worded search; no country IP, city, Google gl/hl, or personalization control",
+      "selectedResults": [
+        {
+          "url": "https://www.techjockey.com/ae/category/bulk-whatsapp-marketing-software/windows",
+          "sourceTitle": "Best WhatsApp Marketing Software for Windows in 2026 | Techjockey UAE",
+          "rank": null
+        },
+        {
+          "url": "https://leadsadd.com/nitro",
+          "sourceTitle": "Nitro: WhatsApp Campaign Software for Windows — Leads ADD",
+          "rank": null
+        },
+        {
+          "url": "https://tawasel.io/solutions/whatsapp-marketing-software.html",
+          "sourceTitle": "WhatsApp Marketing Software for UAE Businesses | Tawasel",
+          "rank": null
+        },
+        {
+          "url": "https://www.techjockey.com/ae/category/bulk-whatsapp-marketing-software",
+          "sourceTitle": "Best WhatsApp Marketing Software in UAE in 2026 : Features, Price & Reviews",
+          "rank": null
+        },
+        {
+          "url": "https://getzappio.com/whatsapp-marketing-dubai",
+          "sourceTitle": "WhatsApp Marketing Dubai: Set Up and Run for You | Zappio",
+          "rank": null
+        },
+        {
+          "url": "https://www.whatsenderpro.com/whatsender/",
+          "sourceTitle": "WhatSender Pro — WhatsApp Desktop Software for Windows",
+          "rank": null
+        },
+        {
+          "url": "https://codecanyon.net/item/campaign-bluster-whatsapp-email-marketing-tool-bulk-whatsapp-messaging-with-buttons/61270161",
+          "sourceTitle": "Campaign Bluster – WhatsApp & Email Marketing Tool – Bulk WhatsApp Messaging with Buttons by ydulana",
+          "rank": null
+        },
+        {
+          "url": "https://codecanyon.net/item/button-sender-desktop-software-for-whatsapp-automation/63381649?s_rank=17",
+          "sourceTitle": "Button Sender | Desktop Software for WhatsApp Automation by ydulana",
+          "rank": null
+        },
+        {
+          "url": "https://what-sender.net/uae-whatsender/",
+          "sourceTitle": "WhatSender Pro UAE — Bulk WhatsApp Marketing Software",
+          "rank": null
+        },
+        {
+          "url": "https://app-beca.com/pricing/",
+          "sourceTitle": "BECA Pricing - WhatsApp Marketing Software Plans in UAE",
+          "rank": null
+        },
+        {
+          "url": "https://dastech.gumroad.com/l/wasender",
+          "sourceTitle": "WASender - WhatsApp Marketing Automation Software",
+          "rank": null
+        },
+        {
+          "url": "https://prodnew.etisalat.ae/en/smb/products/digital-products/online-marketing/smart-messaging/whatsapp-marketing.html",
+          "sourceTitle": "e& UAE | Whatsapp Marketing",
+          "rank": null
+        }
+      ]
+    },
+    {
+      "id": "Q4",
+      "date": "2026-10-24",
+      "country": "EG",
+      "query": "برنامج إدارة حسابات السوشيال ميديا للكمبيوتر مصر",
+      "method": "Country-worded search; no country IP, city, Google gl/hl, or personalization control",
+      "selectedResults": [
+        {
+          "url": "https://www.takwed.net/services/social-media-management",
+          "sourceTitle": "إدارة حسابات السوشيال ميديا - تكويد للحلول التقنية",
+          "rank": null
+        },
+        {
+          "url": "https://rawwij.com/",
+          "sourceTitle": "برنامج جدولة منشورات السوشيال ميديا - روّج",
+          "rank": null
+        },
+        {
+          "url": "https://www.redoctopuseg.com/ar/services/social-media",
+          "sourceTitle": "إدارة حسابات سوشيال ميديا في مصر · ريد أوكتوبس",
+          "rank": null
+        },
+        {
+          "url": "https://live.com.eg/billing/",
+          "sourceTitle": "إدارة سوشيال ميديا بالذكاء الاصطناعي ونشر تلقائي | Sada",
+          "rank": null
+        },
+        {
+          "url": "https://igmatrix.com/ar/",
+          "sourceTitle": "IgMatrix — أتمتة Instagram على Windows وMac",
+          "rank": null
+        },
+        {
+          "url": "https://www.syntaxroom.com/services/social-media-ads/",
+          "sourceTitle": "شركة سوشيال ميديا في مصر | إعلانات ممولة وإدارة حسابات - Syntax Room",
+          "rank": null
+        },
+        {
+          "url": "https://aelestra.com/social-media-management-ar",
+          "sourceTitle": "برنامج إدارة التواصل الاجتماعي | خطط، انشر، ونمِّ أعمالك | ايليسترا",
+          "rank": null
+        },
+        {
+          "url": "https://naasher.com/",
+          "sourceTitle": "Naasher — جدولة وإدارة كل شبكاتك الاجتماعية من لوحة واحدة",
+          "rank": null
+        },
+        {
+          "url": "https://ayaapps.com/solutions/desktop-accounting/",
+          "sourceTitle": "برنامج حسابات للكمبيوتر – AYA Apps",
+          "rank": null
+        },
+        {
+          "url": "https://play.google.com/store/apps/details?hl=ar&id=com.socialmedia.social_media_manager",
+          "sourceTitle": "Media Pro Social - التطبيقات على Google Play",
+          "rank": null
+        },
+        {
+          "url": "https://jarveepro.com/ar/",
+          "sourceTitle": "إدارة حسابات التواصل الاجتماعي · الأتمتة بالذكاء الاصطناعي — JarveePro · Nexus",
+          "rank": null
+        }
+      ]
+    }
+  ]
+}

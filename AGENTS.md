@@ -1,5 +1,13 @@
 # Sky Pro project instructions
 
+## Post-launch SEO growth — 2026-10-24
+- The accepted a8a3560 application/build remains the baseline; do not repeat the design/rebuild/article-delivery work. Growth stays open until measured demand/visibility/qualified conversions and real authority work exist.
+- User authorized measurement setup with skywaveads@gmail.com and confirmed the specific Search Console ownership grant. Official UI now verifies ownership and successful sitemap processing with 45 discovered URLs; performance/index reports are processing and CWV has insufficient usage data. Discovery is not indexing or ranking.
+- PR #17 merged at 0a307d802fa5fd4b23b92d86942926085eb76aad; only its 53-byte verification asset was deployed, not a rebuilt app. HTTPS hash matches Git. Installed Next indexes public names at startup, requiring one named skypro reload. Other 20 PM2 services retained PID/status. No DB/env/DNS/payment or unrelated project changes.
+- New branch feat/postlaunch-seo-audit-20261024 corrects guide measurement and records reviewed evidence. Thirty-nine URLs KEEP editorially; measured SERP acceptance OPEN. No canonical/body/UI change. Source fingerprints checked; actual catalog has 20 cards and 897 normalized collector words (917 raw); editorial SSR's broader scope is 1109.
+- GA4 independent setup and Bing manual verification are in progress; final account terms/access confirmation gates apply. Do not reuse another project's measurement stream or imply third-party GSC delegation. Product account creation is pending verification; do not count it as an active trial.
+- Eight new authority opportunities are research/HOLD, zero acquired links/outreach/submissions. Desktop media request hit usage limit; no new images. Evidence: D:/SkyPro-seo-growth-20261024 and docs/POSTLAUNCH_SEO_20261024.md. No new ZIP.
+
 ## Published recovery — 2026-10-24 Cairo
 - Owner explicitly approved publication: «اعتماد النشر», for candidate f19df6b / PR #15 and the tested review package. PR #15 merged to a8a3560430c40d357d1a5c4c37776454f4accc97. This supersedes the pending publication gate below.
 - Live exact source a8a3560430c40d357d1a5c4c37776454f4accc97; web tree cea8e3f07d6725d2b04b5dfcbe1b2c8826b9c969; Linux build qU1VvtZiTP5PhvRyshPUg. Runtime /var/www/skypro.skywaveads.com/releases/20261024-a8a3560/skypro-web, named PM2 skypro. Current PID 1062154 / 0 restarts at verification; recheck before repeating time-sensitive process facts.

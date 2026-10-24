@@ -1,0 +1,421 @@
+{
+  "reviewDate": "2026-10-24",
+  "scope": "Read-only discovery, qualification and prepared angles. No external communication, signup, submission, payment, partnership or publication.",
+  "baseline": "Previous four opportunities retained in docs/research/authority-opportunities-20261023.json; this tracker adds eight distinct organizations, rather than relabeling those four as execution.",
+  "limitations": [
+    "Country words in search queries are hints, not controlled EG/SA/AE Google rankings.",
+    "Search volume, KD, current position, impressions, clicks, CTR and trial conversions remain unavailable in this research session.",
+    "Selected results are not a complete SERP universe. Primary-page comparisons do not prove market share, independent reputation, compliance, anti-ban safety, operation or mobile usability.",
+    "No installation, account creation, vendor contact, external publishing, purchase or submission was performed.",
+    "No country doorway pages, regional prices, local offices or unsupported SkyPro features are recommended."
+  ],
+  "websiteCount": 8,
+  "verifiedAcquiredLinks": 0,
+  "externalMessagesSent": 0,
+  "accountsCreated": 0,
+  "submissions": 0,
+  "doNotUse": [
+    "PBN",
+    "spam comments",
+    "mass outreach",
+    "fabricated reviews",
+    "paid ranking links",
+    "undisclosed sponsored placements"
+  ],
+  "statusRules": {
+    "RESEARCHED": "Primary paths checked; not contacted, accepted or published.",
+    "HOLD": "Do not contact until named quality, commercial or eligibility condition is resolved.",
+    "ACQUIRED": "Requires a publicly live URL, actual link check and date. No entry is acquired."
+  },
+  "opportunities": [
+    {
+      "id": "egyptinnovate",
+      "website": "EgyptInnovate",
+      "url": "https://egyptinnovate.com/",
+      "country": [
+        "EG"
+      ],
+      "countryEvidence": "صفحة الاتصال الرسمية تذكر TIEC، القرية الذكية، القاهرة.",
+      "relevance": "منظومة ابتكار وشركات وتقنية؛ ملف شركة صحيح أو مادة تعليمية عن تقييم البرمجيات، لا رابط عشوائي.",
+      "editorialQuality": "دليل كيانات وتعلم وأدوات؛ نوعه منظومة أعمال وليس ضمان مراجعة تحريرية لكل ملف. قبول SkyPro غير مؤكد.",
+      "contactMethod": {
+        "type": "Official contact form",
+        "url": "https://egyptinnovate.com/en/contact-us",
+        "verified": "GET200 + primary page reviewed",
+        "notes": "نموذج اتصال/شراكات وRegister your entity ظاهر؛ لم يُملأ."
+      },
+      "proposedContent": "بطاقة منتج عربية دقيقة مع جهة التطوير، Windows، الصور الحقيقية وحدود الوحدات؛ قائمة اختبار تجربة بمهمة مأذونة.",
+      "targetURL": "https://skypro.skywaveads.com/",
+      "secondaryTarget": "https://skypro.skywaveads.com/guides/two-day-trial-checklist",
+      "status": "RESEARCHED_ELIGIBILITY_CHECK_REQUIRED",
+      "readiness": "يجب التأكد من أهلية الكيان وحق تمثيله وموافقة شروط المنصة قبل تسجيل أو إضافة.",
+      "priority": "P1_AFTER_OWNER_AUTHORIZATION",
+      "sources": [
+        "https://egyptinnovate.com/en/contact-us",
+        "https://egyptinnovate.com/en/entities/profile/sympl-1"
+      ],
+      "verificationDate": "2026-10-24",
+      "publishedLink": null,
+      "publishedLinkVerifiedAt": null,
+      "contactedAt": null,
+      "accountCreated": false,
+      "submitted": false,
+      "externalMessagesSent": 0,
+      "linkAttributes": "NOT_APPLICABLE_NO_PUBLISHED_LINK",
+      "contactPageMetadata": {
+        "httpStatus": 200,
+        "requestAt": "2026-10-24T02:14:36.049Z",
+        "finalUrl": "https://egyptinnovate.com/en/contact-us",
+        "title": "Contact Us | EgyptInnovate",
+        "h1": [
+          "Get in touch"
+        ],
+        "htmlSha256": "c7250a2b73ff3afe9f0b3d05bc1828861e2a9d8c65f001c200f0aee9ae0660a0",
+        "httpError": null,
+        "viewportMeta": true
+      }
+    },
+    {
+      "id": "computer-wd",
+      "website": "عالم الكمبيوتر",
+      "url": "https://www.computer-wd.com/",
+      "country": [
+        "EG"
+      ],
+      "countryEvidence": "مرشح لجمهور عربي/مصري؛ لم يثبت عنوان مقر في المصادر المراجعة، فلا يُنسب له مقر مصري.",
+      "relevance": "مراجعات وبرامج Windows؛ ملاءمة مباشرة لتجربة أداة مكتبية.",
+      "editorialQuality": "مقالات برامج مؤرخة ومؤلفون؛ صفحة الاتصال تصف دعم مقالات sponsored فقط. لا تعامل كفرصة رابط تحريري مجاني.",
+      "contactMethod": {
+        "type": "Public business email on official page",
+        "url": "https://www.computer-wd.com/p/contact-us.html",
+        "address": "ComputerWd1@Gmail.com",
+        "verified": "GET200 + primary page reviewed",
+        "notes": "مسار دعائي رسمي، لم تُرسل رسالة."
+      },
+      "proposedContent": "عرض للمحرر لتجربة إصدار محدد على مهمة مأذونة، مع فصل صورة القائمة عن نتيجة التشغيل. أي تعاون ممول يفصح عنه ويؤهل رابطه.",
+      "targetURL": "https://skypro.skywaveads.com/",
+      "secondaryTarget": "https://skypro.skywaveads.com/guides/windows-or-cloud-marketing-tool",
+      "status": "HOLD_SPONSORED_ONLY_REQUIRES_DISCLOSURE_AND_TERMS",
+      "readiness": "لا يُشترى رابط يمرر ترتيبًا. لا سعر أو أهلية أو جودة مراجعة مضمونة. يلزم تصريح مراسلة وميزانية منفصل إن أراد المالك.",
+      "priority": "P3_SPONSORED_REVIEW_ONLY",
+      "sources": [
+        "https://www.computer-wd.com/",
+        "https://www.computer-wd.com/p/contact-us.html"
+      ],
+      "verificationDate": "2026-10-24",
+      "publishedLink": null,
+      "publishedLinkVerifiedAt": null,
+      "contactedAt": null,
+      "accountCreated": false,
+      "submitted": false,
+      "externalMessagesSent": 0,
+      "linkAttributes": "NOT_APPLICABLE_NO_PUBLISHED_LINK",
+      "contactPageMetadata": {
+        "httpStatus": 200,
+        "requestAt": "2026-10-24T02:14:45.415Z",
+        "finalUrl": "https://www.computer-wd.com/p/contact-us.html",
+        "title": "إتصل بنا | Contact Us",
+        "h1": [
+          "إتصل بنا | Contact Us"
+        ],
+        "htmlSha256": "9fcc4db004e6b0f390a6327e3ad0bc315eeeac41b33e2727f459f1173442ec2e",
+        "httpError": null,
+        "viewportMeta": true
+      }
+    },
+    {
+      "id": "waya",
+      "website": "WAYA",
+      "url": "https://waya.media/",
+      "country": [
+        "EG",
+        "SA",
+        "AE"
+      ],
+      "countryEvidence": "غطاء MENA؛ صفحة الجهة تنشر مصر والخليج؛ ليست ثلاثة مقرات محلية مثبتة.",
+      "relevance": "قصص شركات ومنتجات تقنية، ملاءمة مشروطة بقصة أصلية ودليل.",
+      "editorialQuality": "توجد مواد مؤرخة ومسار أخبار، لكن GET الحالي لصفحة الاتصال كشف رابط كازينو خارجي غير مرتبط بالمجال داخل وصف الشبكة. لا تشخيص أمني من هذه الملاحظة وحدها.",
+      "contactMethod": {
+        "type": "Official press email",
+        "url": "https://waya.media/contact/",
+        "address": "stories@waya.media",
+        "verified": "GET200; unrelated outbound link independently observed",
+        "notes": "لا ترسل قبل مراجعة الجودة الحالية للصفحة والجهة."
+      },
+      "proposedContent": "فقط بعد إزالة التحفظ: مادة أصلية عن كيف يتحقق مشتري عربي من أداة Windows، مدعومة بصور إصدار ومعايير تجربة؛ لا أرقام استخدام مفترضة.",
+      "targetURL": "https://skypro.skywaveads.com/guides/two-day-trial-checklist",
+      "status": "HOLD_QUALITY_REVIEW",
+      "readiness": "ليست ضمن قائمة جاهزة للمراسلة بسبب الملاحظة الحالية. لا روابط مكتسبة أو قبول.",
+      "priority": "HOLD",
+      "sources": [
+        "https://waya.media/contact/",
+        "https://waya.media/about/"
+      ],
+      "verificationDate": "2026-10-24",
+      "publishedLink": null,
+      "publishedLinkVerifiedAt": null,
+      "contactedAt": null,
+      "accountCreated": false,
+      "submitted": false,
+      "externalMessagesSent": 0,
+      "linkAttributes": "NOT_APPLICABLE_NO_PUBLISHED_LINK",
+      "contactPageMetadata": {
+        "httpStatus": 200,
+        "requestAt": "2026-10-24T02:14:38.745Z",
+        "finalUrl": "https://waya.media/contact/",
+        "title": "Contact - WAYA",
+        "h1": [
+          "SIGN UP FOR OUR",
+          "NEWSLETTER",
+          "Contact"
+        ],
+        "htmlSha256": "313ec8b14f84e7a0820da1f549e2ef5300c51029c22f7775b1ec8c55ceb2b092",
+        "httpError": null,
+        "viewportMeta": true
+      }
+    },
+    {
+      "id": "saudishopper",
+      "website": "Saudi ICT Shopper News",
+      "url": "https://saudishopper.com.sa/en/",
+      "country": [
+        "SA"
+      ],
+      "countryEvidence": "عنوان الرياض منشور في الاتصال، وتعريف تحرير سعودي في المعايير.",
+      "relevance": "أخبار تطبيقات وبرامج وتقنية؛ يحتاج سببًا خبريًا أو مادة اختبار ذات فائدة للقارئ السعودي.",
+      "editorialQuality": "معايير تحرير وتصحيح وإفصاح ونماذج أخبار تطبيقات متاحة. هذه سياسات معلنة لا قياسًا مستقلاً للسمعة أو authority.",
+      "contactMethod": {
+        "type": "Official contact / press route",
+        "url": "https://saudishopper.com.sa/en/contact/",
+        "whatsappUrl": "https://wa.me/966565275572",
+        "verified": "GET200 + primary contact and editorial standards reviewed",
+        "notes": "البريد محمي في نص الاسترجاع؛ استخدم رابط الاتصال الرسمي، لا تخمين عنوان. لم يُضغط واتساب."
+      },
+      "proposedContent": "قائمة مقارنة شراء أداة Windows مقابل خدمة نشر سحابية، بمثال اختبار واقعي وحدود التشغيل والصور الصحيحة؛ بلا سعر SAR مخترع أو ادعاء مقر سعودي.",
+      "targetURL": "https://skypro.skywaveads.com/guides/windows-or-cloud-marketing-tool",
+      "status": "RESEARCHED_AWAITING_EDITORIAL_ASSET_AND_AUTHORIZATION",
+      "readiness": "تجهيز مادة أصلية قابلة للتحقق أولًا؛ أي placement مدفوع يلزم الإفصاح وتأهيل الرابط. لا وعد نشر.",
+      "priority": "P2_EDITORIAL_FIT",
+      "sources": [
+        "https://saudishopper.com.sa/en/contact/",
+        "https://saudishopper.com.sa/en/editorial-standards/"
+      ],
+      "verificationDate": "2026-10-24",
+      "publishedLink": null,
+      "publishedLinkVerifiedAt": null,
+      "contactedAt": null,
+      "accountCreated": false,
+      "submitted": false,
+      "externalMessagesSent": 0,
+      "linkAttributes": "NOT_APPLICABLE_NO_PUBLISHED_LINK",
+      "contactPageMetadata": {
+        "httpStatus": 200,
+        "requestAt": "2026-10-24T02:14:39.513Z",
+        "finalUrl": "https://saudishopper.com.sa/en/contact/",
+        "title": "Contact Us - Saudishopper",
+        "h1": [
+          "Contact Us"
+        ],
+        "htmlSha256": "bd715d532dec3bbaffe44d769e03c1b2d2e065a2280f6484eae2ea332e338372",
+        "httpError": null,
+        "viewportMeta": true
+      }
+    },
+    {
+      "id": "menabytes",
+      "website": "MENAbytes",
+      "url": "https://www.menabytes.com/",
+      "country": [
+        "EG",
+        "SA",
+        "AE"
+      ],
+      "countryEvidence": "جمهور MENA معلن؛ الصفحة الرئيسية تعرض قصصًا عن السعودية ومصر ودبي. مقر داخل كل دولة غير مثبت.",
+      "relevance": "شركات ناشئة ومنتجات تقنية؛ ملاءمة لقصة مؤسس/اختبار جديد مع أدلة، لا قائمة روابط.",
+      "editorialQuality": "تعريف هيئة ورسالة تحرير ونسب للأخبار ومسار تواصل رسمي؛ لا تحقق مستقل من أرقام الجمهور المعلنة.",
+      "contactMethod": {
+        "type": "Official public email / form",
+        "url": "https://www.menabytes.com/contact/",
+        "address": "hello@menabytes.com",
+        "verified": "GET200 + primary page reviewed",
+        "notes": "نموذج موجود؛ لم يُملأ أو يُرسل شيء."
+      },
+      "proposedContent": "زاوية منتج محلي بواجهة عربية: ما الذي يستطيع المستخدم إثباته في يومي التجربة؟ نحتاج مقابلة صاحب المنتج ونتيجة اختبار مأذون قبل pitch، لا قصة نجاح مختلقة.",
+      "targetURL": "https://skypro.skywaveads.com/guides/two-day-trial-checklist",
+      "status": "RESEARCHED_NEWSWORTHINESS_NOT_ESTABLISHED",
+      "readiness": "قصة منتج ونقل خبرة موثقة؛ ليس ضمانًا بقبول إعلان إطلاق تقني فقط.",
+      "priority": "P2_AFTER_ORIGINAL_EVIDENCE",
+      "sources": [
+        "https://www.menabytes.com/contact/",
+        "https://www.menabytes.com/about/",
+        "https://www.menabytes.com/"
+      ],
+      "verificationDate": "2026-10-24",
+      "publishedLink": null,
+      "publishedLinkVerifiedAt": null,
+      "contactedAt": null,
+      "accountCreated": false,
+      "submitted": false,
+      "externalMessagesSent": 0,
+      "linkAttributes": "NOT_APPLICABLE_NO_PUBLISHED_LINK",
+      "contactPageMetadata": {
+        "httpStatus": 200,
+        "requestAt": "2026-10-24T02:14:45.305Z",
+        "finalUrl": "https://www.menabytes.com/contact/",
+        "title": "Contact Us - MENAbytes",
+        "h1": [
+          "Contact Us"
+        ],
+        "htmlSha256": "3a0b2b2e14c0df8f71f2e73ff468a50febafaa90cebd5aeedfe635b6aa99d2e4",
+        "httpError": null,
+        "viewportMeta": true
+      }
+    },
+    {
+      "id": "aitnews",
+      "website": "البوابة التقنية / AITnews",
+      "url": "https://aitnews.com/",
+      "country": [
+        "AE"
+      ],
+      "countryEvidence": "صفحة عن البوابة الرسمية تذكر دبي للإعلام؛ لا قياس جمهور إماراتي مستقل.",
+      "relevance": "تغطية برامج وتقنية عربية؛ مناسب لشرح تقني صادق عن تقييم أداة سطح مكتب.",
+      "editorialQuality": "مؤسسة تقنية عربية مع تعريف ومسار بيان صحفي. فتح أداة الويب أعاد403 في محاولة؛ GET غير الموثق أعاد200 وحُفظت metadata. لا اختبار تحرير/سمعة مستقل.",
+      "contactMethod": {
+        "type": "Official press email",
+        "url": "https://aitnews.com/contact-us/",
+        "address": "Editorial@aitnews.com",
+        "verified": "Primary indexed contact + live GET200",
+        "notes": "يظهر البريد الرسمي لإرسال بيان صحفي؛ لم تُرسل رسالة."
+      },
+      "proposedContent": "تجربة تعليمية قصيرة: الفرق بين لقطة واجهة ونتيجة تشغيل، مع معايير تجربة Windows وحدود الصور الحالية؛ لا بيان يدعي نجاح تشغيل OLX أو Google Maps.",
+      "targetURL": "https://skypro.skywaveads.com/guides/two-day-trial-checklist",
+      "status": "RESEARCHED_AWAITING_ASSET_AND_AUTHORIZATION",
+      "readiness": "يلزم إصدار قابل لإعادة الاختبار وخطاب يوضح ما تم التحقق منه. لا ضمان نشر أو رابط.",
+      "priority": "P2_TECH_EDITORIAL",
+      "sources": [
+        "https://aitnews.com/contact-us/",
+        "https://aitnews.com/about-us/"
+      ],
+      "verificationDate": "2026-10-24",
+      "publishedLink": null,
+      "publishedLinkVerifiedAt": null,
+      "contactedAt": null,
+      "accountCreated": false,
+      "submitted": false,
+      "externalMessagesSent": 0,
+      "linkAttributes": "NOT_APPLICABLE_NO_PUBLISHED_LINK",
+      "contactPageMetadata": {
+        "httpStatus": 200,
+        "requestAt": "2026-10-24T02:14:41.374Z",
+        "finalUrl": "https://aitnews.com/contact-us/",
+        "title": "اتصل بنا | البوابة التقنية",
+        "h1": [
+          "اتصل بنا"
+        ],
+        "htmlSha256": "7de05f1b3c1b2d880d80384c9c856240c1db6b4a9d49d3f2c85a0f9af8fa71b2",
+        "httpError": null,
+        "viewportMeta": true
+      }
+    },
+    {
+      "id": "techjockey",
+      "website": "Techjockey UAE",
+      "url": "https://www.techjockey.com/ae/",
+      "country": [
+        "AE"
+      ],
+      "countryEvidence": "سوق UAE رسمي وصفحة فئة Windows/WhatsApp؛ الشركة الأم عنوانها في الهند وليس مقرًا إماراتيًا مثبتًا.",
+      "relevance": "أقرب فرصة دليل برامج لنية شراء Windows WhatsApp؛ الفئة تعرض بدائل منتج محددة.",
+      "editorialQuality": "دليل/سوق تجاري مع سياسة تحرير وروابط بائعين؛ التقييمات والسمعة لم تفحص استقلاليًا، والتسعير قد يختلف عن الجهة الأصلية.",
+      "contactMethod": {
+        "type": "Official seller-partnership email",
+        "url": "https://www.techjockey.com/company/contact-us",
+        "address": "partnership@techjockey.com",
+        "verified": "GET200 + primary contact reviewed",
+        "notes": "Become a Seller مرتبط؛ لم يُفتح حساب أو يُقبل عقد."
+      },
+      "proposedContent": "بيانات بائع دقيقة: منتج Windows عربي، سعر EGP المعتمد فقط، تجربة يومين، متطلبات الوحدات وصور حقيقية. اطلب تصنيفًا صحيحًا وحدود اللغة والبلد.",
+      "targetURL": "https://skypro.skywaveads.com/",
+      "status": "RESEARCHED_VENDOR_ELIGIBILITY_TERMS_REQUIRED",
+      "readiness": "أهلية التوزيع والعمولة واللغة غير متحققة. لا إعداد سعر AED أو ادعاء Meta API معتمد. أي تعاون تجاري يتطلب عقدًا وتصريحًا.",
+      "priority": "P1_QUALIFIED_DIRECTORY_CHECK",
+      "sources": [
+        "https://www.techjockey.com/ae/category/bulk-whatsapp-marketing-software/windows",
+        "https://www.techjockey.com/company/contact-us"
+      ],
+      "verificationDate": "2026-10-24",
+      "publishedLink": null,
+      "publishedLinkVerifiedAt": null,
+      "contactedAt": null,
+      "accountCreated": false,
+      "submitted": false,
+      "externalMessagesSent": 0,
+      "linkAttributes": "NOT_APPLICABLE_NO_PUBLISHED_LINK",
+      "contactPageMetadata": {
+        "httpStatus": 200,
+        "requestAt": "2026-10-24T02:14:41.899Z",
+        "finalUrl": "https://www.techjockey.com/company/contact-us",
+        "title": "Contact US - Techjockey | A Trusted Software Marketplace",
+        "h1": [
+          "We&rsquo;re Here to Help"
+        ],
+        "htmlSha256": "6a4d33e549101f75b467d746c0d6c166f99a41f0105f5fe465c04f4b6cbc9568",
+        "httpError": null,
+        "viewportMeta": true
+      }
+    },
+    {
+      "id": "sourceforge",
+      "website": "SourceForge Business Software",
+      "url": "https://sourceforge.net/software/",
+      "country": [
+        "GLOBAL"
+      ],
+      "targetMarkets": [
+        "EG",
+        "SA",
+        "AE"
+      ],
+      "countryEvidence": "دليل عالمي؛ لا تقسيم أو ترتيب مصر/السعودية/الإمارات مثبت.",
+      "relevance": "دليل تجاري يدعم Windows وفئات التسويق؛ مناسب لمنتج مملوك لا يشترط الادعاء بأنه مفتوح المصدر.",
+      "editorialQuality": "طلب listing يخضع للمراجعة؛ يوجد تمييز بين الدليل التجاري وopen-source. لا جودة عميل أو رابط يضمن ترتيبًا.",
+      "contactMethod": {
+        "type": "Official add-product form",
+        "url": "https://sourceforge.net/software/vendors/new",
+        "verified": "GET200 + primary form and support instructions reviewed",
+        "notes": "يشترط بيانات المنتج وقبول شروط واتصالات؛ لم يُملأ أو يُرسل. افحص وجود listing سابق أولًا."
+      },
+      "proposedContent": "وصف وظيفي دقيق وlogo وصور الإصدار الفعلي ولغة المنتج وتفاصيل تجربة وترخيص متحققة، لا تقييمات مصطنعة.",
+      "targetURL": "https://skypro.skywaveads.com/",
+      "status": "RESEARCHED_EXISTING_LISTING_AND_ELIGIBILITY_CHECK_REQUIRED",
+      "readiness": "البحث عن listing سابق ثم مراجعة الشروط وتمثيل الشركة قبل تقديم. لا نضمن الموافقة أو وجود link dofollow.",
+      "priority": "P1_QUALIFIED_DIRECTORY_CHECK",
+      "sources": [
+        "https://sourceforge.net/software/vendors/new",
+        "https://sourceforge.net/p/forge/site-support/27068/",
+        "https://sourceforge.net/software/"
+      ],
+      "verificationDate": "2026-10-24",
+      "publishedLink": null,
+      "publishedLinkVerifiedAt": null,
+      "contactedAt": null,
+      "accountCreated": false,
+      "submitted": false,
+      "externalMessagesSent": 0,
+      "linkAttributes": "NOT_APPLICABLE_NO_PUBLISHED_LINK",
+      "contactPageMetadata": {
+        "httpStatus": 200,
+        "requestAt": "2026-10-24T02:14:43.655Z",
+        "finalUrl": "https://sourceforge.net/software/vendors/new",
+        "title": "Add Your Business Software or Service to SourceForge",
+        "h1": [
+          "Add Your Business Software or Service to SourceForge"
+        ],
+        "htmlSha256": "f5658bf7ec0d1a7bec811a5615ca7f867fab686a93ed744d626ccf84fd6f335e",
+        "httpError": null,
+        "viewportMeta": true
+      }
+    }
+  ]
+}

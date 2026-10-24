@@ -1,0 +1,188 @@
+{
+  "generatedAt": "2026-10-24T02:16:43.144Z",
+  "method": "Hand review of distinct question, deliverable, funnel stage, source and link direction; not inferred from shingle score. Shared generic CTA/disclaimer/template language alone is not a merge reason.",
+  "clusters": [
+    {
+      "id": "software-v-agency-v-cloud",
+      "urls": [
+        "/",
+        "/platforms",
+        "/guides/software-or-social-media-agency",
+        "/guides/windows-or-cloud-marketing-tool",
+        "/guides/two-day-trial-checklist"
+      ],
+      "evidence": [
+        "agency: responsibility table separates supplier deliverables and user responsibilities.",
+        "cloud: work-location/check-device/evaluation-sheet concern device, license and handover.",
+        "trial: before-registration/first-test/record concern an evaluation plan."
+      ],
+      "decision": "KEEP_DISTINCT_ROLES",
+      "ownedQueries": "Home: product buying. Catalog: module selection. Agency guide: solution category. Cloud guide: deployment requirements. Trial guide: evaluation plan.",
+      "risk": "Generic إدارة حسابات/service/software phrases can overlap; no agency commercial landing page is justified.",
+      "canonicalAction": "KEEP_SELF_CANONICAL",
+      "measuredCannibalization": "OPEN_NOT_VERIFIED"
+    },
+    {
+      "id": "account-organization-support-handover",
+      "urls": [
+        "/platforms/accounts",
+        "/platforms/security",
+        "/guides/name-and-add-platform-accounts",
+        "/guides/session-problem-support-brief",
+        "/guides/multi-account-work-handover"
+      ],
+      "evidence": [
+        "naming-rule/prepare-fields: specific account name and field review.",
+        "support-note/redact/after-reply: reproducible support report, secrets redaction, repeat test.",
+        "one-row/state-and-proof/receiving-check: task status and handover evidence.",
+        "security platform: session presets and intervals, not an account-recovery guarantee."
+      ],
+      "decision": "KEEP_DISTINCT_TASK_OUTPUTS",
+      "ownedQueries": "accounts: product module. naming: clear account labels. support: error report. handover: work log. security: configuration limits.",
+      "risk": "Do not make all pages target broad إدارة حسابات or حل مشكلة الحساب. Each has a different expected answer.",
+      "canonicalAction": "KEEP_SELF_CANONICAL",
+      "measuredCannibalization": "OPEN_NOT_VERIFIED"
+    },
+    {
+      "id": "whatsapp-inputs-v-message-v-email",
+      "urls": [
+        "/platforms/whatsapp",
+        "/platforms/send-emails",
+        "/guides/contact-list-quality-check",
+        "/guides/whatsapp-message-test",
+        "/guides/smtp-test-message-checklist"
+      ],
+      "evidence": [
+        "contact-list: source/normalize/deduplicate/approve concern input eligibility.",
+        "WhatsApp: recipient/message/attachment/check-result concern a consented single message.",
+        "SMTP: provider-sheet/credentials/delivery concern server auth, recipient mailbox and reply."
+      ],
+      "decision": "KEEP_DIFFERENT_CHANNEL_AND_STAGE",
+      "risk": "Common preparation words do not justify merging; no official WhatsApp integration or guaranteed deliverability inferred.",
+      "canonicalAction": "KEEP_SELF_CANONICAL",
+      "measuredCannibalization": "OPEN_NOT_VERIFIED"
+    },
+    {
+      "id": "facebook-module-v-fields",
+      "urls": [
+        "/platforms/facebook",
+        "/guides/facebook-task-inputs"
+      ],
+      "evidence": [
+        "Platform: unit entry points, requirements, evidence limits.",
+        "Guide fields/limit explain a visible data-task form and distinguish publishing."
+      ],
+      "decision": "KEEP_PRODUCT_VS_FIELD_EXPLANATION",
+      "risk": "Do not give guide ownership of all Facebook program queries or call a data screenshot a publishing walkthrough.",
+      "canonicalAction": "KEEP_SELF_CANONICAL",
+      "measuredCannibalization": "OPEN_NOT_VERIFIED"
+    },
+    {
+      "id": "instagram-video-pinterest-threads-briefs",
+      "urls": [
+        "/platforms/instagram",
+        "/platforms/tiktok",
+        "/platforms/pinterest",
+        "/platforms/threads",
+        "/guides/instagram-task-brief",
+        "/guides/tiktok-video-task-checklist",
+        "/guides/pinterest-board-content-brief",
+        "/guides/threads-account-task-review"
+      ],
+      "evidence": [
+        "Instagram content-pack/match-function: approved text/image and a matching function.",
+        "TikTok master/rights: full video, timecoded issue and source audio rights.",
+        "Pinterest theme/assets/description: board idea, image/destination consistency, distinct useful captions.",
+        "Threads destination/copy/function: adapting meaning and identity for a separate destination."
+      ],
+      "decision": "KEEP_DESTINATION_SPECIFIC_OUTPUTS",
+      "risk": "These are generic preparation guides with moderate commercial relevance. They are not proven operating tutorials; adding more generic lookalikes without query data would dilute usefulness.",
+      "canonicalAction": "KEEP_SELF_CANONICAL",
+      "measuredCannibalization": "OPEN_NOT_VERIFIED"
+    },
+    {
+      "id": "telegram-standard-premium-destination",
+      "urls": [
+        "/platforms/telegram",
+        "/platforms/telegram-premium",
+        "/guides/telegram-group-channel-task"
+      ],
+      "evidence": [
+        "Two current module menus differ.",
+        "Guide destination/permissions distinguishes channel/group and account role.",
+        "Guide product explicitly refuses to equate Sky Pro module name with official Telegram subscription."
+      ],
+      "decision": "KEEP_TWO_MODULES_PLUS_GUIDE",
+      "risk": "Unit name ambiguity is real. Premium official membership must never be claimed as included.",
+      "canonicalAction": "KEEP_SELF_CANONICAL",
+      "measuredCannibalization": "OPEN_NOT_VERIFIED"
+    },
+    {
+      "id": "linkedin-x-reddit-communication",
+      "urls": [
+        "/platforms/linkedin",
+        "/platforms/twitter",
+        "/platforms/reddit",
+        "/guides/linkedin-outreach-brief",
+        "/guides/x-search-or-message-task",
+        "/guides/reddit-community-checklist"
+      ],
+      "evidence": [
+        "LinkedIn reason/identity/request: professional message with a genuine prior request example.",
+        "X classify/policy/result: distinguish search/post/message and confirm execution route.",
+        "Reddit read/contribution/no-repeat: community-specific contributions and no mass promotion."
+      ],
+      "decision": "KEEP_CONTEXT_AND_POLICY_DISTINCT",
+      "risk": "These are not equivalent requests. Relevant APIs/authorized methods remain product evidence gaps, not keyword opportunities to overclaim.",
+      "canonicalAction": "KEEP_SELF_CANONICAL",
+      "measuredCannibalization": "OPEN_NOT_VERIFIED"
+    },
+    {
+      "id": "maps-platform-v-evaluation",
+      "urls": [
+        "/platforms/google-maps",
+        "/guides/maps-data-task-evaluation"
+      ],
+      "evidence": [
+        "Platform states menu-only evidence and asks for proof of search/export.",
+        "Guide purpose/access/proof/quality adds source, required fields, attribution/storage and acceptance criteria."
+      ],
+      "decision": "KEEP_WITH_PRIORITY_OVERLAP_WATCH",
+      "risk": "Closest commercial-investigation pair; both ask for proof. Keep guide because of independent evaluation detail; do not assert absence of cannibalization. If same queries land on both and answers converge after true product proof, prefer platform as commercial owner and a narrower source/evaluation guide.",
+      "canonicalAction": "KEEP_SELF_CANONICAL",
+      "measuredCannibalization": "OPEN_NOT_VERIFIED"
+    },
+    {
+      "id": "olx-platform-v-demo",
+      "urls": [
+        "/platforms/olx",
+        "/guides/olx-demo-questions"
+      ],
+      "evidence": [
+        "Platform is brief module-status/availability disclosure.",
+        "Guide market/availability/demo/decision provides a country-specific demo request template and a complete input-to-result acceptance sheet."
+      ],
+      "decision": "KEEP_WITH_PRIORITY_OVERLAP_WATCH",
+      "risk": "Closest status/demonstration overlap; no independent screen or function result exists. Only measured page/query evidence and loss of unique answer would justify later merge.",
+      "canonicalAction": "KEEP_SELF_CANONICAL",
+      "measuredCannibalization": "OPEN_NOT_VERIFIED"
+    },
+    {
+      "id": "unpaired-modules",
+      "urls": [
+        "/platforms/snapchat",
+        "/platforms/auto-point"
+      ],
+      "evidence": [
+        "Snapchat availability/lock requirements differ from Auto Point X/Instagram task menu.",
+        "No article targets the same specific module."
+      ],
+      "decision": "KEEP_NAVIGATIONAL_SCOPE",
+      "risk": "Do not turn vague function labels into ready-made growth, account-unlock or result claims. Their direct commercial relevance is evidence-limited.",
+      "canonicalAction": "KEEP_SELF_CANONICAL",
+      "measuredCannibalization": "OPEN_NOT_VERIFIED"
+    }
+  ],
+  "mergeThreshold": "Review an overlap when authorized GSC shows sustained query/page switching or mismatched landing intent with enough observations. First improve intent boundaries/links and verify product proof. Merge only when two pages answer substantially the same primary task and one adds no unique useful answer; preserve redirects and internal links if an approved merge is ever implemented.",
+  "timeWindow": "No arbitrary ranking or conversion success is inferred from two days after publication. Choose a window consistent with actual indexation and query volume."
+}

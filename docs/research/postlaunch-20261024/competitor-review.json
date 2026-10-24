@@ -1,0 +1,539 @@
+{
+  "reviewDate": "2026-10-24",
+  "method": "Country-worded search + current primary-site review + unauthenticated HTTP metadata where successful",
+  "baselineFilesRead": [
+    "D:/SkyPro-theme-20261015/docs/research/organic-markets-20261022.json",
+    "D:/SkyPro-theme-20261015/docs/research/authority-opportunities-20261023.json",
+    "D:/SkyPro-theme-20261015/docs/research/press-kit-20261023.md"
+  ],
+  "limitations": [
+    "Country words in search queries are hints, not controlled EG/SA/AE Google rankings.",
+    "Search volume, KD, current position, impressions, clicks, CTR and trial conversions remain unavailable in this research session.",
+    "Selected results are not a complete SERP universe. Primary-page comparisons do not prove market share, independent reputation, compliance, anti-ban safety, operation or mobile usability.",
+    "No installation, account creation, vendor contact, external publishing, purchase or submission was performed.",
+    "No country doorway pages, regional prices, local offices or unsupported SkyPro features are recommended."
+  ],
+  "competitors": [
+    {
+      "id": "whatsenderpro",
+      "name": "WhatSender Pro",
+      "classification": "PARTIAL_DIRECT_WINDOWS_WHATSAPP",
+      "countries": [
+        "EG",
+        "SA",
+        "AE"
+      ],
+      "countryBasis": "صفحات رسمية تحمل أسماء الدول الثلاث؛ لا إثبات مقر محلي أو ترتيب محلي.",
+      "queryIds": [
+        "Q3"
+      ],
+      "url": "https://www.whatsenderpro.com/egypt-whatsender/",
+      "otherSources": [
+        "https://www.whatsenderpro.com/saudi-arabia-whatsender/",
+        "https://www.whatsenderpro.com/uae-whatsender/",
+        "https://www.whatsenderpro.com/whatsender/"
+      ],
+      "intent": "شراء برنامج Windows لمهام واتساب؛ يتداخل مع وحدة واتساب فقط، وليس كل SkyPro.",
+      "productEvidence": "الموقع يعرض رابط تنزيل Windows وصفحات ميزات وترخيص وتوثيق. لم يُثبّت المنتج أو يُختبر الإرسال.",
+      "cta": "شراء الترخيص أو تنزيل Windows؛ لا شراء أو تنزيل نُفّذ.",
+      "contentStrength": "يربط صفحة العرض بمتطلبات التنزيل وشرح الترخيص؛ وجود هذه الصفحات يفيد المشتري قبل التجربة.",
+      "trust": "أرقام العملاء والميزات والوعود المضادة للحظر ادعاءات مورّد غير متحققة؛ لا تُنقل إلى SkyPro.",
+      "relevantLinks": "تنزيل/تثبيت/توثيق/دعم داخلي؛ لا backlink index أو روابط مكتسبة مقاسة.",
+      "actionableGap": "اربط صفحة واتساب بدليل اختبار مأذون وبحالة الوظائف والصور الصحيحة؛ وضّح ما تثبته لقطة الإعداد وما لا تثبته.",
+      "targetUrl": "https://skypro.skywaveads.com/platforms/whatsapp",
+      "verificationDate": "2026-10-24",
+      "metadata": {
+        "httpStatus": 200,
+        "requestAt": "2026-10-24T02:14:28.035Z",
+        "finalUrl": "https://www.whatsenderpro.com/egypt-whatsender/",
+        "title": "WhatSender Pro مصر: تسويق واتساب جماعي للأعمال 2026 WA AI",
+        "h1": [
+          "برنامج تسويق واتساب لـ مصر"
+        ],
+        "htmlSha256": "6877492429fb340a06e61731d65521b9b8837223cb56f77426a62fba498b382d",
+        "httpError": null,
+        "viewportMeta": true
+      },
+      "sourceMetadata": [
+        {
+          "url": "https://www.whatsenderpro.com/saudi-arabia-whatsender/",
+          "httpStatus": 200,
+          "requestAt": "2026-10-24T02:14:28.165Z",
+          "finalUrl": "https://www.whatsenderpro.com/saudi-arabia-whatsender/",
+          "title": "WhatSender Pro السعودية: تسويق WhatsApp جماعي · 2026 Mktg",
+          "h1": [
+            "برنامج تسويق واتساب لـ السعودية"
+          ],
+          "htmlSha256": "f93f161e004a5d8e772e2d82335b10257eb921fdb9b8cc9489ed8dbd8f987158",
+          "httpError": null,
+          "viewportMeta": true
+        },
+        {
+          "url": "https://www.whatsenderpro.com/uae-whatsender/",
+          "httpStatus": 200,
+          "requestAt": "2026-10-24T02:14:28.167Z",
+          "finalUrl": "https://www.whatsenderpro.com/uae-whatsender/",
+          "title": "WhatSender Pro الإمارات: تسويق واتساب جماعي AI · 2026 Pro",
+          "h1": [
+            "برنامج تسويق واتساب لـ الإمارات"
+          ],
+          "htmlSha256": "7824cf0896f3e49674d5726051776024dce202c2d2413eb1eb481a4c537b74e1",
+          "httpError": null,
+          "viewportMeta": true
+        },
+        {
+          "url": "https://www.whatsenderpro.com/whatsender/",
+          "httpStatus": null
+        }
+      ],
+      "mobileExperience": "NOT_BROWSER_VERIFIED; viewport meta alone is not mobile QA",
+      "observedOrganicRank": null,
+      "searchVolume": null,
+      "keywordDifficulty": null,
+      "claimsIndependentlyTested": false
+    },
+    {
+      "id": "nitro",
+      "name": "Nitro / Leads ADD",
+      "classification": "PARTIAL_DIRECT_WINDOWS_WHATSAPP",
+      "countries": [
+        "AE"
+      ],
+      "countryBasis": "عاد في الاستعلام الإنجليزي المسمّى UAE؛ صفحة المنتج تعرض فوترًا وأسعار تحصيل AED. لا إثبات ترتيب جغرافي أو مقر محلي من هذه الأدلة.",
+      "queryIds": [
+        "Q3"
+      ],
+      "url": "https://leadsadd.com/nitro",
+      "otherSources": [],
+      "intent": "تقييم برنامج Windows لحملات واتساب بأرقام المستخدم.",
+      "productEvidence": "متطلبات Windows 10/11 وشرح ربط الرقم ومسار تجربة؛ المعاينة على الصفحة مثال واجهة وليست تجربة تشغيل مستقلة.",
+      "cta": "بدء تجربة مجانية؛ لم يُنشأ حساب.",
+      "contentStrength": "يعرض متطلبات قبل البدء، حدودًا وأسئلة عن طريقة الربط؛ هذه أبعاد مقارنة عملية.",
+      "trust": "ادعاءات الأداء والسلامة والسعة لم تختبر. النص يذكر قيد القواعد الخاصة بواتساب؛ لا ضمان حماية الحساب.",
+      "relevantLinks": "Features/FAQ/pricing متصلة بالمنتج؛ لا حجم روابط موثّق.",
+      "actionableGap": "اعرض في دليل تجربة SkyPro قائمة مهمة واحدة ومتطلبات واضحة ونتيجة قبول قابلة للرصد بدل الوعد بأعداد إرسال.",
+      "targetUrl": "https://skypro.skywaveads.com/guides/two-day-trial-checklist",
+      "verificationDate": "2026-10-24",
+      "metadata": {
+        "httpStatus": 200,
+        "requestAt": "2026-10-24T02:16:23.864Z",
+        "finalUrl": "https://leadsadd.com/nitro",
+        "title": "Nitro: WhatsApp Campaign Software for Windows — Leads ADD",
+        "h1": [
+          "Send WhatsApp campaigns from your own numbers."
+        ],
+        "htmlSha256": "5bbc02dce053c097e1ce325e43be79e4eddd0b2e68a52531859854899fcc8751",
+        "httpError": null,
+        "viewportMeta": true
+      },
+      "sourceMetadata": [],
+      "mobileExperience": "NOT_BROWSER_VERIFIED; viewport meta alone is not mobile QA",
+      "observedOrganicRank": null,
+      "searchVolume": null,
+      "keywordDifficulty": null,
+      "claimsIndependentlyTested": false
+    },
+    {
+      "id": "adspower",
+      "name": "AdsPower",
+      "classification": "PARTIAL_DIRECT_ACCOUNT_WORKSPACE",
+      "countries": [
+        "EG",
+        "SA",
+        "AE"
+      ],
+      "countryBasis": "مرجع منتج عالمي لمهمة إدارة الحسابات؛ لم يثبت أنه منافس عضوي محلي في الدول الثلاث.",
+      "queryIds": [],
+      "url": "https://www.adspower.com/",
+      "otherSources": [
+        "https://www.adspower.com/download"
+      ],
+      "intent": "إدارة ملفات حسابات متعددة على جهاز؛ أقرب إلى مدير الحسابات من جدولة المحتوى السحابية.",
+      "productEvidence": "صفحة تنزيل تذكر Windows؛ الصفحة الرئيسية تعرض تنظيم الملفات وأدوات أتمتة. لا اختبار عزل أو تشغيل.",
+      "cta": "التجربة/التنزيل/السعر؛ لم يُنفّذ تسجيل أو تنزيل.",
+      "contentStrength": "يفصل نظام التشغيل ومساحة الحسابات والتعاون؛ تفاصيله لا تثبت تكافؤ SkyPro.",
+      "trust": "ادعاءات منع الربط والحظر والشهادات وأرقام المستخدمين لم تتحقق استقلاليًا.",
+      "relevantLinks": "مركز المساعدة والتنزيل وتفاصيل المنتج؛ لا بيانات روابط خلفية.",
+      "actionableGap": "صفحة مدير الحسابات في SkyPro تحتاج شرحًا واضحًا لحقول الحساب ومتطلبات الجلسة وحدود المنتج، دون ادعاء عزل بصمات أو حماية من الحظر.",
+      "targetUrl": "https://skypro.skywaveads.com/platforms/accounts",
+      "verificationDate": "2026-10-24",
+      "metadata": {
+        "httpStatus": 200,
+        "requestAt": "2026-10-24T02:14:32.079Z",
+        "finalUrl": "https://www.adspower.com/",
+        "title": "AdsPower - Best Antidetect Browser for Multi-Accounting",
+        "h1": [
+          "The #1 Anti-detect Browser Trusted By 10M+ Users"
+        ],
+        "htmlSha256": "1fceb50d4becb89535b40858f0b871bba50dbaa2d2828de4b53aa7c25c32e4dc",
+        "httpError": null,
+        "viewportMeta": true
+      },
+      "sourceMetadata": [
+        {
+          "url": "https://www.adspower.com/download",
+          "httpStatus": 200,
+          "requestAt": "2026-10-24T02:14:32.383Z",
+          "finalUrl": "https://www.adspower.com/download",
+          "title": "Download AdsPower Antidetect Browser on Your PC/Mac/Linux",
+          "h1": [
+            "Download AdsPower"
+          ],
+          "htmlSha256": "3eb9340333f4b916c4db709767e09fdfa4e02fb82f78e49870318269a6dcb5ca",
+          "httpError": null,
+          "viewportMeta": true
+        }
+      ],
+      "mobileExperience": "NOT_BROWSER_VERIFIED; viewport meta alone is not mobile QA",
+      "observedOrganicRank": null,
+      "searchVolume": null,
+      "keywordDifficulty": null,
+      "claimsIndependentlyTested": false
+    },
+    {
+      "id": "jarveepro",
+      "name": "JarveePro Nexus",
+      "classification": "OVERLAPPING_MULTIPLATFORM_PRODUCT_OS_NOT_VERIFIED",
+      "countries": [
+        "EG"
+      ],
+      "countryBasis": "عاد في Q4 العربي المسمى مصر. لا دليل مقر مصري أو ترتيب محلي.",
+      "queryIds": [
+        "Q4"
+      ],
+      "url": "https://jarveepro.com/ar/",
+      "otherSources": [
+        "https://jarveepro.com/download/"
+      ],
+      "intent": "مقارنة برنامج متعدد المنصات لإدارة الحسابات والمهام؛ وظائفه التسويقية تتداخل لكن التنفيذ غير مُختبر.",
+      "productEvidence": "صور منتج مع تسميات وسياق للقطات؛ صفحة تنزيل Nexus تحيل للفريق للحصول على الإصدار ومتطلبات النظام، فلا تُسجّل نسخة Windows حالية مؤكدة.",
+      "cta": "طلب تجربة من الفريق؛ لم تُرسل رسالة.",
+      "contentStrength": "تفريق بين لقطة حسابات وقياس أداء فعلي؛ توجد صفحات تخصصية للمقارنة والوظائف.",
+      "trust": "نِسب خفض التكلفة والأرقام والادعاءات التشغيلية غير متحققة. لا يُفترض أنه JARVEE الأصلي أو أنه يفي بكل وظيفة.",
+      "relevantLinks": "صفحات المنتج والنسخ والمقارنات؛ لا قوة روابط مقاسة.",
+      "actionableGap": "أضف سياق الإصدار وتاريخ الصورة وحالة المهمة عند توفره من Desktop؛ لا تكرار لقطة عامة كدليل مستقل لكل منصة.",
+      "targetUrl": "https://skypro.skywaveads.com/platforms",
+      "verificationDate": "2026-10-24",
+      "metadata": {
+        "httpStatus": 200,
+        "requestAt": "2026-10-24T02:16:14.606Z",
+        "finalUrl": "https://jarveepro.com/ar/",
+        "title": "إدارة حسابات التواصل الاجتماعي · الأتمتة بالذكاء الاصطناعي — JarveePro · Nexus",
+        "h1": [
+          "JarveePro واحد = فريق من ⁦ 100+ ⁩ موظف رقمي يعملون معًا من أجلك"
+        ],
+        "htmlSha256": "db9c6af8cac34d80c95fb31b28039555fa65183412eeb4231ebf24981346162d",
+        "httpError": null,
+        "viewportMeta": true
+      },
+      "sourceMetadata": [
+        {
+          "url": "https://jarveepro.com/download/",
+          "httpStatus": 200,
+          "requestAt": "2026-10-24T02:16:14.783Z",
+          "finalUrl": "https://jarveepro.com/download/",
+          "title": "Download & Get Started — JarveePro · Nexus",
+          "h1": [
+            "Download & Get Started"
+          ],
+          "htmlSha256": "94e7e4be95c7be0beb48d52148477e9d785fe861b7de87bb3b79341fe8590643",
+          "httpError": null,
+          "viewportMeta": true
+        }
+      ],
+      "mobileExperience": "NOT_BROWSER_VERIFIED; viewport meta alone is not mobile QA",
+      "observedOrganicRank": null,
+      "searchVolume": null,
+      "keywordDifficulty": null,
+      "claimsIndependentlyTested": false
+    },
+    {
+      "id": "igmatrix",
+      "name": "IgMatrix",
+      "classification": "PARTIAL_DIRECT_PHONE_FLEET_AUTOMATION",
+      "countries": [
+        "EG"
+      ],
+      "countryBasis": "عاد في Q4 المسمى مصر؛ لا إثبات تمركز مصري أو استخدام محلي.",
+      "queryIds": [
+        "Q4"
+      ],
+      "url": "https://igmatrix.com/ar/",
+      "otherSources": [],
+      "intent": "أتمتة حسابات عبر سطح مكتب وأجهزة Android؛ احتياج مختلف عن أداة Windows بلا أسطول هواتف.",
+      "productEvidence": "HTTP الحالي يعرض عنوان Windows/Mac، والنص الرسمي يشرح تنفيذًا على هواتف Android؛ لا تشغيل أو نتائج مثبتة.",
+      "cta": "تنزيل/استكشاف الميزات؛ لم ينزّل شيء.",
+      "contentStrength": "يوضح اعتماد الوظائف على أجهزة حقيقية؛ يختلف عن إدارة محتوى سحابية.",
+      "trust": "وعود أمان الحساب والنمو والشهادات النصية لم تتحقق. نسخة أداة الويب الأقدم أعادت عنوان TikMatrix؛ يُعتمد عنوان GET الحالي المحفوظ.",
+      "relevantLinks": "توثيق وAPI وتنزيل؛ لا backlink dataset.",
+      "actionableGap": "اشرح متطلبات كل مهمة في SkyPro كما هي؛ لا استهداف أتمتة أساطيل Android إن لم تكن وظيفة متاحة.",
+      "targetUrl": "https://skypro.skywaveads.com/platforms/instagram",
+      "verificationDate": "2026-10-24",
+      "metadata": {
+        "httpStatus": 200,
+        "requestAt": "2026-10-24T02:16:14.786Z",
+        "finalUrl": "https://igmatrix.com/ar/",
+        "title": "IgMatrix — أتمتة Instagram على Windows وMac",
+        "h1": [
+          "أتمتة وسائل التواصل الاجتماعي الاحترافية"
+        ],
+        "htmlSha256": "32baf0b0310fb3b7e636dc06c489d9acb02a4f55b784d6494eb436babfa8c2e2",
+        "httpError": null,
+        "viewportMeta": true
+      },
+      "sourceMetadata": [],
+      "mobileExperience": "NOT_BROWSER_VERIFIED; viewport meta alone is not mobile QA",
+      "observedOrganicRank": null,
+      "searchVolume": null,
+      "keywordDifficulty": null,
+      "claimsIndependentlyTested": false
+    },
+    {
+      "id": "sada",
+      "name": "صدى / Live Web",
+      "classification": "ADJACENT_CLOUD_CONTENT_AND_MESSAGING",
+      "countries": [
+        "EG"
+      ],
+      "countryBasis": "نطاق مصري وعرض بالجنيه المصري في صفحة الجهة؛ لا ترتيب مقاس.",
+      "queryIds": [
+        "Q4"
+      ],
+      "url": "https://live.com.eg/sada/",
+      "otherSources": [
+        "https://live.com.eg/billing/",
+        "https://live.com.eg/sada-docs/"
+      ],
+      "intent": "تفويض المحتوى والنشر والموافقات لخدمة؛ ليس شراء مجموعة أدوات Windows.",
+      "productEvidence": "شرح خطوات وموافقات وأسعار وتوثيق؛ أمثلة الصفحة ليست نتائج عميل مستقلة.",
+      "cta": "التجربة/واتساب؛ لم تُرسل بيانات.",
+      "contentStrength": "يفصل رحلة المحتوى للمشتري عن صفحة الباقات؛ يقدم أسئلة تشغيل قبل الاشتراك.",
+      "trust": "قدرات الربط والنشر والنتائج والتوفر لم تُختبر. اختلاف تفاصيل الباقات بين صفحات الجهة يحتاج تحققًا قبل أي مقارنة أسعار.",
+      "relevantLinks": "دليل تشغيل وباقات داخليان؛ لا روابط خارجية مقاسة.",
+      "actionableGap": "استخدم دليل برنامج أم وكالة لتصفية الباحث عن خدمة محتوى؛ لا تغيّر SkyPro إلى وعد بفريق محتوى كامل.",
+      "targetUrl": "https://skypro.skywaveads.com/guides/software-or-social-media-agency",
+      "verificationDate": "2026-10-24",
+      "metadata": {
+        "httpStatus": 200,
+        "requestAt": "2026-10-24T02:14:33.398Z",
+        "finalUrl": "https://live.com.eg/sada/",
+        "title": "إدارة السوشيال ميديا بالذكاء الاصطناعي | صدى — محتوى ونشر وردود تبيع",
+        "h1": [
+          "إدارة السوشيال ميديا بالذكاء الاصطناعي"
+        ],
+        "htmlSha256": "8ce997cd53a192ca9733e285e43dad408009729cb9a7d6afa730cf00a1df34ff",
+        "httpError": null,
+        "viewportMeta": true
+      },
+      "sourceMetadata": [
+        {
+          "url": "https://live.com.eg/billing/",
+          "httpStatus": null
+        },
+        {
+          "url": "https://live.com.eg/sada-docs/",
+          "httpStatus": null
+        }
+      ],
+      "mobileExperience": "NOT_BROWSER_VERIFIED; viewport meta alone is not mobile QA",
+      "observedOrganicRank": null,
+      "searchVolume": null,
+      "keywordDifficulty": null,
+      "claimsIndependentlyTested": false
+    },
+    {
+      "id": "retm",
+      "name": "رتم",
+      "classification": "ADJACENT_CLOUD_PUBLISHING_AND_GOVERNANCE",
+      "countries": [
+        "SA"
+      ],
+      "countryBasis": "الصفحة تُعرّف المنتج سعوديًا وعاد في Q2؛ لا تثبيت rank محلي.",
+      "queryIds": [
+        "Q2"
+      ],
+      "url": "https://www.retmplat.sa/ar",
+      "otherSources": [
+        "https://www.retmplat.sa/ar/faq",
+        "https://www.retmplat.sa/ar/pricing"
+      ],
+      "intent": "إدارة نشر وموافقات فريق؛ فئة SaaS مجاورة لمنتج SkyPro المكتبي.",
+      "productEvidence": "صور لوحة وباقات وأسئلة وتطبيقات جوال مرتبطة؛ لا اختبار وظائف أو موافقات.",
+      "cta": "تجربة أو عرض توضيحي؛ لم يُحجز شيء.",
+      "contentStrength": "يربط حالات الفريق بالموافقات والمتطلبات والأسئلة؛ مناسب لفهم نية المشتري السحابية.",
+      "trust": "الأسبقية والعملاء والاستضافة والشهادات ادعاءات الجهة؛ لم تُتحقق استقلاليًا.",
+      "relevantLinks": "FAQ/pricing ومتاجر تطبيقات من الجهة؛ لا قوة domain مقاسة.",
+      "actionableGap": "عرّف Windows في موضع مبكر وحدد مسؤولية المستخدم في تشغيل المهام؛ لا نسخ جدولة أو استضافة سعودية كقدرات SkyPro.",
+      "targetUrl": "https://skypro.skywaveads.com/guides/windows-or-cloud-marketing-tool",
+      "verificationDate": "2026-10-24",
+      "metadata": {
+        "httpStatus": 200,
+        "requestAt": "2026-10-24T02:14:33.785Z",
+        "finalUrl": "https://www.retmplat.sa/ar",
+        "title": "رتم | المنصة السعودية الأولى لإدارة محتوى منصات التواصل الاجتماعي",
+        "h1": [
+          "أول منصة سعودية لإدارة التواصل الاجتماعي"
+        ],
+        "htmlSha256": "e0aca6bb4a6a8a354b96f9e49a47fe2dbcedc6d3100e7b8b633827c9060cdeb6",
+        "httpError": null,
+        "viewportMeta": true
+      },
+      "sourceMetadata": [
+        {
+          "url": "https://www.retmplat.sa/ar/faq",
+          "httpStatus": null
+        },
+        {
+          "url": "https://www.retmplat.sa/ar/pricing",
+          "httpStatus": null
+        }
+      ],
+      "mobileExperience": "NOT_BROWSER_VERIFIED; viewport meta alone is not mobile QA",
+      "observedOrganicRank": null,
+      "searchVolume": null,
+      "keywordDifficulty": null,
+      "claimsIndependentlyTested": false
+    },
+    {
+      "id": "consys",
+      "name": "Consys",
+      "classification": "ADJACENT_CLOUD_SOCIAL_GOVERNANCE",
+      "countries": [
+        "SA"
+      ],
+      "countryBasis": "نطاق سعودي وتموضع سعودي وعاد في Q2؛ لا رتبة جغرافية مقاسة.",
+      "queryIds": [
+        "Q2"
+      ],
+      "url": "https://consys.com.sa/",
+      "otherSources": [
+        "https://consys.com.sa/demo/"
+      ],
+      "intent": "التخطيط والنشر والحوكمة للفرق، لا أدوات مهام Windows.",
+      "productEvidence": "معاينة لوحة ومسارات ميزات وحلول وعرض توضيحي؛ المعاينة لا تثبت خدمة فعالة مستقلة.",
+      "cta": "تجربة/طلب عرض؛ لم يُنشأ حساب.",
+      "contentStrength": "يفصل شرائح الجهات والفرق ويتصل بصفحات مقارنة؛ لا يعني وجوب إنشاء صفحات كثيرة في SkyPro.",
+      "trust": "ادعاءات الامتثال والشهادات والمحلية غير متحققة خارج موقع المورّد.",
+      "relevantLinks": "صفحات ميزات وحلول ومقارنات داخلية؛ لا backlinks موثقة.",
+      "actionableGap": "ركّز الصفحة الرئيسية على ملاءمة برنامج Windows ووظائفه المثبتة، واترك سؤال السحابة للدليل القائم.",
+      "targetUrl": "https://skypro.skywaveads.com/",
+      "verificationDate": "2026-10-24",
+      "metadata": {
+        "httpStatus": 200,
+        "requestAt": "2026-10-24T02:14:34.216Z",
+        "finalUrl": "https://consys.com.sa/",
+        "title": "كل حساباتك الاجتماعية من منصة واحدة — Consys",
+        "h1": [
+          "كل حساباتك الاجتماعية، من منصة واحدة."
+        ],
+        "htmlSha256": "645cf3a32852966a3207b5da80b51a1c08690951b2cc8635634255d8706364f7",
+        "httpError": null,
+        "viewportMeta": true
+      },
+      "sourceMetadata": [
+        {
+          "url": "https://consys.com.sa/demo/",
+          "httpStatus": null
+        }
+      ],
+      "mobileExperience": "NOT_BROWSER_VERIFIED; viewport meta alone is not mobile QA",
+      "observedOrganicRank": null,
+      "searchVolume": null,
+      "keywordDifficulty": null,
+      "claimsIndependentlyTested": false
+    },
+    {
+      "id": "mindcat",
+      "name": "Mindcat Social",
+      "classification": "ADJACENT_CLOUD_AGENCY_WORKFLOW",
+      "countries": [
+        "AE",
+        "SA"
+      ],
+      "countryBasis": "الصفحة الرسمية المسترجعة تصف فرق السعودية والإمارات؛ هذا تموضع معلن لا ترتيب أو إثبات مقرات مستقل.",
+      "queryIds": [],
+      "url": "https://mindcat.ai/apps/social",
+      "otherSources": [],
+      "intent": "حل محتوى/موافقات للوكالات مع إعداد واستضافة؛ مختلف عن شراء أداة مكتبية.",
+      "productEvidence": "شرح للواجهة العربية والتسعير حسب القنوات وخيارات الاستضافة. أداة الويب قرأت الصفحة؛ GET الإضافي فشل وموثّق.",
+      "cta": "التواصل بشأن الإعداد؛ لا تواصل تم.",
+      "contentStrength": "يوضح بوضوح أن بعض المنصات غير مدعومة؛ شفافية التوفر مفيدة.",
+      "trust": "القدرات والتسعير والاستضافة ادعاءات مورّد ولم تُختبر؛ HTTP المباشر غير متاح لهذه المحاولة.",
+      "relevantLinks": "لم يُفحص graph الروابط الخارجية؛ لا بيانات authority.",
+      "actionableGap": "اعرض وظيفة تحت التطوير وصورة غائبة بوضوح؛ لا تحوّل تموضع المنافس إلى ادعاء استضافة أو دعم محلي في SkyPro.",
+      "targetUrl": "https://skypro.skywaveads.com/platforms",
+      "verificationDate": "2026-10-24",
+      "metadata": {
+        "httpStatus": null,
+        "requestAt": "2026-10-24T02:14:34.888Z",
+        "finalUrl": null,
+        "title": null,
+        "h1": [],
+        "htmlSha256": null,
+        "httpError": "fetch failed",
+        "viewportMeta": null
+      },
+      "sourceMetadata": [],
+      "mobileExperience": "NOT_BROWSER_VERIFIED; viewport meta alone is not mobile QA",
+      "observedOrganicRank": null,
+      "searchVolume": null,
+      "keywordDifficulty": null,
+      "claimsIndependentlyTested": false
+    },
+    {
+      "id": "socinator",
+      "name": "Socinator",
+      "classification": "LEGACY_WINDOWS_FAQ_CURRENT_CLOUD_POSITIONING_UNRESOLVED",
+      "countries": [
+        "EG",
+        "SA",
+        "AE"
+      ],
+      "countryBasis": "مرجع عالمي بحثي، لا إثبات منافس محلي أو ترتيب في الدول الثلاث.",
+      "queryIds": [],
+      "url": "https://socinator.com/",
+      "otherSources": [
+        "https://socinator.com/faq/"
+      ],
+      "intent": "الصفحة الحالية تسوّق وكلاء AI بلوحة ويب، بينما FAQ يعرض متطلبات Windows قديمة.",
+      "productEvidence": "تعـارض بين الصفحة الحالية وFAQ متحقق في GET ونص الجهة؛ لا يُعامل كمنتج Windows حالي مؤكد.",
+      "cta": "نشر وكلاء/الاستفسار؛ لم يُنشأ حساب أو تُرسل رسالة.",
+      "contentStrength": "عرض تجاري مباشر، لكن تناقض النسخ يقلل صلاحيته لجدول مقارنة مواصفات.",
+      "trust": "السعر والأتمتة والأرقام أمثلة مورّد غير مثبتة. تصريحات قانونية عامة في FAQ ليست مرجعًا قانونيًا.",
+      "relevantLinks": "لا backlink index أو تسجيل مصداقية مستقل.",
+      "actionableGap": "احتفظ بتاريخ الإصدار ومصدر الصور في SkyPro، واربط التوفر الحالي بمراجعة Desktop بدل استخدام قوائم قديمة.",
+      "targetUrl": "https://skypro.skywaveads.com/guides/two-day-trial-checklist",
+      "verificationDate": "2026-10-24",
+      "metadata": {
+        "httpStatus": 200,
+        "requestAt": "2026-10-24T02:14:33.081Z",
+        "finalUrl": "https://socinator.com/",
+        "title": "Socinator - Social Media Automation and Marketing Tool",
+        "h1": [
+          "Replace Operational Overhead with Agentic AI"
+        ],
+        "htmlSha256": "39ad44eba52f5218c99d4ae9dd4a9d0b8a5dc34a09ee834871d5e1df8101077b",
+        "httpError": null,
+        "viewportMeta": true
+      },
+      "sourceMetadata": [
+        {
+          "url": "https://socinator.com/faq/",
+          "httpStatus": 200,
+          "requestAt": "2026-10-24T02:14:33.166Z",
+          "finalUrl": "https://socinator.com/faq/",
+          "title": "FAQ - Socinator",
+          "h1": [],
+          "htmlSha256": "0558c8a177d9d884daa22617e91ba2d8c1d8a861adfc5c1ba7c3bba7f975edcc",
+          "httpError": null,
+          "viewportMeta": true
+        }
+      ],
+      "mobileExperience": "NOT_BROWSER_VERIFIED; viewport meta alone is not mobile QA",
+      "observedOrganicRank": null,
+      "searchVolume": null,
+      "keywordDifficulty": null,
+      "claimsIndependentlyTested": false
+    }
+  ]
+}
