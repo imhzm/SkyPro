@@ -1,0 +1,4702 @@
+{
+  "generatedAt": "2026-10-24T02:16:43.039Z",
+  "scope": {
+    "guideIndex": 1,
+    "completeArticleBodies": 20,
+    "platformBodies": 18,
+    "totalUrls": 39
+  },
+  "editorialAcceptance": {
+    "status": "COMPLETE_WITH_SPECIFIC_RECOMMENDATIONS",
+    "keepCount": 39,
+    "mergeCount": 0,
+    "meaning": "Roles/content are distinct enough to keep their self-canonical URLs today. Some guides are general preparation; this is not proof of qualified demand or conversion."
+  },
+  "measuredSERPAcceptance": {
+    "status": "OPEN_NOT_VERIFIED",
+    "requiredEvidence": [
+      "Authorized GSC query x landing page x country x device baseline",
+      "Stable query ownership and page switching over a meaningful time window, with low-volume caution",
+      "GA4 consent-aware guide -> platform -> trial -> backend-confirmed registration pathway",
+      "Exact keyword country SERP/Planner evidence where available"
+    ],
+    "notEstablished": [
+      "Search volume",
+      "Keyword difficulty",
+      "Current position",
+      "Country rank",
+      "Traffic lift",
+      "Actual trial conversions",
+      "Absence of cannibalization in search results"
+    ]
+  },
+  "urls": [
+    {
+      "path": "/guides",
+      "primaryKeyword": {
+        "candidate": "أدلة Sky Pro واختيار وتجهيز مهام البرنامج",
+        "status": "NAVIGATIONAL_COLLECTION_CANDIDATE"
+      },
+      "searchIntent": "اختيار الدليل المناسب، لا استبدال صفحات المنتج أو شرح مهمة واحدة.",
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/guides",
+        "observed": "https://skypro.skywaveads.com/guides",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [
+          "/platforms",
+          "/guides/software-or-social-media-agency",
+          "/guides/windows-or-cloud-marketing-tool",
+          "/guides/two-day-trial-checklist",
+          "/guides/name-and-add-platform-accounts",
+          "/guides/session-problem-support-brief",
+          "/guides/multi-account-work-handover",
+          "/guides/whatsapp-message-test",
+          "/guides/contact-list-quality-check",
+          "/guides/smtp-test-message-checklist",
+          "/guides/facebook-task-inputs",
+          "/guides/instagram-task-brief",
+          "/guides/telegram-group-channel-task",
+          "/guides/linkedin-outreach-brief",
+          "/guides/tiktok-video-task-checklist",
+          "/guides/x-search-or-message-task",
+          "/guides/pinterest-board-content-brief",
+          "/guides/reddit-community-checklist",
+          "/guides/threads-account-task-review",
+          "/guides/maps-data-task-evaluation",
+          "/guides/olx-demo-questions"
+        ],
+        "boundary": "/platforms is a product/module catalog; /guides is an instructional collection. Article cards are intentional summaries/link navigation, not duplicate full articles.",
+        "measuredCannibalization": "NOT_VERIFIED"
+      },
+      "links": [
+        {
+          "href": "/guides/two-day-trial-checklist",
+          "label": "اقرأ خطة التجربة"
+        },
+        {
+          "href": "/guides/software-or-social-media-agency",
+          "label": "لقطة فعلية من البرنامج ● ● ● Sky Pro"
+        },
+        {
+          "href": "/guides/software-or-social-media-agency",
+          "label": "برنامج سوشيال ميديا ولا شركة إدارة حسابات: إيه المناسب لشغلك؟"
+        },
+        {
+          "href": "/guides/software-or-social-media-agency",
+          "label": "اقرأ الدليل : برنامج سوشيال ميديا ولا شركة إدارة حسابات: إيه المناسب لشغلك؟"
+        },
+        {
+          "href": "/guides/windows-or-cloud-marketing-tool",
+          "label": "لقطة فعلية من البرنامج ● ● ● Sky Pro"
+        },
+        {
+          "href": "/guides/windows-or-cloud-marketing-tool",
+          "label": "أداة تسويق على Windows ولا خدمة سحابية: أسئلة المقارنة قبل الشراء"
+        },
+        {
+          "href": "/guides/windows-or-cloud-marketing-tool",
+          "label": "اقرأ الدليل : أداة تسويق على Windows ولا خدمة سحابية: أسئلة المقارنة قبل الشراء"
+        },
+        {
+          "href": "/guides/two-day-trial-checklist",
+          "label": "لقطة فعلية من البرنامج ● ● ● Sky Pro"
+        },
+        {
+          "href": "/guides/two-day-trial-checklist",
+          "label": "خطة عملية لتقييم برنامج تسويق خلال تجربة يومين"
+        },
+        {
+          "href": "/guides/two-day-trial-checklist",
+          "label": "اقرأ الدليل : خطة عملية لتقييم برنامج تسويق خلال تجربة يومين"
+        },
+        {
+          "href": "/guides/name-and-add-platform-accounts",
+          "label": "لقطة فعلية من البرنامج ● ● ● Sky Pro"
+        },
+        {
+          "href": "/guides/name-and-add-platform-accounts",
+          "label": "إزاي تسمّي حسابات المنصات وتراجعها قبل تشغيل مهمة؟"
+        },
+        {
+          "href": "/guides/name-and-add-platform-accounts",
+          "label": "اقرأ الدليل : إزاي تسمّي حسابات المنصات وتراجعها قبل تشغيل مهمة؟"
+        },
+        {
+          "href": "/guides/session-problem-support-brief",
+          "label": "لقطة فعلية من البرنامج ● ● ● Sky Pro"
+        },
+        {
+          "href": "/guides/session-problem-support-brief",
+          "label": "جلسة الحساب مش جاهزة: إيه اللي تراجعه وإزاي توصف المشكلة للدعم؟"
+        },
+        {
+          "href": "/guides/session-problem-support-brief",
+          "label": "اقرأ الدليل : جلسة الحساب مش جاهزة: إيه اللي تراجعه وإزاي توصف المشكلة للدعم؟"
+        },
+        {
+          "href": "/guides/multi-account-work-handover",
+          "label": "لقطة فعلية من البرنامج ● ● ● Sky Pro"
+        },
+        {
+          "href": "/guides/multi-account-work-handover",
+          "label": "تسليم شغل حسابات متعددة: سجل المهمة والحساب والنتيجة من غير كلمات مرور"
+        },
+        {
+          "href": "/guides/multi-account-work-handover",
+          "label": "اقرأ الدليل : تسليم شغل حسابات متعددة: سجل المهمة والحساب والنتيجة من غير كلمات مرور"
+        },
+        {
+          "href": "/guides/whatsapp-message-test",
+          "label": "لقطة فعلية من البرنامج ● ● ● Sky Pro"
+        },
+        {
+          "href": "/guides/whatsapp-message-test",
+          "label": "رسالة واتساب تجريبية: راجع الحساب والمحتوى والمرفق قبل الإرسال"
+        },
+        {
+          "href": "/guides/whatsapp-message-test",
+          "label": "اقرأ الدليل : رسالة واتساب تجريبية: راجع الحساب والمحتوى والمرفق قبل الإرسال"
+        },
+        {
+          "href": "/guides/contact-list-quality-check",
+          "label": "لقطة فعلية من البرنامج ● ● ● Sky Pro"
+        },
+        {
+          "href": "/guides/contact-list-quality-check",
+          "label": "مراجعة قائمة تواصل: التكرار ومصدر البيانات وصلاحية الاستخدام"
+        },
+        {
+          "href": "/guides/contact-list-quality-check",
+          "label": "اقرأ الدليل : مراجعة قائمة تواصل: التكرار ومصدر البيانات وصلاحية الاستخدام"
+        },
+        {
+          "href": "/guides/smtp-test-message-checklist",
+          "label": "لقطة فعلية من البرنامج ● ● ● Sky Pro"
+        },
+        {
+          "href": "/guides/smtp-test-message-checklist",
+          "label": "من إعداد SMTP لرسالة الاختبار: قائمة مراجعة عملية"
+        },
+        {
+          "href": "/guides/smtp-test-message-checklist",
+          "label": "اقرأ الدليل : من إعداد SMTP لرسالة الاختبار: قائمة مراجعة عملية"
+        },
+        {
+          "href": "/guides/facebook-task-inputs",
+          "label": "لقطة فعلية من البرنامج ● ● ● Sky Pro"
+        },
+        {
+          "href": "/guides/facebook-task-inputs",
+          "label": "نوع المهمة والرابط وحد النتائج: قراءة إعدادات مهمة فيسبوك"
+        },
+        {
+          "href": "/guides/facebook-task-inputs",
+          "label": "اقرأ الدليل : نوع المهمة والرابط وحد النتائج: قراءة إعدادات مهمة فيسبوك"
+        },
+        {
+          "href": "/guides/instagram-task-brief",
+          "label": "لقطة فعلية من البرنامج ● ● ● Sky Pro"
+        },
+        {
+          "href": "/guides/instagram-task-brief",
+          "label": "قبل استخدام أداة إنستجرام: جهّز مهمة محتوى واضحة"
+        },
+        {
+          "href": "/guides/instagram-task-brief",
+          "label": "اقرأ الدليل : قبل استخدام أداة إنستجرام: جهّز مهمة محتوى واضحة"
+        },
+        {
+          "href": "/guides/telegram-group-channel-task",
+          "label": "لقطة فعلية من البرنامج ● ● ● Sky Pro"
+        },
+        {
+          "href": "/guides/telegram-group-channel-task",
+          "label": "مجموعة ولا قناة تيليجرام: حدد المهمة والصلاحيات الأول"
+        },
+        {
+          "href": "/guides/telegram-group-channel-task",
+          "label": "اقرأ الدليل : مجموعة ولا قناة تيليجرام: حدد المهمة والصلاحيات الأول"
+        },
+        {
+          "href": "/guides/linkedin-outreach-brief",
+          "label": "لقطة فعلية من البرنامج ● ● ● Sky Pro"
+        },
+        {
+          "href": "/guides/linkedin-outreach-brief",
+          "label": "رسالة لينكدإن المهنية: جهّز سبب التواصل قبل اختيار الأداة"
+        },
+        {
+          "href": "/guides/linkedin-outreach-brief",
+          "label": "اقرأ الدليل : رسالة لينكدإن المهنية: جهّز سبب التواصل قبل اختيار الأداة"
+        },
+        {
+          "href": "/guides/tiktok-video-task-checklist",
+          "label": "لقطة فعلية من البرنامج ● ● ● Sky Pro"
+        },
+        {
+          "href": "/guides/tiktok-video-task-checklist",
+          "label": "قبل تجربة أداة تيك توك: راجع الفيديو والحساب وحقوق المحتوى"
+        },
+        {
+          "href": "/guides/tiktok-video-task-checklist",
+          "label": "اقرأ الدليل : قبل تجربة أداة تيك توك: راجع الفيديو والحساب وحقوق المحتوى"
+        },
+        {
+          "href": "/guides/x-search-or-message-task",
+          "label": "لقطة فعلية من البرنامج ● ● ● Sky Pro"
+        },
+        {
+          "href": "/guides/x-search-or-message-task",
+          "label": "بحث ولا منشور ولا رسالة على إكس: إزاي تختار مدخل المهمة؟"
+        },
+        {
+          "href": "/guides/x-search-or-message-task",
+          "label": "اقرأ الدليل : بحث ولا منشور ولا رسالة على إكس: إزاي تختار مدخل المهمة؟"
+        },
+        {
+          "href": "/guides/pinterest-board-content-brief",
+          "label": "لقطة فعلية من البرنامج ● ● ● Sky Pro"
+        },
+        {
+          "href": "/guides/pinterest-board-content-brief",
+          "label": "لوحة بنترست لمتجرك: نموذج لتجهيز الصور والروابط"
+        },
+        {
+          "href": "/guides/pinterest-board-content-brief",
+          "label": "اقرأ الدليل : لوحة بنترست لمتجرك: نموذج لتجهيز الصور والروابط"
+        },
+        {
+          "href": "/guides/reddit-community-checklist",
+          "label": "لقطة فعلية من البرنامج ● ● ● Sky Pro"
+        },
+        {
+          "href": "/guides/reddit-community-checklist",
+          "label": "قبل المشاركة في ريديت: اقرأ قواعد المجتمع وجهّز محتوى مناسبًا"
+        },
+        {
+          "href": "/guides/reddit-community-checklist",
+          "label": "اقرأ الدليل : قبل المشاركة في ريديت: اقرأ قواعد المجتمع وجهّز محتوى مناسبًا"
+        },
+        {
+          "href": "/guides/threads-account-task-review",
+          "label": "لقطة فعلية من البرنامج ● ● ● Sky Pro"
+        },
+        {
+          "href": "/guides/threads-account-task-review",
+          "label": "مراجعة مهمة ثريدز بشكل مستقل عن إنستجرام"
+        },
+        {
+          "href": "/guides/threads-account-task-review",
+          "label": "اقرأ الدليل : مراجعة مهمة ثريدز بشكل مستقل عن إنستجرام"
+        },
+        {
+          "href": "/guides/maps-data-task-evaluation",
+          "label": "لقطة فعلية من البرنامج ● ● ● Sky Pro"
+        },
+        {
+          "href": "/guides/maps-data-task-evaluation",
+          "label": "قبل اختيار أداة خرائط جوجل: حدد البيانات والغرض ودليل التشغيل"
+        },
+        {
+          "href": "/guides/maps-data-task-evaluation",
+          "label": "اقرأ الدليل : قبل اختيار أداة خرائط جوجل: حدد البيانات والغرض ودليل التشغيل"
+        },
+        {
+          "href": "/guides/olx-demo-questions",
+          "label": "لقطة فعلية من البرنامج ● ● ● Sky Pro"
+        },
+        {
+          "href": "/guides/olx-demo-questions",
+          "label": "محتاج أداة OLX؟ أسئلة العرض التجريبي قبل الاشتراك"
+        },
+        {
+          "href": "/guides/olx-demo-questions",
+          "label": "اقرأ الدليل : محتاج أداة OLX؟ أسئلة العرض التجريبي قبل الاشتراك"
+        }
+      ],
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "editorialAcceptance": "ACCEPT_COLLECTION_PURPOSE",
+        "measuredSERPAcceptance": "OPEN"
+      },
+      "proposedImprovements": [
+        {
+          "action": "Update measurement selector to include catalog card content and keep collection vs article prose counts explicit; preserve historical baseline report.",
+          "status": "PROPOSED_TO_ROOT_AGENT",
+          "evidence": "SSR main has 20 full title/description/link sets, so old one-word result is not defensible."
+        }
+      ]
+    },
+    {
+      "path": "/guides/software-or-social-media-agency",
+      "primaryKeyword": {
+        "candidate": "برنامج سوشيال ميديا ولا شركة إدارة حسابات",
+        "status": "EDITORIAL_CANDIDATE_NOT_MEASURED_DEMAND"
+      },
+      "searchIntent": {
+        "declared": "مقارنة شراء برنامج بتنفيذ خدمة إدارة حسابات، قبل البحث عن منتج أو وكالة",
+        "reviewedQuestion": "هل أحتاج برنامج أشغله بنفسي أم مقدم خدمة ينتج ويدير المحتوى؟",
+        "funnel": "MEDIUM_PRE_PURCHASE_QUALIFICATION"
+      },
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/guides/software-or-social-media-agency",
+        "observed": "https://skypro.skywaveads.com/guides/software-or-social-media-agency",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [
+          "/guides/windows-or-cloud-marketing-tool",
+          "/guides/two-day-trial-checklist",
+          "/",
+          "/platforms"
+        ],
+        "risk": "MEDIUM_SHARED_GENERIC_SOFTWARE_TERMS",
+        "boundary": "هذا المقال يملك قرار برنامج أم خدمة. مقال Windows/cloud يملك مكان التشغيل. الصفحة الرئيسية تملك شراء Sky Pro وخصائصه.",
+        "measuredCannibalization": "NOT_VERIFIED_NO_QUERY_PAGE_GSC"
+      },
+      "links": {
+        "product": [
+          {
+            "href": "/platforms",
+            "label": "راجع منصات وأدوات Sky Pro"
+          }
+        ],
+        "related": [
+          "/guides/windows-or-cloud-marketing-tool",
+          "/guides/two-day-trial-checklist"
+        ],
+        "cta": {
+          "label": "اختار المنصة اللي تحتاجها",
+          "href": "/platforms",
+          "description": "راجع الأداة ومتطلباتها، وبعدها حدد تجربة مناسبة لاحتياجك."
+        },
+        "renderedMainLinks": [
+          {
+            "href": "/",
+            "label": "الرئيسية"
+          },
+          {
+            "href": "/guides",
+            "label": "أدلة الاستخدام"
+          },
+          {
+            "href": "https://www.skywaveads.com/",
+            "label": "فريق Sky Wave"
+          },
+          {
+            "href": "#name-the-work",
+            "label": "حوّل احتياجك لقائمة شغل فعلية"
+          },
+          {
+            "href": "#responsibility",
+            "label": "قارن المسؤولية قبل عدد المزايا"
+          },
+          {
+            "href": "#compare-tools",
+            "label": "اختبر الميزة اللي هتستخدمها بنفسها"
+          },
+          {
+            "href": "#example",
+            "label": "مثال افتراضي: متجر عنده صور ومشكلة متابعة"
+          },
+          {
+            "href": "#cost",
+            "label": "احسب وقتك مع التكلفة المعلنة"
+          },
+          {
+            "href": "#decision",
+            "label": "خرج بقرار له سبب مكتوب"
+          },
+          {
+            "href": "#sources",
+            "label": "المصادر والمراجع"
+          },
+          {
+            "href": "https://www.zoho.com/ar/social/",
+            "label": "Zoho Social: عرض المنتج الرسمي"
+          },
+          {
+            "href": "https://skypro.skywaveads.com/platforms",
+            "label": "منصات Sky Pro ومتطلبات الأدوات"
+          },
+          {
+            "href": "https://www.zoho.com/ar/social/",
+            "label": "Zoho Social: عرض المنتج الرسمي"
+          },
+          {
+            "href": "https://skypro.skywaveads.com/platforms",
+            "label": "منصات Sky Pro ومتطلبات الأدوات"
+          },
+          {
+            "href": "/platforms",
+            "label": "راجع منصات وأدوات Sky Pro"
+          },
+          {
+            "href": "/platforms",
+            "label": "اختار المنصة اللي تحتاجها"
+          },
+          {
+            "href": "/guides/windows-or-cloud-marketing-tool",
+            "label": "أداة تسويق على Windows ولا خدمة سحابية: أسئلة المقارنة قبل الشراء"
+          },
+          {
+            "href": "/guides/two-day-trial-checklist",
+            "label": "خطة عملية لتقييم برنامج تسويق خلال تجربة يومين"
+          }
+        ]
+      },
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "mergeAction": "NO_MERGE_JUSTIFICATION_FROM_CURRENT_CONTENT",
+        "editorialAcceptance": "ACCEPT_DECLARED_PREPARATION_OR_EVALUATION_PURPOSE_WITH_RECOMMENDATIONS",
+        "measuredSERPAcceptance": "OPEN_REQUIRES_GSC_QUERY_PAGE_COUNTRY_DEVICE_BASELINE"
+      },
+      "proposedImprovements": [
+        {
+          "section": "decision",
+          "action": "عند وصول بيانات Queries، افصل عبارات شركة/خدمة إدارة صفحات عن برنامج/كمبيوتر؛ لا تحول المقال إلى صفحة خدمات وكالة.",
+          "evidence": "جدول responsibility يوزّع المسؤوليات فعلًا، ولا يعرض باقة خدمة تنفيذية.",
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "keywordValidation": "Requires measured queries or verified Desktop evidence before expanding claims"
+        }
+      ]
+    },
+    {
+      "path": "/guides/windows-or-cloud-marketing-tool",
+      "primaryKeyword": {
+        "candidate": "برنامج تسويق Windows ولا خدمة سحابية",
+        "status": "EDITORIAL_CANDIDATE_NOT_MEASURED_DEMAND"
+      },
+      "searchIntent": {
+        "declared": "تقييم مكان تشغيل الأداة ومتطلبات الفريق والجهاز",
+        "reviewedQuestion": "هل يناسبني تشغيل الأداة على Windows أم تحتاج طريقة عملي خدمة من أجهزة متعددة؟",
+        "funnel": "HIGH_PRE_PURCHASE_REQUIREMENTS"
+      },
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/guides/windows-or-cloud-marketing-tool",
+        "observed": "https://skypro.skywaveads.com/guides/windows-or-cloud-marketing-tool",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [
+          "/guides/software-or-social-media-agency",
+          "/guides/multi-account-work-handover",
+          "/platforms/accounts",
+          "/",
+          "/download"
+        ],
+        "risk": "MEDIUM_SHARED_COMPARISON_AND_HANDOVER",
+        "boundary": "السؤال هنا جهاز وتشغيل وترخيص؛ handover يقدم نموذج تسليم يومي مستقل، لا قرار شراء نوع برنامج.",
+        "measuredCannibalization": "NOT_VERIFIED_NO_QUERY_PAGE_GSC"
+      },
+      "links": {
+        "product": [
+          {
+            "href": "/platforms/accounts",
+            "label": "مدير حسابات Sky Pro"
+          }
+        ],
+        "related": [
+          "/guides/software-or-social-media-agency",
+          "/guides/name-and-add-platform-accounts",
+          "/guides/multi-account-work-handover"
+        ],
+        "cta": {
+          "label": "راجع إعداد الحساب",
+          "href": "/platforms/accounts",
+          "description": "شوف الحقول الفعلية ومتطلبات الحساب قبل تجربة وظيفة مرتبطة به."
+        },
+        "renderedMainLinks": [
+          {
+            "href": "/",
+            "label": "الرئيسية"
+          },
+          {
+            "href": "/guides",
+            "label": "أدلة الاستخدام"
+          },
+          {
+            "href": "https://www.skywaveads.com/",
+            "label": "فريق Sky Wave"
+          },
+          {
+            "href": "#work-location",
+            "label": "حدد مين هيشغّل المهمة وعلى أي جهاز"
+          },
+          {
+            "href": "#check-device",
+            "label": "راجع التثبيت والترخيص قبل تجهيز بياناتك"
+          },
+          {
+            "href": "#handover",
+            "label": "اختبر تسليم المهمة بدل افتراض التعاون"
+          },
+          {
+            "href": "#evaluation-sheet",
+            "label": "ورقة اختبار تختصر المقارنة"
+          },
+          {
+            "href": "#security",
+            "label": "اسأل عن البيانات بإجابات محددة"
+          },
+          {
+            "href": "#choose",
+            "label": "اختار بناءً على نتيجة جهازك وفريقك"
+          },
+          {
+            "href": "#sources",
+            "label": "المصادر والمراجع"
+          },
+          {
+            "href": "https://skypro.skywaveads.com/",
+            "label": "Sky Pro: البرنامج وطريقة البدء"
+          },
+          {
+            "href": "https://skypro.skywaveads.com/#pricing",
+            "label": "تفاصيل التجربة والاشتراك المعلن"
+          },
+          {
+            "href": "https://skypro.skywaveads.com/",
+            "label": "Sky Pro: البرنامج وطريقة البدء"
+          },
+          {
+            "href": "https://skypro.skywaveads.com/#pricing",
+            "label": "تفاصيل التجربة والاشتراك المعلن"
+          },
+          {
+            "href": "https://skypro.skywaveads.com/platforms/accounts",
+            "label": "نموذج مدير الحسابات ومتطلباته"
+          },
+          {
+            "href": "/platforms/accounts",
+            "label": "مدير حسابات Sky Pro"
+          },
+          {
+            "href": "/platforms/accounts",
+            "label": "راجع إعداد الحساب"
+          },
+          {
+            "href": "/guides/software-or-social-media-agency",
+            "label": "برنامج سوشيال ميديا ولا شركة إدارة حسابات: إيه المناسب لشغلك؟"
+          },
+          {
+            "href": "/guides/name-and-add-platform-accounts",
+            "label": "إزاي تسمّي حسابات المنصات وتراجعها قبل تشغيل مهمة؟"
+          },
+          {
+            "href": "/guides/multi-account-work-handover",
+            "label": "تسليم شغل حسابات متعددة: سجل المهمة والحساب والنتيجة من غير كلمات مرور"
+          }
+        ]
+      },
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "mergeAction": "NO_MERGE_JUSTIFICATION_FROM_CURRENT_CONTENT",
+        "editorialAcceptance": "ACCEPT_DECLARED_PREPARATION_OR_EVALUATION_PURPOSE_WITH_RECOMMENDATIONS",
+        "measuredSERPAcceptance": "OPEN_REQUIRES_GSC_QUERY_PAGE_COUNTRY_DEVICE_BASELINE"
+      },
+      "proposedImprovements": [
+        {
+          "section": "check-device",
+          "action": "عندما يقدم Desktop متطلبات نسخة مختبرة، اربط بها مباشرة بدل ترك متطلبات النظام لسؤال الدعم فقط.",
+          "evidence": "القسم يطلب قراءة المتطلبات من الدعم ولا يعطي Windows version/RAM موثقين.",
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "keywordValidation": "Requires measured queries or verified Desktop evidence before expanding claims"
+        },
+        {
+          "section": "evaluation-sheet",
+          "action": "إذا أثبتت Queries طلب مقارنة حقيقية، أضف مقارنة محدودة بمنتج سحابي موثق لنفس المهمة؛ لا تخترع تعاونًا أو تشغيلًا في الخلفية في Sky Pro.",
+          "evidence": "الجدول أسئلة قابلة للتعبئة ولا يحدد منتجًا سحابيًا أو نتيجة اختبار.",
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "keywordValidation": "Requires measured queries or verified Desktop evidence before expanding claims"
+        }
+      ]
+    },
+    {
+      "path": "/guides/two-day-trial-checklist",
+      "primaryKeyword": {
+        "candidate": "تجربة Sky Pro يومين",
+        "status": "EDITORIAL_CANDIDATE_NOT_MEASURED_DEMAND"
+      },
+      "searchIntent": {
+        "declared": "تخطيط تجربة محددة وقياس ملاءمة الوظيفة قبل الاشتراك",
+        "reviewedQuestion": "كيف أستغل اليومين لتقييم وظيفة مطلوبة قبل الاشتراك؟",
+        "funnel": "HIGH_TRIAL_CONVERSION"
+      },
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/guides/two-day-trial-checklist",
+        "observed": "https://skypro.skywaveads.com/guides/two-day-trial-checklist",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [
+          "/",
+          "/auth/register",
+          "/guides/software-or-social-media-agency",
+          "/guides/name-and-add-platform-accounts"
+        ],
+        "risk": "LOW_SUPPORTS_TRIAL_ENTRY",
+        "boundary": "الرئيسية تعرض العرض؛ المقال يملك خطة تقييمه. لا cross-canonical إلى التسجيل ولا noindex للمقال لمجرد ذكر التجربة.",
+        "measuredCannibalization": "NOT_VERIFIED_NO_QUERY_PAGE_GSC"
+      },
+      "links": {
+        "product": [
+          {
+            "href": "/platforms",
+            "label": "اختار وظيفة للتجربة"
+          }
+        ],
+        "related": [
+          "/guides/software-or-social-media-agency",
+          "/guides/name-and-add-platform-accounts",
+          "/guides/session-problem-support-brief"
+        ],
+        "cta": {
+          "label": "ابدأ تجربة Sky Pro",
+          "href": "/auth/register",
+          "description": "جهّز مهمة واضحة وراجع تاريخ انتهاء التجربة داخل حسابك."
+        },
+        "renderedMainLinks": [
+          {
+            "href": "/",
+            "label": "الرئيسية"
+          },
+          {
+            "href": "/guides",
+            "label": "أدلة الاستخدام"
+          },
+          {
+            "href": "https://www.skywaveads.com/",
+            "label": "فريق Sky Wave"
+          },
+          {
+            "href": "#before-registration",
+            "label": "قبل التسجيل: اكتب المهمة ومعيار نجاحها"
+          },
+          {
+            "href": "#prepare",
+            "label": "في أول جلسة: جهّز وصولك وحساب الاختبار"
+          },
+          {
+            "href": "#first-test",
+            "label": "جرّب مهمة صغيرة وسجّل ما حصل"
+          },
+          {
+            "href": "#record",
+            "label": "استخدم سجلًا قصيرًا بدل الاعتماد على الذاكرة"
+          },
+          {
+            "href": "#second-session",
+            "label": "في الجلسة التالية: راجع النقطة غير المحسومة"
+          },
+          {
+            "href": "#decision",
+            "label": "في نهاية التجربة: افصل ما ثبت عما يحتاج سؤالًا"
+          },
+          {
+            "href": "#sources",
+            "label": "المصادر والمراجع"
+          },
+          {
+            "href": "https://skypro.skywaveads.com/platforms",
+            "label": "منصات Sky Pro ومتطلبات الوظائف"
+          },
+          {
+            "href": "https://skypro.skywaveads.com/platforms/google-maps",
+            "label": "حالة أداة خرائط جوجل"
+          },
+          {
+            "href": "https://skypro.skywaveads.com/platforms/olx",
+            "label": "حالة أداة OLX"
+          },
+          {
+            "href": "https://skypro.skywaveads.com/#pricing",
+            "label": "التجربة والاشتراك في Sky Pro"
+          },
+          {
+            "href": "https://skypro.skywaveads.com/platforms",
+            "label": "منصات Sky Pro ومتطلبات الوظائف"
+          },
+          {
+            "href": "https://skypro.skywaveads.com/platforms/google-maps",
+            "label": "حالة أداة خرائط جوجل"
+          },
+          {
+            "href": "https://skypro.skywaveads.com/platforms/olx",
+            "label": "حالة أداة OLX"
+          },
+          {
+            "href": "/platforms",
+            "label": "اختار وظيفة للتجربة"
+          },
+          {
+            "href": "/auth/register",
+            "label": "ابدأ تجربة Sky Pro"
+          },
+          {
+            "href": "/guides/software-or-social-media-agency",
+            "label": "برنامج سوشيال ميديا ولا شركة إدارة حسابات: إيه المناسب لشغلك؟"
+          },
+          {
+            "href": "/guides/name-and-add-platform-accounts",
+            "label": "إزاي تسمّي حسابات المنصات وتراجعها قبل تشغيل مهمة؟"
+          },
+          {
+            "href": "/guides/session-problem-support-brief",
+            "label": "جلسة الحساب مش جاهزة: إيه اللي تراجعه وإزاي توصف المشكلة للدعم؟"
+          }
+        ]
+      },
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "mergeAction": "NO_MERGE_JUSTIFICATION_FROM_CURRENT_CONTENT",
+        "editorialAcceptance": "ACCEPT_DECLARED_PREPARATION_OR_EVALUATION_PURPOSE_WITH_RECOMMENDATIONS",
+        "measuredSERPAcceptance": "OPEN_REQUIRES_GSC_QUERY_PAGE_COUNTRY_DEVICE_BASELINE"
+      },
+      "proposedImprovements": [
+        {
+          "section": "record",
+          "action": "عند توفر قياس فعلي، قارن من قرأ خطة التجربة ومن أكمل التسجيل واختبار المهمة؛ لا تستخدم عدد النقرات بدل التحويل.",
+          "evidence": "المقال يفرّق بالفعل بين قبول الإعداد والنتيجة الفعلية.",
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "keywordValidation": "Requires measured queries or verified Desktop evidence before expanding claims"
+        }
+      ]
+    },
+    {
+      "path": "/guides/name-and-add-platform-accounts",
+      "primaryKeyword": {
+        "candidate": "تنظيم حسابات المنصات",
+        "status": "EDITORIAL_CANDIDATE_NOT_MEASURED_DEMAND"
+      },
+      "searchIntent": {
+        "declared": "تجهيز تسمية الحساب واختياره قبل المهمة",
+        "reviewedQuestion": "كيف أسمي حسابات الأنشطة وأطابق حقولها قبل مهمة؟",
+        "funnel": "HIGH_ACTIVATION_AND_PRODUCT_FIT"
+      },
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/guides/name-and-add-platform-accounts",
+        "observed": "https://skypro.skywaveads.com/guides/name-and-add-platform-accounts",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [
+          "/platforms/accounts",
+          "/guides/session-problem-support-brief",
+          "/guides/multi-account-work-handover"
+        ],
+        "risk": "MEDIUM_ACCOUNTS_CLUSTER",
+        "boundary": "المنصة تعرض وظيفة مدير الحسابات؛ الدليل يعطي قاعدة تسمية وفحص قبل التشغيل؛ support يشخص نقطة التوقف؛ handover يسلم المهمة.",
+        "measuredCannibalization": "NOT_VERIFIED_NO_QUERY_PAGE_GSC"
+      },
+      "links": {
+        "product": [
+          {
+            "href": "/platforms/accounts",
+            "label": "راجع مدير الحسابات"
+          }
+        ],
+        "related": [
+          "/guides/session-problem-support-brief",
+          "/guides/multi-account-work-handover",
+          "/guides/two-day-trial-checklist"
+        ],
+        "cta": {
+          "label": "شوف نموذج الحسابات",
+          "href": "/platforms/accounts",
+          "description": "راجع الحقول والصورة الأصلية قبل تجهيز حسابك."
+        },
+        "renderedMainLinks": [
+          {
+            "href": "/",
+            "label": "الرئيسية"
+          },
+          {
+            "href": "/guides",
+            "label": "أدلة الاستخدام"
+          },
+          {
+            "href": "https://www.skywaveads.com/",
+            "label": "فريق Sky Wave"
+          },
+          {
+            "href": "#naming-rule",
+            "label": "اختار قاعدة تسمية يقدر زميلك يفهمها"
+          },
+          {
+            "href": "#prepare-fields",
+            "label": "راجع كل حقل بمعناه"
+          },
+          {
+            "href": "#confirm-session",
+            "label": "بعد الحفظ، تحقّق من الحساب قبل المهمة"
+          },
+          {
+            "href": "#choose-before-run",
+            "label": "اعمل مراجعة قصيرة عند بدء كل مهمة"
+          },
+          {
+            "href": "#sources",
+            "label": "المصادر والمراجع"
+          },
+          {
+            "href": "https://skypro.skywaveads.com/platforms/accounts",
+            "label": "مدير الحسابات والصورة الفعلية في Sky Pro"
+          },
+          {
+            "href": "/platforms/accounts",
+            "label": "راجع مدير الحسابات"
+          },
+          {
+            "href": "/platforms/accounts",
+            "label": "شوف نموذج الحسابات"
+          },
+          {
+            "href": "/guides/session-problem-support-brief",
+            "label": "جلسة الحساب مش جاهزة: إيه اللي تراجعه وإزاي توصف المشكلة للدعم؟"
+          },
+          {
+            "href": "/guides/multi-account-work-handover",
+            "label": "تسليم شغل حسابات متعددة: سجل المهمة والحساب والنتيجة من غير كلمات مرور"
+          },
+          {
+            "href": "/guides/two-day-trial-checklist",
+            "label": "خطة عملية لتقييم برنامج تسويق خلال تجربة يومين"
+          }
+        ]
+      },
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "mergeAction": "NO_MERGE_JUSTIFICATION_FROM_CURRENT_CONTENT",
+        "editorialAcceptance": "ACCEPT_DECLARED_PREPARATION_OR_EVALUATION_PURPOSE_WITH_RECOMMENDATIONS",
+        "measuredSERPAcceptance": "OPEN_REQUIRES_GSC_QUERY_PAGE_COUNTRY_DEVICE_BASELINE"
+      },
+      "proposedImprovements": [
+        {
+          "section": "prepare-fields",
+          "action": "عند وصول لقطة نسخة حديثة، طابق اسم كل حقل وجدول المراجعة حرفيًا وسجل رقم النسخة؛ لا تغير الوصف اعتمادًا على اسم ملف.",
+          "evidence": "الجدول يتناول المنصة والاسم وبيانات الدخول والبروكسي تحديدًا.",
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "keywordValidation": "Requires measured queries or verified Desktop evidence before expanding claims"
+        }
+      ]
+    },
+    {
+      "path": "/guides/session-problem-support-brief",
+      "primaryKeyword": {
+        "candidate": "مشكلة جلسة الحساب",
+        "status": "EDITORIAL_CANDIDATE_NOT_MEASURED_DEMAND"
+      },
+      "searchIntent": {
+        "declared": "تجهيز وصف قابل للتكرار لمشكلة جلسة حساب",
+        "reviewedQuestion": "كيف أحدد نقطة فشل جلسة الحساب وأكتب بلاغًا قابلًا للتكرار؟",
+        "funnel": "MEDIUM_SUPPORT_AND_TRIAL_RETENTION"
+      },
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/guides/session-problem-support-brief",
+        "observed": "https://skypro.skywaveads.com/guides/session-problem-support-brief",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [
+          "/platforms/security",
+          "/platforms/accounts",
+          "/guides/name-and-add-platform-accounts",
+          "/guides/multi-account-work-handover"
+        ],
+        "risk": "MEDIUM_SUPPORT_VS_PRODUCT",
+        "boundary": "هذا المقال يملك وصف مشكلة، لا يملك كلمة برنامج حماية ولا منع حظر.",
+        "measuredCannibalization": "NOT_VERIFIED_NO_QUERY_PAGE_GSC"
+      },
+      "links": {
+        "product": [
+          {
+            "href": "/platforms/accounts",
+            "label": "مدير الحسابات"
+          },
+          {
+            "href": "/platforms/security",
+            "label": "إعدادات الجلسة"
+          }
+        ],
+        "related": [
+          "/guides/name-and-add-platform-accounts",
+          "/guides/multi-account-work-handover"
+        ],
+        "cta": {
+          "label": "راجع إعدادات الجلسة",
+          "href": "/platforms/security",
+          "description": "افهم الخيارات وحدودها قبل تغيير إعداد التشغيل."
+        },
+        "renderedMainLinks": [
+          {
+            "href": "/",
+            "label": "الرئيسية"
+          },
+          {
+            "href": "/guides",
+            "label": "أدلة الاستخدام"
+          },
+          {
+            "href": "https://www.skywaveads.com/",
+            "label": "فريق Sky Wave"
+          },
+          {
+            "href": "#locate-failure",
+            "label": "حدد آخر خطوة اشتغلت فعلًا"
+          },
+          {
+            "href": "#separate-causes",
+            "label": "راجع الوصول والإعداد والصلاحية كل واحد لوحده"
+          },
+          {
+            "href": "#support-note",
+            "label": "اكتب بلاغًا يستطيع الدعم تكراره"
+          },
+          {
+            "href": "#redact",
+            "label": "راجع الصورة والملف قبل إرسالهما"
+          },
+          {
+            "href": "#after-reply",
+            "label": "راجع النتيجة بعد اقتراح الحل"
+          },
+          {
+            "href": "#sources",
+            "label": "المصادر والمراجع"
+          },
+          {
+            "href": "https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html",
+            "label": "OWASP: معنى رمز الجلسة وحساسيته"
+          },
+          {
+            "href": "https://skypro.skywaveads.com/platforms/accounts",
+            "label": "حقول الحساب ومتطلبات الجلسة في Sky Pro"
+          },
+          {
+            "href": "https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html",
+            "label": "OWASP: معنى رمز الجلسة وحساسيته"
+          },
+          {
+            "href": "/platforms/accounts",
+            "label": "مدير الحسابات"
+          },
+          {
+            "href": "/platforms/security",
+            "label": "إعدادات الجلسة"
+          },
+          {
+            "href": "/platforms/security",
+            "label": "راجع إعدادات الجلسة"
+          },
+          {
+            "href": "/guides/name-and-add-platform-accounts",
+            "label": "إزاي تسمّي حسابات المنصات وتراجعها قبل تشغيل مهمة؟"
+          },
+          {
+            "href": "/guides/multi-account-work-handover",
+            "label": "تسليم شغل حسابات متعددة: سجل المهمة والحساب والنتيجة من غير كلمات مرور"
+          }
+        ]
+      },
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "mergeAction": "NO_MERGE_JUSTIFICATION_FROM_CURRENT_CONTENT",
+        "editorialAcceptance": "ACCEPT_DECLARED_PREPARATION_OR_EVALUATION_PURPOSE_WITH_RECOMMENDATIONS",
+        "measuredSERPAcceptance": "OPEN_REQUIRES_GSC_QUERY_PAGE_COUNTRY_DEVICE_BASELINE"
+      },
+      "proposedImprovements": [
+        {
+          "section": "support-note",
+          "action": "أضف لاحقًا رابط دعم مباشر يحمل اسم المقال فقط دون نص البلاغ/PII عند إتمام النموذج؛ قِس contact_click دون تسجيل المحتوى.",
+          "evidence": "يوجد نموذج بلاغ كامل لكن CTA النهائي يفتح صفحة security.",
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "keywordValidation": "Requires measured queries or verified Desktop evidence before expanding claims"
+        },
+        {
+          "section": "redact",
+          "action": "استبدل الغلاف مستقبلًا بصورة رسالة خطأ تجريبية حقيقية مخفية البيانات إن أتاح Desktop ذلك؛ لا تصنع رسالة خطأ.",
+          "evidence": "الغلاف الحالي لوحة فواصل لا يشير إلى خطوة فشل بعينها.",
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "keywordValidation": "Requires measured queries or verified Desktop evidence before expanding claims"
+        }
+      ]
+    },
+    {
+      "path": "/guides/multi-account-work-handover",
+      "primaryKeyword": {
+        "candidate": "تسليم شغل حسابات السوشيال ميديا",
+        "status": "EDITORIAL_CANDIDATE_NOT_MEASURED_DEMAND"
+      },
+      "searchIntent": {
+        "declared": "تجهيز سجل تسليم عمل للحسابات المتعددة",
+        "reviewedQuestion": "كيف أسلّم مهمة وحسابًا ونتيجة لشخص آخر دون نقل كلمات المرور؟",
+        "funnel": "MEDIUM_GENERAL_WORKFLOW"
+      },
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/guides/multi-account-work-handover",
+        "observed": "https://skypro.skywaveads.com/guides/multi-account-work-handover",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [
+          "/guides/windows-or-cloud-marketing-tool",
+          "/guides/name-and-add-platform-accounts",
+          "/platforms/accounts",
+          "/guides/instagram-task-brief"
+        ],
+        "risk": "MEDIUM_GENERIC_WORKFLOW_OVERLAP",
+        "boundary": "السجل هنا يملك آخر حالة/دليل/المسؤول التالي، بينما naming يملك اختيار الحساب وInstagram يملك مادة وجهة محددة.",
+        "measuredCannibalization": "NOT_VERIFIED_NO_QUERY_PAGE_GSC"
+      },
+      "links": {
+        "product": [
+          {
+            "href": "/platforms/accounts",
+            "label": "تنظيم الحسابات داخل Sky Pro"
+          }
+        ],
+        "related": [
+          "/guides/name-and-add-platform-accounts",
+          "/guides/session-problem-support-brief",
+          "/guides/whatsapp-message-test"
+        ],
+        "cta": {
+          "label": "راجع مدير الحسابات",
+          "href": "/platforms/accounts",
+          "description": "طابق احتياج تنظيم حساباتك مع الحقول المتاحة فعلًا."
+        },
+        "renderedMainLinks": [
+          {
+            "href": "/",
+            "label": "الرئيسية"
+          },
+          {
+            "href": "/guides",
+            "label": "أدلة الاستخدام"
+          },
+          {
+            "href": "https://www.skywaveads.com/",
+            "label": "فريق Sky Wave"
+          },
+          {
+            "href": "#one-row",
+            "label": "خلّي كل سطر يصف مهمة محددة"
+          },
+          {
+            "href": "#state-and-proof",
+            "label": "اربط كل حالة بما يثبتها"
+          },
+          {
+            "href": "#access-separate",
+            "label": "افصل التسليم عن نقل صلاحيات الحساب"
+          },
+          {
+            "href": "#receiving-check",
+            "label": "المستلم يراجع قبل ما يكمل"
+          },
+          {
+            "href": "#sources",
+            "label": "المصادر والمراجع"
+          },
+          {
+            "href": "https://skypro.skywaveads.com/platforms/accounts",
+            "label": "مدير الحسابات: الوظائف والحدود"
+          },
+          {
+            "href": "/platforms/accounts",
+            "label": "تنظيم الحسابات داخل Sky Pro"
+          },
+          {
+            "href": "/platforms/accounts",
+            "label": "راجع مدير الحسابات"
+          },
+          {
+            "href": "/guides/name-and-add-platform-accounts",
+            "label": "إزاي تسمّي حسابات المنصات وتراجعها قبل تشغيل مهمة؟"
+          },
+          {
+            "href": "/guides/session-problem-support-brief",
+            "label": "جلسة الحساب مش جاهزة: إيه اللي تراجعه وإزاي توصف المشكلة للدعم؟"
+          },
+          {
+            "href": "/guides/whatsapp-message-test",
+            "label": "رسالة واتساب تجريبية: راجع الحساب والمحتوى والمرفق قبل الإرسال"
+          }
+        ]
+      },
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "mergeAction": "NO_MERGE_JUSTIFICATION_FROM_CURRENT_CONTENT",
+        "editorialAcceptance": "ACCEPT_DECLARED_PREPARATION_OR_EVALUATION_PURPOSE_WITH_RECOMMENDATIONS",
+        "measuredSERPAcceptance": "OPEN_REQUIRES_GSC_QUERY_PAGE_COUNTRY_DEVICE_BASELINE"
+      },
+      "proposedImprovements": [
+        {
+          "section": "receiving-check",
+          "action": "اختبر لاحقًا نسبة انتقال هذه الزيارات إلى accounts ثم trial. أبقِه support/retention إن ثبت أنه يجيب بحثًا تنظيميًا عامًا دون شراء.",
+          "evidence": "معظم المتن عن مستند العمل ولا يشرح تشغيل وظيفة داخل Sky Pro.",
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "keywordValidation": "Requires measured queries or verified Desktop evidence before expanding claims"
+        }
+      ]
+    },
+    {
+      "path": "/guides/whatsapp-message-test",
+      "primaryKeyword": {
+        "candidate": "اختبار رسالة واتساب",
+        "status": "EDITORIAL_CANDIDATE_NOT_MEASURED_DEMAND"
+      },
+      "searchIntent": {
+        "declared": "مراجعة رسالة اختبار متوقعة ومأذون بها",
+        "reviewedQuestion": "كيف أراجع رسالة اختبار واحدة وحسابها ومرفقها عند مستلم موافق؟",
+        "funnel": "HIGH_TASK_EVALUATION"
+      },
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/guides/whatsapp-message-test",
+        "observed": "https://skypro.skywaveads.com/guides/whatsapp-message-test",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [
+          "/platforms/whatsapp",
+          "/guides/contact-list-quality-check",
+          "/guides/smtp-test-message-checklist"
+        ],
+        "risk": "MEDIUM_TEST_MESSAGE_CLUSTER",
+        "boundary": "واتساب يراجع رقمًا وحسابًا ومرفقًا في واتساب؛ SMTP يراجع خادمًا ومصادقة وصندوقًا وردًا؛ contact-list يملك القائمة قبل الإرسال.",
+        "measuredCannibalization": "NOT_VERIFIED_NO_QUERY_PAGE_GSC"
+      },
+      "links": {
+        "product": [
+          {
+            "href": "/platforms/whatsapp",
+            "label": "استعرض أدوات واتساب"
+          }
+        ],
+        "related": [
+          "/guides/contact-list-quality-check",
+          "/guides/multi-account-work-handover",
+          "/guides/session-problem-support-brief"
+        ],
+        "cta": {
+          "label": "راجع أدوات واتساب",
+          "href": "/platforms/whatsapp",
+          "description": "افهم القوائم والصور المتاحة وحدد الوظيفة اللي عايز تختبرها."
+        },
+        "renderedMainLinks": [
+          {
+            "href": "/",
+            "label": "الرئيسية"
+          },
+          {
+            "href": "/guides",
+            "label": "أدلة الاستخدام"
+          },
+          {
+            "href": "https://www.skywaveads.com/",
+            "label": "فريق Sky Wave"
+          },
+          {
+            "href": "#recipient",
+            "label": "اختار مستلمًا يعرف إنه اختبار"
+          },
+          {
+            "href": "#message",
+            "label": "راجع النص كما سيقرأه المستلم"
+          },
+          {
+            "href": "#attachment",
+            "label": "افتح المرفق والرابط قبل الإرسال"
+          },
+          {
+            "href": "#check-result",
+            "label": "افحص النتيجة عند المستلم وسجّل حدودها"
+          },
+          {
+            "href": "#sources",
+            "label": "المصادر والمراجع"
+          },
+          {
+            "href": "https://business.whatsapp.com/policy",
+            "label": "WhatsApp Business Messaging Policy"
+          },
+          {
+            "href": "https://business.whatsapp.com/policy",
+            "label": "WhatsApp Business Messaging Policy"
+          },
+          {
+            "href": "https://skypro.skywaveads.com/platforms/whatsapp",
+            "label": "أدوات واتساب المعروضة في Sky Pro"
+          },
+          {
+            "href": "/platforms/whatsapp",
+            "label": "استعرض أدوات واتساب"
+          },
+          {
+            "href": "/platforms/whatsapp",
+            "label": "راجع أدوات واتساب"
+          },
+          {
+            "href": "/guides/contact-list-quality-check",
+            "label": "مراجعة قائمة تواصل: التكرار ومصدر البيانات وصلاحية الاستخدام"
+          },
+          {
+            "href": "/guides/multi-account-work-handover",
+            "label": "تسليم شغل حسابات متعددة: سجل المهمة والحساب والنتيجة من غير كلمات مرور"
+          },
+          {
+            "href": "/guides/session-problem-support-brief",
+            "label": "جلسة الحساب مش جاهزة: إيه اللي تراجعه وإزاي توصف المشكلة للدعم؟"
+          }
+        ]
+      },
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "mergeAction": "NO_MERGE_JUSTIFICATION_FROM_CURRENT_CONTENT",
+        "editorialAcceptance": "ACCEPT_DECLARED_PREPARATION_OR_EVALUATION_PURPOSE_WITH_RECOMMENDATIONS",
+        "measuredSERPAcceptance": "OPEN_REQUIRES_GSC_QUERY_PAGE_COUNTRY_DEVICE_BASELINE"
+      },
+      "proposedImprovements": [
+        {
+          "section": "check-result",
+          "action": "أضف فقط عند توافر تجربة Desktop مصرح بها خطوات نسخة فعلية وصورة الإعداد/النتيجة؛ لا تحوّل checklist إلى وعد إرسال ناجح.",
+          "evidence": "المتن مشروط بـ«الوظيفة المسموح بها في نسختك» ولا يعرض تجربة تشغيل.",
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "keywordValidation": "Requires measured queries or verified Desktop evidence before expanding claims"
+        }
+      ]
+    },
+    {
+      "path": "/guides/contact-list-quality-check",
+      "primaryKeyword": {
+        "candidate": "مراجعة قائمة تواصل",
+        "status": "EDITORIAL_CANDIDATE_NOT_MEASURED_DEMAND"
+      },
+      "searchIntent": {
+        "declared": "فحص جودة قائمة مأذون بها قبل استخدامها في التواصل",
+        "reviewedQuestion": "كيف أراجع مصدر قائمة واتساب/بريد وتنسيقها وتكرارها قبل اعتماد التواصل؟",
+        "funnel": "MEDIUM_GENERAL_PREPARATION"
+      },
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/guides/contact-list-quality-check",
+        "observed": "https://skypro.skywaveads.com/guides/contact-list-quality-check",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [
+          "/platforms/whatsapp",
+          "/platforms/send-emails",
+          "/guides/whatsapp-message-test",
+          "/guides/smtp-test-message-checklist"
+        ],
+        "risk": "MEDIUM_INPUTS_VS_DELIVERY",
+        "boundary": "المقال يملك جودة القائمة وغرضها؛ لا يملك اختبار رسالة ولا شراء برنامج فلترة مثبت.",
+        "measuredCannibalization": "NOT_VERIFIED_NO_QUERY_PAGE_GSC"
+      },
+      "links": {
+        "product": [
+          {
+            "href": "/platforms/whatsapp",
+            "label": "أدوات واتساب"
+          },
+          {
+            "href": "/platforms/send-emails",
+            "label": "أدوات البريد"
+          }
+        ],
+        "related": [
+          "/guides/whatsapp-message-test",
+          "/guides/smtp-test-message-checklist"
+        ],
+        "cta": {
+          "label": "راجع مسار رسالة الاختبار",
+          "href": "/platforms/send-emails",
+          "description": "لو التواصل بالبريد، ابدأ بإعداد المزود ورسالة لنفسك."
+        },
+        "renderedMainLinks": [
+          {
+            "href": "/",
+            "label": "الرئيسية"
+          },
+          {
+            "href": "/guides",
+            "label": "أدلة الاستخدام"
+          },
+          {
+            "href": "https://www.skywaveads.com/",
+            "label": "فريق Sky Wave"
+          },
+          {
+            "href": "#source",
+            "label": "اسأل عن أصل السجل قبل تنسيقه"
+          },
+          {
+            "href": "#normalize",
+            "label": "نظّم القيم من غير ما تخمّن بيانات ناقصة"
+          },
+          {
+            "href": "#deduplicate",
+            "label": "حدد معنى التكرار قبل الحذف"
+          },
+          {
+            "href": "#approve",
+            "label": "اقفل المراجعة بقرار واضح"
+          },
+          {
+            "href": "#sources",
+            "label": "المصادر والمراجع"
+          },
+          {
+            "href": "https://business.whatsapp.com/policy",
+            "label": "سياسة واتساب: إذن التواصل وطلبات التوقف"
+          },
+          {
+            "href": "https://business.whatsapp.com/policy",
+            "label": "سياسة واتساب: إذن التواصل وطلبات التوقف"
+          },
+          {
+            "href": "https://skypro.skywaveads.com/platforms/whatsapp",
+            "label": "أدوات واتساب وإعداد جهات الاتصال"
+          },
+          {
+            "href": "/platforms/whatsapp",
+            "label": "أدوات واتساب"
+          },
+          {
+            "href": "/platforms/send-emails",
+            "label": "أدوات البريد"
+          },
+          {
+            "href": "/platforms/send-emails",
+            "label": "راجع مسار رسالة الاختبار"
+          },
+          {
+            "href": "/guides/whatsapp-message-test",
+            "label": "رسالة واتساب تجريبية: راجع الحساب والمحتوى والمرفق قبل الإرسال"
+          },
+          {
+            "href": "/guides/smtp-test-message-checklist",
+            "label": "من إعداد SMTP لرسالة الاختبار: قائمة مراجعة عملية"
+          }
+        ]
+      },
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "mergeAction": "NO_MERGE_JUSTIFICATION_FROM_CURRENT_CONTENT",
+        "editorialAcceptance": "ACCEPT_DECLARED_PREPARATION_OR_EVALUATION_PURPOSE_WITH_RECOMMENDATIONS",
+        "measuredSERPAcceptance": "OPEN_REQUIRES_GSC_QUERY_PAGE_COUNTRY_DEVICE_BASELINE"
+      },
+      "proposedImprovements": [
+        {
+          "section": "normalize",
+          "action": "لو Queries تُظهر طلب email validation آلي أو تصحيح أرقام آلي، لا توجّه له الصفحة باعتبار المنتج ينفذه قبل إثبات الوظيفة؛ افصل الفحص الشكلي الحالي.",
+          "evidence": "المتن يقول إن الصيغة الصحيحة لا تثبت وجود صندوق البريد.",
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "keywordValidation": "Requires measured queries or verified Desktop evidence before expanding claims"
+        }
+      ]
+    },
+    {
+      "path": "/guides/smtp-test-message-checklist",
+      "primaryKeyword": {
+        "candidate": "إعداد SMTP ورسالة اختبار",
+        "status": "EDITORIAL_CANDIDATE_NOT_MEASURED_DEMAND"
+      },
+      "searchIntent": {
+        "declared": "تجهيز مزود SMTP وفحص رسالة اختبار مملوكة",
+        "reviewedQuestion": "كيف أراجع إعداد SMTP ثم الاستلام والمحتوى والرد بصورة مستقلة؟",
+        "funnel": "HIGH_TASK_REQUIREMENTS"
+      },
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/guides/smtp-test-message-checklist",
+        "observed": "https://skypro.skywaveads.com/guides/smtp-test-message-checklist",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [
+          "/platforms/send-emails",
+          "/guides/whatsapp-message-test",
+          "/guides/contact-list-quality-check"
+        ],
+        "risk": "LOW_PROVIDER_SPECIFIC_DIFFERENCE",
+        "boundary": "الصفحة التجارية تعرض وحدة البريد ومتطلباتها؛ المقال يملك checklist SMTP والتسليم والرد.",
+        "measuredCannibalization": "NOT_VERIFIED_NO_QUERY_PAGE_GSC"
+      },
+      "links": {
+        "product": [
+          {
+            "href": "/platforms/send-emails",
+            "label": "مداخل وحدة البريد"
+          }
+        ],
+        "related": [
+          "/guides/contact-list-quality-check",
+          "/guides/session-problem-support-brief"
+        ],
+        "cta": {
+          "label": "استعرض وحدة البريد",
+          "href": "/platforms/send-emails",
+          "description": "راجع ما تعرضه الوحدة واسأل عن توافق مزودك قبل الاشتراك من أجلها."
+        },
+        "renderedMainLinks": [
+          {
+            "href": "/",
+            "label": "الرئيسية"
+          },
+          {
+            "href": "/guides",
+            "label": "أدلة الاستخدام"
+          },
+          {
+            "href": "https://www.skywaveads.com/",
+            "label": "فريق Sky Wave"
+          },
+          {
+            "href": "#provider-sheet",
+            "label": "خد الإعدادات من مزودك مباشرة"
+          },
+          {
+            "href": "#credentials",
+            "label": "راجع المصادقة من غير إضعاف الحماية"
+          },
+          {
+            "href": "#test-letter",
+            "label": "اكتب رسالة اختبار تكشف الأخطاء الصغيرة"
+          },
+          {
+            "href": "#delivery",
+            "label": "افحص الاستلام والقراءة والرد كل واحد لوحده"
+          },
+          {
+            "href": "#before-list",
+            "label": "راجع القائمة والسياسة قبل الاستخدام الفعلي"
+          },
+          {
+            "href": "#sources",
+            "label": "المصادر والمراجع"
+          },
+          {
+            "href": "https://knowledge.workspace.google.com/admin/gmail/send-email-from-a-printer-scanner-or-app?hl=en",
+            "label": "Google Workspace: الإرسال من جهاز أو تطبيق"
+          },
+          {
+            "href": "https://support.google.com/mail/answer/185833?hl=en",
+            "label": "Google: تسجيل الدخول بكلمات مرور التطبيقات"
+          },
+          {
+            "href": "https://knowledge.workspace.google.com/admin/gmail/send-email-from-a-printer-scanner-or-app?hl=en",
+            "label": "Google Workspace: الإرسال من جهاز أو تطبيق"
+          },
+          {
+            "href": "https://support.google.com/mail/answer/185833?hl=en",
+            "label": "Google: تسجيل الدخول بكلمات مرور التطبيقات"
+          },
+          {
+            "href": "https://skypro.skywaveads.com/platforms/send-emails",
+            "label": "وحدة البريد في Sky Pro"
+          },
+          {
+            "href": "/platforms/send-emails",
+            "label": "مداخل وحدة البريد"
+          },
+          {
+            "href": "/platforms/send-emails",
+            "label": "استعرض وحدة البريد"
+          },
+          {
+            "href": "/guides/contact-list-quality-check",
+            "label": "مراجعة قائمة تواصل: التكرار ومصدر البيانات وصلاحية الاستخدام"
+          },
+          {
+            "href": "/guides/session-problem-support-brief",
+            "label": "جلسة الحساب مش جاهزة: إيه اللي تراجعه وإزاي توصف المشكلة للدعم؟"
+          }
+        ]
+      },
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "mergeAction": "NO_MERGE_JUSTIFICATION_FROM_CURRENT_CONTENT",
+        "editorialAcceptance": "ACCEPT_DECLARED_PREPARATION_OR_EVALUATION_PURPOSE_WITH_RECOMMENDATIONS",
+        "measuredSERPAcceptance": "OPEN_REQUIRES_GSC_QUERY_PAGE_COUNTRY_DEVICE_BASELINE"
+      },
+      "proposedImprovements": [
+        {
+          "section": "credentials",
+          "action": "عند إتاحة اختبار Desktop آمن، انشر جدول مزود/طريقة مصادقة/نسخة/نتيجة فعلية؛ لا تصف app password أو OAuth كمدعومين لمجرد وجود مصدر Google.",
+          "evidence": "القسم يطلب سؤال الدعم عن التوافق؛ التجربة المنشورة ليست اختبار وحدة Windows.",
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "keywordValidation": "Requires measured queries or verified Desktop evidence before expanding claims"
+        }
+      ]
+    },
+    {
+      "path": "/guides/facebook-task-inputs",
+      "primaryKeyword": {
+        "candidate": "إعداد مهمة فيسبوك",
+        "status": "EDITORIAL_CANDIDATE_NOT_MEASURED_DEMAND"
+      },
+      "searchIntent": {
+        "declared": "فهم حقول شاشة إعداد مهمة فيسبوك المعروضة",
+        "reviewedQuestion": "كيف أطابق نوع مهمة بيانات فيسبوك والرابط والحد والفاصل مع الإعداد؟",
+        "funnel": "HIGH_IMAGE_BACKED_TASK_INPUTS"
+      },
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/guides/facebook-task-inputs",
+        "observed": "https://skypro.skywaveads.com/guides/facebook-task-inputs",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [
+          "/platforms/facebook",
+          "/guides/instagram-task-brief"
+        ],
+        "risk": "MEDIUM_PLATFORM_AND_GUIDE",
+        "boundary": "المنصة تعرض المداخل ومزايا الملاءمة؛ المقال يملك تفسير حقول إعداد بيانات معينة.",
+        "measuredCannibalization": "NOT_VERIFIED_NO_QUERY_PAGE_GSC"
+      },
+      "links": {
+        "product": [
+          {
+            "href": "/platforms/facebook",
+            "label": "صور فيسبوك بالحجم الكامل"
+          }
+        ],
+        "related": [
+          "/guides/name-and-add-platform-accounts",
+          "/guides/two-day-trial-checklist",
+          "/guides/session-problem-support-brief"
+        ],
+        "cta": {
+          "label": "افتح صور إعداد فيسبوك",
+          "href": "/platforms/facebook",
+          "description": "كبّر الحقول وراجع الوظيفة المطلوبة قبل تجهيز المدخلات."
+        },
+        "renderedMainLinks": [
+          {
+            "href": "/",
+            "label": "الرئيسية"
+          },
+          {
+            "href": "/guides",
+            "label": "أدلة الاستخدام"
+          },
+          {
+            "href": "https://www.skywaveads.com/",
+            "label": "فريق Sky Wave"
+          },
+          {
+            "href": "#task-before-link",
+            "label": "سمّ المهمة قبل نسخ الرابط"
+          },
+          {
+            "href": "#fields",
+            "label": "طابق نوع البيانات مع المصدر"
+          },
+          {
+            "href": "#limit",
+            "label": "حد النتائج يحدد نطاق الطلب، مش ضمان النتيجة"
+          },
+          {
+            "href": "#example",
+            "label": "سجّل التجربة بما يسمح بمراجعتها"
+          },
+          {
+            "href": "#inspect",
+            "label": "راجع المخرجات بدل الاكتفاء بزر البداية"
+          },
+          {
+            "href": "#sources",
+            "label": "المصادر والمراجع"
+          },
+          {
+            "href": "https://skypro.skywaveads.com/platforms/facebook",
+            "label": "صور أدوات فيسبوك وإعداد المهمة في Sky Pro"
+          },
+          {
+            "href": "/platforms/facebook",
+            "label": "صور فيسبوك بالحجم الكامل"
+          },
+          {
+            "href": "/platforms/facebook",
+            "label": "افتح صور إعداد فيسبوك"
+          },
+          {
+            "href": "/guides/name-and-add-platform-accounts",
+            "label": "إزاي تسمّي حسابات المنصات وتراجعها قبل تشغيل مهمة؟"
+          },
+          {
+            "href": "/guides/two-day-trial-checklist",
+            "label": "خطة عملية لتقييم برنامج تسويق خلال تجربة يومين"
+          },
+          {
+            "href": "/guides/session-problem-support-brief",
+            "label": "جلسة الحساب مش جاهزة: إيه اللي تراجعه وإزاي توصف المشكلة للدعم؟"
+          }
+        ]
+      },
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "mergeAction": "NO_MERGE_JUSTIFICATION_FROM_CURRENT_CONTENT",
+        "editorialAcceptance": "ACCEPT_DECLARED_PREPARATION_OR_EVALUATION_PURPOSE_WITH_RECOMMENDATIONS",
+        "measuredSERPAcceptance": "OPEN_REQUIRES_GSC_QUERY_PAGE_COUNTRY_DEVICE_BASELINE"
+      },
+      "proposedImprovements": [
+        {
+          "section": "fields",
+          "action": "اربط من فقرة الإعداد في صفحة فيسبوك إلى هذا الجدول عند تنفيذ تحسين روابط مصرح؛ لا تعمم الحقول على شاشة النشر.",
+          "evidence": "task-before-link وinspect يصرحان أن النشر مسار مستقل عن البيانات.",
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "keywordValidation": "Requires measured queries or verified Desktop evidence before expanding claims"
+        }
+      ]
+    },
+    {
+      "path": "/guides/instagram-task-brief",
+      "primaryKeyword": {
+        "candidate": "تجهيز مهمة إنستجرام",
+        "status": "EDITORIAL_CANDIDATE_NOT_MEASURED_DEMAND"
+      },
+      "searchIntent": {
+        "declared": "صياغة موجز مهمة محتوى لإنستجرام قبل اختيار الأداة",
+        "reviewedQuestion": "كيف أجهز موجز حساب ومحتوى واعتماد ثم أطابقه مع وظيفة إنستجرام؟",
+        "funnel": "MEDIUM_GENERAL_PREPARATION"
+      },
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/guides/instagram-task-brief",
+        "observed": "https://skypro.skywaveads.com/guides/instagram-task-brief",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [
+          "/platforms/instagram",
+          "/guides/multi-account-work-handover",
+          "/guides/tiktok-video-task-checklist",
+          "/guides/threads-account-task-review"
+        ],
+        "risk": "MEDIUM_SHARED_BRIEF_STRUCTURE",
+        "boundary": "Instagram يملك مادة الصورة/النص واعتمادها؛ TikTok يملك master video/audio؛ Threads يملك نقل السياق بين الوجهتين؛ handover يملك حالة ومتلقي التسليم.",
+        "measuredCannibalization": "NOT_VERIFIED_NO_QUERY_PAGE_GSC"
+      },
+      "links": {
+        "product": [
+          {
+            "href": "/platforms/instagram",
+            "label": "راجع وحدة إنستجرام"
+          }
+        ],
+        "related": [
+          "/guides/threads-account-task-review",
+          "/guides/name-and-add-platform-accounts",
+          "/guides/multi-account-work-handover"
+        ],
+        "cta": {
+          "label": "شوف إعداد إنستجرام",
+          "href": "/platforms/instagram",
+          "description": "راجع الصورة الكاملة وميّز نوع الوظيفة قبل تجربتها."
+        },
+        "renderedMainLinks": [
+          {
+            "href": "/",
+            "label": "الرئيسية"
+          },
+          {
+            "href": "/guides",
+            "label": "أدلة الاستخدام"
+          },
+          {
+            "href": "https://www.skywaveads.com/",
+            "label": "فريق Sky Wave"
+          },
+          {
+            "href": "#brief",
+            "label": "اكتب جملة تنفيذ بدل هدف واسع"
+          },
+          {
+            "href": "#content-pack",
+            "label": "جهّز ملف المادة بمراجع واضحة"
+          },
+          {
+            "href": "#match-function",
+            "label": "طابق الأداة مع الوظيفة المطلوبة"
+          },
+          {
+            "href": "#result",
+            "label": "اقفل المهمة على نتيجة يمكن فحصها"
+          },
+          {
+            "href": "#sources",
+            "label": "المصادر والمراجع"
+          },
+          {
+            "href": "https://skypro.skywaveads.com/platforms/instagram",
+            "label": "وحدة إنستجرام وصور إعدادها في Sky Pro"
+          },
+          {
+            "href": "/platforms/instagram",
+            "label": "راجع وحدة إنستجرام"
+          },
+          {
+            "href": "/platforms/instagram",
+            "label": "شوف إعداد إنستجرام"
+          },
+          {
+            "href": "/guides/threads-account-task-review",
+            "label": "مراجعة مهمة ثريدز بشكل مستقل عن إنستجرام"
+          },
+          {
+            "href": "/guides/name-and-add-platform-accounts",
+            "label": "إزاي تسمّي حسابات المنصات وتراجعها قبل تشغيل مهمة؟"
+          },
+          {
+            "href": "/guides/multi-account-work-handover",
+            "label": "تسليم شغل حسابات متعددة: سجل المهمة والحساب والنتيجة من غير كلمات مرور"
+          }
+        ]
+      },
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "mergeAction": "NO_MERGE_JUSTIFICATION_FROM_CURRENT_CONTENT",
+        "editorialAcceptance": "ACCEPT_DECLARED_PREPARATION_OR_EVALUATION_PURPOSE_WITH_RECOMMENDATIONS",
+        "measuredSERPAcceptance": "OPEN_REQUIRES_GSC_QUERY_PAGE_COUNTRY_DEVICE_BASELINE"
+      },
+      "proposedImprovements": [
+        {
+          "section": "match-function",
+          "action": "عند وصول capture مصرح لمسار واضح، أضف مثال مطابقة وظيفة واحدة بحقولها؛ لا تعِد كتابة المقال كدليل نشر لم يتم إثباته.",
+          "evidence": "الفقرة تقول صراحةً إن خانة رابط/نوع بيانات قد لا تكون شاشة نشر.",
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "keywordValidation": "Requires measured queries or verified Desktop evidence before expanding claims"
+        }
+      ]
+    },
+    {
+      "path": "/guides/telegram-group-channel-task",
+      "primaryKeyword": {
+        "candidate": "الفرق بين مجموعة وقناة تيليجرام",
+        "status": "EDITORIAL_CANDIDATE_NOT_MEASURED_DEMAND"
+      },
+      "searchIntent": {
+        "declared": "تحديد نوع وجهة تيليجرام وصلاحية المهمة",
+        "reviewedQuestion": "هل مهمتي تخص قناة أم مجموعة وما صلاحية حسابي ومتطلبات الوحدة؟",
+        "funnel": "HIGH_PRODUCT_QUALIFICATION"
+      },
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/guides/telegram-group-channel-task",
+        "observed": "https://skypro.skywaveads.com/guides/telegram-group-channel-task",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [
+          "/platforms/telegram",
+          "/platforms/telegram-premium"
+        ],
+        "risk": "MEDIUM_MODULE_NAME_AMBIGUITY",
+        "boundary": "المنصتان تعرضان قائمتين مختلفتين؛ المقال يملك اختيار الوجهة والدور. Premium الرسمي ليس رخصة تمنحها وحدة Sky Pro.",
+        "measuredCannibalization": "NOT_VERIFIED_NO_QUERY_PAGE_GSC"
+      },
+      "links": {
+        "product": [
+          {
+            "href": "/platforms/telegram",
+            "label": "أدوات تيليجرام"
+          },
+          {
+            "href": "/platforms/telegram-premium",
+            "label": "متطلبات وحدة Telegram Premium"
+          }
+        ],
+        "related": [
+          "/guides/name-and-add-platform-accounts",
+          "/guides/two-day-trial-checklist"
+        ],
+        "cta": {
+          "label": "راجع أدوات تيليجرام",
+          "href": "/platforms/telegram",
+          "description": "حدد مدخل المهمة واطلب توضيح متطلباتها لو الصورة لا تكفي."
+        },
+        "renderedMainLinks": [
+          {
+            "href": "/",
+            "label": "الرئيسية"
+          },
+          {
+            "href": "/guides",
+            "label": "أدلة الاستخدام"
+          },
+          {
+            "href": "https://www.skywaveads.com/",
+            "label": "فريق Sky Wave"
+          },
+          {
+            "href": "#destination",
+            "label": "ابدأ من طريقة التواصل المطلوبة"
+          },
+          {
+            "href": "#permissions",
+            "label": "راجع دور الحساب قبل تجهيز التشغيل"
+          },
+          {
+            "href": "#product",
+            "label": "افصل متطلبات تيليجرام عن اسم وحدة البرنامج"
+          },
+          {
+            "href": "#example",
+            "label": "جهّز موجزًا يوضح المطلوب للدعم"
+          },
+          {
+            "href": "#review",
+            "label": "راجع الأثر عند الوجهة الصحيحة"
+          },
+          {
+            "href": "#sources",
+            "label": "المصادر والمراجع"
+          },
+          {
+            "href": "https://telegram.org/faq?setln=en",
+            "label": "Telegram FAQ: groups and channels"
+          },
+          {
+            "href": "https://telegram.org/faq?setln=en",
+            "label": "Telegram FAQ: groups and channels"
+          },
+          {
+            "href": "https://skypro.skywaveads.com/platforms/telegram",
+            "label": "وحدة تيليجرام في Sky Pro"
+          },
+          {
+            "href": "/platforms/telegram",
+            "label": "أدوات تيليجرام"
+          },
+          {
+            "href": "/platforms/telegram-premium",
+            "label": "متطلبات وحدة Telegram Premium"
+          },
+          {
+            "href": "/platforms/telegram",
+            "label": "راجع أدوات تيليجرام"
+          },
+          {
+            "href": "/guides/name-and-add-platform-accounts",
+            "label": "إزاي تسمّي حسابات المنصات وتراجعها قبل تشغيل مهمة؟"
+          },
+          {
+            "href": "/guides/two-day-trial-checklist",
+            "label": "خطة عملية لتقييم برنامج تسويق خلال تجربة يومين"
+          }
+        ]
+      },
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "mergeAction": "NO_MERGE_JUSTIFICATION_FROM_CURRENT_CONTENT",
+        "editorialAcceptance": "ACCEPT_DECLARED_PREPARATION_OR_EVALUATION_PURPOSE_WITH_RECOMMENDATIONS",
+        "measuredSERPAcceptance": "OPEN_REQUIRES_GSC_QUERY_PAGE_COUNTRY_DEVICE_BASELINE"
+      },
+      "proposedImprovements": [
+        {
+          "section": "product",
+          "action": "أضف رابطًا وصفيًا مباشرًا إلى /platforms/telegram-premium بجانب الفرق عن الوحدة الأساسية عند تنفيذ تحسين روابط.",
+          "evidence": "القسم يقول «لها صفحة منفصلة» لكن productLinks يحتوي telegram فقط.",
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "keywordValidation": "Requires measured queries or verified Desktop evidence before expanding claims"
+        }
+      ]
+    },
+    {
+      "path": "/guides/linkedin-outreach-brief",
+      "primaryKeyword": {
+        "candidate": "رسالة لينكدإن المهنية",
+        "status": "EDITORIAL_CANDIDATE_NOT_MEASURED_DEMAND"
+      },
+      "searchIntent": {
+        "declared": "تجهيز موجز تواصل مهني ذي صلة قبل اختيار وسيلة التنفيذ",
+        "reviewedQuestion": "كيف أكتب رسالة مهنية بسبب حقيقي وطلب مناسب قبل اختيار الوسيلة؟",
+        "funnel": "MEDIUM_GENERAL_COMMUNICATION"
+      },
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/guides/linkedin-outreach-brief",
+        "observed": "https://skypro.skywaveads.com/guides/linkedin-outreach-brief",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [
+          "/platforms/linkedin",
+          "/guides/whatsapp-message-test",
+          "/guides/reddit-community-checklist"
+        ],
+        "risk": "LOW_CONTEXT_DISTINCT",
+        "boundary": "LinkedIn يملك رسالة مهنية بناء على علاقة/طلب؛ WhatsApp يملك اختبار محتوى ومرفق؛ Reddit مساهمة مجتمع لها قواعد.",
+        "measuredCannibalization": "NOT_VERIFIED_NO_QUERY_PAGE_GSC"
+      },
+      "links": {
+        "product": [
+          {
+            "href": "/platforms/linkedin",
+            "label": "راجع قائمة لينكدإن"
+          }
+        ],
+        "related": [
+          "/guides/contact-list-quality-check",
+          "/guides/multi-account-work-handover"
+        ],
+        "cta": {
+          "label": "استعرض وحدة لينكدإن",
+          "href": "/platforms/linkedin",
+          "description": "افهم ما تعرضه القائمة واسأل عن الإجراء المطلوب وسياسة استخدامه."
+        },
+        "renderedMainLinks": [
+          {
+            "href": "/",
+            "label": "الرئيسية"
+          },
+          {
+            "href": "/guides",
+            "label": "أدلة الاستخدام"
+          },
+          {
+            "href": "https://www.skywaveads.com/",
+            "label": "فريق Sky Wave"
+          },
+          {
+            "href": "#reason",
+            "label": "اكتب سببًا تستطيع إثباته"
+          },
+          {
+            "href": "#identity",
+            "label": "طابق هوية المرسل مع ما تقوله"
+          },
+          {
+            "href": "#request",
+            "label": "اطلب خطوة تتناسب مع السياق"
+          },
+          {
+            "href": "#tool",
+            "label": "قيّم الوظيفة وسياسة الاستخدام بصورة مستقلة"
+          },
+          {
+            "href": "#record",
+            "label": "سجّل الرد المطلوب من غير تحويل الناس لقائمة آلية"
+          },
+          {
+            "href": "#sources",
+            "label": "المصادر والمراجع"
+          },
+          {
+            "href": "https://www.linkedin.com/legal/professional-community-policies",
+            "label": "LinkedIn Professional Community Policies"
+          },
+          {
+            "href": "https://www.linkedin.com/help/linkedin/answer/a1338787",
+            "label": "LinkedIn Help: Spam"
+          },
+          {
+            "href": "https://www.linkedin.com/legal/professional-community-policies",
+            "label": "LinkedIn Professional Community Policies"
+          },
+          {
+            "href": "https://www.linkedin.com/help/linkedin/answer/a1338787",
+            "label": "LinkedIn Help: Spam"
+          },
+          {
+            "href": "https://skypro.skywaveads.com/platforms/linkedin",
+            "label": "أدوات لينكدإن المعروضة في Sky Pro"
+          },
+          {
+            "href": "/platforms/linkedin",
+            "label": "راجع قائمة لينكدإن"
+          },
+          {
+            "href": "/platforms/linkedin",
+            "label": "استعرض وحدة لينكدإن"
+          },
+          {
+            "href": "/guides/contact-list-quality-check",
+            "label": "مراجعة قائمة تواصل: التكرار ومصدر البيانات وصلاحية الاستخدام"
+          },
+          {
+            "href": "/guides/multi-account-work-handover",
+            "label": "تسليم شغل حسابات متعددة: سجل المهمة والحساب والنتيجة من غير كلمات مرور"
+          }
+        ]
+      },
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "mergeAction": "NO_MERGE_JUSTIFICATION_FROM_CURRENT_CONTENT",
+        "editorialAcceptance": "ACCEPT_DECLARED_PREPARATION_OR_EVALUATION_PURPOSE_WITH_RECOMMENDATIONS",
+        "measuredSERPAcceptance": "OPEN_REQUIRES_GSC_QUERY_PAGE_COUNTRY_DEVICE_BASELINE"
+      },
+      "proposedImprovements": [
+        {
+          "section": "tool",
+          "action": "أضف مستقبلًا سؤالًا يميز الباحث عن نموذج رسالة فقط عن الباحث عن برنامج، استنادًا لQueries والتحويلات؛ لا تحوّل المثال إلى قالب إرسال آلي واسع.",
+          "evidence": "معظم الأقسام reason/identity/request/record كتابة وتواصل عام؛ tool وحده عن البرنامج.",
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "keywordValidation": "Requires measured queries or verified Desktop evidence before expanding claims"
+        }
+      ]
+    },
+    {
+      "path": "/guides/tiktok-video-task-checklist",
+      "primaryKeyword": {
+        "candidate": "تجهيز مهمة تيك توك",
+        "status": "EDITORIAL_CANDIDATE_NOT_MEASURED_DEMAND"
+      },
+      "searchIntent": {
+        "declared": "تجهيز مادة فيديو ومهمة محددة لتقييم وظيفة تيك توك",
+        "reviewedQuestion": "كيف أراجع نسخة الفيديو والصوت وحقوق المادة والحساب قبل تجربة وظيفة؟",
+        "funnel": "MEDIUM_GENERAL_CONTENT_PREPARATION"
+      },
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/guides/tiktok-video-task-checklist",
+        "observed": "https://skypro.skywaveads.com/guides/tiktok-video-task-checklist",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [
+          "/platforms/tiktok",
+          "/guides/instagram-task-brief",
+          "/guides/pinterest-board-content-brief"
+        ],
+        "risk": "MEDIUM_SHARED_PREPARATION",
+        "boundary": "الفيديو له مراجعة زمنية وصوت وmaster؛ Instagram مادة صورة/نص، وPinterest تطابق صورة مع landing URL واللوحة.",
+        "measuredCannibalization": "NOT_VERIFIED_NO_QUERY_PAGE_GSC"
+      },
+      "links": {
+        "product": [
+          {
+            "href": "/platforms/tiktok",
+            "label": "قائمة تيك توك"
+          }
+        ],
+        "related": [
+          "/guides/instagram-task-brief",
+          "/guides/multi-account-work-handover",
+          "/guides/two-day-trial-checklist"
+        ],
+        "cta": {
+          "label": "راجع وحدة تيك توك",
+          "href": "/platforms/tiktok",
+          "description": "حدد الوظيفة المطلوبة واسأل عن حالة إتاحتها قبل الشراء من أجلها."
+        },
+        "renderedMainLinks": [
+          {
+            "href": "/",
+            "label": "الرئيسية"
+          },
+          {
+            "href": "/guides",
+            "label": "أدلة الاستخدام"
+          },
+          {
+            "href": "https://www.skywaveads.com/",
+            "label": "فريق Sky Wave"
+          },
+          {
+            "href": "#master",
+            "label": "حدّد نسخة الفيديو المعتمدة"
+          },
+          {
+            "href": "#rights",
+            "label": "راجع المادة والصوت قبل الاستخدام التجاري"
+          },
+          {
+            "href": "#brief",
+            "label": "اكتب بطاقة للفيديو والحساب والوظيفة"
+          },
+          {
+            "href": "#evaluate",
+            "label": "اختبر الوظيفة المطلوبة من غير وعد بالنمو"
+          },
+          {
+            "href": "#sources",
+            "label": "المصادر والمراجع"
+          },
+          {
+            "href": "https://skypro.skywaveads.com/platforms/tiktok",
+            "label": "أدوات تيك توك المعروضة في Sky Pro"
+          },
+          {
+            "href": "/platforms/tiktok",
+            "label": "قائمة تيك توك"
+          },
+          {
+            "href": "/platforms/tiktok",
+            "label": "راجع وحدة تيك توك"
+          },
+          {
+            "href": "/guides/instagram-task-brief",
+            "label": "قبل استخدام أداة إنستجرام: جهّز مهمة محتوى واضحة"
+          },
+          {
+            "href": "/guides/multi-account-work-handover",
+            "label": "تسليم شغل حسابات متعددة: سجل المهمة والحساب والنتيجة من غير كلمات مرور"
+          },
+          {
+            "href": "/guides/two-day-trial-checklist",
+            "label": "خطة عملية لتقييم برنامج تسويق خلال تجربة يومين"
+          }
+        ]
+      },
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "mergeAction": "NO_MERGE_JUSTIFICATION_FROM_CURRENT_CONTENT",
+        "editorialAcceptance": "ACCEPT_DECLARED_PREPARATION_OR_EVALUATION_PURPOSE_WITH_RECOMMENDATIONS",
+        "measuredSERPAcceptance": "OPEN_REQUIRES_GSC_QUERY_PAGE_COUNTRY_DEVICE_BASELINE"
+      },
+      "proposedImprovements": [
+        {
+          "section": "rights",
+          "action": "عند توسيع القسم بتفاصيل موسيقى تجارية، استخدم مرجع TikTok الرسمي الحالي وحدد نطاقه؛ لا تعامل مرجع المنتج الداخلي كإثبات ترخيص.",
+          "evidence": "مصادر المقال الآن product فقط رغم وجود قسم حقوق وصوت.",
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "keywordValidation": "Requires measured queries or verified Desktop evidence before expanding claims"
+        },
+        {
+          "section": "evaluate",
+          "action": "إضافة خطوات منتج تنتظر وظيفة فيديو مثبتة من Desktop؛ لا تُستنتج من اسم القائمة.",
+          "evidence": "القسم يفرق بين قبول رابط ونشر فيديو.",
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "keywordValidation": "Requires measured queries or verified Desktop evidence before expanding claims"
+        }
+      ]
+    },
+    {
+      "path": "/guides/x-search-or-message-task",
+      "primaryKeyword": {
+        "candidate": "اختيار مهمة إكس",
+        "status": "EDITORIAL_CANDIDATE_NOT_MEASURED_DEMAND"
+      },
+      "searchIntent": {
+        "declared": "تمييز أنواع مهام إكس ومتطلبات كل نوع قبل اختيار الأداة",
+        "reviewedQuestion": "هل احتياجي بحث أم منشور أم رسالة، وهل طريقة التنفيذ مقبولة في إكس؟",
+        "funnel": "HIGH_TASK_AND_POLICY_QUALIFICATION"
+      },
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/guides/x-search-or-message-task",
+        "observed": "https://skypro.skywaveads.com/guides/x-search-or-message-task",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [
+          "/platforms/twitter",
+          "/guides/linkedin-outreach-brief"
+        ],
+        "risk": "MEDIUM_SEARCH_POST_MESSAGE",
+        "boundary": "المنصة تعرض المنتج؛ الدليل يصنف المهمة والسياسة والناتج. اسم twitter في URL هو المعتمد لإكس ولا يستدعي URL منافسة جديدة.",
+        "measuredCannibalization": "NOT_VERIFIED_NO_QUERY_PAGE_GSC"
+      },
+      "links": {
+        "product": [
+          {
+            "href": "/platforms/twitter",
+            "label": "تفاصيل وحدة إكس"
+          }
+        ],
+        "related": [
+          "/guides/linkedin-outreach-brief",
+          "/guides/name-and-add-platform-accounts"
+        ],
+        "cta": {
+          "label": "راجع قائمة إكس",
+          "href": "/platforms/twitter",
+          "description": "تعرف على المداخل المعروضة وحدد سؤالك عن طريقة التنفيذ."
+        },
+        "renderedMainLinks": [
+          {
+            "href": "/",
+            "label": "الرئيسية"
+          },
+          {
+            "href": "/guides",
+            "label": "أدلة الاستخدام"
+          },
+          {
+            "href": "https://www.skywaveads.com/",
+            "label": "فريق Sky Wave"
+          },
+          {
+            "href": "#classify",
+            "label": "اختار نوع المهمة من الناتج المطلوب"
+          },
+          {
+            "href": "#policy",
+            "label": "اسأل عن طريقة التنفيذ قبل الإعداد"
+          },
+          {
+            "href": "#brief",
+            "label": "جهّز مدخلًا يمكن مراجعته"
+          },
+          {
+            "href": "#result",
+            "label": "احتفظ بنتيجة تخص نوع المهمة"
+          },
+          {
+            "href": "#sources",
+            "label": "المصادر والمراجع"
+          },
+          {
+            "href": "https://help.x.com/en/rules-and-policies/x-automation",
+            "label": "X Help: Automation rules"
+          },
+          {
+            "href": "https://help.x.com/en/rules-and-policies/x-automation",
+            "label": "X Help: Automation rules"
+          },
+          {
+            "href": "https://skypro.skywaveads.com/platforms/twitter",
+            "label": "قائمة إكس داخل Sky Pro"
+          },
+          {
+            "href": "/platforms/twitter",
+            "label": "تفاصيل وحدة إكس"
+          },
+          {
+            "href": "/platforms/twitter",
+            "label": "راجع قائمة إكس"
+          },
+          {
+            "href": "/guides/linkedin-outreach-brief",
+            "label": "رسالة لينكدإن المهنية: جهّز سبب التواصل قبل اختيار الأداة"
+          },
+          {
+            "href": "/guides/name-and-add-platform-accounts",
+            "label": "إزاي تسمّي حسابات المنصات وتراجعها قبل تشغيل مهمة؟"
+          }
+        ]
+      },
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "mergeAction": "NO_MERGE_JUSTIFICATION_FROM_CURRENT_CONTENT",
+        "editorialAcceptance": "ACCEPT_DECLARED_PREPARATION_OR_EVALUATION_PURPOSE_WITH_RECOMMENDATIONS",
+        "measuredSERPAcceptance": "OPEN_REQUIRES_GSC_QUERY_PAGE_COUNTRY_DEVICE_BASELINE"
+      },
+      "proposedImprovements": [
+        {
+          "section": "policy",
+          "action": "إذا جاء توثيق Desktop للطريقة، سجل الوظيفة/المسار المسموح والنسخة؛ أبقِ unknown بدل وصفها معتمدة.",
+          "evidence": "الفقرة تنص على عدم وجود دليل تكامل API في الصفحة الحالية.",
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "keywordValidation": "Requires measured queries or verified Desktop evidence before expanding claims"
+        }
+      ]
+    },
+    {
+      "path": "/guides/pinterest-board-content-brief",
+      "primaryKeyword": {
+        "candidate": "تجهيز لوحة بنترست للمتجر",
+        "status": "EDITORIAL_CANDIDATE_NOT_MEASURED_DEMAND"
+      },
+      "searchIntent": {
+        "declared": "تجهيز موجز لوحة بصرية وروابط منتجات متطابقة",
+        "reviewedQuestion": "كيف أجهز لوحة متماسكة بصور ووصف وروابط تطابق المنتج؟",
+        "funnel": "MEDIUM_GENERAL_VISUAL_COMMERCE"
+      },
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/guides/pinterest-board-content-brief",
+        "observed": "https://skypro.skywaveads.com/guides/pinterest-board-content-brief",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [
+          "/platforms/pinterest",
+          "/guides/instagram-task-brief",
+          "/guides/tiktok-video-task-checklist"
+        ],
+        "risk": "MEDIUM_GENERAL_ASSET_BRIEF",
+        "boundary": "المقال يملك board theme وصورة+صفحة نهائية ووصف. لا يمتلك كلمة أداة إنشاء لوحات مثبتة.",
+        "measuredCannibalization": "NOT_VERIFIED_NO_QUERY_PAGE_GSC"
+      },
+      "links": {
+        "product": [
+          {
+            "href": "/platforms/pinterest",
+            "label": "أدوات بنترست المعروضة"
+          }
+        ],
+        "related": [
+          "/guides/instagram-task-brief",
+          "/guides/tiktok-video-task-checklist"
+        ],
+        "cta": {
+          "label": "شوف وحدة بنترست",
+          "href": "/platforms/pinterest",
+          "description": "طابق وظيفة الأداة مع موجز الصور والروابط اللي جهزته."
+        },
+        "renderedMainLinks": [
+          {
+            "href": "/",
+            "label": "الرئيسية"
+          },
+          {
+            "href": "/guides",
+            "label": "أدلة الاستخدام"
+          },
+          {
+            "href": "https://www.skywaveads.com/",
+            "label": "فريق Sky Wave"
+          },
+          {
+            "href": "#theme",
+            "label": "اختار غرضًا واحدًا للوحة"
+          },
+          {
+            "href": "#assets",
+            "label": "راجع الصورة والصفحة مع بعض"
+          },
+          {
+            "href": "#description",
+            "label": "اكتب وصفًا يساعد على الاختيار"
+          },
+          {
+            "href": "#tool",
+            "label": "قيّم الإجراء الذي تحتاجه داخل الأداة"
+          },
+          {
+            "href": "#sources",
+            "label": "المصادر والمراجع"
+          },
+          {
+            "href": "https://policy.pinterest.com/en/community-guidelines",
+            "label": "Pinterest Community Guidelines"
+          },
+          {
+            "href": "https://policy.pinterest.com/en/community-guidelines",
+            "label": "Pinterest Community Guidelines"
+          },
+          {
+            "href": "https://skypro.skywaveads.com/platforms/pinterest",
+            "label": "قائمة بنترست في Sky Pro"
+          },
+          {
+            "href": "/platforms/pinterest",
+            "label": "أدوات بنترست المعروضة"
+          },
+          {
+            "href": "/platforms/pinterest",
+            "label": "شوف وحدة بنترست"
+          },
+          {
+            "href": "/guides/instagram-task-brief",
+            "label": "قبل استخدام أداة إنستجرام: جهّز مهمة محتوى واضحة"
+          },
+          {
+            "href": "/guides/tiktok-video-task-checklist",
+            "label": "قبل تجربة أداة تيك توك: راجع الفيديو والحساب وحقوق المحتوى"
+          }
+        ]
+      },
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "mergeAction": "NO_MERGE_JUSTIFICATION_FROM_CURRENT_CONTENT",
+        "editorialAcceptance": "ACCEPT_DECLARED_PREPARATION_OR_EVALUATION_PURPOSE_WITH_RECOMMENDATIONS",
+        "measuredSERPAcceptance": "OPEN_REQUIRES_GSC_QUERY_PAGE_COUNTRY_DEVICE_BASELINE"
+      },
+      "proposedImprovements": [
+        {
+          "section": "tool",
+          "action": "حدّث هذا القسم بصورة حقول/وظيفة مثبتة عند توافرها فقط؛ وإلى حينها صِنّف المقال تعليم تجهيز لا شرح استخدام.",
+          "evidence": "النص ينفي إثبات إنشاء أو نشر تلقائي والصورة قائمة فقط.",
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "keywordValidation": "Requires measured queries or verified Desktop evidence before expanding claims"
+        }
+      ]
+    },
+    {
+      "path": "/guides/reddit-community-checklist",
+      "primaryKeyword": {
+        "candidate": "قواعد المشاركة في ريديت",
+        "status": "EDITORIAL_CANDIDATE_NOT_MEASURED_DEMAND"
+      },
+      "searchIntent": {
+        "declared": "تقييم ملاءمة مشاركة لمجتمع ريديت وقواعده",
+        "reviewedQuestion": "هل مساهمتي ملائمة لقواعد المجتمع وغير مزعجة قبل استخدام أي أداة؟",
+        "funnel": "MEDIUM_COMMUNITY_PREPARATION"
+      },
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/guides/reddit-community-checklist",
+        "observed": "https://skypro.skywaveads.com/guides/reddit-community-checklist",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [
+          "/platforms/reddit",
+          "/guides/linkedin-outreach-brief",
+          "/guides/x-search-or-message-task"
+        ],
+        "risk": "LOW_CONTEXT_DISTINCT",
+        "boundary": "مشاركة مجتمع وقواعده تختلف عن رسالة مهنية أو تصنيف فعل إكس، فلا دمج بسبب لغة الصلاحية/التواصل المشتركة.",
+        "measuredCannibalization": "NOT_VERIFIED_NO_QUERY_PAGE_GSC"
+      },
+      "links": {
+        "product": [
+          {
+            "href": "/platforms/reddit",
+            "label": "قائمة ريديت"
+          }
+        ],
+        "related": [
+          "/guides/linkedin-outreach-brief",
+          "/guides/x-search-or-message-task"
+        ],
+        "cta": {
+          "label": "راجع وحدة ريديت",
+          "href": "/platforms/reddit",
+          "description": "حدد الوظيفة المطلوبة ومتطلباتها قبل إدخال محتوى أو حساب."
+        },
+        "renderedMainLinks": [
+          {
+            "href": "/",
+            "label": "الرئيسية"
+          },
+          {
+            "href": "/guides",
+            "label": "أدلة الاستخدام"
+          },
+          {
+            "href": "https://www.skywaveads.com/",
+            "label": "فريق Sky Wave"
+          },
+          {
+            "href": "#read",
+            "label": "اقرأ القواعد وراجع نوع النقاش"
+          },
+          {
+            "href": "#contribution",
+            "label": "جهّز مساهمة لها فائدة من غير الرابط"
+          },
+          {
+            "href": "#no-repeat",
+            "label": "ما تحوّلش نفس النص لحملة على المجتمعات"
+          },
+          {
+            "href": "#brief",
+            "label": "اكتب موجز المراجعة قبل تقييم الأداة"
+          },
+          {
+            "href": "#followup",
+            "label": "راجع التعليقات باعتبارها نقاشًا"
+          },
+          {
+            "href": "#sources",
+            "label": "المصادر والمراجع"
+          },
+          {
+            "href": "https://support.reddithelp.com/hc/en-us/articles/360043503951-What-are-Reddit-s-rules",
+            "label": "Reddit Help: قواعد ريديت والمجتمعات"
+          },
+          {
+            "href": "https://support.reddithelp.com/hc/en-us/articles/360043504051-Spam",
+            "label": "Reddit Help: Spam"
+          },
+          {
+            "href": "https://support.reddithelp.com/hc/en-us/articles/360043503951-What-are-Reddit-s-rules",
+            "label": "Reddit Help: قواعد ريديت والمجتمعات"
+          },
+          {
+            "href": "https://support.reddithelp.com/hc/en-us/articles/360043504051-Spam",
+            "label": "Reddit Help: Spam"
+          },
+          {
+            "href": "https://skypro.skywaveads.com/platforms/reddit",
+            "label": "وحدة ريديت في Sky Pro"
+          },
+          {
+            "href": "/platforms/reddit",
+            "label": "قائمة ريديت"
+          },
+          {
+            "href": "/platforms/reddit",
+            "label": "راجع وحدة ريديت"
+          },
+          {
+            "href": "/guides/linkedin-outreach-brief",
+            "label": "رسالة لينكدإن المهنية: جهّز سبب التواصل قبل اختيار الأداة"
+          },
+          {
+            "href": "/guides/x-search-or-message-task",
+            "label": "بحث ولا منشور ولا رسالة على إكس: إزاي تختار مدخل المهمة؟"
+          }
+        ]
+      },
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "mergeAction": "NO_MERGE_JUSTIFICATION_FROM_CURRENT_CONTENT",
+        "editorialAcceptance": "ACCEPT_DECLARED_PREPARATION_OR_EVALUATION_PURPOSE_WITH_RECOMMENDATIONS",
+        "measuredSERPAcceptance": "OPEN_REQUIRES_GSC_QUERY_PAGE_COUNTRY_DEVICE_BASELINE"
+      },
+      "proposedImprovements": [
+        {
+          "section": "brief",
+          "action": "راجع مع Desktop وسيلة تنفيذ الوظيفة قبل أي توسيع إلى tutorial؛ احتفظ بنموذج المراجعة دون ادعاء قبول منشور أو backlink.",
+          "evidence": "النموذج يقول إن القائمة لا تثبت سلوك التنفيذ أو الإذن.",
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "keywordValidation": "Requires measured queries or verified Desktop evidence before expanding claims"
+        }
+      ]
+    },
+    {
+      "path": "/guides/threads-account-task-review",
+      "primaryKeyword": {
+        "candidate": "مراجعة مهمة ثريدز",
+        "status": "EDITORIAL_CANDIDATE_NOT_MEASURED_DEMAND"
+      },
+      "searchIntent": {
+        "declared": "مراجعة وجهة وحساب مهمة ثريدز بصورة مستقلة",
+        "reviewedQuestion": "كيف أراجع هوية وحساب ومحتوى مهمة Threads دون تعميم تجربة إنستجرام عليها؟",
+        "funnel": "MEDIUM_PRODUCT_PREPARATION"
+      },
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/guides/threads-account-task-review",
+        "observed": "https://skypro.skywaveads.com/guides/threads-account-task-review",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [
+          "/platforms/threads",
+          "/platforms/instagram",
+          "/guides/instagram-task-brief",
+          "/guides/multi-account-work-handover"
+        ],
+        "risk": "MEDIUM_REPURPOSING_OVERLAP",
+        "boundary": "Threads يملك استقلال الوجهة والسياق؛ Instagram تجهيز مادته، وhandover انتقال الحالة بين الأشخاص.",
+        "measuredCannibalization": "NOT_VERIFIED_NO_QUERY_PAGE_GSC"
+      },
+      "links": {
+        "product": [
+          {
+            "href": "/platforms/threads",
+            "label": "تفاصيل ثريدز"
+          },
+          {
+            "href": "/platforms/instagram",
+            "label": "تفاصيل إنستجرام للمقارنة"
+          }
+        ],
+        "related": [
+          "/guides/instagram-task-brief",
+          "/guides/multi-account-work-handover"
+        ],
+        "cta": {
+          "label": "راجع وحدة ثريدز",
+          "href": "/platforms/threads",
+          "description": "اسأل عن الإجراء الذي تحتاجه تحديدًا ومتطلباته الحالية."
+        },
+        "renderedMainLinks": [
+          {
+            "href": "/",
+            "label": "الرئيسية"
+          },
+          {
+            "href": "/guides",
+            "label": "أدلة الاستخدام"
+          },
+          {
+            "href": "https://www.skywaveads.com/",
+            "label": "فريق Sky Wave"
+          },
+          {
+            "href": "#destination",
+            "label": "ابدأ ببطاقة وجهة واضحة"
+          },
+          {
+            "href": "#copy",
+            "label": "راجع معنى النص خارج سياقه الأصلي"
+          },
+          {
+            "href": "#function",
+            "label": "اسأل عن الوظيفة بالاسم"
+          },
+          {
+            "href": "#result",
+            "label": "راجع النتيجة داخل الوجهة المقصودة"
+          },
+          {
+            "href": "#sources",
+            "label": "المصادر والمراجع"
+          },
+          {
+            "href": "https://skypro.skywaveads.com/platforms/threads",
+            "label": "قائمة ثريدز في Sky Pro"
+          },
+          {
+            "href": "/platforms/threads",
+            "label": "تفاصيل ثريدز"
+          },
+          {
+            "href": "/platforms/instagram",
+            "label": "تفاصيل إنستجرام للمقارنة"
+          },
+          {
+            "href": "/platforms/threads",
+            "label": "راجع وحدة ثريدز"
+          },
+          {
+            "href": "/guides/instagram-task-brief",
+            "label": "قبل استخدام أداة إنستجرام: جهّز مهمة محتوى واضحة"
+          },
+          {
+            "href": "/guides/multi-account-work-handover",
+            "label": "تسليم شغل حسابات متعددة: سجل المهمة والحساب والنتيجة من غير كلمات مرور"
+          }
+        ]
+      },
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "mergeAction": "NO_MERGE_JUSTIFICATION_FROM_CURRENT_CONTENT",
+        "editorialAcceptance": "ACCEPT_DECLARED_PREPARATION_OR_EVALUATION_PURPOSE_WITH_RECOMMENDATIONS",
+        "measuredSERPAcceptance": "OPEN_REQUIRES_GSC_QUERY_PAGE_COUNTRY_DEVICE_BASELINE"
+      },
+      "proposedImprovements": [
+        {
+          "section": "function",
+          "action": "احتفظ بسؤال الوظيفة مستقلًا، وأضف لاحقًا اختلافات مثبتة في الحقول أو الشروط عند توثيق النسخة؛ لا تعمم متطلبات إنستجرام.",
+          "evidence": "جدول المراجعة يطلب دليلًا من Threads لا لقطة من إنستجرام.",
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "keywordValidation": "Requires measured queries or verified Desktop evidence before expanding claims"
+        }
+      ]
+    },
+    {
+      "path": "/guides/maps-data-task-evaluation",
+      "primaryKeyword": {
+        "candidate": "تقييم أداة خرائط جوجل",
+        "status": "EDITORIAL_CANDIDATE_NOT_MEASURED_DEMAND"
+      },
+      "searchIntent": {
+        "declared": "تقييم مهمة بيانات أماكن ومصدر الوصول قبل شراء أداة",
+        "reviewedQuestion": "كيف أحدد غرض بيانات الأماكن ومصدرها ودليل وظيفة الخرائط قبل الشراء؟",
+        "funnel": "MEDIUM_HIGH_COMMERCIAL_RESEARCH_WITH_PRODUCT_GAP"
+      },
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/guides/maps-data-task-evaluation",
+        "observed": "https://skypro.skywaveads.com/guides/maps-data-task-evaluation",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [
+          "/platforms/google-maps",
+          "/guides/olx-demo-questions",
+          "/guides/contact-list-quality-check"
+        ],
+        "risk": "HIGHER_EDITORIAL_OVERLAP_WATCH",
+        "boundary": "المنصة تملك حالة Sky Pro وصورته المتاحة؛ الدليل يملك تقييم الغرض والمصدر والإسناد وجودة الدليل. له قيمة مستقلة رغم تقارب pre-purchase.",
+        "measuredCannibalization": "NOT_VERIFIED_NO_QUERY_PAGE_GSC"
+      },
+      "links": {
+        "product": [
+          {
+            "href": "/platforms/google-maps",
+            "label": "حالة وظيفة الخرائط في Sky Pro"
+          }
+        ],
+        "related": [
+          "/guides/olx-demo-questions",
+          "/guides/two-day-trial-checklist",
+          "/guides/contact-list-quality-check"
+        ],
+        "cta": {
+          "label": "راجع صفحة خرائط جوجل",
+          "href": "/platforms/google-maps",
+          "description": "استعرض الصورة المتاحة واطلب دليلًا للوظيفة المحددة قبل الاشتراك من أجلها."
+        },
+        "renderedMainLinks": [
+          {
+            "href": "/",
+            "label": "الرئيسية"
+          },
+          {
+            "href": "/guides",
+            "label": "أدلة الاستخدام"
+          },
+          {
+            "href": "https://www.skywaveads.com/",
+            "label": "فريق Sky Wave"
+          },
+          {
+            "href": "#purpose",
+            "label": "حوّل الطلب العام لاحتياج يمكن تقييمه"
+          },
+          {
+            "href": "#access",
+            "label": "راجع مسار الوصول قبل اختبار البيانات"
+          },
+          {
+            "href": "#proof",
+            "label": "اطلب دليلًا يخص نفس الوظيفة"
+          },
+          {
+            "href": "#quality",
+            "label": "راجع جودة النتيجة من غير ادعاء شمول"
+          },
+          {
+            "href": "#sources",
+            "label": "المصادر والمراجع"
+          },
+          {
+            "href": "https://developers.google.com/maps/documentation/places/web-service/overview",
+            "label": "Google Places API: نظرة عامة"
+          },
+          {
+            "href": "https://developers.google.com/maps/documentation/places/web-service/policies",
+            "label": "Google Places API: السياسات والإسناد"
+          },
+          {
+            "href": "https://developers.google.com/maps/documentation/places/web-service/overview",
+            "label": "Google Places API: نظرة عامة"
+          },
+          {
+            "href": "https://developers.google.com/maps/documentation/places/web-service/policies",
+            "label": "Google Places API: السياسات والإسناد"
+          },
+          {
+            "href": "https://skypro.skywaveads.com/platforms/google-maps",
+            "label": "Google Maps في Sky Pro: الصورة المتاحة والحدود"
+          },
+          {
+            "href": "/platforms/google-maps",
+            "label": "حالة وظيفة الخرائط في Sky Pro"
+          },
+          {
+            "href": "/platforms/google-maps",
+            "label": "راجع صفحة خرائط جوجل"
+          },
+          {
+            "href": "/guides/olx-demo-questions",
+            "label": "محتاج أداة OLX؟ أسئلة العرض التجريبي قبل الاشتراك"
+          },
+          {
+            "href": "/guides/two-day-trial-checklist",
+            "label": "خطة عملية لتقييم برنامج تسويق خلال تجربة يومين"
+          },
+          {
+            "href": "/guides/contact-list-quality-check",
+            "label": "مراجعة قائمة تواصل: التكرار ومصدر البيانات وصلاحية الاستخدام"
+          }
+        ]
+      },
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "mergeAction": "NO_MERGE_JUSTIFICATION_FROM_CURRENT_CONTENT",
+        "editorialAcceptance": "ACCEPT_DECLARED_PREPARATION_OR_EVALUATION_PURPOSE_WITH_RECOMMENDATIONS",
+        "measuredSERPAcceptance": "OPEN_REQUIRES_GSC_QUERY_PAGE_COUNTRY_DEVICE_BASELINE"
+      },
+      "proposedImprovements": [
+        {
+          "section": "purpose",
+          "action": "لو أظهرت Queries مشتري Windows، أضف سيناريو شراء برمجية محددًا من حالة متحققة بدل الاكتفاء بمثال مطور عرض الفروع؛ لا تخترع extraction use case.",
+          "evidence": "المثال يبدأ «أطوّر صفحة تساعد الزائر يختار فرعًا».",
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "keywordValidation": "Requires measured queries or verified Desktop evidence before expanding claims"
+        },
+        {
+          "section": "proof",
+          "action": "اجمع عرض Desktop مصرحًا قبل استهداف عبارات استخراج/تصدير كميزات جاهزة؛ راقب منافسة الدليل والمنصة بعد ربط GSC.",
+          "evidence": "المتن يقر بأن لقطة قائمة لا تثبت بحثًا أو ملف مخرجات.",
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "keywordValidation": "Requires measured queries or verified Desktop evidence before expanding claims"
+        }
+      ]
+    },
+    {
+      "path": "/guides/olx-demo-questions",
+      "primaryKeyword": {
+        "candidate": "تقييم أداة OLX",
+        "status": "EDITORIAL_CANDIDATE_NOT_MEASURED_DEMAND"
+      },
+      "searchIntent": {
+        "declared": "صياغة طلب عرض تجريبي مستقل لوظيفة OLX في سوق محدد",
+        "reviewedQuestion": "ما أسئلة عرض أداة OLX حسب البلد والوجهة والوظيفة والدليل قبل الاشتراك؟",
+        "funnel": "MEDIUM_HIGH_COMMERCIAL_RESEARCH_WITH_PRODUCT_GAP"
+      },
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/guides/olx-demo-questions",
+        "observed": "https://skypro.skywaveads.com/guides/olx-demo-questions",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [
+          "/platforms/olx",
+          "/guides/maps-data-task-evaluation",
+          "/guides/two-day-trial-checklist"
+        ],
+        "risk": "HIGHER_EDITORIAL_OVERLAP_WATCH",
+        "boundary": "المنصة ملك حالة الوحدة؛ المقال ملك أسئلة عرض/بلد/إجراء/معيار قبول. لا دمج قبل معرفة Queries والاستفادة المستقلة.",
+        "measuredCannibalization": "NOT_VERIFIED_NO_QUERY_PAGE_GSC"
+      },
+      "links": {
+        "product": [
+          {
+            "href": "/platforms/olx",
+            "label": "حالة OLX ومتطلبات التقييم"
+          }
+        ],
+        "related": [
+          "/guides/maps-data-task-evaluation",
+          "/guides/two-day-trial-checklist"
+        ],
+        "cta": {
+          "label": "راجع حالة OLX",
+          "href": "/platforms/olx",
+          "description": "استخدم الأسئلة في تواصلك مع الدعم لطلب عرض يخص احتياجك."
+        },
+        "renderedMainLinks": [
+          {
+            "href": "/",
+            "label": "الرئيسية"
+          },
+          {
+            "href": "/guides",
+            "label": "أدلة الاستخدام"
+          },
+          {
+            "href": "https://www.skywaveads.com/",
+            "label": "فريق Sky Wave"
+          },
+          {
+            "href": "#market",
+            "label": "اكتب البلد والوجهة والإجراء"
+          },
+          {
+            "href": "#availability",
+            "label": "اطلب تأكيد الإتاحة والمتطلبات الحالية"
+          },
+          {
+            "href": "#demo",
+            "label": "راجع العرض من المدخل للنتيجة"
+          },
+          {
+            "href": "#decision",
+            "label": "اتخذ القرار على ما اتأكد، وسجّل الناقص"
+          },
+          {
+            "href": "#sources",
+            "label": "المصادر والمراجع"
+          },
+          {
+            "href": "https://skypro.skywaveads.com/platforms/olx",
+            "label": "OLX في Sky Pro: حالة الصورة والوظيفة المطلوبة"
+          },
+          {
+            "href": "/platforms/olx",
+            "label": "حالة OLX ومتطلبات التقييم"
+          },
+          {
+            "href": "/platforms/olx",
+            "label": "راجع حالة OLX"
+          },
+          {
+            "href": "/guides/maps-data-task-evaluation",
+            "label": "قبل اختيار أداة خرائط جوجل: حدد البيانات والغرض ودليل التشغيل"
+          },
+          {
+            "href": "/guides/two-day-trial-checklist",
+            "label": "خطة عملية لتقييم برنامج تسويق خلال تجربة يومين"
+          }
+        ]
+      },
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "mergeAction": "NO_MERGE_JUSTIFICATION_FROM_CURRENT_CONTENT",
+        "editorialAcceptance": "ACCEPT_DECLARED_PREPARATION_OR_EVALUATION_PURPOSE_WITH_RECOMMENDATIONS",
+        "measuredSERPAcceptance": "OPEN_REQUIRES_GSC_QUERY_PAGE_COUNTRY_DEVICE_BASELINE"
+      },
+      "proposedImprovements": [
+        {
+          "section": "demo",
+          "action": "بعد صورة وتشغيل مصرح، أضف مثال الوظيفة ونسختها والبلد المتحقق فقط؛ حافظ على self-canonical الآن وراجع التداخل ببيانات GSC.",
+          "evidence": "قرار decision يترك الحالة «بانتظار عرض مستقل» عندما لا يتاح دليل.",
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "keywordValidation": "Requires measured queries or verified Desktop evidence before expanding claims"
+        }
+      ]
+    },
+    {
+      "path": "/platforms/facebook",
+      "primaryKeyword": {
+        "candidate": "برنامج أدوات فيسبوك للكمبيوتر",
+        "status": "EDITORIAL_PRODUCT_FIT_CANDIDATE_NOT_DEMAND_VERIFIED"
+      },
+      "searchIntent": "Commercial: تقييم مداخل فيسبوك في برنامج Windows.",
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/platforms/facebook",
+        "observed": "https://skypro.skywaveads.com/platforms/facebook",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [
+          "/guides/facebook-task-inputs"
+        ],
+        "boundary": "المنصة تعرف الوحدة والمقال يفسر حقول بيانات محددة.",
+        "measuredCannibalization": "NOT_VERIFIED_NO_QUERY_PAGE_GSC"
+      },
+      "links": {
+        "renderedMain": [
+          {
+            "href": "/",
+            "label": "الرئيسية"
+          },
+          {
+            "href": "/platforms",
+            "label": "جميع المنصات"
+          },
+          {
+            "href": "/auth/register",
+            "label": "جرّب يومين مجانًا"
+          },
+          {
+            "href": "#tools",
+            "label": "استكشف الأدوات"
+          },
+          {
+            "href": "https://wa.me/201029934356",
+            "label": "اسأل فريق الدعم"
+          },
+          {
+            "href": "/auth/register",
+            "label": "ابدأ تجربتك"
+          },
+          {
+            "href": "/platforms",
+            "label": "جميع المنصات"
+          },
+          {
+            "href": "/platforms/whatsapp",
+            "label": "واتساب"
+          },
+          {
+            "href": "/platforms/instagram",
+            "label": "إنستجرام"
+          },
+          {
+            "href": "/platforms/twitter",
+            "label": "إكس (تويتر)"
+          },
+          {
+            "href": "/platforms/snapchat",
+            "label": "سناب شات"
+          },
+          {
+            "href": "/platforms/telegram",
+            "label": "تيليجرام"
+          },
+          {
+            "href": "/platforms/telegram-premium",
+            "label": "تيليجرام بريميم"
+          }
+        ],
+        "linkedGuidesInMain": [],
+        "relatedGuideCandidates": [
+          "/guides/facebook-task-inputs"
+        ]
+      },
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "reason": "المنصة تعرف الوحدة والمقال يفسر حقول بيانات محددة.",
+        "measuredSERPAcceptance": "OPEN"
+      },
+      "proposedImprovements": [
+        {
+          "section": "tools / requirements",
+          "action": "Add one or two contextual, descriptive links to the relevant existing guides, selected for the current question; do not bulk-link every guide.",
+          "targets": [
+            "/guides/facebook-task-inputs"
+          ],
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "evidence": "Current main links contain no /guides/ destination."
+        }
+      ]
+    },
+    {
+      "path": "/platforms/whatsapp",
+      "primaryKeyword": {
+        "candidate": "برنامج أدوات واتساب للكمبيوتر",
+        "status": "EDITORIAL_PRODUCT_FIT_CANDIDATE_NOT_DEMAND_VERIFIED"
+      },
+      "searchIntent": "Commercial: تقييم وحدة واتساب والرسائل وجهات الاتصال.",
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/platforms/whatsapp",
+        "observed": "https://skypro.skywaveads.com/platforms/whatsapp",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [
+          "/guides/whatsapp-message-test",
+          "/guides/contact-list-quality-check"
+        ],
+        "boundary": "المقالان يملكان رسالة اختبار وقائمة مدخلات؛ هذه الصفحة مداخل المنتج.",
+        "measuredCannibalization": "NOT_VERIFIED_NO_QUERY_PAGE_GSC"
+      },
+      "links": {
+        "renderedMain": [
+          {
+            "href": "/",
+            "label": "الرئيسية"
+          },
+          {
+            "href": "/platforms",
+            "label": "جميع المنصات"
+          },
+          {
+            "href": "/auth/register",
+            "label": "جرّب يومين مجانًا"
+          },
+          {
+            "href": "#tools",
+            "label": "استكشف الأدوات"
+          },
+          {
+            "href": "https://wa.me/201029934356",
+            "label": "اسأل فريق الدعم"
+          },
+          {
+            "href": "/auth/register",
+            "label": "ابدأ تجربتك"
+          },
+          {
+            "href": "/platforms",
+            "label": "جميع المنصات"
+          },
+          {
+            "href": "/platforms/facebook",
+            "label": "فيسبوك"
+          },
+          {
+            "href": "/platforms/instagram",
+            "label": "إنستجرام"
+          },
+          {
+            "href": "/platforms/twitter",
+            "label": "إكس (تويتر)"
+          },
+          {
+            "href": "/platforms/snapchat",
+            "label": "سناب شات"
+          },
+          {
+            "href": "/platforms/telegram",
+            "label": "تيليجرام"
+          },
+          {
+            "href": "/platforms/telegram-premium",
+            "label": "تيليجرام بريميم"
+          }
+        ],
+        "linkedGuidesInMain": [],
+        "relatedGuideCandidates": [
+          "/guides/whatsapp-message-test",
+          "/guides/contact-list-quality-check"
+        ]
+      },
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "reason": "المقالان يملكان رسالة اختبار وقائمة مدخلات؛ هذه الصفحة مداخل المنتج.",
+        "measuredSERPAcceptance": "OPEN"
+      },
+      "proposedImprovements": [
+        {
+          "section": "tools / requirements",
+          "action": "Add one or two contextual, descriptive links to the relevant existing guides, selected for the current question; do not bulk-link every guide.",
+          "targets": [
+            "/guides/whatsapp-message-test",
+            "/guides/contact-list-quality-check"
+          ],
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "evidence": "Current main links contain no /guides/ destination."
+        }
+      ]
+    },
+    {
+      "path": "/platforms/instagram",
+      "primaryKeyword": {
+        "candidate": "برنامج أدوات إنستجرام على Windows",
+        "status": "EDITORIAL_PRODUCT_FIT_CANDIDATE_NOT_DEMAND_VERIFIED"
+      },
+      "searchIntent": "Commercial: مقارنة مداخل حساب/محتوى/بيانات داخل البرنامج.",
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/platforms/instagram",
+        "observed": "https://skypro.skywaveads.com/platforms/instagram",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [
+          "/guides/instagram-task-brief",
+          "/guides/threads-account-task-review"
+        ],
+        "boundary": "الدليل موجز مادة واعتماد، والمنصة عرض المنتج؛ Threads وجهة مستقلة.",
+        "measuredCannibalization": "NOT_VERIFIED_NO_QUERY_PAGE_GSC"
+      },
+      "links": {
+        "renderedMain": [
+          {
+            "href": "/",
+            "label": "الرئيسية"
+          },
+          {
+            "href": "/platforms",
+            "label": "جميع المنصات"
+          },
+          {
+            "href": "/auth/register",
+            "label": "جرّب يومين مجانًا"
+          },
+          {
+            "href": "#tools",
+            "label": "استكشف الأدوات"
+          },
+          {
+            "href": "https://wa.me/201029934356",
+            "label": "اسأل فريق الدعم"
+          },
+          {
+            "href": "/auth/register",
+            "label": "ابدأ تجربتك"
+          },
+          {
+            "href": "/platforms",
+            "label": "جميع المنصات"
+          },
+          {
+            "href": "/platforms/facebook",
+            "label": "فيسبوك"
+          },
+          {
+            "href": "/platforms/whatsapp",
+            "label": "واتساب"
+          },
+          {
+            "href": "/platforms/twitter",
+            "label": "إكس (تويتر)"
+          },
+          {
+            "href": "/platforms/snapchat",
+            "label": "سناب شات"
+          },
+          {
+            "href": "/platforms/telegram",
+            "label": "تيليجرام"
+          },
+          {
+            "href": "/platforms/telegram-premium",
+            "label": "تيليجرام بريميم"
+          }
+        ],
+        "linkedGuidesInMain": [],
+        "relatedGuideCandidates": [
+          "/guides/instagram-task-brief",
+          "/guides/threads-account-task-review"
+        ]
+      },
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "reason": "الدليل موجز مادة واعتماد، والمنصة عرض المنتج؛ Threads وجهة مستقلة.",
+        "measuredSERPAcceptance": "OPEN"
+      },
+      "proposedImprovements": [
+        {
+          "section": "tools / requirements",
+          "action": "Add one or two contextual, descriptive links to the relevant existing guides, selected for the current question; do not bulk-link every guide.",
+          "targets": [
+            "/guides/instagram-task-brief",
+            "/guides/threads-account-task-review"
+          ],
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "evidence": "Current main links contain no /guides/ destination."
+        }
+      ]
+    },
+    {
+      "path": "/platforms/twitter",
+      "primaryKeyword": {
+        "candidate": "برنامج أدوات إكس للكمبيوتر",
+        "status": "EDITORIAL_PRODUCT_FIT_CANDIDATE_NOT_DEMAND_VERIFIED"
+      },
+      "searchIntent": "Commercial: تقييم مداخل بحث ومنشورات ورسائل إكس.",
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/platforms/twitter",
+        "observed": "https://skypro.skywaveads.com/platforms/twitter",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [
+          "/guides/x-search-or-message-task"
+        ],
+        "boundary": "الدليل يصنف الفعل والسياسة، والمنصة تعرض الوحدة.",
+        "measuredCannibalization": "NOT_VERIFIED_NO_QUERY_PAGE_GSC"
+      },
+      "links": {
+        "renderedMain": [
+          {
+            "href": "/",
+            "label": "الرئيسية"
+          },
+          {
+            "href": "/platforms",
+            "label": "جميع المنصات"
+          },
+          {
+            "href": "/auth/register",
+            "label": "جرّب يومين مجانًا"
+          },
+          {
+            "href": "#tools",
+            "label": "استكشف الأدوات"
+          },
+          {
+            "href": "https://wa.me/201029934356",
+            "label": "اسأل فريق الدعم"
+          },
+          {
+            "href": "/auth/register",
+            "label": "ابدأ تجربتك"
+          },
+          {
+            "href": "/platforms",
+            "label": "جميع المنصات"
+          },
+          {
+            "href": "/platforms/facebook",
+            "label": "فيسبوك"
+          },
+          {
+            "href": "/platforms/whatsapp",
+            "label": "واتساب"
+          },
+          {
+            "href": "/platforms/instagram",
+            "label": "إنستجرام"
+          },
+          {
+            "href": "/platforms/snapchat",
+            "label": "سناب شات"
+          },
+          {
+            "href": "/platforms/telegram",
+            "label": "تيليجرام"
+          },
+          {
+            "href": "/platforms/telegram-premium",
+            "label": "تيليجرام بريميم"
+          }
+        ],
+        "linkedGuidesInMain": [],
+        "relatedGuideCandidates": [
+          "/guides/x-search-or-message-task"
+        ]
+      },
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "reason": "الدليل يصنف الفعل والسياسة، والمنصة تعرض الوحدة.",
+        "measuredSERPAcceptance": "OPEN"
+      },
+      "proposedImprovements": [
+        {
+          "section": "tools / requirements",
+          "action": "Add one or two contextual, descriptive links to the relevant existing guides, selected for the current question; do not bulk-link every guide.",
+          "targets": [
+            "/guides/x-search-or-message-task"
+          ],
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "evidence": "Current main links contain no /guides/ destination."
+        }
+      ]
+    },
+    {
+      "path": "/platforms/snapchat",
+      "primaryKeyword": {
+        "candidate": "وحدة سناب شات في Sky Pro",
+        "status": "EDITORIAL_PRODUCT_FIT_CANDIDATE_NOT_DEMAND_VERIFIED"
+      },
+      "searchIntent": "Navigational/commercial: فحص إتاحة الأصدقاء والرسائل في وحدة محددة.",
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/platforms/snapchat",
+        "observed": "https://skypro.skywaveads.com/platforms/snapchat",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [],
+        "boundary": "لا مقال مستقل متنافس؛ لا تكتب درس إرسال يتجاوز الوظيفة الموثقة.",
+        "measuredCannibalization": "NOT_VERIFIED_NO_QUERY_PAGE_GSC"
+      },
+      "links": {
+        "renderedMain": [
+          {
+            "href": "/",
+            "label": "الرئيسية"
+          },
+          {
+            "href": "/platforms",
+            "label": "جميع المنصات"
+          },
+          {
+            "href": "/auth/register",
+            "label": "جرّب يومين مجانًا"
+          },
+          {
+            "href": "#tools",
+            "label": "استكشف الأدوات"
+          },
+          {
+            "href": "https://wa.me/201029934356",
+            "label": "اسأل فريق الدعم"
+          },
+          {
+            "href": "/auth/register",
+            "label": "ابدأ تجربتك"
+          },
+          {
+            "href": "/platforms",
+            "label": "جميع المنصات"
+          },
+          {
+            "href": "/platforms/facebook",
+            "label": "فيسبوك"
+          },
+          {
+            "href": "/platforms/whatsapp",
+            "label": "واتساب"
+          },
+          {
+            "href": "/platforms/instagram",
+            "label": "إنستجرام"
+          },
+          {
+            "href": "/platforms/twitter",
+            "label": "إكس (تويتر)"
+          },
+          {
+            "href": "/platforms/telegram",
+            "label": "تيليجرام"
+          },
+          {
+            "href": "/platforms/telegram-premium",
+            "label": "تيليجرام بريميم"
+          }
+        ],
+        "linkedGuidesInMain": [],
+        "relatedGuideCandidates": []
+      },
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "reason": "لا مقال مستقل متنافس؛ لا تكتب درس إرسال يتجاوز الوظيفة الموثقة.",
+        "measuredSERPAcceptance": "OPEN"
+      },
+      "proposedImprovements": []
+    },
+    {
+      "path": "/platforms/telegram",
+      "primaryKeyword": {
+        "candidate": "برنامج أدوات تيليجرام للقنوات والمجموعات",
+        "status": "EDITORIAL_PRODUCT_FIT_CANDIDATE_NOT_DEMAND_VERIFIED"
+      },
+      "searchIntent": "Commercial: ملاءمة الوحدة الأساسية لدور حساب معين.",
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/platforms/telegram",
+        "observed": "https://skypro.skywaveads.com/platforms/telegram",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [
+          "/guides/telegram-group-channel-task",
+          "/platforms/telegram-premium"
+        ],
+        "boundary": "الدليل يختار قناة/مجموعة والدور؛ الوحدة تعرض مداخل البرنامج.",
+        "measuredCannibalization": "NOT_VERIFIED_NO_QUERY_PAGE_GSC"
+      },
+      "links": {
+        "renderedMain": [
+          {
+            "href": "/",
+            "label": "الرئيسية"
+          },
+          {
+            "href": "/platforms",
+            "label": "جميع المنصات"
+          },
+          {
+            "href": "/auth/register",
+            "label": "جرّب يومين مجانًا"
+          },
+          {
+            "href": "#tools",
+            "label": "استكشف الأدوات"
+          },
+          {
+            "href": "https://wa.me/201029934356",
+            "label": "اسأل فريق الدعم"
+          },
+          {
+            "href": "/auth/register",
+            "label": "ابدأ تجربتك"
+          },
+          {
+            "href": "/platforms",
+            "label": "جميع المنصات"
+          },
+          {
+            "href": "/platforms/facebook",
+            "label": "فيسبوك"
+          },
+          {
+            "href": "/platforms/whatsapp",
+            "label": "واتساب"
+          },
+          {
+            "href": "/platforms/instagram",
+            "label": "إنستجرام"
+          },
+          {
+            "href": "/platforms/twitter",
+            "label": "إكس (تويتر)"
+          },
+          {
+            "href": "/platforms/snapchat",
+            "label": "سناب شات"
+          },
+          {
+            "href": "/platforms/telegram-premium",
+            "label": "تيليجرام بريميم"
+          }
+        ],
+        "linkedGuidesInMain": [],
+        "relatedGuideCandidates": [
+          "/guides/telegram-group-channel-task"
+        ]
+      },
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "reason": "الدليل يختار قناة/مجموعة والدور؛ الوحدة تعرض مداخل البرنامج.",
+        "measuredSERPAcceptance": "OPEN"
+      },
+      "proposedImprovements": [
+        {
+          "section": "tools / requirements",
+          "action": "Add one or two contextual, descriptive links to the relevant existing guides, selected for the current question; do not bulk-link every guide.",
+          "targets": [
+            "/guides/telegram-group-channel-task"
+          ],
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "evidence": "Current main links contain no /guides/ destination."
+        }
+      ]
+    },
+    {
+      "path": "/platforms/telegram-premium",
+      "primaryKeyword": {
+        "candidate": "وحدة Telegram Premium في Sky Pro ومتطلباتها",
+        "status": "EDITORIAL_PRODUCT_FIT_CANDIDATE_NOT_DEMAND_VERIFIED"
+      },
+      "searchIntent": "Navigational/commercial: الفرق بين الوحدة الإضافية والأساسية.",
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/platforms/telegram-premium",
+        "observed": "https://skypro.skywaveads.com/platforms/telegram-premium",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [
+          "/guides/telegram-group-channel-task",
+          "/platforms/telegram"
+        ],
+        "boundary": "يجب الاحتفاظ بصفحتين لأن القائمتين مختلفتان؛ ملكية كلمات الأساس/الإضافي منفصلة.",
+        "measuredCannibalization": "NOT_VERIFIED_NO_QUERY_PAGE_GSC"
+      },
+      "links": {
+        "renderedMain": [
+          {
+            "href": "/",
+            "label": "الرئيسية"
+          },
+          {
+            "href": "/platforms",
+            "label": "جميع المنصات"
+          },
+          {
+            "href": "/auth/register",
+            "label": "جرّب يومين مجانًا"
+          },
+          {
+            "href": "#tools",
+            "label": "استكشف الأدوات"
+          },
+          {
+            "href": "https://wa.me/201029934356",
+            "label": "اسأل فريق الدعم"
+          },
+          {
+            "href": "/auth/register",
+            "label": "ابدأ تجربتك"
+          },
+          {
+            "href": "/platforms",
+            "label": "جميع المنصات"
+          },
+          {
+            "href": "/platforms/facebook",
+            "label": "فيسبوك"
+          },
+          {
+            "href": "/platforms/whatsapp",
+            "label": "واتساب"
+          },
+          {
+            "href": "/platforms/instagram",
+            "label": "إنستجرام"
+          },
+          {
+            "href": "/platforms/twitter",
+            "label": "إكس (تويتر)"
+          },
+          {
+            "href": "/platforms/snapchat",
+            "label": "سناب شات"
+          },
+          {
+            "href": "/platforms/telegram",
+            "label": "تيليجرام"
+          }
+        ],
+        "linkedGuidesInMain": [],
+        "relatedGuideCandidates": [
+          "/guides/telegram-group-channel-task"
+        ]
+      },
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "reason": "يجب الاحتفاظ بصفحتين لأن القائمتين مختلفتان؛ ملكية كلمات الأساس/الإضافي منفصلة.",
+        "measuredSERPAcceptance": "OPEN"
+      },
+      "proposedImprovements": [
+        {
+          "section": "tools / requirements",
+          "action": "Add one or two contextual, descriptive links to the relevant existing guides, selected for the current question; do not bulk-link every guide.",
+          "targets": [
+            "/guides/telegram-group-channel-task"
+          ],
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "evidence": "Current main links contain no /guides/ destination."
+        }
+      ]
+    },
+    {
+      "path": "/platforms/linkedin",
+      "primaryKeyword": {
+        "candidate": "برنامج أدوات لينكدإن على Windows",
+        "status": "EDITORIAL_PRODUCT_FIT_CANDIDATE_NOT_DEMAND_VERIFIED"
+      },
+      "searchIntent": "Commercial: تقييم مداخل البحث والتواصل المهني بالبرنامج.",
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/platforms/linkedin",
+        "observed": "https://skypro.skywaveads.com/platforms/linkedin",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [
+          "/guides/linkedin-outreach-brief"
+        ],
+        "boundary": "المقال كتابة رسالة مهنية؛ المنصة تعرض مداخل الأداة ومتطلباتها.",
+        "measuredCannibalization": "NOT_VERIFIED_NO_QUERY_PAGE_GSC"
+      },
+      "links": {
+        "renderedMain": [
+          {
+            "href": "/",
+            "label": "الرئيسية"
+          },
+          {
+            "href": "/platforms",
+            "label": "جميع المنصات"
+          },
+          {
+            "href": "/auth/register",
+            "label": "جرّب يومين مجانًا"
+          },
+          {
+            "href": "#tools",
+            "label": "استكشف الأدوات"
+          },
+          {
+            "href": "https://wa.me/201029934356",
+            "label": "اسأل فريق الدعم"
+          },
+          {
+            "href": "/auth/register",
+            "label": "ابدأ تجربتك"
+          },
+          {
+            "href": "/platforms",
+            "label": "جميع المنصات"
+          },
+          {
+            "href": "/platforms/facebook",
+            "label": "فيسبوك"
+          },
+          {
+            "href": "/platforms/whatsapp",
+            "label": "واتساب"
+          },
+          {
+            "href": "/platforms/instagram",
+            "label": "إنستجرام"
+          },
+          {
+            "href": "/platforms/twitter",
+            "label": "إكس (تويتر)"
+          },
+          {
+            "href": "/platforms/snapchat",
+            "label": "سناب شات"
+          },
+          {
+            "href": "/platforms/telegram",
+            "label": "تيليجرام"
+          }
+        ],
+        "linkedGuidesInMain": [],
+        "relatedGuideCandidates": [
+          "/guides/linkedin-outreach-brief"
+        ]
+      },
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "reason": "المقال كتابة رسالة مهنية؛ المنصة تعرض مداخل الأداة ومتطلباتها.",
+        "measuredSERPAcceptance": "OPEN"
+      },
+      "proposedImprovements": [
+        {
+          "section": "tools / requirements",
+          "action": "Add one or two contextual, descriptive links to the relevant existing guides, selected for the current question; do not bulk-link every guide.",
+          "targets": [
+            "/guides/linkedin-outreach-brief"
+          ],
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "evidence": "Current main links contain no /guides/ destination."
+        }
+      ]
+    },
+    {
+      "path": "/platforms/pinterest",
+      "primaryKeyword": {
+        "candidate": "برنامج أدوات بنترست للكمبيوتر",
+        "status": "EDITORIAL_PRODUCT_FIT_CANDIDATE_NOT_DEMAND_VERIFIED"
+      },
+      "searchIntent": "Commercial: تقييم مداخل الصور واللوحات والحساب.",
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/platforms/pinterest",
+        "observed": "https://skypro.skywaveads.com/platforms/pinterest",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [
+          "/guides/pinterest-board-content-brief"
+        ],
+        "boundary": "الدليل صور/روابط/وصف، والمنصة مداخل المنتج.",
+        "measuredCannibalization": "NOT_VERIFIED_NO_QUERY_PAGE_GSC"
+      },
+      "links": {
+        "renderedMain": [
+          {
+            "href": "/",
+            "label": "الرئيسية"
+          },
+          {
+            "href": "/platforms",
+            "label": "جميع المنصات"
+          },
+          {
+            "href": "/auth/register",
+            "label": "جرّب يومين مجانًا"
+          },
+          {
+            "href": "#tools",
+            "label": "استكشف الأدوات"
+          },
+          {
+            "href": "https://wa.me/201029934356",
+            "label": "اسأل فريق الدعم"
+          },
+          {
+            "href": "/auth/register",
+            "label": "ابدأ تجربتك"
+          },
+          {
+            "href": "/platforms",
+            "label": "جميع المنصات"
+          },
+          {
+            "href": "/platforms/facebook",
+            "label": "فيسبوك"
+          },
+          {
+            "href": "/platforms/whatsapp",
+            "label": "واتساب"
+          },
+          {
+            "href": "/platforms/instagram",
+            "label": "إنستجرام"
+          },
+          {
+            "href": "/platforms/twitter",
+            "label": "إكس (تويتر)"
+          },
+          {
+            "href": "/platforms/snapchat",
+            "label": "سناب شات"
+          },
+          {
+            "href": "/platforms/telegram",
+            "label": "تيليجرام"
+          }
+        ],
+        "linkedGuidesInMain": [],
+        "relatedGuideCandidates": [
+          "/guides/pinterest-board-content-brief"
+        ]
+      },
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "reason": "الدليل صور/روابط/وصف، والمنصة مداخل المنتج.",
+        "measuredSERPAcceptance": "OPEN"
+      },
+      "proposedImprovements": [
+        {
+          "section": "tools / requirements",
+          "action": "Add one or two contextual, descriptive links to the relevant existing guides, selected for the current question; do not bulk-link every guide.",
+          "targets": [
+            "/guides/pinterest-board-content-brief"
+          ],
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "evidence": "Current main links contain no /guides/ destination."
+        }
+      ]
+    },
+    {
+      "path": "/platforms/reddit",
+      "primaryKeyword": {
+        "candidate": "وحدة أدوات ريديت في Sky Pro",
+        "status": "EDITORIAL_PRODUCT_FIT_CANDIDATE_NOT_DEMAND_VERIFIED"
+      },
+      "searchIntent": "Commercial/navigational: فحص الوحدة مع قواعد المشاركة.",
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/platforms/reddit",
+        "observed": "https://skypro.skywaveads.com/platforms/reddit",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [
+          "/guides/reddit-community-checklist"
+        ],
+        "boundary": "الدليل قواعد وموجز مشاركة؛ الوحدة تصف المداخل.",
+        "measuredCannibalization": "NOT_VERIFIED_NO_QUERY_PAGE_GSC"
+      },
+      "links": {
+        "renderedMain": [
+          {
+            "href": "/",
+            "label": "الرئيسية"
+          },
+          {
+            "href": "/platforms",
+            "label": "جميع المنصات"
+          },
+          {
+            "href": "/auth/register",
+            "label": "جرّب يومين مجانًا"
+          },
+          {
+            "href": "#tools",
+            "label": "استكشف الأدوات"
+          },
+          {
+            "href": "https://wa.me/201029934356",
+            "label": "اسأل فريق الدعم"
+          },
+          {
+            "href": "/auth/register",
+            "label": "ابدأ تجربتك"
+          },
+          {
+            "href": "/platforms",
+            "label": "جميع المنصات"
+          },
+          {
+            "href": "/platforms/facebook",
+            "label": "فيسبوك"
+          },
+          {
+            "href": "/platforms/whatsapp",
+            "label": "واتساب"
+          },
+          {
+            "href": "/platforms/instagram",
+            "label": "إنستجرام"
+          },
+          {
+            "href": "/platforms/twitter",
+            "label": "إكس (تويتر)"
+          },
+          {
+            "href": "/platforms/snapchat",
+            "label": "سناب شات"
+          },
+          {
+            "href": "/platforms/telegram",
+            "label": "تيليجرام"
+          }
+        ],
+        "linkedGuidesInMain": [],
+        "relatedGuideCandidates": [
+          "/guides/reddit-community-checklist"
+        ]
+      },
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "reason": "الدليل قواعد وموجز مشاركة؛ الوحدة تصف المداخل.",
+        "measuredSERPAcceptance": "OPEN"
+      },
+      "proposedImprovements": [
+        {
+          "section": "tools / requirements",
+          "action": "Add one or two contextual, descriptive links to the relevant existing guides, selected for the current question; do not bulk-link every guide.",
+          "targets": [
+            "/guides/reddit-community-checklist"
+          ],
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "evidence": "Current main links contain no /guides/ destination."
+        }
+      ]
+    },
+    {
+      "path": "/platforms/tiktok",
+      "primaryKeyword": {
+        "candidate": "برنامج أدوات تيك توك للكمبيوتر",
+        "status": "EDITORIAL_PRODUCT_FIT_CANDIDATE_NOT_DEMAND_VERIFIED"
+      },
+      "searchIntent": "Commercial: تقييم قائمة البحث والفيديو والحساب.",
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/platforms/tiktok",
+        "observed": "https://skypro.skywaveads.com/platforms/tiktok",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [
+          "/guides/tiktok-video-task-checklist"
+        ],
+        "boundary": "الدليل master video والحقوق، والمنصة مداخل الأداة.",
+        "measuredCannibalization": "NOT_VERIFIED_NO_QUERY_PAGE_GSC"
+      },
+      "links": {
+        "renderedMain": [
+          {
+            "href": "/",
+            "label": "الرئيسية"
+          },
+          {
+            "href": "/platforms",
+            "label": "جميع المنصات"
+          },
+          {
+            "href": "/auth/register",
+            "label": "جرّب يومين مجانًا"
+          },
+          {
+            "href": "#tools",
+            "label": "استكشف الأدوات"
+          },
+          {
+            "href": "https://wa.me/201029934356",
+            "label": "اسأل فريق الدعم"
+          },
+          {
+            "href": "/auth/register",
+            "label": "ابدأ تجربتك"
+          },
+          {
+            "href": "/platforms",
+            "label": "جميع المنصات"
+          },
+          {
+            "href": "/platforms/facebook",
+            "label": "فيسبوك"
+          },
+          {
+            "href": "/platforms/whatsapp",
+            "label": "واتساب"
+          },
+          {
+            "href": "/platforms/instagram",
+            "label": "إنستجرام"
+          },
+          {
+            "href": "/platforms/twitter",
+            "label": "إكس (تويتر)"
+          },
+          {
+            "href": "/platforms/snapchat",
+            "label": "سناب شات"
+          },
+          {
+            "href": "/platforms/telegram",
+            "label": "تيليجرام"
+          }
+        ],
+        "linkedGuidesInMain": [],
+        "relatedGuideCandidates": [
+          "/guides/tiktok-video-task-checklist"
+        ]
+      },
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "reason": "الدليل master video والحقوق، والمنصة مداخل الأداة.",
+        "measuredSERPAcceptance": "OPEN"
+      },
+      "proposedImprovements": [
+        {
+          "section": "tools / requirements",
+          "action": "Add one or two contextual, descriptive links to the relevant existing guides, selected for the current question; do not bulk-link every guide.",
+          "targets": [
+            "/guides/tiktok-video-task-checklist"
+          ],
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "evidence": "Current main links contain no /guides/ destination."
+        }
+      ]
+    },
+    {
+      "path": "/platforms/threads",
+      "primaryKeyword": {
+        "candidate": "برنامج أدوات ثريدز للكمبيوتر",
+        "status": "EDITORIAL_PRODUCT_FIT_CANDIDATE_NOT_DEMAND_VERIFIED"
+      },
+      "searchIntent": "Commercial: تقييم وحدة Threads منفصلة عن Instagram.",
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/platforms/threads",
+        "observed": "https://skypro.skywaveads.com/platforms/threads",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [
+          "/guides/threads-account-task-review",
+          "/platforms/instagram"
+        ],
+        "boundary": "الدليل يملك مطابقة الوجهة والسياق، والمنصة تعرض وحدتها الفعلية.",
+        "measuredCannibalization": "NOT_VERIFIED_NO_QUERY_PAGE_GSC"
+      },
+      "links": {
+        "renderedMain": [
+          {
+            "href": "/",
+            "label": "الرئيسية"
+          },
+          {
+            "href": "/platforms",
+            "label": "جميع المنصات"
+          },
+          {
+            "href": "/auth/register",
+            "label": "جرّب يومين مجانًا"
+          },
+          {
+            "href": "#tools",
+            "label": "استكشف الأدوات"
+          },
+          {
+            "href": "https://wa.me/201029934356",
+            "label": "اسأل فريق الدعم"
+          },
+          {
+            "href": "/auth/register",
+            "label": "ابدأ تجربتك"
+          },
+          {
+            "href": "/platforms",
+            "label": "جميع المنصات"
+          },
+          {
+            "href": "/platforms/facebook",
+            "label": "فيسبوك"
+          },
+          {
+            "href": "/platforms/whatsapp",
+            "label": "واتساب"
+          },
+          {
+            "href": "/platforms/instagram",
+            "label": "إنستجرام"
+          },
+          {
+            "href": "/platforms/twitter",
+            "label": "إكس (تويتر)"
+          },
+          {
+            "href": "/platforms/snapchat",
+            "label": "سناب شات"
+          },
+          {
+            "href": "/platforms/telegram",
+            "label": "تيليجرام"
+          }
+        ],
+        "linkedGuidesInMain": [],
+        "relatedGuideCandidates": [
+          "/guides/threads-account-task-review"
+        ]
+      },
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "reason": "الدليل يملك مطابقة الوجهة والسياق، والمنصة تعرض وحدتها الفعلية.",
+        "measuredSERPAcceptance": "OPEN"
+      },
+      "proposedImprovements": [
+        {
+          "section": "tools / requirements",
+          "action": "Add one or two contextual, descriptive links to the relevant existing guides, selected for the current question; do not bulk-link every guide.",
+          "targets": [
+            "/guides/threads-account-task-review"
+          ],
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "evidence": "Current main links contain no /guides/ destination."
+        }
+      ]
+    },
+    {
+      "path": "/platforms/olx",
+      "primaryKeyword": {
+        "candidate": "أداة OLX في Sky Pro وحالة إتاحتها",
+        "status": "EDITORIAL_PRODUCT_FIT_CANDIDATE_NOT_DEMAND_VERIFIED"
+      },
+      "searchIntent": "Navigational/commercial: حالة الوحدة الحالية وسؤال البلد/المهمة.",
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/platforms/olx",
+        "observed": "https://skypro.skywaveads.com/platforms/olx",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [
+          "/guides/olx-demo-questions"
+        ],
+        "boundary": "الدليل أوسع كأسئلة عرض ومعيار قبول؛ أقرب زوج overlap ويحتاج قياسًا قبل أي دمج.",
+        "measuredCannibalization": "NOT_VERIFIED_NO_QUERY_PAGE_GSC"
+      },
+      "links": {
+        "renderedMain": [
+          {
+            "href": "/",
+            "label": "الرئيسية"
+          },
+          {
+            "href": "/platforms",
+            "label": "جميع المنصات"
+          },
+          {
+            "href": "/auth/register",
+            "label": "جرّب يومين مجانًا"
+          },
+          {
+            "href": "#tools",
+            "label": "استكشف الأدوات"
+          },
+          {
+            "href": "https://wa.me/201029934356",
+            "label": "اطلب توضيحًا من الدعم"
+          },
+          {
+            "href": "https://wa.me/201029934356",
+            "label": "اسأل فريق الدعم"
+          },
+          {
+            "href": "/auth/register",
+            "label": "ابدأ تجربتك"
+          },
+          {
+            "href": "/platforms",
+            "label": "جميع المنصات"
+          },
+          {
+            "href": "/platforms/google-maps",
+            "label": "خرائط جوجل"
+          },
+          {
+            "href": "/platforms/facebook",
+            "label": "فيسبوك"
+          },
+          {
+            "href": "/platforms/whatsapp",
+            "label": "واتساب"
+          },
+          {
+            "href": "/platforms/instagram",
+            "label": "إنستجرام"
+          },
+          {
+            "href": "/platforms/twitter",
+            "label": "إكس (تويتر)"
+          },
+          {
+            "href": "/platforms/snapchat",
+            "label": "سناب شات"
+          }
+        ],
+        "linkedGuidesInMain": [],
+        "relatedGuideCandidates": [
+          "/guides/olx-demo-questions"
+        ]
+      },
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "reason": "الدليل أوسع كأسئلة عرض ومعيار قبول؛ أقرب زوج overlap ويحتاج قياسًا قبل أي دمج.",
+        "measuredSERPAcceptance": "OPEN"
+      },
+      "proposedImprovements": [
+        {
+          "section": "tools / requirements",
+          "action": "Add one or two contextual, descriptive links to the relevant existing guides, selected for the current question; do not bulk-link every guide.",
+          "targets": [
+            "/guides/olx-demo-questions"
+          ],
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "evidence": "Current main links contain no /guides/ destination."
+        },
+        {
+          "section": "limits / trial CTA",
+          "action": "Keep the exact function status and request independent Desktop proof before presenting an operation as available or selecting ready-to-use extraction/growth queries.",
+          "status": "PROPOSED_EVIDENCE_DEPENDENT",
+          "evidence": "لا صورة مستقلة ولا نتائج تشغيل؛ لا استهداف extraction جاهز."
+        }
+      ]
+    },
+    {
+      "path": "/platforms/security",
+      "primaryKeyword": {
+        "candidate": "إعدادات الجلسة وفواصل التشغيل في Sky Pro",
+        "status": "EDITORIAL_PRODUCT_FIT_CANDIDATE_NOT_DEMAND_VERIFIED"
+      },
+      "searchIntent": "Navigational/task-commercial: فهم الخيارات الفعلية وحدودها.",
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/platforms/security",
+        "observed": "https://skypro.skywaveads.com/platforms/security",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [
+          "/guides/session-problem-support-brief"
+        ],
+        "boundary": "المنصة إعدادات معلنة؛ الدليل بلاغ وتشخيص نقطة توقف وليس بيع حماية.",
+        "measuredCannibalization": "NOT_VERIFIED_NO_QUERY_PAGE_GSC"
+      },
+      "links": {
+        "renderedMain": [
+          {
+            "href": "/",
+            "label": "الرئيسية"
+          },
+          {
+            "href": "/platforms",
+            "label": "جميع المنصات"
+          },
+          {
+            "href": "/auth/register",
+            "label": "جرّب يومين مجانًا"
+          },
+          {
+            "href": "#tools",
+            "label": "استكشف الأدوات"
+          },
+          {
+            "href": "https://wa.me/201029934356",
+            "label": "اسأل فريق الدعم"
+          },
+          {
+            "href": "/auth/register",
+            "label": "ابدأ تجربتك"
+          },
+          {
+            "href": "/platforms",
+            "label": "جميع المنصات"
+          },
+          {
+            "href": "/platforms/accounts",
+            "label": "إدارة الحسابات"
+          },
+          {
+            "href": "/platforms/auto-point",
+            "label": "أوتو بوينت"
+          },
+          {
+            "href": "/platforms/facebook",
+            "label": "فيسبوك"
+          },
+          {
+            "href": "/platforms/whatsapp",
+            "label": "واتساب"
+          },
+          {
+            "href": "/platforms/instagram",
+            "label": "إنستجرام"
+          },
+          {
+            "href": "/platforms/twitter",
+            "label": "إكس (تويتر)"
+          }
+        ],
+        "linkedGuidesInMain": [],
+        "relatedGuideCandidates": [
+          "/guides/session-problem-support-brief"
+        ]
+      },
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "reason": "المنصة إعدادات معلنة؛ الدليل بلاغ وتشخيص نقطة توقف وليس بيع حماية.",
+        "measuredSERPAcceptance": "OPEN"
+      },
+      "proposedImprovements": [
+        {
+          "section": "tools / requirements",
+          "action": "Add one or two contextual, descriptive links to the relevant existing guides, selected for the current question; do not bulk-link every guide.",
+          "targets": [
+            "/guides/session-problem-support-brief"
+          ],
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "evidence": "Current main links contain no /guides/ destination."
+        }
+      ]
+    },
+    {
+      "path": "/platforms/accounts",
+      "primaryKeyword": {
+        "candidate": "برنامج تنظيم حسابات المنصات على Windows",
+        "status": "EDITORIAL_PRODUCT_FIT_CANDIDATE_NOT_DEMAND_VERIFIED"
+      },
+      "searchIntent": "Commercial/task: فحص نموذج إضافة وتمييز حسابات Sky Pro.",
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/platforms/accounts",
+        "observed": "https://skypro.skywaveads.com/platforms/accounts",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [
+          "/guides/name-and-add-platform-accounts",
+          "/guides/session-problem-support-brief",
+          "/guides/multi-account-work-handover",
+          "/guides/windows-or-cloud-marketing-tool"
+        ],
+        "boundary": "النموذج التجاري مستقل عن التسمية والبلاغ وتسليم سجل العمل.",
+        "measuredCannibalization": "NOT_VERIFIED_NO_QUERY_PAGE_GSC"
+      },
+      "links": {
+        "renderedMain": [
+          {
+            "href": "/",
+            "label": "الرئيسية"
+          },
+          {
+            "href": "/platforms",
+            "label": "جميع المنصات"
+          },
+          {
+            "href": "/auth/register",
+            "label": "جرّب يومين مجانًا"
+          },
+          {
+            "href": "#tools",
+            "label": "استكشف الأدوات"
+          },
+          {
+            "href": "https://wa.me/201029934356",
+            "label": "اسأل فريق الدعم"
+          },
+          {
+            "href": "/auth/register",
+            "label": "ابدأ تجربتك"
+          },
+          {
+            "href": "/platforms",
+            "label": "جميع المنصات"
+          },
+          {
+            "href": "/platforms/security",
+            "label": "الحماية"
+          },
+          {
+            "href": "/platforms/auto-point",
+            "label": "أوتو بوينت"
+          },
+          {
+            "href": "/platforms/facebook",
+            "label": "فيسبوك"
+          },
+          {
+            "href": "/platforms/whatsapp",
+            "label": "واتساب"
+          },
+          {
+            "href": "/platforms/instagram",
+            "label": "إنستجرام"
+          },
+          {
+            "href": "/platforms/twitter",
+            "label": "إكس (تويتر)"
+          }
+        ],
+        "linkedGuidesInMain": [],
+        "relatedGuideCandidates": [
+          "/guides/name-and-add-platform-accounts",
+          "/guides/session-problem-support-brief",
+          "/guides/multi-account-work-handover",
+          "/guides/windows-or-cloud-marketing-tool"
+        ]
+      },
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "reason": "النموذج التجاري مستقل عن التسمية والبلاغ وتسليم سجل العمل.",
+        "measuredSERPAcceptance": "OPEN"
+      },
+      "proposedImprovements": [
+        {
+          "section": "tools / requirements",
+          "action": "Add one or two contextual, descriptive links to the relevant existing guides, selected for the current question; do not bulk-link every guide.",
+          "targets": [
+            "/guides/name-and-add-platform-accounts",
+            "/guides/session-problem-support-brief",
+            "/guides/multi-account-work-handover",
+            "/guides/windows-or-cloud-marketing-tool"
+          ],
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "evidence": "Current main links contain no /guides/ destination."
+        }
+      ]
+    },
+    {
+      "path": "/platforms/google-maps",
+      "primaryKeyword": {
+        "candidate": "أداة خرائط جوجل في Sky Pro وحالة الوظيفة",
+        "status": "EDITORIAL_PRODUCT_FIT_CANDIDATE_NOT_DEMAND_VERIFIED"
+      },
+      "searchIntent": "Commercial qualification: تحقق من البحث/التصدير المقصود قبل شراء الوحدة.",
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/platforms/google-maps",
+        "observed": "https://skypro.skywaveads.com/platforms/google-maps",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [
+          "/guides/maps-data-task-evaluation"
+        ],
+        "boundary": "المنصة حالة Sky Pro؛ الدليل غرض البيانات والمصدر والإسناد والدليل؛ monitor أقرب زوج.",
+        "measuredCannibalization": "NOT_VERIFIED_NO_QUERY_PAGE_GSC"
+      },
+      "links": {
+        "renderedMain": [
+          {
+            "href": "/",
+            "label": "الرئيسية"
+          },
+          {
+            "href": "/platforms",
+            "label": "جميع المنصات"
+          },
+          {
+            "href": "/auth/register",
+            "label": "جرّب يومين مجانًا"
+          },
+          {
+            "href": "#tools",
+            "label": "استكشف الأدوات"
+          },
+          {
+            "href": "https://wa.me/201029934356",
+            "label": "اسأل فريق الدعم"
+          },
+          {
+            "href": "/auth/register",
+            "label": "ابدأ تجربتك"
+          },
+          {
+            "href": "/platforms",
+            "label": "جميع المنصات"
+          },
+          {
+            "href": "/platforms/olx",
+            "label": "OLX"
+          },
+          {
+            "href": "/platforms/facebook",
+            "label": "فيسبوك"
+          },
+          {
+            "href": "/platforms/whatsapp",
+            "label": "واتساب"
+          },
+          {
+            "href": "/platforms/instagram",
+            "label": "إنستجرام"
+          },
+          {
+            "href": "/platforms/twitter",
+            "label": "إكس (تويتر)"
+          },
+          {
+            "href": "/platforms/snapchat",
+            "label": "سناب شات"
+          }
+        ],
+        "linkedGuidesInMain": [],
+        "relatedGuideCandidates": [
+          "/guides/maps-data-task-evaluation"
+        ]
+      },
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "reason": "المنصة حالة Sky Pro؛ الدليل غرض البيانات والمصدر والإسناد والدليل؛ monitor أقرب زوج.",
+        "measuredSERPAcceptance": "OPEN"
+      },
+      "proposedImprovements": [
+        {
+          "section": "tools / requirements",
+          "action": "Add one or two contextual, descriptive links to the relevant existing guides, selected for the current question; do not bulk-link every guide.",
+          "targets": [
+            "/guides/maps-data-task-evaluation"
+          ],
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "evidence": "Current main links contain no /guides/ destination."
+        },
+        {
+          "section": "limits / trial CTA",
+          "action": "Keep the exact function status and request independent Desktop proof before presenting an operation as available or selecting ready-to-use extraction/growth queries.",
+          "status": "PROPOSED_EVIDENCE_DEPENDENT",
+          "evidence": "قائمة Google فقط؛ نجاح البحث/التصدير ومسار الوصول غير متحققين."
+        }
+      ]
+    },
+    {
+      "path": "/platforms/send-emails",
+      "primaryKeyword": {
+        "candidate": "برنامج إرسال بريد SMTP للكمبيوتر",
+        "status": "EDITORIAL_PRODUCT_FIT_CANDIDATE_NOT_DEMAND_VERIFIED"
+      },
+      "searchIntent": "Commercial: تقييم وحدة البريد ومزود الإرسال والمتطلبات.",
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/platforms/send-emails",
+        "observed": "https://skypro.skywaveads.com/platforms/send-emails",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [
+          "/guides/smtp-test-message-checklist",
+          "/guides/contact-list-quality-check"
+        ],
+        "boundary": "المنصة عرض الوحدة، checklist يملك فحص الاتصال/الاستلام/الرد، وcontact-list يملك المدخلات.",
+        "measuredCannibalization": "NOT_VERIFIED_NO_QUERY_PAGE_GSC"
+      },
+      "links": {
+        "renderedMain": [
+          {
+            "href": "/",
+            "label": "الرئيسية"
+          },
+          {
+            "href": "/platforms",
+            "label": "جميع المنصات"
+          },
+          {
+            "href": "/auth/register",
+            "label": "جرّب يومين مجانًا"
+          },
+          {
+            "href": "#tools",
+            "label": "استكشف الأدوات"
+          },
+          {
+            "href": "https://wa.me/201029934356",
+            "label": "اسأل فريق الدعم"
+          },
+          {
+            "href": "/auth/register",
+            "label": "ابدأ تجربتك"
+          },
+          {
+            "href": "/platforms",
+            "label": "جميع المنصات"
+          },
+          {
+            "href": "/platforms/facebook",
+            "label": "فيسبوك"
+          },
+          {
+            "href": "/platforms/whatsapp",
+            "label": "واتساب"
+          },
+          {
+            "href": "/platforms/instagram",
+            "label": "إنستجرام"
+          },
+          {
+            "href": "/platforms/twitter",
+            "label": "إكس (تويتر)"
+          },
+          {
+            "href": "/platforms/snapchat",
+            "label": "سناب شات"
+          },
+          {
+            "href": "/platforms/telegram",
+            "label": "تيليجرام"
+          }
+        ],
+        "linkedGuidesInMain": [],
+        "relatedGuideCandidates": [
+          "/guides/smtp-test-message-checklist",
+          "/guides/contact-list-quality-check"
+        ]
+      },
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "reason": "المنصة عرض الوحدة، checklist يملك فحص الاتصال/الاستلام/الرد، وcontact-list يملك المدخلات.",
+        "measuredSERPAcceptance": "OPEN"
+      },
+      "proposedImprovements": [
+        {
+          "section": "tools / requirements",
+          "action": "Add one or two contextual, descriptive links to the relevant existing guides, selected for the current question; do not bulk-link every guide.",
+          "targets": [
+            "/guides/smtp-test-message-checklist",
+            "/guides/contact-list-quality-check"
+          ],
+          "status": "PROPOSED_NOT_IMPLEMENTED",
+          "evidence": "Current main links contain no /guides/ destination."
+        }
+      ]
+    },
+    {
+      "path": "/platforms/auto-point",
+      "primaryKeyword": {
+        "candidate": "وحدة Auto Point في Sky Pro ومتطلباتها",
+        "status": "EDITORIAL_PRODUCT_FIT_CANDIDATE_NOT_DEMAND_VERIFIED"
+      },
+      "searchIntent": "Navigational: معرفة وظيفة الوحدة وحالتها قبل الشراء.",
+      "canonical": {
+        "expected": "https://skypro.skywaveads.com/platforms/auto-point",
+        "observed": "https://skypro.skywaveads.com/platforms/auto-point",
+        "status": "VERIFIED_SELF_CANONICAL_HTTP_SSR"
+      },
+      "internalCompetition": {
+        "reviewedUrls": [
+          "/platforms/twitter",
+          "/platforms/instagram"
+        ],
+        "boundary": "اسم module مستقل؛ لا تملكه كلمات برامج زيادة متابعين أو تفاعل مضمون، ولا دمج بصفحات X/Instagram دون أدلة.",
+        "measuredCannibalization": "NOT_VERIFIED_NO_QUERY_PAGE_GSC"
+      },
+      "links": {
+        "renderedMain": [
+          {
+            "href": "/",
+            "label": "الرئيسية"
+          },
+          {
+            "href": "/platforms",
+            "label": "جميع المنصات"
+          },
+          {
+            "href": "/auth/register",
+            "label": "جرّب يومين مجانًا"
+          },
+          {
+            "href": "#tools",
+            "label": "استكشف الأدوات"
+          },
+          {
+            "href": "https://wa.me/201029934356",
+            "label": "اسأل فريق الدعم"
+          },
+          {
+            "href": "/auth/register",
+            "label": "ابدأ تجربتك"
+          },
+          {
+            "href": "/platforms",
+            "label": "جميع المنصات"
+          },
+          {
+            "href": "/platforms/security",
+            "label": "الحماية"
+          },
+          {
+            "href": "/platforms/accounts",
+            "label": "إدارة الحسابات"
+          },
+          {
+            "href": "/platforms/facebook",
+            "label": "فيسبوك"
+          },
+          {
+            "href": "/platforms/whatsapp",
+            "label": "واتساب"
+          },
+          {
+            "href": "/platforms/instagram",
+            "label": "إنستجرام"
+          },
+          {
+            "href": "/platforms/twitter",
+            "label": "إكس (تويتر)"
+          }
+        ],
+        "linkedGuidesInMain": [],
+        "relatedGuideCandidates": []
+      },
+      "decision": {
+        "action": "KEEP",
+        "canonicalAction": "KEEP_SELF_CANONICAL",
+        "reason": "اسم module مستقل؛ لا تملكه كلمات برامج زيادة متابعين أو تفاعل مضمون، ولا دمج بصفحات X/Instagram دون أدلة.",
+        "measuredSERPAcceptance": "OPEN"
+      },
+      "proposedImprovements": [
+        {
+          "section": "limits / trial CTA",
+          "action": "Keep the exact function status and request independent Desktop proof before presenting an operation as available or selecting ready-to-use extraction/growth queries.",
+          "status": "PROPOSED_EVIDENCE_DEPENDENT",
+          "evidence": "مداخل إكس وإنستجرام فقط؛ لا نتائج نمو ولا مهمة آلية موثقة."
+        }
+      ]
+    }
+  ]
+}

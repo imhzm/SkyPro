@@ -61,3 +61,9 @@ PR #10 merged; deployed e3778186c132cbfebf183d7007ba9ea016fd3683 after clean Lin
 ## 2026-10-24 — approved recovery release published
 
 PR #15 merged and a8a3560430c40d357d1a5c4c37776454f4accc97 deployed after clean Linux build/preflight and 351-file source verification. Build qU1VvtZiTP5PhvRyshPUg. All 20 articles and product/gallery updates are live. Live 45-page SEO/DOM comparison, 180 browser cases and 79-image checks pass; keyboard/menu/theme checks pass. Other 20 services retained PIDs/status. Previous runtime retained for rollback; no production data/env/DNS/payment changes. Final unified package contains live capture provenance and <=19 media. Full details: DEPLOYMENT_20261024.md.
+# 2026-10-24 — post-launch measurement checkpoint
+
+- Verified the live accepted release and 45-page metadata/schema/route baseline without regressions. Completed 39-URL editorial intent mapping and source-integrity review, keeping measured SERP acceptance open.
+- Fixed empty-body word counting and semantic-main capture for guide catalogs; 39 live captures / 741 pairs / no ≥80% pairs, 20 catalog cards and 897 normalized index words. Four meaningful regression tests and targeted script lint pass.
+- PR #17 added Google's official public ownership proof with explicit owner consent. Deployed only that merged static file (0a307d8), checked exact HTTPS hash and health, reloaded only skypro and preserved 20 other service identities. Google confirmed ownership and processed the 45-URL sitemap. Reports are processing; field CWV insufficient.
+- Expanded competitor and legitimate authority research without external messages, accounts, submissions or acquired links. GA4/Bing configuration and authentic missing product media remain open. See POSTLAUNCH_SEO_20261024.md.
