@@ -419,6 +419,13 @@ export default function PrivacyPage() {
                   يمكنك التحكم في تفضيلات الكوكيز من خلال شريط الموافقة عند
                   زيارتك للموقع.
                 </p>
+                <button
+                  type="button"
+                  className="btn-secondary mt-3"
+                  onClick={() => window.dispatchEvent(new Event("skypro:open-consent"))}
+                >
+                  تعديل تفضيلات ملفات الارتباط
+                </button>
               </Section>
 
               <Section id="security" icon={KeyRound} title="إجراءات الأمان">

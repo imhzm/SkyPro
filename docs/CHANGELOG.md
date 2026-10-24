@@ -67,3 +67,9 @@ PR #15 merged and a8a3560430c40d357d1a5c4c37776454f4accc97 deployed after clean 
 - Fixed empty-body word counting and semantic-main capture for guide catalogs; 39 live captures / 741 pairs / no ≥80% pairs, 20 catalog cards and 897 normalized index words. Four meaningful regression tests and targeted script lint pass.
 - PR #17 added Google's official public ownership proof with explicit owner consent. Deployed only that merged static file (0a307d8), checked exact HTTPS hash and health, reloaded only skypro and preserved 20 other service identities. Google confirmed ownership and processed the 45-URL sitemap. Reports are processing; field CWV insufficient.
 - Expanded competitor and legitimate authority research without external messages, accounts, submissions or acquired links. GA4/Bing configuration and authentic missing product media remain open. See POSTLAUNCH_SEO_20261024.md.
+# 2026-10-24 evening — local consented measurement candidate
+
+- Implemented guide CTA coverage, safe contact/download classification, response-confirmed registration and a separate verified trial event. Added strict consent withdrawal/private-route suppression, manual query-free pageviews and reopening existing cookie preferences.
+- Ten tests, TypeScript, isolated webpack build and eight loopback HTTP/SSR cases pass; targeted lint 0 errors/1 existing warning. Real GA4 stream, browser/network/visual/flow receipt and deployment remain pending.
+- Published owner-approved Bing proof from merged PR #18 / 27ab203 with exact HTTPS bytes and preserved unrelated service identities. Visible Bing dashboard verification remains unproven; Search Console already confirms ownership and sitemap processing. Preserved newly approved GA4 terms/account details across browser tool initialization failure.
+- Documented source-proven contradictions and unverified security claims in legacy privacy copy for separate review; did not alter those legal statements or auth backend/mail behavior.

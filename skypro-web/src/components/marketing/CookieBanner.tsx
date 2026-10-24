@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Cookie, X, Settings2, Check } from "lucide-react";
 
@@ -41,11 +41,32 @@ export function CookieBanner() {
   const [showCustomize, setShowCustomize] = useState(false);
   const [analytics, setAnalytics] = useState(true);
   const [marketing, setMarketing] = useState(false);
+  const dialog = useRef<HTMLDivElement>(null);
+  const opener = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const existing = readConsent();
     if (!existing) setVisible(true);
+    const reopen = () => {
+      const saved = readConsent();
+      opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      setAnalytics(saved?.analytics === true);
+      setMarketing(saved?.marketing === true);
+      setShowCustomize(true);
+      setVisible(true);
+    };
+    window.addEventListener("skypro:open-consent", reopen);
+    return () => window.removeEventListener("skypro:open-consent", reopen);
   }, []);
+
+  useEffect(() => {
+    if (visible && opener.current) dialog.current?.focus();
+  }, [visible]);
+
+  const close = () => {
+    setVisible(false);
+    opener.current?.focus();
+  };
 
   const acceptAll = () => {
     writeConsent({
@@ -54,7 +75,7 @@ export function CookieBanner() {
       marketing: true,
       consentedAt: new Date().toISOString(),
     });
-    setVisible(false);
+    close();
   };
 
   const rejectOptional = () => {
@@ -64,7 +85,7 @@ export function CookieBanner() {
       marketing: false,
       consentedAt: new Date().toISOString(),
     });
-    setVisible(false);
+    close();
   };
 
   const saveCustom = () => {
@@ -74,7 +95,7 @@ export function CookieBanner() {
       marketing,
       consentedAt: new Date().toISOString(),
     });
-    setVisible(false);
+    close();
     setShowCustomize(false);
   };
 
@@ -82,6 +103,8 @@ export function CookieBanner() {
 
   return (
     <div
+      ref={dialog}
+      tabIndex={-1}
       role="dialog"
       aria-label="إعدادات ملفات تعريف الارتباط"
       className="fixed inset-x-0 bottom-0 z-[60] p-4 sm:p-6 pointer-events-none"

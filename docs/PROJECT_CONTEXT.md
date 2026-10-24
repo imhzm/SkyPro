@@ -1,5 +1,9 @@
 # Sky Pro homepage theme
 
+## Measurement candidate — 2026-10-24 evening Cairo
+
+GA4 agreement/account details and Bing ownership are now explicitly approved. GA4 final acceptance/stream setup is blocked by CUA initialization, despite Edge being connected; do not repeat approvals or claim a property exists. Bing proof is published and Verify redirected Home, but its blank UI leaves verification/sitemap unproven. Search Console ownership and processed 45-URL sitemap are confirmed; home is not yet indexed in the recorded lookup but passes Google's live crawlability test. Branch feat/consented-measurement-20261024 prepares consent withdrawal, guides and truthful trial measurement. Ten tests, TypeScript, build _So3loysw3w7wY8GFxKGA and eight loopback HTTP/SSR cases pass; provider/browser/network/visual checks remain open. Candidate at 127.0.0.1:3103, unpublished. Legacy privacy claims need separate factual/legal review. See CONSENTED_MEASUREMENT_20261024.md.
+
 ## Active post-launch growth checkpoint — 2026-10-24
 
 Accepted live application a8a3560/build qU1VvtZiTP5PhvRyshPUg remains the baseline. Search Console ownership for skypro.skywaveads.com is now verified for skywaveads@gmail.com after explicit action-time approval; its sitemap was processed with 45 discovered URLs. Performance/indexing reports are processing; GSC CWV has insufficient device data. Only PR #17's exact merged static verification proof (0a307d8) was published, with one named skypro reload and all 20 other service PIDs/status preserved. No DB/env/DNS/payment change. Corrected guide text capture and completed 39-URL editorial KEEP review; measured search intent, country demand/ranks, conversions, authentic media and earned links remain open. GA4/Bing setup is in progress, not connected until verified. See POSTLAUNCH_SEO_20261024.md and D:/SkyPro-seo-growth-20261024/GAP_REPORT.md. Earlier release checkpoints below retain their historical scope.

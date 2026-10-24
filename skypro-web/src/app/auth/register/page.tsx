@@ -15,7 +15,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { Logo } from "@/components/marketing/Logo";
-import { trackProductEvent } from "@/lib/product-analytics";
+import { isCreatedRegistration, trackProductEvent } from "@/lib/product-analytics";
 import { getProductShot } from "@/data/platform-media";
 
 const accountShot = getProductShot("skypro-saved-accounts-manager");
@@ -63,7 +63,7 @@ export default function RegisterPage() {
       const data = await res.json();
 
       if (data.success) {
-        trackProductEvent("complete_registration");
+        if (isCreatedRegistration(res.ok, data)) trackProductEvent("complete_registration");
         if (data.data?.emailSent === false) {
           setError(
             data.message ||

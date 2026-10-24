@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { Mail, CheckCircle2 } from "lucide-react";
 import { Logo } from "@/components/marketing/Logo";
+import { isConfirmedTrialActivation, trackProductEvent } from "@/lib/product-analytics";
 
 function VerifyEmailForm() {
   const [status, setStatus] = useState<"loading" | "success" | "error">(
@@ -27,9 +28,10 @@ function VerifyEmailForm() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token }),
     })
-      .then((res) => res.json())
-      .then((data) => {
+      .then(async (res) => ({ok: res.ok, data: await res.json()}))
+      .then(({ok, data}) => {
         if (data.success) {
+          if (isConfirmedTrialActivation(ok, data)) trackProductEvent("trial_activated");
           setStatus("success");
           setMessage(data.message || "تم تأكيد البريد الإلكتروني بنجاح");
         } else {
