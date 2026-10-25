@@ -1,5 +1,9 @@
 # Sky Pro homepage theme
 
+## Measurement acceptance — 2026-10-26
+
+GA4 Realtime confirms synthetic receipt. Production-build private-route suppression and 24 new-media geometry/keyboard/image cases pass; eight corrected exact-size captures are retained. An actual dedicated dev-fixture account moves pending → verified/active/trial, with distinct registration/activation events and collector blocking for synthetic conversions. A client verification ref prevents duplicate Strict Mode requests; server chronology and DB inspection supply durable evidence where the browser buffer truncated. Final production build/source and deployment QA remain pending. See MEASUREMENT_ACCEPTANCE_20261026.md; no business conversions or acquired links are inferred.
+
 ## Connections and authentic captures — 2026-10-25
 
 Independent SkyPro GA4 account/property/stream verified (public ID G-DNP0ZME36D), optional sharing and automatic enhanced events off. Bing ownership is proven by dashboard and signed Microsoft mail; sitemap submitted and Processing. Local build Rnu5LxiIA5P3OWDVmHz6J includes the actual public ID, truthful conversion readiness handling and independently reviewed OLX/Maps settings captures. Thirteen current contract/unit tests pass; browser collector 204, pre-consent suppression, query/hash removal, SPA guide deduplication and withdrawal suppression are evidenced. Synthetic QA is not business traffic/trials. Two owner-approved outreach messages are confirmed sent; EgyptInnovate form submitted once, final delivery unverified. No acquired links. Five supporting galleries and full fixture/visual/provider/deployment acceptance remain open. Production has not been replaced by this candidate. See POSTLAUNCH_CONNECTIONS_20261025.md; older checkpoint statements below are historical.

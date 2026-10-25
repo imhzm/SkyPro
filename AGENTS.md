@@ -1,5 +1,10 @@
 # Sky Pro project instructions
 
+## Measurement acceptance — 2026-10-26
+- GA4 Realtime now visibly receives the synthetic page_view in the independent SkyPro property. Private-route SPA suppression passes. New-media matrix: 24 geometry/image/keyboard cases pass across all six widths and both themes; eight corrected exact-viewport PNGs checked. Generic screenshot scaling/document-scroll errors were corrected in the capture method, not product UI.
+- Real local fixture registration stays pending and emits complete_registration only; email activation changes DB to active/trial and emits trial_activated. Collector was blocked for synthetic conversions. Production HTTP correctly rejects registration; the journey runs on the separate Next dev fixture. Do not call this a production conversion test.
+- A verification-effect ref prevents duplicate requests under Strict Mode; after-fix server stdout records one 200, backed by DB before/after and the final login confirmation. Browser network buffer was truncated; use full server chronology rather than claiming full browser trace coverage. No backend/schema/origin-security changes. Final exact-source production build, deployment preflight and live QA remain required. See docs/MEASUREMENT_ACCEPTANCE_20261026.md.
+
 ## Connections and authentic captures — 2026-10-25
 - GA4 creation is confirmed; do not recreate it or reuse CRM. Independent account 413311475 / property 560665803 / stream 16197622736 / public ID G-DNP0ZME36D. Egypt and accepted data-processing terms are visible; four optional data-sharing settings and enhanced history/scroll/outbound/search/form/video/download events are off. Public ID is supplied at build time; persistent production env remains untouched.
 - Bing ownership is confirmed by the actual dashboard and Microsoft-signed welcome mail. Sitemap was submitted once on Oct25 and is Processing, not yet proven crawled/indexed. GSC previous ownership and processed 45-URL sitemap remain recorded; refresh reports before reporting current metrics.

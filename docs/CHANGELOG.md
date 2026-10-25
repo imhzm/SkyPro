@@ -1,5 +1,9 @@
 # Change log
 
+## 2026-10-26 — measured candidate acceptance
+
+Verified synthetic GA4 Realtime receipt, loaded-tag suppression on private-route navigation and 24 new-media breakpoint/theme cases. Captured eight corrected exact-size viewport images. Exercised real fixture registration/activation with external conversion collection blocked; added a verification-effect guard after observing duplicate Strict Mode requests. Frontend only; backend/schema and HTTPS origin protection preserved. Final release build and live deployment QA remain pending; see MEASUREMENT_ACCEPTANCE_20261026.md.
+
 ## 2026-10-25 — measurement connections and authentic settings captures
 
 Verified independent GA4 stream and privacy settings; verified Bing ownership and submitted its sitemap. Imported genuine OLX/Dubizzle main settings capture and a Maps supporting settings capture with binary, pixel and hash provenance; corrected the now-stale OLX missing-image copy. Preserved image optimizer restrictions and full-size zoom. Added delayed-provider handling for backend-confirmed conversions and lifecycle regression checks. Local build/TypeScript and thirteen current analytics/media/hook tests pass; initial real Google collector consent/network checks pass. Two expressly authorized editorial inquiries are confirmed sent; one form outcome remains unverified. Candidate unpublished; five galleries, commercial metrics, full browser acceptance and production QA remain open. See POSTLAUNCH_CONNECTIONS_20261025.md.
