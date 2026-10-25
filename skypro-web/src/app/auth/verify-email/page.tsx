@@ -1,11 +1,15 @@
 ﻿"use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Mail, CheckCircle2 } from "lucide-react";
 import { Logo } from "@/components/marketing/Logo";
+import { isConfirmedTrialActivation } from "@/lib/product-analytics";
+import { useConfirmedConversion } from "@/components/analytics/useConfirmedConversion";
 
 function VerifyEmailForm() {
+  const recordConversion = useConfirmedConversion();
+  const verificationStarted = useRef(false);
   const [status, setStatus] = useState<"loading" | "success" | "error">(
     "loading",
   );
@@ -13,6 +17,8 @@ function VerifyEmailForm() {
   const [countdown, setCountdown] = useState(5);
 
   useEffect(() => {
+    if (verificationStarted.current) return;
+    verificationStarted.current = true;
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token");
 
@@ -27,9 +33,10 @@ function VerifyEmailForm() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token }),
     })
-      .then((res) => res.json())
-      .then((data) => {
+      .then(async (res) => ({ok: res.ok, data: await res.json()}))
+      .then(({ok, data}) => {
         if (data.success) {
+          if (isConfirmedTrialActivation(ok, data)) recordConversion("trial_activated");
           setStatus("success");
           setMessage(data.message || "تم تأكيد البريد الإلكتروني بنجاح");
         } else {
@@ -41,7 +48,7 @@ function VerifyEmailForm() {
         setStatus("error");
         setMessage("فشل الاتصال بالخادم");
       });
-  }, []);
+  }, [recordConversion]);
 
   useEffect(() => {
     if (status !== "success") return;

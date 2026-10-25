@@ -1,3 +1,11 @@
+# 2026-10-25 — verified connections and truthful media scope
+
+- Use independent GA4 SkyPro Web (G-DNP0ZME36D); never reuse the CRM stream. Supply the public ID at build time, retain consent gating and disable overlapping enhanced events. Collector acknowledgments from synthetic QA do not establish business conversions.
+- Keep a backend-confirmed conversion name in page memory until the provider is ready; discard on withdrawal/unmount. No PII or confirmation token enters the analytics queue.
+- Publish the supplied OLX/Maps settings captures only with explicit settings-only captions. Preserve original-source hashes and full-size zoom. Missing remaining galleries and operational results stay disclosed.
+- Keep owner-approved outreach evidence local. Sent inquiries are not backlinks; do not re-send EgyptInnovate solely to recover an expired toast. No paid or publication commitment is authorized.
+- Do not deploy until the remaining fixture/browser/viewport/provider checks pass. Existing production authorization is preserved; do not repeat it for routine approved connection/media changes. Recheck exact source/build, preserve rollback and unrelated services.
+
 # 2026-10-22 — approved web recovery
 
 - The six displayed design boards are approved for implementation in isolated Preview; new production approval follows final QA.
@@ -78,3 +86,10 @@ The owner approved publication for f19df6b / PR #15. Merge to a8a3560 retained t
 - Editorial KEEP acceptance for all 39 URLs is complete; measured SERP cannibalization remains open. Preserve both states in the unified comparison report. Different collector scopes do not provide numerically comparable old/new similarity scores.
 - GA4 and Bing must be isolated to SkyPro; prepared wizards/downloads are not successful connections. Observe final terms/access confirmations, collect only consented events and distinguish created accounts from active trials. No GSC bulk import or third-party delegation by implication.
 - Authority research is not acquired links. Preserve zero outreach/submissions/verified links until actual authorized publication is checked. Desktop media remains unavailable rather than fabricated.
+# 2026-10-24 evening — measurement semantics and tool recovery
+
+- Preserve the user's GA4/Bing approvals; a broken tool is not a reason to repeat legal/ownership confirmations or infer completed account creation. Recover existing tabs/account state before submitting anything again.
+- Keep created accounts and backend-confirmed active trials distinct. Do not send form fields, tokens, IDs or contact values. Manual pageviews require disabling history-based Enhanced Measurement in the actual stream before activation.
+- Add a way to reopen existing consent preferences and stop already loaded tags when consent is withdrawn. Test private-route suppression and query/referrer sanitization; no activation until real provider/browser acceptance.
+- Keep the measurement candidate unpublished while CUA cannot initialize. Preserve concrete local checks and a draft review, not a production-completion claim.
+- Record legacy legal/security claims against code; do not silently rewrite legal text or change auth-mail behavior within analytics. Factual/legal review remains an explicit gap.

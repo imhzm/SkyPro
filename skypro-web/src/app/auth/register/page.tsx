@@ -15,7 +15,8 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { Logo } from "@/components/marketing/Logo";
-import { trackProductEvent } from "@/lib/product-analytics";
+import { isCreatedRegistration } from "@/lib/product-analytics";
+import { useConfirmedConversion } from "@/components/analytics/useConfirmedConversion";
 import { getProductShot } from "@/data/platform-media";
 
 const accountShot = getProductShot("skypro-saved-accounts-manager");
@@ -23,6 +24,7 @@ const setupShot = getProductShot("facebook-task-setup");
 
 export default function RegisterPage() {
   const router = useRouter();
+  const recordConversion = useConfirmedConversion();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -63,7 +65,7 @@ export default function RegisterPage() {
       const data = await res.json();
 
       if (data.success) {
-        trackProductEvent("complete_registration");
+        if (isCreatedRegistration(res.ok, data)) recordConversion("complete_registration");
         if (data.data?.emailSent === false) {
           setError(
             data.message ||

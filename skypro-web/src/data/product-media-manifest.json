@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "sourceReview": "2026-10-22",
-  "processing": "Lossless WebP; only explicit crop rectangles; no generated or reconstructed UI. Full source files retained.",
+  "sourceReview": "2026-10-25",
+  "processing": "Existing lossless WebP and reviewed PNG captures; exact source pixels only. The two 1.31.8 PNGs are explicit y=0..834 crops supplied by Desktop; original captures retained in the local handoff. No generated or reconstructed UI.",
   "shots": {
     "facebook-marketing-tools": {
       "id": "facebook-marketing-tools",
@@ -509,6 +509,54 @@
         "height": 857
       },
       "privacyReview": "No customer identity or licence values visible in selected source"
+    },
+    "olx-settings-1-31-8": {
+      "id": "olx-settings-1-31-8",
+      "platform": "olx",
+      "src": "/images/product/olx-settings-1-31-8-230ece19d9.png",
+      "width": 1602,
+      "height": 835,
+      "alt": "إعداد أداة دوبيزل / OLX في SkyPro",
+      "title": "إعداد أداة دوبيزل / OLX في SkyPro",
+      "caption": "لقطة إعداد حقيقية من SkyPro 1.31.8؛ لا تثبت تشغيل الاستخراج أو صحة نتائج، ولم تُنفّذ مهمة في هذا التوثيق.",
+      "kind": "setup",
+      "source": "/images/app/olx-settings-1-31-8.png",
+      "sourceSha256": "230ece19d92b64910f45f3646d118169edf852510ed714ae6de05c0a9ee833c8",
+      "sha256": "230ece19d92b64910f45f3646d118169edf852510ed714ae6de05c0a9ee833c8",
+      "captureProvenance": {
+        "date": "2026-10-24T21:27:21+03:00",
+        "version": "1.31.8",
+        "executableSha256": "65b20b1d6b8cc85df84234d83702cb24b8f864ab37d78a2748784a78380a7962",
+        "appAsarSha256": "d2987d49f74eecb12a2adf0e038f6e6dca0e5f4e7be6a95771474b54cd445580",
+        "rawSha256": "8876001b60d1785281e210543f35c7e19f06fc8568e3c96e8c5639592a617b45",
+        "processing": "Exact screenshot crop y=0..834 to exclude persistent OS notification; no synthetic content",
+        "sourceToBinaryLink": "Not cryptographically verified; binary SHA-256 is the definitive capture reference"
+      },
+      "privacyReview": "Visually reviewed: empty settings, no licence, customer or account credentials. Public business display name only."
+    },
+    "google-maps-settings-1-31-8": {
+      "id": "google-maps-settings-1-31-8",
+      "platform": "google-maps",
+      "src": "/images/product/google-maps-settings-1-31-8-b2e1b97907.png",
+      "width": 1602,
+      "height": 835,
+      "alt": "إعداد مهمة خرائط جوجل في SkyPro",
+      "title": "إعداد مهمة خرائط جوجل في SkyPro",
+      "caption": "لقطة إعداد حقيقية من SkyPro 1.31.8؛ لا تثبت تشغيل الاستخراج أو صحة نتائج، ولم تُنفّذ مهمة في هذا التوثيق.",
+      "kind": "setup",
+      "source": "/images/app/google-maps-settings-1-31-8.png",
+      "sourceSha256": "b2e1b979074eb50848bd2b0a8b09d8dbedd72ab42d15b8806763590766b85bbc",
+      "sha256": "b2e1b979074eb50848bd2b0a8b09d8dbedd72ab42d15b8806763590766b85bbc",
+      "captureProvenance": {
+        "date": "2026-10-24T21:28:03+03:00",
+        "version": "1.31.8",
+        "executableSha256": "65b20b1d6b8cc85df84234d83702cb24b8f864ab37d78a2748784a78380a7962",
+        "appAsarSha256": "d2987d49f74eecb12a2adf0e038f6e6dca0e5f4e7be6a95771474b54cd445580",
+        "rawSha256": "32452481536a558410aa5e7023c253ca642090e4990d953f4717ac333cdb6764",
+        "processing": "Exact screenshot crop y=0..834 to exclude persistent OS notification; no synthetic content",
+        "sourceToBinaryLink": "Not cryptographically verified; binary SHA-256 is the definitive capture reference"
+      },
+      "privacyReview": "Visually reviewed: empty settings, no licence, customer or account credentials. Public business display name only."
     }
   },
   "platforms": {
@@ -610,7 +658,9 @@
     },
     "google-maps": {
       "hero": "google-tools-menu",
-      "gallery": [],
+      "gallery": [
+        "google-maps-settings-1-31-8"
+      ],
       "caption": "قائمة Google ومدخل خرائط جوجل — لقطة من واجهة البرنامج، وليست إثباتًا لنتيجة تشغيل.",
       "status": "captured"
     },
@@ -639,10 +689,10 @@
       "status": "captured"
     },
     "olx": {
-      "hero": null,
+      "hero": "olx-settings-1-31-8",
       "gallery": [],
-      "status": "missing-independent-capture",
-      "caption": "لقطة مستقلة لأداة OLX لم تتوفر للمراجعة. لا نعرض قائمة Google باعتبارها واجهة OLX، ولم نوثّق نتائج تشغيل الأداة."
+      "status": "captured-settings-only",
+      "caption": "إعداد أداة دوبيزل / OLX — لقطة مستقلة من البرنامج؛ لم نوثّق استخراجًا أو نتائج تشغيل."
     }
   }
 }
