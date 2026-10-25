@@ -1,5 +1,9 @@
 # Change log
 
+## 2026-10-25 — measurement connections and authentic settings captures
+
+Verified independent GA4 stream and privacy settings; verified Bing ownership and submitted its sitemap. Imported genuine OLX/Dubizzle main settings capture and a Maps supporting settings capture with binary, pixel and hash provenance; corrected the now-stale OLX missing-image copy. Preserved image optimizer restrictions and full-size zoom. Added delayed-provider handling for backend-confirmed conversions and lifecycle regression checks. Local build/TypeScript and thirteen current analytics/media/hook tests pass; initial real Google collector consent/network checks pass. Two expressly authorized editorial inquiries are confirmed sent; one form outcome remains unverified. Candidate unpublished; five galleries, commercial metrics, full browser acceptance and production QA remain open. See POSTLAUNCH_CONNECTIONS_20261025.md.
+
 ## 2026-10-23 — approved guide V2 candidate
 
 The owner approved the revised guide/article boards. Implemented /guides and 20 original articles with genuine framed product images, interactive full-size zoom, search/category filters, article TOC, labelled examples, tables, primary sources, related/product links, truthful team author, candidate dates and Article/Breadcrumb schema. Added navigation/footer discovery and article sitemap entries with actual content revision dates. TypeScript passes; coherent production build and rendered/visual QA are in progress. Production remains unchanged.

@@ -4,9 +4,11 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { Mail, CheckCircle2 } from "lucide-react";
 import { Logo } from "@/components/marketing/Logo";
-import { isConfirmedTrialActivation, trackProductEvent } from "@/lib/product-analytics";
+import { isConfirmedTrialActivation } from "@/lib/product-analytics";
+import { useConfirmedConversion } from "@/components/analytics/useConfirmedConversion";
 
 function VerifyEmailForm() {
+  const recordConversion = useConfirmedConversion();
   const [status, setStatus] = useState<"loading" | "success" | "error">(
     "loading",
   );
@@ -31,7 +33,7 @@ function VerifyEmailForm() {
       .then(async (res) => ({ok: res.ok, data: await res.json()}))
       .then(({ok, data}) => {
         if (data.success) {
-          if (isConfirmedTrialActivation(ok, data)) trackProductEvent("trial_activated");
+          if (isConfirmedTrialActivation(ok, data)) recordConversion("trial_activated");
           setStatus("success");
           setMessage(data.message || "تم تأكيد البريد الإلكتروني بنجاح");
         } else {
@@ -43,7 +45,7 @@ function VerifyEmailForm() {
         setStatus("error");
         setMessage("فشل الاتصال بالخادم");
       });
-  }, []);
+  }, [recordConversion]);
 
   useEffect(() => {
     if (status !== "success") return;

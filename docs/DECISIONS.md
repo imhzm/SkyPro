@@ -1,3 +1,11 @@
+# 2026-10-25 — verified connections and truthful media scope
+
+- Use independent GA4 SkyPro Web (G-DNP0ZME36D); never reuse the CRM stream. Supply the public ID at build time, retain consent gating and disable overlapping enhanced events. Collector acknowledgments from synthetic QA do not establish business conversions.
+- Keep a backend-confirmed conversion name in page memory until the provider is ready; discard on withdrawal/unmount. No PII or confirmation token enters the analytics queue.
+- Publish the supplied OLX/Maps settings captures only with explicit settings-only captions. Preserve original-source hashes and full-size zoom. Missing remaining galleries and operational results stay disclosed.
+- Keep owner-approved outreach evidence local. Sent inquiries are not backlinks; do not re-send EgyptInnovate solely to recover an expired toast. No paid or publication commitment is authorized.
+- Do not deploy until the remaining fixture/browser/viewport/provider checks pass. Existing production authorization is preserved; do not repeat it for routine approved connection/media changes. Recheck exact source/build, preserve rollback and unrelated services.
+
 # 2026-10-22 — approved web recovery
 
 - The six displayed design boards are approved for implementation in isolated Preview; new production approval follows final QA.

@@ -1,5 +1,7 @@
 # Consented measurement candidate — 2026-10-24 Cairo
 
+> Provider setup advanced on 25 October. The old blockers/build below retain their historical scope; use [POSTLAUNCH_CONNECTIONS_20261025.md](POSTLAUNCH_CONNECTIONS_20261025.md) for the verified account IDs, settings, media and current acceptance boundaries.
+
 ## Status and authority
 
 This is a local candidate on `feat/consented-measurement-20261024`, based on merged PR #18 / `27ab2031c55f83442665b50b755b6962ca16bb46`. It is not deployed or collecting production events. The accepted application remains a8a3560/build qU1VvtZiTP5PhvRyshPUg plus the separately approved Google/Bing static proofs. Do not deploy the candidate until the real GA4 stream is identified, property settings are configured and browser/network/visual acceptance is complete.
