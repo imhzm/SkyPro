@@ -1,5 +1,11 @@
 # Change log
 
+## 2026-10-26 — measurement/media published and provider reports refreshed
+
+Merged PR #19 and activated exact source `c304ba3324fe1870dfd076b97930394ec855689f`, Linux build `XhJNtDzT9PISf-ihLYOZY`. Verified 361 source files, successful build/TypeScript and 19 contract tests; live HTTP/SSR checks pass for 45 SEO pages, 51 internal destinations, 8 noindex auth pages, 83 raster assets and 15 restricted-media rejection cases. All 20 unrelated PM2 services retained PID/status during activation; a8a3560 remains the rollback runtime. No DB/schema/env/DNS/payment changes.
+
+Verified live consent/network/withdrawal behavior and desktop 1440×900/mobile 390×844 home, menu/themes and OLX/Maps galleries. GA4 Realtime receives our synthetic production views/platform/gallery events; no business conversion is inferred. GSC individual inspections now confirm home and OLX guide indexed, while its dated aggregate remains inconsistent and cannot provide a current whole-site total. GSC/Bing sitemaps succeed with 45 URLs; country metrics, field CWV, five supporting galleries, actual trials and acquired links remain open. This entry supersedes earlier candidate-only publication status. See [DEPLOYMENT_20261026.md](DEPLOYMENT_20261026.md).
+
 ## 2026-10-26 — measured candidate acceptance
 
 Verified synthetic GA4 Realtime receipt, loaded-tag suppression on private-route navigation and 24 new-media breakpoint/theme cases. Captured eight corrected exact-size viewport images. Exercised real fixture registration/activation with external conversion collection blocked; added a verification-effect guard after observing duplicate Strict Mode requests. Frontend only; backend/schema and HTTPS origin protection preserved. Final release build and live deployment QA remain pending; see MEASUREMENT_ACCEPTANCE_20261026.md.

@@ -1,5 +1,13 @@
 # Sky Pro homepage theme
 
+## Published measurement/media release — 2026-10-26
+
+PR #19 is merged and exact source `c304ba3324fe1870dfd076b97930394ec855689f` is live, web tree `39701af155e2a2ad8895f6673e4986469d4dfdfe`, Linux build `XhJNtDzT9PISf-ihLYOZY`. All 361 tracked web files match; build/TypeScript and 19 contract tests pass. Live HTTP/SSR checks pass for 45 SEO pages, 51 internal destinations, 8 noindex auth pages, 83 raster assets and 15 restricted-media rejection cases. The 20 unrelated services retained PID/status during activation; the previous a8a3560 runtime is preserved for rollback. No DB/schema/env/DNS/payment changes. See [DEPLOYMENT_20261026.md](DEPLOYMENT_20261026.md).
+
+Scoped live browser QA verifies consent gating, actual Google collector 204, query/hash removal, platform/gallery events, withdrawal suppression, desktop/mobile home, themes/menu and the new OLX/Maps galleries. Realtime displays our synthetic production events only (5 page_view, 2 view_platform, 2 view_product_gallery). Local registration/activation fixtures do not establish production conversions. Historical 180-case coverage is retained at its original revision rather than relabelled as a new run.
+
+GSC individually confirms the home and OLX guide indexed; its aggregate dated Oct23 (0 indexed/38 excluded) is older and conflicts with these inspections, so a current whole-site total is unknown. Both GSC and Bing sitemaps succeed with 45 discovered URLs. Available GSC performance for Oct23–24 is 0 clicks/0 impressions with empty query/page/country/device tables; rank and CTR remain unavailable. Field CWV is insufficient; Bing Search is processing and AI Performance has no data. Five supporting galleries, measured country demand/ranks, business trials, and earned links remain open. Detailed current evidence is in the owner-local GAP_REPORT and provider-refresh-20261026 reports. The dated candidate statements below are historical and superseded for publication status.
+
 ## Measurement acceptance — 2026-10-26
 
 GA4 Realtime confirms synthetic receipt. Production-build private-route suppression and 24 new-media geometry/keyboard/image cases pass; eight corrected exact-size captures are retained. An actual dedicated dev-fixture account moves pending → verified/active/trial, with distinct registration/activation events and collector blocking for synthetic conversions. A client verification ref prevents duplicate Strict Mode requests; server chronology and DB inspection supply durable evidence where the browser buffer truncated. Final production build/source and deployment QA remain pending. See MEASUREMENT_ACCEPTANCE_20261026.md; no business conversions or acquired links are inferred.
