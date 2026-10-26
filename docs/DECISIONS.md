@@ -1,3 +1,11 @@
+# 2026-10-26 — published measurement and scoped growth evidence
+
+- Complete the authorized routine measurement/media activation after preflight. PR #19/source `c304ba3324fe1870dfd076b97930394ec855689f` is deployed; retain exact source/tree/build proof and the a8a3560 rollback runtime. The deployment gate in the Oct25 entry below is satisfied for this release. See [DEPLOYMENT_20261026.md](DEPLOYMENT_20261026.md).
+- Report synthetic live GA4 receipt separately from actual business traffic/trials. Consent gating, sanitized locations, collector acknowledgment and withdrawal are live-verified; conversion transactions remain tested only in the isolated local fixture.
+- Keep newer individual GSC inspections separate from the older aggregate: home and OLX guide are indexed, but a current whole-site total is unknown. Forty-five discovered sitemap URLs are not forty-five indexed URLs. Empty performance tables and the displayed position0 do not supply country ranks, demand or CTR.
+- Preserve the accepted design, twenty article bodies, pricing and self-canonicals. The final 39-URL content addendum records only OLX/Maps text changes; editorial KEEP acceptance does not close measured SERP intent. Do not merge distinct intents or fabricate operating results to close missing media.
+- Keep the five remaining galleries, field CWV, EG/SA/AE measurements, genuine earned links and business conversions open. Detailed unresolved claim findings remain owner-local; do not include them in the public deployment record.
+
 # 2026-10-25 — verified connections and truthful media scope
 
 - Use independent GA4 SkyPro Web (G-DNP0ZME36D); never reuse the CRM stream. Supply the public ID at build time, retain consent gating and disable overlapping enhanced events. Collector acknowledgments from synthetic QA do not establish business conversions.
