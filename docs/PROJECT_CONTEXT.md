@@ -1,3 +1,7 @@
+## Approved privacy copy — 28 October 2026
+
+The owner explicitly approved P1–P10. Two web text files now correct the specified technical security descriptions and legacy FAQ, with visible/schema date2026-10-28. Combined local build8aVu6fJ0g3_a-cQJk0gWL, two-file lint,23contracts,45SEO/51links/eightnoindex and four privacy presentation cases pass. No backend/mail/auth/DB/dependency/payment change; broader legal review remains open. Performance PR21 is retained but not yet deployed. See docs/APPROVED_PRIVACY_COPY_20261028.md; resource-gated exact-SHA Linux/preflight/live QA are next.
+
 ## Cairo performance candidate — 27 October 2026
 
 Local candidate preserves the accepted Cairo font and layout while serving the original licensed font bytes from the same origin and prioritizing the first gallery hero image. Build `4ZkALgUUFQHhDsPHw0Ewf`, 23 contracts, 45-page/51-link/eight-private SSR audit and 24 rendered baseline pairs across six routes, two widths and both themes pass. Font/wrapping/absolute positions/content match, no overflow; font transport/hash and mobile gallery/menu checks pass. Rejected CSS-order and collector iterations remain documented in `docs/CAIRO_FONT_PROVENANCE.md`. This is local acceptance only: current production remains c304ba3. No new PSI/field performance claim. New VPS storage is volatile (initial zero free, then externally about 3.3GB); require fresh guards before staged build or activation. No cleanup, production DB/env/DNS/payment or other-service changes.
