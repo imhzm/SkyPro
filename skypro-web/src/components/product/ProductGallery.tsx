@@ -64,7 +64,7 @@ export const ProductGallery = forwardRef<ProductGalleryHandle, Props>(function P
           <div className={styles.chrome} aria-hidden="true"><span>● ● ●</span><b>Sky Pro</b></div>
           <button className={styles.open} onClick={() => open(index)} aria-label={`فتح وتكبير: ${shot.title}`}>
             <Image src={shot.src} alt={shot.alt} width={shot.width} height={shot.height}
-              preload={priority && index === 0} quality={90}
+              preload={priority && index === 0} fetchPriority={priority && index === 0 ? "high" : undefined} quality={90}
               sizes={layout === "hero" ? "(max-width: 768px) 94vw, (max-width: 1100px) 88vw, 1080px" : "(max-width: 768px) 92vw, 600px"} />
             <span className={styles.expand}><Expand size={17} /> {layout === "hero" ? (images.length === 1 ? "افتح الصورة" : "افتح المعرض") : "شوف التفاصيل"}</span>
           </button>

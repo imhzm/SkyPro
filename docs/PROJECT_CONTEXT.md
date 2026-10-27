@@ -1,3 +1,7 @@
+## Cairo performance candidate — 27 October 2026
+
+Local candidate preserves the accepted Cairo font and layout while serving the original licensed font bytes from the same origin and prioritizing the first gallery hero image. Build `4ZkALgUUFQHhDsPHw0Ewf`, 23 contracts, 45-page/51-link/eight-private SSR audit and 24 rendered baseline pairs across six routes, two widths and both themes pass. Font/wrapping/absolute positions/content match, no overflow; font transport/hash and mobile gallery/menu checks pass. Rejected CSS-order and collector iterations remain documented in `docs/CAIRO_FONT_PROVENANCE.md`. This is local acceptance only: current production remains c304ba3. No new PSI/field performance claim. New VPS storage is volatile (initial zero free, then externally about 3.3GB); require fresh guards before staged build or activation. No cleanup, production DB/env/DNS/payment or other-service changes.
+
 # Sky Pro homepage theme
 
 ## Published measurement/media release — 2026-10-26

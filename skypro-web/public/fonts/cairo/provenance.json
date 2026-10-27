@@ -1,0 +1,43 @@
+{
+  "at": "2026-10-27T03:36:09.298Z",
+  "family": "Cairo",
+  "version": "Google Fonts CSS v31",
+  "license": "OFL.txt",
+  "licenseUrl": "https://raw.githubusercontent.com/google/fonts/main/ofl/cairo/OFL.txt",
+  "referenceCss": "https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap",
+  "rootReferenceCss": "https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap",
+  "sameOriginalSubsets": true,
+  "files": [
+    {
+      "url": "https://fonts.gstatic.com/s/cairo/v31/SLXVc1nY6HkvangtZmpQdkhzfH5lkSscQyyS4J0.woff2",
+      "file": "cairo-arabic-748022f50c42.woff2",
+      "bytes": 30896,
+      "sha256": "748022f50c427456ad66031e855349be3448ee1f05a5f1eb59574ebe0c686749",
+      "subset": "arabic",
+      "publicPath": "/fonts/cairo/cairo-arabic-748022f50c42.woff2"
+    },
+    {
+      "url": "https://fonts.gstatic.com/s/cairo/v31/SLXVc1nY6HkvangtZmpQdkhzfH5lkSscSCyS4J0.woff2",
+      "file": "cairo-latin-ext-da6ada83c3a8.woff2",
+      "bytes": 16648,
+      "sha256": "da6ada83c3a87c2f0211325dc0a123702e1d4a940958b3e943ac4f37b31d5371",
+      "subset": "latin-ext",
+      "publicPath": "/fonts/cairo/cairo-latin-ext-da6ada83c3a8.woff2"
+    },
+    {
+      "url": "https://fonts.gstatic.com/s/cairo/v31/SLXVc1nY6HkvangtZmpQdkhzfH5lkSscRiyS.woff2",
+      "file": "cairo-latin-82c13cbd1352.woff2",
+      "bytes": 33820,
+      "sha256": "82c13cbd1352d76e97c3d335caa912ae68fecdc3949a43cf8d149eb892384c1b",
+      "subset": "latin",
+      "publicPath": "/fonts/cairo/cairo-latin-82c13cbd1352.woff2"
+    }
+  ],
+  "fontWeightMatching": "Original Google CSS discrete descriptors preserved (21 faces, three unchanged font files)",
+  "stylesheet": {
+    "file": "cairo-v31-8285aca730bb.css",
+    "publicPath": "/fonts/cairo/cairo-v31-8285aca730bb.css",
+    "sha256": "8285aca730bbb12ad9d5d8afdaff42795820a952b5895fd54b53297afa36f955",
+    "purpose": "Retain the existing global CSS import boundary so Next chunk merging does not alter the approved equal-specificity cascade."
+  }
+}
