@@ -22,8 +22,8 @@ import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 
 const SITE_URL = "https://skypro.skywaveads.com";
-const LAST_UPDATED = "2026-05-09";
-const LAST_UPDATED_AR = "٩ مايو ٢٠٢٦";
+const LAST_UPDATED = "2026-10-28";
+const LAST_UPDATED_AR = "٢٨ أكتوبر ٢٠٢٦";
 
 const sections = [
   { id: "intro", title: "مقدمة", icon: FileText },
@@ -206,7 +206,7 @@ export default function PrivacyPage() {
                 <h3>1. بيانات الحساب</h3>
                 <ul>
                   <li>الاسم الكامل، البريد الإلكتروني، رقم الهاتف.</li>
-                  <li>كلمة المرور (مُشفّرة بـ Argon2 — لا نراها).</li>
+                  <li>كلمة المرور (تُخزَّن في قاعدة بيانات الحساب كتجزئة باستخدام bcrypt).</li>
                   <li>صورة الملف الشخصي (اختياري).</li>
                 </ul>
 
@@ -389,8 +389,7 @@ export default function PrivacyPage() {
                     Clauses).
                   </li>
                   <li>
-                    تشفير البيانات أثناء النقل (TLS 1.3) وفي الاستراحة
-                    (AES-256).
+                    يستخدم الموقع HTTPS لحماية الاتصال بين متصفحك والموقع.
                   </li>
                 </ul>
               </Section>
@@ -430,15 +429,12 @@ export default function PrivacyPage() {
 
               <Section id="security" icon={KeyRound} title="إجراءات الأمان">
                 <ul>
-                  <li>تشفير TLS 1.3 لكل اتصالات الموقع.</li>
-                  <li>تشفير AES-256 لقاعدة البيانات.</li>
+                  <li>يستخدم الموقع HTTPS لحماية الاتصال بين متصفحك والموقع.</li>
                   <li>
-                    كلمات المرور مُشفّرة بـ Argon2 (أحد أقوى خوارزميات التشفير).
+                    تُخزَّن كلمات المرور في قاعدة بيانات الحساب كتجزئة باستخدام bcrypt.
                   </li>
-                  <li>مصادقة ثنائية (2FA) متاحة لكل الحسابات.</li>
-                  <li>اختبارات اختراق دورية ومراجعات أمنية مستقلة.</li>
-                  <li>نظام كشف التهديدات في الوقت الفعلي.</li>
-                  <li>نسخ احتياطية يومية مشفّرة.</li>
+                  <li>يمكن تفعيل المصادقة الثنائية (2FA) من إعدادات الحساب.</li>
+                  <li>نطبّق حدودًا لعدد محاولات التسجيل وتسجيل الدخول بكلمة مرور.</li>
                 </ul>
               </Section>
 

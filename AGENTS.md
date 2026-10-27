@@ -1,3 +1,8 @@
+## Approved privacy copy — 2026-10-28
+- Owner approved the exact P1–P10 proposal: «اعتماد التصحيحات المحددة». Privacy/security descriptions and legacy FAQ corrected in two text files; visible/JSON-LD update date2026-10-28. Do not re-ask this approval. Broader legal review and independent backend/mail issues remain outside this copy change.
+- Combined local build8aVu6fJ0g3_a-cQJk0gWL, two-file ESLint,23contracts,45SEO/51links/eightnoindex and four privacy light/dark desktop/mobile cases pass. No backend/auth/mail/DB/dependency/payment changes. PerformancePR21 unchanged. See docs/APPROVED_PRIVACY_COPY_20261028.md.
+- Not deployed at this checkpoint: production remainsc304ba3. Old0c Git source archive is uploaded and hash-verified only; no0c runtime was created. Build/preflight/activation will use a new reviewed combined SHA withc304 rollback and fresh resource/service guards.
+
 ## Cairo performance candidate — 2026-10-27
 - Original Cairo v31 bytes/OFL and discrete weight descriptors retained; same-origin CSS import preserves original chunk/cascade boundaries. Non-font CSS unchanged. First priority gallery image fetchPriority high. No redesign/content/backend/dependency changes.
 - Local build 4ZkALgUUFQHhDsPHw0Ewf, 23 existing contracts, 45 SEO/51 internal/eight private SSR checks pass. Same-theme rendered comparison: six routes × two widths × two themes =24 matching baseline/candidate pairs; no font/wrapping/absolute-position/content/overflow regression. Exact desktop/mobile screenshots and gallery/menu interactions inspected. See docs/CAIRO_FONT_PROVENANCE.md.

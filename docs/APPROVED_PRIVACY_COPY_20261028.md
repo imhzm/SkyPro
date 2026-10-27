@@ -1,0 +1,11 @@
+# Approved privacy copy correction — 28 October 2026
+
+The owner approved the specific P1–P10 copy proposal with “اعتماد التصحيحات المحددة”. The privacy page now describes account password storage as bcrypt hashing, limits HTTPS wording to the browser/site connection, describes the existing optional 2FA and request limits, and removes the specified unsupported whole-database encryption, independent testing, real-time detection and backup promises. The retained legacy FAQ data receives the same factual correction; it is not the current home FAQ source. The policy's visible update date and JSON-LD dateModified are both 2026-10-28.
+
+Only `src/app/(marketing)/privacy/page.tsx` and `src/data/platforms.ts` change within the web tree relative to merged PR #21 (`0c7cd64323a8e2207047bf07e2715312eacce4a3`). No backend, authentication, mail, database, dependency, pricing or payment behavior changes. The owner's broader legal/policy review remains open; this correction is not a legal compliance certification.
+
+Combined local build `8aVu6fJ0g3_a-cQJk0gWL` succeeds with TypeScript. ESLint passes on the two changed files. All 23 existing analytics/media/content/conversion/SEO contracts pass; HTTP/SSR checks pass 45 public pages, 51 internal destinations and eight noindex auth pages. Four rendered privacy cases (1440/390 × light/dark) confirm the four approved security statements, both bcrypt occurrences, absence of the removed terms, the visible/schema date and no horizontal overflow. Desktop/mobile section captures were inspected. Earlier scrolled CDP captures showed compositor clipping/tiling and were excluded from visual acceptance; a native desktop capture and clean mobile section capture provide the visual evidence.
+
+The Cairo delivery and first hero-image priority changes from PR #21 are retained unchanged, including the accepted import boundary and font byte provenance. Its 24 matched baseline/candidate presentation pairs retain their original scope. This copy correction requires a fresh Linux build, resource checks, exact-SHA source verification, preflight and live QA before publication. Production remains c304ba3 at this checkpoint; no after-release PSI or field-CWV claim is made.
+
+Owner-local evidence: `D:/SkyPro-seo-growth-20261024/release-20261028/local-qa/`. Previous deployment and provider reports are preserved as dated baselines.
