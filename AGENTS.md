@@ -1,3 +1,8 @@
+## Cairo performance candidate — 2026-10-27
+- Original Cairo v31 bytes/OFL and discrete weight descriptors retained; same-origin CSS import preserves original chunk/cascade boundaries. Non-font CSS unchanged. First priority gallery image fetchPriority high. No redesign/content/backend/dependency changes.
+- Local build 4ZkALgUUFQHhDsPHw0Ewf, 23 existing contracts, 45 SEO/51 internal/eight private SSR checks pass. Same-theme rendered comparison: six routes × two widths × two themes =24 matching baseline/candidate pairs; no font/wrapping/absolute-position/content/overflow regression. Exact desktop/mobile screenshots and gallery/menu interactions inspected. See docs/CAIRO_FONT_PROVENANCE.md.
+- Not deployed at this checkpoint; production remains c304ba3. VPS root disk initially had zero available bytes and then externally freed about3.3GB. Require fresh headroom/memory/current-runtime guards, Linux build/preflight and immediate service snapshots before approved routine activation. No cleanup or unrelated-service mutation. External after-PSI and field CWV remain unverified.
+
 # Sky Pro project instructions
 
 ## Published measurement/media release — 2026-10-26

@@ -1,0 +1,25 @@
+# Cairo loading follow-up — 27 October 2026
+
+The official Oct26 PageSpeed run on c304ba3 reported mobile LCP 3.8s and two external Google Fonts CSS requests. The root layout and global stylesheet both requested Cairo; the second request also loaded an unused Alexandria family.
+
+This candidate serves the same three unmodified Cairo v31 WOFF2 subsets from the site's own origin, retaining the `Cairo` family name, normal style, Unicode ranges and the original discrete weight descriptors 300/400/500/600/700/800/900. The former root weight list and global Cairo weight list resolve to identical original subset URLs. The discrete descriptors preserve the existing CSS font matching for requested intermediate weights such as 850; replacing them with a new variable-weight range could change that matching. Explicit Cairo declarations in home, guides, auth and workspace styles continue to use Cairo. The Arabic and Latin subsets are preloaded; Latin Extended remains selected by Unicode range. The first priority gallery image now also supplies `fetchPriority="high"` to its existing image/preload. Image bytes, quality, dimensions, responsive sizes and original lightbox are unchanged.
+
+| Subset | Bytes | Original SHA-256 |
+| --- | ---: | --- |
+| Arabic | 30,896 | `748022f50c427456ad66031e855349be3448ee1f05a5f1eb59574ebe0c686749` |
+| Latin Extended | 16,648 | `da6ada83c3a87c2f0211325dc0a123702e1d4a940958b3e943ac4f37b31d5371` |
+| Latin | 33,820 | `82c13cbd1352d76e97c3d335caa912ae68fecdc3949a43cf8d149eb892384c1b` |
+
+The official [Google Fonts Cairo license](https://github.com/google/fonts/blob/main/ofl/cairo/OFL.txt) is distributed beside the font files at `skypro-web/public/fonts/cairo/OFL.txt`. Copyright belongs to the Cairo Project Authors; the license is SIL OFL 1.1. No font conversion or modification was performed. `public/fonts/cairo/provenance.json` records source URLs and byte hashes. Reference CSS and download/install verification remain in the owner-local `live-measurement/official-ui-20261026/font-reference/` evidence.
+
+Scope: the root application font delivery only. The independently generated invoice HTML retains its existing Google font import. This is not a font redesign, a whole-repository removal of Google Fonts, a new lab result or a field-CWV pass. Build, rendered geometry/font/network checks and before/after performance measurements are required before accepting or deploying the candidate.
+
+The first inline-font candidate changed Next CSS chunk grouping and the order of equal-specificity home reset/hero rules; it was rejected before publication. The accepted-source global import boundary is therefore retained, pointing to a hash-named same-origin font stylesheet. No non-font CSS rule or specificity override is added. The font preloads avoid external Google connections. Rendered comparison is rerun against this candidate.
+
+## Local acceptance checkpoint
+
+Final Windows webpack build `4ZkALgUUFQHhDsPHw0Ewf` completed successfully on Oct27. The final CSS-boundary candidate passes 23 existing analytics/media/content/conversion/SEO tests. HTTP/SSR audit passes 45 public SEO pages, 51 internal destinations and eight noindex auth pages. The rendered comparison covers six representative routes (home, guides, trial article, OLX, privacy and login) at 390 and 1440, in both light/dark themes: 24 baseline/candidate pairs, zero heading font/weight/wrapping/absolute-position differences, zero content-text differences and zero overflow. All three WOFF2 plus the font stylesheet return 200, correct MIME and original SHA-256. The non-font global CSS remains byte-identical after line-ending normalization; unchanged theme/home/hero CSS chunk hashes retain their original order.
+
+Comparison collection was corrected before acceptance: an earlier run mixed light/dark themes (the dark features section contains an extra image), and a whole-main text sample included transient auth-navigation hydration. The final collector records the actual theme, compares like-for-like themes and measures headings/paragraphs/list items outside navigation/header/footer. Rejected/intermediate evidence is retained. The initial generic screenshot clips omitted the eight-pixel scrollbar strip; exact captures were separately saved as 1440×900 and 390×844 PNGs and visually inspected. Home mobile menu open/close, gallery original-size mode, body scroll lock, Escape and focus return pass. This is representative presentation/interaction QA, not a rerun of authenticated account/admin flows or the old 180-case matrix.
+
+Owner-local evidence: `D:/SkyPro-seo-growth-20261024/live-measurement/official-ui-20261026/font-qa/`, especially `comparison-confirmed.json`, `confirmed-both-themes-24.json`, `tests-final.log`, `seo-local.json` and the `*-exact.png` captures. Production remains source `c304ba3` at this checkpoint. No after-release PSI or field-CWV improvement is claimed. The VPS root disk was initially full, then externally freed about 3.3GB during read-only inspection; staging/build/activation require a fresh resource gate and a verified rollback.

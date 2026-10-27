@@ -1,3 +1,7 @@
+## Cairo performance candidate — 27 October 2026
+
+Local candidate preserves the accepted Cairo font and layout while serving the original licensed font bytes from the same origin and prioritizing the first gallery hero image. Build `4ZkALgUUFQHhDsPHw0Ewf`, 23 contracts, 45-page/51-link/eight-private SSR audit and 24 rendered baseline pairs across six routes, two widths and both themes pass. Font/wrapping/absolute positions/content match, no overflow; font transport/hash and mobile gallery/menu checks pass. Rejected CSS-order and collector iterations remain documented in `docs/CAIRO_FONT_PROVENANCE.md`. This is local acceptance only: current production remains c304ba3. No new PSI/field performance claim. New VPS storage is volatile (initial zero free, then externally about 3.3GB); require fresh guards before staged build or activation. No cleanup, production DB/env/DNS/payment or other-service changes.
+
 # 2026-10-26 — published measurement and scoped growth evidence
 
 - Complete the authorized routine measurement/media activation after preflight. PR #19/source `c304ba3324fe1870dfd076b97930394ec855689f` is deployed; retain exact source/tree/build proof and the a8a3560 rollback runtime. The deployment gate in the Oct25 entry below is satisfied for this release. See [DEPLOYMENT_20261026.md](DEPLOYMENT_20261026.md).
