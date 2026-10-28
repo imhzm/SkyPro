@@ -1,0 +1,17 @@
+# Cairo delivery and approved privacy copy — live verification
+
+The routine release from merged PRs #21 and #22 was activated on 2026-10-28 at22:38 UTC (2026-10-29 Cairo). Exact source: `126edfcbf3bd38bebfc8d948c3dc3e115a2653ca`; web tree: `27db3fc125a49b0ac8b817bf8e302ee6904c0706`; Linux build: `is6gkGLDfAzjlMIb0Cfyh`. Runtime: `/var/www/skypro.skywaveads.com/releases/20261028-126edfc/skypro-web`.
+
+All367 tracked web files match Git objects after the Linux build. Existing dependencies/schema remain unchanged; no installation, generation, migration, environment-value edit, DNS/payment change or unrelated-project modification occurred. The c304 runtime and this release's rollback.config.cjs are retained; older a8 release remains untouched. Fresh activation snapshots show all20 unrelated PM2 identities unchanged, including PID/status/cwd/script/restarts. Health and database report operational.
+
+Linux webpack/TypeScript build,23 existing contracts,45 SEO pages,51 internal destinations,eight noindex pages,83 rasters,15 restricted-media rejection cases and four same-origin Cairo font/CSS hashes/MIME types pass. Node24's default spec reporter produced a passing test log that the TAP verifier rejected; the original log was preserved and the same23 tests were explicitly rerun with --test-reporter=tap, then preflight passed. No application correction or rebuild was needed for this evidence-format issue.
+
+Live browser scope: home1440x900 and390x844 in both themes, loaded visible images, mobile menu disclosure, gallery open/original-mode/Escape with body-lock restoration, and privacy at both widths/themes. Exact home screenshots are retained owner-locally. Privacy shows the approved bcrypt/HTTPS/2FA/request-limit descriptions, with visible and JSON-LD date2026-10-28 and no removed unsupported terms. This is scoped acceptance; the historical180-case full-site matrix was not repeated. Registration, payments and external mail were not submitted during this release QA.
+
+Official PSI report, captured2026-10-29 01:40 Cairo: https://pagespeed.web.dev/analysis/https-skypro-skywaveads-com/6gczno3wme . Mobile87/FCP1.8s/LCP3.7s/TBT40ms/CLS0; desktop99/FCP0.4s/LCP0.9s/TBT10ms/CLS0.001. Accessibility100, Best Practices96, SEO100 are automated scores only. The earlier Oct26 mobile84/FCP2.9s/LCP3.8s and desktop99 are a dated comparison, not a controlled causal experiment. Mobile product-image LCP remains above2.5s. CrUX says No Data; field INP/p75 acceptance remains unproven.
+
+Source/evidence: owner-local `D:/SkyPro-seo-growth-20261024/release-20261028/production/`, including deployment-verification.json, source-verification.json, service snapshots, transport/SEO/media checks, privacy-browser-live.json, four exact home PNGs and PSI raw reports. The five supporting-gallery gaps, commercial keyword demand/ranks, earned links, real trials and broader legal review remain open. Publication is not completion of SEO growth.
+
+## Next authorized verification
+
+The owner separately confirmed Ahrefs HTML-meta ownership for skypro.skywaveads.com under skywaveads@gmail.com. The next candidate adds only that official public meta tag to the root head. No Ahrefs analytics script, Google Search Console delegation, DNS edit or purchase is authorized by that change. Ownership is not yet verified at this checkpoint; inspect final Site Audit settings and keep automatic scheduling off before saving the free project.

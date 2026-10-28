@@ -1,3 +1,8 @@
+## Live combined release and Ahrefs approval — 29 October 2026
+
+Exact source126edfcbf3bd38bebfc8d948c3dc3e115a2653ca / web tree27db3fc125a49b0ac8b817bf8e302ee6904c0706 / Linux buildis6gkGLDfAzjlMIb0Cfyh is live. Linux build,23contracts,45SEO/51links/eightnoindex,83rasters,15restricted and four font/CSS hashes pass. All20 other PM2 identities remained unchanged at activation. Home1440x900/390x844 themes/menu/gallery and four privacy presentation cases are checked. The c304 rollback is retained; no DB/env/DNS/payment/unrelated-service change. This supersedes earlier pending-deployment entries; historical evidence retains its scope. See docs/DEPLOYMENT_20261029.md.
+
+Official PSI after publication: mobile87/FCP1.8s/LCP3.7s/TBT40ms/CLS0; desktop99/FCP0.4s/LCP0.9s/TBT10ms/CLS0.001. One lab run per device; mobile LCP still above target and field CWV No Data. Owner approved Ahrefs HTML-meta ownership for this origin/account; the next candidate contains only its official public meta tag. Verification/project creation remain pending, with no extra Analytics, GSC delegation, DNS or purchase. Growth remains active.
 ## Approved privacy copy — 28 October 2026
 
 The owner explicitly approved P1–P10. Two web text files now correct the specified technical security descriptions and legacy FAQ, with visible/schema date2026-10-28. Combined local build8aVu6fJ0g3_a-cQJk0gWL, two-file lint,23contracts,45SEO/51links/eightnoindex and four privacy presentation cases pass. No backend/mail/auth/DB/dependency/payment change; broader legal review remains open. Performance PR21 is retained but not yet deployed. See docs/APPROVED_PRIVACY_COPY_20261028.md; resource-gated exact-SHA Linux/preflight/live QA are next.
