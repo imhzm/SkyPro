@@ -149,6 +149,7 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <head>
+        <meta name="ahrefs-site-verification" content="6a2048b79376940b4c3d559a2245eeff8e0ed4cf00f17de27c99790773acbf3a" />
         <script
           dangerouslySetInnerHTML={{
             __html: `try{var t=localStorage.getItem('skypro-theme');document.documentElement.dataset.skyproTheme=t==='light'||t==='dark'?t:(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light')}catch(e){document.documentElement.dataset.skyproTheme='dark'}`,
