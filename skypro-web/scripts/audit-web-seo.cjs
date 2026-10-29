@@ -46,6 +46,13 @@ function validatePage(page, options) {
   if (!page.title) issues.push("TITLE");
   if (options.private && !page.robots.some(r => /\bnoindex\b/i.test(r))) issues.push("PRIVATE_INDEXABLE");
   if (!options.private && page.robots.some(r => /\bnoindex\b/i.test(r))) issues.push("PUBLIC_NOINDEX");
+  if (!options.private) {
+    const validSocialImage = values => values.length > 0 && values.every(value => {
+      try { return new URL(value).protocol === "https:"; } catch { return false; }
+    });
+    if (!validSocialImage(page.ogImages)) issues.push("PUBLIC_OG_IMAGE");
+    if (!validSocialImage(page.twitterImages)) issues.push("PUBLIC_TWITTER_IMAGE");
+  }
   if (expected) {
     if (page.title !== expected.metaTitle || page.h1[0] !== expected.heroTitle || page.descriptions[0] !== expected.metaDescription) issues.push("DATA_METADATA_MISMATCH");
     const faq = page.schemas.filter(s => s["@type"] === "FAQPage");

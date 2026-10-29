@@ -1,0 +1,11 @@
+# Security acknowledgement page — social image correction
+
+Ahrefs' first completed audit found one page with incomplete Open Graph tags: `/security/hall-of-fame`. A direct production SSR read confirmed both `og:image` and `twitter:image` absent on source4027e54. Our existing45-page verifier collected these arrays but checked their presence only for platform/guide pages, so its generic-page acceptance missed this defect.
+
+The page now uses the existing `publicMetadata` helper and the existing branded `/opengraph-image` for both sharing surfaces, consistent with the security-policy page. Title, description, canonical and public body wording are preserved. The rendered-function source is byte-identical after line-ending normalization, SHA256 `3214f1860d6b6177546b0cc861cc3bca45ded361fd815cbe37b2912393345f79`. No layout, image design, legal wording, backend, dependencies or schema change.
+
+The verifier now requires every public page to provide nonempty HTTPS Open Graph and Twitter image URLs, while allowing valid alternative images. Two fault-injection tests cover the generic-page omission and unsafe URLs/valid alternatives. The strengthened verifier correctly rejects the existing production page with `PUBLIC_OG_IMAGE` and `PUBLIC_TWITTER_IMAGE` before the correction.
+
+Local webpack/TypeScript build `nf6OmCZpK4cnOwIfAtXif`, targeted ESLint,25contracts and45public/51internal/eightnoindex checks pass. The actual browser confirms both image metas and the preserved Arabic text/canonical. Owner-local before/after evidence is in `D:/SkyPro-seo-growth-20261024/release-social-20261029/` and `keyword-source-refresh-20261028/hall-social-before.json`. Exact merged-SHA Linux build/deployment/live checks remain pending at this checkpoint.
+
+The other Ahrefs findings are seven guide title-length warnings, four short-description warnings and five pages with one incoming dofollow link. They remain editorial review items, not proof of Google truncation, a missing commercial query or internal keyword competition. Do not pad legal descriptions or rewrite the20 accepted article bodies solely to clear tool thresholds. Commercial country demand and measured query-to-page ownership remain separate open requirements.

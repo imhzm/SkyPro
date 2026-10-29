@@ -1,19 +1,12 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
+import { publicMetadata } from "@/data/site-metadata";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
-const url = "https://skypro.skywaveads.com/security/hall-of-fame";
 const title = "شكر الباحثين الأمنيين | Sky Pro";
 const description =
   "صفحة شكر الباحثين الأمنيين وإرشادات التواصل والإفصاح المسؤول عن الثغرات في Sky Pro.";
-export const metadata: Metadata = {
-  title: { absolute: title },
-  description,
-  alternates: { canonical: url },
-  openGraph: { title, description, url, type: "website", locale: "ar_EG" },
-  twitter: { card: "summary", title, description },
-};
+export const metadata = publicMetadata("/security/hall-of-fame", title, description);
 export default function SecurityAcknowledgements() {
   return (
     <>

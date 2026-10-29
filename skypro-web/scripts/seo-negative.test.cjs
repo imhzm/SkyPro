@@ -13,6 +13,26 @@ test.before(async () => {
 const options = () => ({ route: "/platforms/facebook", expected: platformPages.facebook, image: platformImage("facebook") });
 const clone = () => structuredClone(original);
 test("actual SSR page passes before fault injection", () => assert.deepEqual(validatePage(original, options()), []));
+
+test("public pages without platform-specific expectations still require social images", () => {
+  const page = clone();
+  page.ogImages = [];
+  page.twitterImages = [];
+  const issues = validatePage(page, { route: "/platforms/facebook" });
+  assert(issues.includes("PUBLIC_OG_IMAGE"));
+  assert(issues.includes("PUBLIC_TWITTER_IMAGE"));
+});
+
+test("public social images reject unsafe URLs and allow valid alternatives", () => {
+  const alternatives = clone();
+  alternatives.ogImages.push("https://skypro.skywaveads.com/opengraph-image");
+  assert.deepEqual(validatePage(alternatives, { route: "/platforms/facebook" }), []);
+  for (const url of ["javascript:alert(1)", "http://example.com/image.png", "/relative.png", "invalid"])
+    for (const property of ["ogImages", "twitterImages"]) {
+      const page = clone(); page[property] = [url];
+      assert(validatePage(page, { route: "/platforms/facebook" }).includes(property === "ogImages" ? "PUBLIC_OG_IMAGE" : "PUBLIC_TWITTER_IMAGE"));
+    }
+});
 test("duplicate/wrong canonicals fail independently of unique content", () => {
   const duplicate = clone(); duplicate.canonicals.push(duplicate.canonicals[0]);
   assert(validatePage(duplicate, options()).includes("CANONICAL"));
