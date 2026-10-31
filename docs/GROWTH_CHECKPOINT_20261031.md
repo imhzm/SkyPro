@@ -26,6 +26,8 @@ The separate AhrefsSERP Checker observations are:EgyptNoData;Saudi request submi
 
 ## Remaining dependencies
 
+A first backend cohort baseline was also acquired directly from the namedSkyPro database using a confirmed read-only transaction and bounded aggregate queries. Connection credentials stayed on the server; no personal rows or identifiers were returned. Detailed business counts remain owner-local in `performance-followup-20261031/BACKEND_COHORT.json` and `BACKEND_COHORT_REVIEW.md`. Registration, verified trial start and currently active trial are distinct measures. Excluding the explicitly known owner account alone does not establish a qualified buyer or organic attribution; those outcomes and country attribution remain unknown. This is independent of the unavailable private analytics UI and does not modify data or schema.
+
 - The owner deferred isolatedDesktop login. Five authentic supporting galleries remain pending; do not re-ask or fabricate product evidence.
 - The nativeWindows UI channel currently fails with missing nativepipe. This does not establish thatEdge disconnected. No alternate driver, credential extraction or login automation was used.
 - PrivateGSC/GA4/Bing/Ahrefs reports were not refreshed. Preserve their individual observation dates and QA contamination limits; actual business trials and commercial country ranks remain unknown.
