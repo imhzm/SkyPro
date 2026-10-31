@@ -1,3 +1,7 @@
+## 31 October 2026 — contextual platform guides, draft
+
+Prepared20 curated article links across16 platform pages and strengthened SSR/data fault checks. Local build,TypeScript,28tests,targeted lint and45/51/eight audit pass.18live-baseline comparisons preserve original main copy/links and metadata. Browser acceptance is unavailable; not merged/deployed. [Details](CONTEXTUAL_GUIDES_20261031.md).
+
 ## 31 October 2026 — growth evidence follow-up
 
 Acquired a bounded backend cohort aggregate snapshot in a confirmed read-only transaction. Counts and definitions are owner-local; no personal rows or credentials exported, data/schema unchanged. Qualified business and acquisition attribution remain unverified. [Scope](GROWTH_CHECKPOINT_20261031.md).

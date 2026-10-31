@@ -4,6 +4,7 @@ const { inspectHTML, validatePage, validateAnchor } = require("./audit-web-seo.c
 const { loadData } = require("./route-inventory.cjs");
 const { platformPages } = loadData("src/data/platform-pages.ts");
 const { platformImage } = loadData("src/data/platform-media.ts");
+const { getPlatformGuides } = loadData("src/data/platform-guides.ts");
 let original;
 test.before(async () => {
   const response = await fetch((process.env.CHECK_ORIGIN || "http://localhost:3102") + "/platforms/facebook");
@@ -13,6 +14,28 @@ test.before(async () => {
 const options = () => ({ route: "/platforms/facebook", expected: platformPages.facebook, image: platformImage("facebook") });
 const clone = () => structuredClone(original);
 test("actual SSR page passes before fault injection", () => assert.deepEqual(validatePage(original, options()), []));
+
+test("a guide link outside main cannot satisfy contextual navigation", () => {
+  const guides = getPlatformGuides("facebook");
+  assert.ok(guides.length);
+  assert.deepEqual(validatePage(original, { ...options(), platformGuides: guides }), []);
+  const page = clone();
+  const href = "/guides/" + guides[0].slug;
+  assert.ok(page.anchors.some(anchor => anchor.href === href));
+  page.mainAnchors = page.mainAnchors.filter(anchor => anchor.href !== href);
+  assert.ok(validatePage(page, { ...options(), platformGuides: guides }).includes("MISSING_CONTEXTUAL_GUIDE:" + guides[0].slug));
+});
+
+test("contextual links require the descriptive article title and a followed link", () => {
+  const guides = getPlatformGuides("facebook");
+  for (const mutation of [{ label: "اقرأ المزيد" }, { rel: "nofollow" }]) {
+    const page = clone();
+    const anchor = page.mainAnchors.find(link => link.href === "/guides/" + guides[0].slug);
+    assert.ok(anchor);
+    Object.assign(anchor, mutation);
+    assert.ok(validatePage(page, { ...options(), platformGuides: guides }).includes("INVALID_CONTEXTUAL_GUIDE:" + guides[0].slug));
+  }
+});
 
 test("public pages without platform-specific expectations still require social images", () => {
   const page = clone();

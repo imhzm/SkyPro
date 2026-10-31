@@ -1,3 +1,7 @@
+## 31 October 2026 — contextual guide navigation
+
+Use an explicit, limited selection of existing published guides with a matching product relationship. Do not add generic filler links to Snapchat or Auto Point or rewrite article bodies. Reuse the accepted related-link presentation. Require browser responsive/theme/focus/navigation acceptance before merging or deploying, despite passing local build and HTTP/SSR checks. See [candidate](CONTEXTUAL_GUIDES_20261031.md).
+
 ## 31 October 2026 — evidence boundaries and keyword intent
 
 Use confirmed read-only backend aggregate queries to establish a cohort baseline while private analytics UI is unavailable. Keep detailed business counts owner-local, separate registration/verified-trial/active-trial definitions, and leave business/organic/country attribution unknown without evidence. Owner-account exclusion alone is insufficient QA classification. No database or schema mutation is authorized by this measurement work.
