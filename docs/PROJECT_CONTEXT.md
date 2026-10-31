@@ -1,3 +1,7 @@
+## Contextual guide candidate — 31 October 2026
+
+Fresh live18-page capture confirms no contextual guide links. Candidate adds20 relevant links across16 pages with the existing presentation. Build/TypeScript,28tests,targeted lint and45/51/eight SSR audit pass; original platform copy/anchors/metadata preserved. Native UI unavailable means responsive/theme/focus/browser acceptance is pending. Draft only; production unchanged. [Evidence and limits](CONTEXTUAL_GUIDES_20261031.md).
+
 ## Growth evidence — 31 October 2026
 
 Read-only backend cohort aggregates are now available separately fromGA4; owner-local reports retain detailed counts. No personal rows or credentials were exported and no data/schema changed. Qualified commercial trials and country/organic attribution remain unknown; count definitions and limits are in [the checkpoint](GROWTH_CHECKPOINT_20261031.md).

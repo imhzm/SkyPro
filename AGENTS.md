@@ -1,3 +1,7 @@
+## Contextual guide candidate — 31 October 2026
+
+Branch feat/contextual-platform-guides-20261031 adds20 curated article links to16 platform pages; fresh live baseline18pages had zero main guide links. Existing related-link styling reused; no article/body/metadata/backend/schema/dependency changes. Local build4FfuITAXlW1PIK3Ot44UK,28tests,targeted lint and45SEO/51destinations/eightnoindex pass.18baseline comparisons preserve old main text/anchors and metadata. Browser/visual/focus/six-width acceptance is missing because native Windows UI pipe failsos error2. Keep draft, unmerged and undeployed; production remains9ed2311. See docs/CONTEXTUAL_GUIDES_20261031.md. Owner-deferred Desktop login remains separate; do not re-ask it.
+
 ## Growth evidence — 31 October 2026
 
 Backend follow-up17:39UTC: first cohort aggregate snapshot acquired fromSkyPro only, with confirmed read-only transaction and5s statement limit. No personal rows or connection values returned; detailed business counts stay owner-local. Registration, verified trial start and active trial are separate; known-owner exclusion does not prove commercial/organic attribution. No DB/schema/env mutation. See docs/GROWTH_CHECKPOINT_20261031.md.
