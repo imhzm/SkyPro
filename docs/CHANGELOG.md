@@ -1,5 +1,7 @@
 ## 31 October 2026 — growth evidence follow-up
 
+Executed one-off public hero cache warming at17:34UTC:32 sequential requests,16 repeatHITs,identical hashes, resource guards passed and process identity preserved. Ordinary cache state changed; no application/deployment/configuration change. BrowserLCP/fieldCWV remain unverified. [Evidence](GROWTH_CHECKPOINT_20261031.md).
+
 Recorded fresh read-only runtime/build/health evidence, boundedPSI API failures and hero cold/warm transport diagnosis. Qualified the first keyword sample as mixed intent and preserved exact countrySERP observation gaps. Documented owner-deferred media, unavailable native UI and dated private-provider metrics. Documentation only; no application/deployment changes. See [checkpoint](GROWTH_CHECKPOINT_20261031.md).
 
 ## Published social image correction — 29 October 2026

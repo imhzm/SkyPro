@@ -1,5 +1,7 @@
 ## Growth evidence — 31 October 2026
 
+Operational follow-up17:34UTC: bounded public hero cache warming executed (32 sequentialGETs,16 existing variants); all16 repeatsHIT with identical hashes. Fresh1GiB memory/disk guards passed; SkyPro process identity preserved. Normal image-cache writes only, no source/config/deployment change. No new browserLCP/fieldCWV claim; release hook remains proposed. Evidence: docs/GROWTH_CHECKPOINT_20261031.md and owner-local HERO_PREWARM.json.
+
 See docs/GROWTH_CHECKPOINT_20261031.md. Same9ed2311 runtime/build observed read-only; no application change or deployment. PSI API429 once per device, no new metrics.750px heroAVIF13,262bytes:MISS829ms versusHIT71ms diagnostic only, not fieldCWV or browserLCP proof. Demand sample is now mixed-intent exploratory after public agency/training discovery; country ranks remain unknown. Owner deferredDesktop login; five galleries stay pending without re-asking. Native UI pipe unavailable, not proofEdge disconnected; private providers retain dated observations. No new outreach or secondAhrefs crawl. Growth remains active.
 
 ## Published social image correction — 29 October 2026

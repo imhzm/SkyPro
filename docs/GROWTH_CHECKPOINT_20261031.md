@@ -12,7 +12,9 @@ One public request per device to the official PSI API returned429RESOURCE_EXHAUS
 
 The existing hero has high fetch priority and a responsive preload. A750px candidate from its actualsrcset returnedAVIF13262bytes: firstMISS829ms to headers, thenHIT71ms. WebP returned22780bytes/MISS269ms. This Windows-to-productionHTTP diagnostic indicates that cold transformation/cache delivery can contribute to delay. It is not a throttled browser waterfall, a claim that PSI selected750px, or proof that image size is the root cause of mobileLCP.
 
-Repeated font preload entries inSSR do not prove repeated browser downloads. No font, CSS, image bytes, image quality or layout was changed. A bounded responsive hero prewarm during future release preflight is a proposal only, requiring cold/warm browser observations and lab validation before claiming improvement. No prewarm batch or deployment hook was implemented here.
+Repeated font preload entries inSSR do not prove repeated browser downloads. No font, CSS, image bytes, image quality or layout was changed. A future release-preflight hook remains proposed and requires browser/lab validation; no hook or recurring task was installed.
+
+At17:34UTC a one-off public hero cache warm was executed: eight existing widths inAVIF/WebP,32 sequentialGETs over two passes,1,080,906bytes transferred. Initial requests had13MISS/3HIT; all16 repeat requests returnedHIT with identical content hashes,69–136ms to headers. The1080pxAVIF candidate returned983ms onMISS and71ms onHIT. Fresh resource guards required at least1GiB available memory and1GiB free root disk before/during/after work. The namedSkyPro process retained PID/status/cwd/script/restarts. Only normal public image-cache entries were populated; no restart, deployment, source or configuration change. Cache warmth may expire or be invalidated, and this does not establish browserLCP or fieldp75 improvement. Raw evidence: `performance-followup-20261031/HERO_PREWARM.json`.
 
 ## Demand classification corrected
 

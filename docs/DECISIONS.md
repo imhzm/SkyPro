@@ -1,5 +1,7 @@
 ## 31 October 2026 — evidence boundaries and keyword intent
 
+Execute bounded publicGET warming only for reviewed hero URLs actually present inSSR, one request at a time, with live runtime/build/resource guards and cached-byte verification. The one-off run completed; keep its cache-transport result separate from unknown browserLCP/fieldp75 and from the still-proposed release hook. [Evidence](GROWTH_CHECKPOINT_20261031.md).
+
 Keep the small datedAhrefs demand sample exploratory with mixed intent; general provider discovery is not controlledEG/SA/AE ranking evidence. Preserve existing pages and articles. Cold hero transformation is a measured diagnostic lead; prewarming remains proposed until browser/lab validation. Do not report newPSI metrics from429 failures. Respect owner-deferredDesktop login and retain private-report dates while native UI is unavailable. See [checkpoint](GROWTH_CHECKPOINT_20261031.md).
 
 ## Published social image correction — 29 October 2026

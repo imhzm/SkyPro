@@ -1,5 +1,7 @@
 ## Growth evidence — 31 October 2026
 
+At17:34UTC the one-off public hero cache warm completed:16 variants confirmedHIT on repeat with preserved hashes and process identity. This changes ordinary image-cache state only; it is not a deployment or browser/fieldCWV acceptance. A future release hook remains proposed. [Evidence and limits](GROWTH_CHECKPOINT_20261031.md).
+
 Read-only production build/health still matches9ed2311. No deployment or application edits. PSI API429 on both devices; last mobileLCP3.7s still above target. Hero cold/warm HTTP diagnosis and corrected mixed-intent keyword classification are documented in [the checkpoint](GROWTH_CHECKPOINT_20261031.md), including measurement limits and pending private-provider refresh. Owner deferredDesktop login and five galleries. Growth remains incomplete.
 
 ## Published social image correction — 29 October 2026
