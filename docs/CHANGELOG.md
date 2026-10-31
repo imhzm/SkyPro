@@ -1,3 +1,7 @@
+## 31 October 2026 — growth evidence follow-up
+
+Recorded fresh read-only runtime/build/health evidence, boundedPSI API failures and hero cold/warm transport diagnosis. Qualified the first keyword sample as mixed intent and preserved exact countrySERP observation gaps. Documented owner-deferred media, unavailable native UI and dated private-provider metrics. Documentation only; no application/deployment changes. See [checkpoint](GROWTH_CHECKPOINT_20261031.md).
+
 ## Published social image correction — 29 October 2026
 
 PR24 source9ed2311b1c55bbab348358d6d51338b036464695, web tree9ced9ef474e2ef7073c3a389d9c07f5f93cd7173, Linux buildloG9s48t7K4qQulKD3b3l is live. Source367, build/TypeScript, 25 contracts, strengthened45SEO/51links/eightnoindex, 83rasters,15restricted and font transport pass. All20 other PM2 identities unchanged at activation. Fresh home1440x900/390x844 and hall-of-fame SSR/browser checks pass; existing branded social PNG is200,image/png,1200x630. Rollback4027e54 retained. Body/title/description/canonical preserved; no DB/env/DNS/payment/backend change. Earlier candidate-deployment-pending entries below are historical. See docs/SOCIAL_METADATA_20261029.md and docs/DEPLOYMENT_20261029.md.

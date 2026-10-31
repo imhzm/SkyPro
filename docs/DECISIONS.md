@@ -1,3 +1,7 @@
+## 31 October 2026 — evidence boundaries and keyword intent
+
+Keep the small datedAhrefs demand sample exploratory with mixed intent; general provider discovery is not controlledEG/SA/AE ranking evidence. Preserve existing pages and articles. Cold hero transformation is a measured diagnostic lead; prewarming remains proposed until browser/lab validation. Do not report newPSI metrics from429 failures. Respect owner-deferredDesktop login and retain private-report dates while native UI is unavailable. See [checkpoint](GROWTH_CHECKPOINT_20261031.md).
+
 ## Published social image correction — 29 October 2026
 
 PR24 source9ed2311b1c55bbab348358d6d51338b036464695, web tree9ced9ef474e2ef7073c3a389d9c07f5f93cd7173, Linux buildloG9s48t7K4qQulKD3b3l is live. Source367, build/TypeScript, 25 contracts, strengthened45SEO/51links/eightnoindex, 83rasters,15restricted and font transport pass. All20 other PM2 identities unchanged at activation. Fresh home1440x900/390x844 and hall-of-fame SSR/browser checks pass; existing branded social PNG is200,image/png,1200x630. Rollback4027e54 retained. Body/title/description/canonical preserved; no DB/env/DNS/payment/backend change. Earlier candidate-deployment-pending entries below are historical. See docs/SOCIAL_METADATA_20261029.md and docs/DEPLOYMENT_20261029.md.
