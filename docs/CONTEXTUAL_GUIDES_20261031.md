@@ -1,4 +1,6 @@
-# Contextual platform guides — candidate, 31 October 2026
+# Contextual platform guides — published 2 November 2026
+
+Published from source `97a0eb85aa147f70a8e9319db3ceddde4cb008c8`, build `41scv5ODoHr0oZSIgj2w5`. Exact-source Linux import, preflight, live HTTP and browser acceptance pass; [deployment record](DEPLOYMENT_20261102.md). The candidate evidence below retains its original scope.
 
 All 18 live platform pages had zero guide links in their main content. Visitors could inspect the tools but could not directly reach the preparation guide for that platform. This candidate adds 20 descriptive article links across 16 relevant platform pages, using the existing related-link presentation. Snapchat and Auto Point receive no generic replacement because no dedicated published guide currently fits.
 
@@ -19,6 +21,6 @@ Owner-local evidence: `D:/SkyPro-seo-growth-20261024/contextual-links-20261031/`
 
 ## Browser acceptance — 2 November 2026
 
-Browser acceptance completed on 2 November 2026 for source f3052a4 / web tree16c1a287 / build4FfuITAXlW1PIK3Ot44UK. All18 platform routes passed216 DOM geometry/theme/link cases across320/390/768/1024/1440/1920 and light/dark, with zero overflow or clipped card text. Four inspected screenshots are exact1440x900 and390x844. Opening the first Accounts guide, returning, and Tab progression through the three guides to the existing trial CTA passed; visible3px focus outline confirmed. These are scoped browser checks, not a new full-site or WCAG certification. Historical native-pipe failures are superseded; no candidate web source changed. Production is still9ed2311 pending exact-SHA Linux build/preflight and live QA.
+Browser acceptance completed on 2 November 2026 for source f3052a4 / web tree16c1a287 / build4FfuITAXlW1PIK3Ot44UK. All18 platform routes passed216 DOM geometry/theme/link cases across320/390/768/1024/1440/1920 and light/dark, with zero overflow or clipped card text. Four inspected screenshots are exact1440x900 and390x844. Opening the first Accounts guide, returning, and Tab progression through the three guides to the existing trial CTA passed; visible3px focus outline confirmed. These are scoped browser checks, not a new full-site or WCAG certification. Historical native-pipe failures are superseded; no candidate web source changed. At this pre-merge checkpoint production was9ed2311; publication is now accepted as recorded above.
 
-Owner-local proof: `browser-20261102/ACCEPTANCE.json`, six layout part files, `navigation-focus.json`, and four key screenshots. An initial mismatched surface-size capture was excluded; accepted screenshots use matching browser viewport and CDP dimensions at DPR1. The existing routine deployment approval remains valid. Merge and deploy only the reviewed web tree, with fresh resource/runtime guards and a9ed2311 rollback.
+Owner-local proof: `browser-20261102/ACCEPTANCE.json`, six layout part files, `navigation-focus.json`, and four key screenshots. An initial mismatched surface-size capture was excluded; accepted screenshots use matching browser viewport and CDP dimensions at DPR1. The existing routine deployment approval remains valid. The reviewed web tree was merged and deployed with fresh resource/runtime guards and a9ed2311 rollback.
