@@ -1,3 +1,7 @@
+## Contextual guide browser acceptance — 2 November 2026
+
+Browser acceptance completed on 2 November 2026 for source f3052a4 / web tree16c1a287 / build4FfuITAXlW1PIK3Ot44UK. All18 platform routes passed216 DOM geometry/theme/link cases across320/390/768/1024/1440/1920 and light/dark, with zero overflow or clipped card text. Four inspected screenshots are exact1440x900 and390x844. Opening the first Accounts guide, returning, and Tab progression through the three guides to the existing trial CTA passed; visible3px focus outline confirmed. These are scoped browser checks, not a new full-site or WCAG certification. Historical native-pipe failures are superseded; no candidate web source changed. Production is still9ed2311 pending exact-SHA Linux build/preflight and live QA. See CONTEXTUAL_GUIDES_20261031.md.
+
 ## 31 October 2026 — contextual guide navigation
 
 Use an explicit, limited selection of existing published guides with a matching product relationship. Do not add generic filler links to Snapchat or Auto Point or rewrite article bodies. Reuse the accepted related-link presentation. Require browser responsive/theme/focus/navigation acceptance before merging or deploying, despite passing local build and HTTP/SSR checks. See [candidate](CONTEXTUAL_GUIDES_20261031.md).
