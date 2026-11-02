@@ -4,6 +4,7 @@ const { loadData } = require("./route-inventory.cjs");
 const { platformPages, getPlatformIds } = loadData("src/data/platform-pages.ts");
 const { platformImage } = loadData("src/data/platform-media.ts");
 const { publishedGuides } = loadData("src/data/articles/index.ts");
+const { getPlatformGuides } = loadData("src/data/platform-guides.ts");
 const { getProductShot } = loadData("src/data/platform-media.ts");
 const site = "https://skypro.skywaveads.com";
 const sameUrl = (a, b) => { try { return new URL(a).href === new URL(b).href; } catch { return false; } };
@@ -35,10 +36,17 @@ function inspectHTML(html) {
     twitterImages: metas.filter(m => m.name === "twitter:image").map(m => m.content),
     alternates: links.filter(l => l.hreflang), schemas, visible,
     anchors: [...html.matchAll(/<a\b([^>]*)>(.*?)<\/a>/gs)].map(m => ({ ...attributes(m[1]), label: text(m[2]) })),
+    mainAnchors: [...(markup.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i)?.[1] || "").matchAll(/<a\b([^>]*)>(.*?)<\/a>/gs)]
+      .map(m => ({ ...attributes(m[1]), label: text(m[2]) })),
     ids: new Set(ids), duplicateIds: [...new Set(ids.filter((id, index) => ids.indexOf(id) !== index))] };
 }
 function validatePage(page, options) {
   const issues = [], expected = options.expected;
+  for (const guide of options.platformGuides || []) {
+    const link = page.mainAnchors.find(anchor => anchor.href === "/guides/" + guide.slug);
+    if (!link) issues.push("MISSING_CONTEXTUAL_GUIDE:" + guide.slug);
+    else if (link.label !== guide.title || /\bnofollow\b/i.test(link.rel || "")) issues.push("INVALID_CONTEXTUAL_GUIDE:" + guide.slug);
+  }
   if (page.duplicateIds.length) issues.push("DUPLICATE_ID");
   if (page.h1.length !== 1) issues.push("H1_COUNT");
   if (page.canonicals.length !== 1 || !sameUrl(page.canonicals[0], site + options.route)) issues.push("CANONICAL");
@@ -99,6 +107,7 @@ async function audit() {
     sourcePages.set(route, page);
     const id = route.split("/")[2], expected = platformPages[id];
     const issues = validatePage(page, { route, expected, image: expected ? platformImage(id) : null,
+      platformGuides: expected ? getPlatformGuides(id) : [],
       guide: publishedGuides.find(article => route === "/guides/" + article.slug), rendered: rendered.find(r => r.path === route) });
     if (response.status !== 200) issues.push("HTTP_STATUS_" + response.status);
     for (const anchor of page.anchors) {

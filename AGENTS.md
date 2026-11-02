@@ -1,3 +1,11 @@
+## Contextual guide browser acceptance — 2 November 2026
+
+Browser acceptance completed on 2 November 2026 for source f3052a4 / web tree16c1a287 / build4FfuITAXlW1PIK3Ot44UK. All18 platform routes passed216 DOM geometry/theme/link cases across320/390/768/1024/1440/1920 and light/dark, with zero overflow or clipped card text. Four inspected screenshots are exact1440x900 and390x844. Opening the first Accounts guide, returning, and Tab progression through the three guides to the existing trial CTA passed; visible3px focus outline confirmed. These are scoped browser checks, not a new full-site or WCAG certification. Historical native-pipe failures are superseded; no candidate web source changed. Production is still9ed2311 pending exact-SHA Linux build/preflight and live QA. See docs/CONTEXTUAL_GUIDES_20261031.md.
+
+## Contextual guide candidate — 31 October 2026
+
+Branch feat/contextual-platform-guides-20261031 adds20 curated article links to16 platform pages; fresh live baseline18pages had zero main guide links. Existing related-link styling reused; no article/body/metadata/backend/schema/dependency changes. Local build4FfuITAXlW1PIK3Ot44UK,28tests,targeted lint and45SEO/51destinations/eightnoindex pass.18baseline comparisons preserve old main text/anchors and metadata. Browser/visual/focus/six-width acceptance is missing because native Windows UI pipe failsos error2. Keep draft, unmerged and undeployed; production remains9ed2311. See docs/CONTEXTUAL_GUIDES_20261031.md. Owner-deferred Desktop login remains separate; do not re-ask it.
+
 ## Growth evidence — 31 October 2026
 
 Backend follow-up17:39UTC: first cohort aggregate snapshot acquired fromSkyPro only, with confirmed read-only transaction and5s statement limit. No personal rows or connection values returned; detailed business counts stay owner-local. Registration, verified trial start and active trial are separate; known-owner exclusion does not prove commercial/organic attribution. No DB/schema/env mutation. See docs/GROWTH_CHECKPOINT_20261031.md.

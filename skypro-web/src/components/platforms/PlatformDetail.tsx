@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Check, ChevronDown, Layers3 } from "lucide-react";
+import { ArrowLeft, BookOpen, Check, ChevronDown, Layers3 } from "lucide-react";
 import { PlatformIcon } from "../marketing/PlatformIcon";
 import {
   getPlatformIds,
@@ -12,9 +12,11 @@ import {
   platformCategory,
 } from "@/data/platform-media";
 import { homeOffer } from "@/data/home-theme";
+import { getPlatformGuides } from "@/data/platform-guides";
 import styles from "./platforms.module.css";
 import { ProductGallery } from "@/components/product/ProductGallery";
 export function PlatformPageContent({ data }: { data: PlatformPageData }) {
+  const guides = getPlatformGuides(data.id);
   const media = platformMedia[data.id];
   const images = [media.hero, ...media.gallery].filter((id): id is string => !!id).map(getProductShot);
   const others = getPlatformIds()
@@ -174,6 +176,25 @@ export function PlatformPageContent({ data }: { data: PlatformPageData }) {
           ))}
         </div>
       </section>
+      {guides.length > 0 && (
+        <section className={`${styles.shell} ${styles.section}`} aria-labelledby="platform-guides-heading">
+          <div className={styles.relatedHeading}>
+            <h2 id="platform-guides-heading">أدلة تساعدك قبل التجربة</h2>
+            <Link href="/guides">
+              جميع الأدلة <ArrowLeft size={16} />
+            </Link>
+          </div>
+          <nav className={styles.related} aria-label={`أدلة مرتبطة بأدوات ${data.arabicName}`}>
+            {guides.map((guide) => (
+              <Link key={guide.slug} href={`/guides/${guide.slug}`}>
+                <BookOpen size={23} aria-hidden="true" />
+                <span>{guide.title}</span>
+                <ArrowLeft size={16} aria-hidden="true" />
+              </Link>
+            ))}
+          </nav>
+        </section>
+      )}
       <section className={`${styles.shell} ${styles.cta}`}>
         <div>
           <span className={styles.eyebrow}>كل الأدوات في اشتراك واحد</span>
