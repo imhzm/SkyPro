@@ -155,6 +155,7 @@ export default function RootLayout({
             __html: `try{var t=localStorage.getItem('skypro-theme');document.documentElement.dataset.skyproTheme=t==='light'||t==='dark'?t:(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light')}catch(e){document.documentElement.dataset.skyproTheme='dark'}`,
           }}
         />
+        <link rel="preload" href="/fonts/cairo/cairo-v31-8285aca730bb.css" as="style" type="text/css" />
         <link rel="preload" href="/fonts/cairo/cairo-arabic-748022f50c42.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <link rel="preload" href="/fonts/cairo/cairo-latin-82c13cbd1352.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://wa.me" />

@@ -1,3 +1,7 @@
+## 3 November 2026 — hold unproven stylesheet preload
+
+Keep source1d266ac as an isolated experiment. Although28 browser pairs and transport/SEO/contracts pass, five local navigations/source show only61.8ms earlier median CSS completion with a wider candidate range; no valid LCP improvement is established. Do not merge/deploy based on the785.3ms discovery improvement alone. Preserve all samples, existing CSS boundaries and the accepted live release. See [evaluation](FONT_STYLE_PRELOAD_20261103.md).
+
 ## Published contextual platform guides — 2 November 2026
 
 PR28 is merged and source97a0eb85aa147f70a8e9319db3ceddde4cb008c8 / web tree16c1a287ae719e93ce8e3eb20d06afd42f1931a4 / Linux build41scv5ODoHr0oZSIgj2w5 is live. Exact369 source and994 compiled files match. Owner-local isolated Linux build protects the shared VPS; no production secrets used.28preflight tests,45SEO/51links/eightnoindex,83rasters,15restricted and four font/CSS hashes pass. Candidate216 layout cases and live18-route mobile plus Accounts/theme/navigation/focus checks pass; six exact live screenshots are retained. All20 other PM2 identities unchanged at activation.9ed2311 rollback retained. No DB/schema/env/DNS/payment/backend change. See docs/DEPLOYMENT_20261102.md. Growth remains incomplete; owner-deferred Desktop login stays deferred. Earlier candidate/pending entries are historical.
