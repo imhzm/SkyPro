@@ -89,7 +89,7 @@ async function preflight(plan, fetcher = fetch) {
     const page = await getText(url, "Page", 2_000_000, fetcher);
     const links = [...page.text.matchAll(/<link\b[^>]*>/gi)].map(m => attrs(m[0]));
     const canonicals = links.filter(a => a.rel?.toLowerCase() === "canonical");
-    assert(canonicals.length === 1 && canonicals[0].href === url, "Changed page must be self-canonical");
+    assert(canonicals.length === 1 && new URL(canonicals[0].href).href === url, "Changed page must be self-canonical");
     const metas = [...page.text.matchAll(/<meta\b[^>]*>/gi)].map(m => attrs(m[0]));
     assert(!metas.some(m => /^(robots|bingbot|googlebot)$/i.test(m.name || "") && /\b(?:noindex|none)\b/i.test(m.content || ""))
       && !/\b(?:noindex|none)\b/i.test(page.response.headers.get("x-robots-tag") || ""), "Changed page is noindex");

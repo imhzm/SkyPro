@@ -12,7 +12,7 @@ function fixture(options = {}) {
       if (options.networkFailure) throw Error("simulated transport failure");
       return new Response(null, { status: options.providerStatus || 200 });
     }
-    if (url === SITE + "/") return new Response(options.build || "reviewed-build", { headers: { "content-type": "text/html" } });
+    if (url === SITE + "/") return new Response(options.build || options.rootHtml || "reviewed-build", { headers: { "content-type": "text/html" } });
     if (url === KEY_LOCATION) return new Response(options.key || key + "\n", { headers: { "content-type": options.keyType || "text/plain" } });
     if (url === SITE + "/sitemap.xml") return new Response(`<urlset><url><loc>${options.sitemapUrl || SITE + "/platforms/accounts"}</loc></url></urlset>`, { headers: { "content-type": "application/xml" } });
     return new Response(options.html || `<html><head><link href='${url}' rel='canonical'><meta content='index, follow' name='robots'></head><body>Published page</body></html>`,
@@ -43,6 +43,15 @@ test("a successful notification uses one fixed endpoint after all public page ch
   assert.equal(result.outcome, "RECEIVED_NOT_INDEXING_PROOF");
   assert.equal(result.preflight.pages.length, 1);
   assert(!JSON.stringify(publicReport(plan, "plan")).includes(key));
+});
+
+test("the homepage self-canonical accepts the equivalent origin without a trailing slash", async () => {
+  const plan = buildPlan({ ...manifest(), urlList: [SITE + "/"] }, key);
+  const f = fixture({ sitemapUrl: SITE + "/", rootHtml: `<script>reviewed-build</script><link rel='canonical' href='${SITE}'>` });
+  const result = await notify(plan, f.fetcher);
+  assert.equal(result.accepted, true);
+  assert.equal(result.preflight.pages[0].url, SITE + "/");
+  assert.equal(f.calls.filter(c => c.init.method === "POST").length, 1);
 });
 
 test("a wrong build, missing/wrong key, wrong MIME, redirect or sitemap exclusion prevents every POST", async () => {
