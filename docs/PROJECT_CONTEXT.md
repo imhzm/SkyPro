@@ -1,3 +1,7 @@
+## IndexNow candidate — 6 November 2026
+
+Prepared a public host-verification file and manual changed-URL notification CLI. Eight boundary/provider tests and targeted lint pass. The16-URL local plan corresponds to PR28's published platform content update. The real pre-publication check stops at the absent public key. Build, static-file/browser checks, exact-source Linux publication and a provider receipt remain pending. [Operation and limits](INDEXNOW_20261106.md).
+
 ## Published contextual platform guides — 2 November 2026
 
 PR28 is merged and source97a0eb85aa147f70a8e9319db3ceddde4cb008c8 / web tree16c1a287ae719e93ce8e3eb20d06afd42f1931a4 / Linux build41scv5ODoHr0oZSIgj2w5 is live. Exact369 source and994 compiled files match. Owner-local isolated Linux build protects the shared VPS; no production secrets used.28preflight tests,45SEO/51links/eightnoindex,83rasters,15restricted and four font/CSS hashes pass. Candidate216 layout cases and live18-route mobile plus Accounts/theme/navigation/focus checks pass; six exact live screenshots are retained. All20 other PM2 identities unchanged at activation.9ed2311 rollback retained. No DB/schema/env/DNS/payment/backend change. See docs/DEPLOYMENT_20261102.md. Growth remains incomplete; owner-deferred Desktop login stays deferred. Earlier candidate/pending entries are historical.
