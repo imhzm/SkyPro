@@ -1,6 +1,8 @@
 ## IndexNow candidate — 6 November 2026
 
-Prepared a public host-verification file and manual changed-URL notification CLI. Eight boundary/provider tests and targeted lint pass. The16-URL local plan corresponds to PR28's published platform content update. The real pre-publication check stops at the absent public key. Build, static-file/browser checks, exact-source Linux publication and a provider receipt remain pending. [Operation and limits](INDEXNOW_20261106.md).
+The public verification file/manual CLI candidate passes Windows build/TypeScript/postbuild,36contracts,targeted lint,45SEO/51links/eightnoindex and16-page real local preflight. Four SSR comparisons preserve published content/metadata; five ordered CSS files match after line-ending normalization, with raw differences retained. Browser control and VPS staging headroom gate further publication. The real public check stops at the unpublished key. [Operation and limits](INDEXNOW_20261106.md).
+
+Growth evidence refreshed6November. The accepted97a0eb8 runtime/build remains online with zero restarts in the read-only snapshot. Gmail has no reply from the selected outreach domains and both approved email threads still contain their original sent message only. A new production cohort snapshot confirms a read-only transaction and5s statement limit. Detailed aggregates stay owner-local. Commercial/organic trial qualification remains unverified.
 
 ## Published contextual platform guides — 2 November 2026
 

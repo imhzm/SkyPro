@@ -1,6 +1,6 @@
 ## 6 November 2026 — IndexNow candidate prepared
 
-Added a public verification file, manual notification CLI and eight boundary/provider tests. The default plan covers16 changed platform URLs. Targeted lint passes. Publication and provider submission remain pending. [Details](INDEXNOW_20261106.md).
+Added a public verification file, manual notification CLI and eight boundary/provider tests. Windows build/TypeScript/postbuild,36contracts,targeted lint,45SEO/51links/eightnoindex and16-page local HTTP preflight pass. Four SSR pairs preserve content/metadata; CSS text/order matches after normalization of two Windows CR characters. CLI receipt replay and the unpublished-key gate are verified. Browser control/staging headroom gate publication and provider submission. [Details](INDEXNOW_20261106.md).
 
 ## Published contextual platform guides — 2 November 2026
 
