@@ -1,6 +1,6 @@
 ## 6 November 2026 — changed-content IndexNow notification
 
-Use an owner-operated CLI with explicit source/build inputs and preserved receipts. The initial changeset selects the16 platform pages updated by PR28. Validate live publication/key/sitemap/canonical/robots before one provider POST and record receipt or pending validation separately from indexing. Keep future changesets tied to substantive public content updates. [Contract](INDEXNOW_20261106.md).
+Use an owner-operated CLI with explicit source/build inputs and preserved receipts. The initial changeset selects the16 platform pages updated by PR28. Validate live publication/key/sitemap/canonical/robots before one provider POST and record receipt or pending validation separately from indexing. Compare absolute canonical URLs after URL normalization, covering the root origin's optional trailing slash. Keep future changesets tied to substantive public content updates. [Contract](INDEXNOW_20261106.md).
 
 ## Published contextual platform guides — 2 November 2026
 
