@@ -1,3 +1,7 @@
+## IndexNow browser checkpoint — 7 November 2026
+
+Edge homepage hero comparisons at1440/390 in both themes and isolated mobile menu/gallery checks pass. Five CSS/two fonts per ordinary reload return200; no field/LCP conclusion. Fresh VPS read-only disk14,739,845,120bytes clears the unchanged2.5GiB stage guard. Exact merged-source Linux/preflight/live acceptance and provider notification remain pending. PR30 stays held; no web source changed. See docs/INDEXNOW_BROWSER_20261107.md.
+
 ## 6 November 2026 — changed-content IndexNow notification
 
 Use an owner-operated CLI with explicit source/build inputs and preserved receipts. The initial changeset selects the16 platform pages updated by PR28. Validate live publication/key/sitemap/canonical/robots before one provider POST and record receipt or pending validation separately from indexing. Compare absolute canonical URLs after URL normalization, covering the root origin's optional trailing slash. Keep future changesets tied to substantive public content updates. [Contract](INDEXNOW_20261106.md).

@@ -1,3 +1,7 @@
+## IndexNow browser checkpoint — 7 November 2026
+
+Edge homepage hero comparisons at1440/390 in both themes and isolated mobile menu/gallery checks pass. Five CSS/two fonts per ordinary reload return200; no field/LCP conclusion. Fresh VPS read-only disk14,739,845,120bytes clears the unchanged2.5GiB stage guard. Exact merged-source Linux/preflight/live acceptance and provider notification remain pending. PR30 stays held; no web source changed. See docs/INDEXNOW_BROWSER_20261107.md.
+
 ## 6 November 2026 — IndexNow candidate prepared
 
 Added a public verification file, manual notification CLI and nine boundary/provider tests. Fixed the homepage canonical comparison to accept equivalent absolute root URLs. Windows build/TypeScript/postbuild,37contracts,targeted lint,45SEO/51links/eightnoindex and16-page local HTTP preflight pass, with a separate homepage HTTP regression check. Four SSR pairs preserve content/metadata; CSS text/order matches after normalization of two Windows CR characters. CLI receipt replay and the unpublished-key gate are verified. Browser control/staging headroom gate publication and provider submission. [Details](INDEXNOW_20261106.md).
