@@ -1,3 +1,7 @@
+## Published IndexNow release — 7 November 2026
+
+PR31/source d5a24f60a2d7a482bdeaa5f0d2bb301639c37998, web tree82c53abcf757352aad372606b58e283827f6f9fd, Linux build0cAlw9aUEbN0fuO18hTTv is live.372 source/994 compiled files match;37 preflight contracts,71routes,45SEO/51links/eightnoindex,83rasters,15restricted and four Cairo assets pass. All21 other PM2 identities remain unchanged at activation;97a0eb8 rollback retained, preview3212 closed. One16-URL IndexNow POST returned202/key validation pending; preserve the receipt and do not automatically resubmit or call this indexing proof. Pre-release Edge acceptance exists for the same web tree, but fresh post-release screenshots/interactions remain missing after bounded CUA timeouts. PR30 stays HOLD. Growth, qualified attribution, ranks, earned links and five owner-deferred Desktop galleries remain open. See docs/DEPLOYMENT_20261107.md.
+
 ## IndexNow browser checkpoint — 7 November 2026
 
 Edge homepage hero comparisons at1440/390 in both themes and isolated mobile menu/gallery checks pass. Five CSS/two fonts per ordinary reload return200; no field/LCP conclusion. Fresh VPS read-only disk14,739,845,120bytes clears the unchanged2.5GiB stage guard. Exact merged-source Linux/preflight/live acceptance and provider notification remain pending. PR30 stays held; no web source changed. See docs/INDEXNOW_BROWSER_20261107.md.
