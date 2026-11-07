@@ -1,3 +1,11 @@
+## IndexNow browser checkpoint — 7 November 2026
+
+Edge homepage hero comparisons at1440/390 in both themes and isolated mobile menu/gallery checks pass. Five CSS/two fonts per ordinary reload return200; no field/LCP conclusion. Fresh VPS read-only disk14,739,845,120bytes clears the unchanged2.5GiB stage guard. Exact merged-source Linux/preflight/live acceptance and provider notification remain pending. PR30 stays held; no web source changed. See docs/INDEXNOW_BROWSER_20261107.md.
+
+## 6 November 2026 — IndexNow candidate prepared
+
+Added a public verification file, manual notification CLI and nine boundary/provider tests. Fixed the homepage canonical comparison to accept equivalent absolute root URLs. Windows build/TypeScript/postbuild,37contracts,targeted lint,45SEO/51links/eightnoindex and16-page local HTTP preflight pass, with a separate homepage HTTP regression check. Four SSR pairs preserve content/metadata; CSS text/order matches after normalization of two Windows CR characters. CLI receipt replay and the unpublished-key gate are verified. Browser control/staging headroom gate publication and provider submission. [Details](INDEXNOW_20261106.md).
+
 ## Published contextual platform guides — 2 November 2026
 
 PR28 is merged and source97a0eb85aa147f70a8e9319db3ceddde4cb008c8 / web tree16c1a287ae719e93ce8e3eb20d06afd42f1931a4 / Linux build41scv5ODoHr0oZSIgj2w5 is live. Exact369 source and994 compiled files match. Owner-local isolated Linux build protects the shared VPS; no production secrets used.28preflight tests,45SEO/51links/eightnoindex,83rasters,15restricted and four font/CSS hashes pass. Candidate216 layout cases and live18-route mobile plus Accounts/theme/navigation/focus checks pass; six exact live screenshots are retained. All20 other PM2 identities unchanged at activation.9ed2311 rollback retained. No DB/schema/env/DNS/payment/backend change. See docs/DEPLOYMENT_20261102.md. Growth remains incomplete; owner-deferred Desktop login stays deferred. Earlier candidate/pending entries are historical.
