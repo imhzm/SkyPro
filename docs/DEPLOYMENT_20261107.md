@@ -26,7 +26,14 @@ One POST was sent on7November. Its receipt was created at18:31:57UTC before the 
 
 Before publication, Edge compared the same candidate web tree's Windows build7gXm636ByZgJ8Iviu_MmY with the published baseline at1440×900/390×844 in both themes. Homepage hero geometry/Cairo match without horizontal overflow; the isolated mobile menu and real gallery open/close. The live authenticated header differs from the isolated guest header as expected. Exact-dimension CDP captures and original cropped/scrolled/focused captures retain their individual provenance. See [browser checkpoint](INDEXNOW_BROWSER_20261107.md).
 
-After publication, binding the refreshed Edge tab timed out and reset the browser kernel. Two bounded inventory/recovery calls also timed out. Fresh live desktop/mobile screenshots and post-release browser interactions are therefore still missing. Earlier images must not be relabelled as proof of the Linux release. HTTP, source, fonts and receipt acceptance above do not close this visual deliverable or establish field CWV.
+After the initial Edge timeouts, post-release captures were recovered from the published Linux release in Edge. The read-only VPS snapshot at 2026-11-12 18:25:55 UTC confirmed the source and build above. The two original captures are in the owner-local `production/` directory.
+
+| Capture | UTC | SHA-256 |
+| --- | --- | --- |
+| `home-desktop-dark-1440x900.png` (1440×900) | 2026-11-07 18:46:13 | `e2bfb157de116e14b7faa3bb8ef0eccd55777ef75854d58bbb2464ee95d98f94` |
+| `home-mobile-dark-390x844.png` (390×844) | 2026-11-12 18:27:52 | `19685c3a3a2fa6ba124616ca10aaaf74f3c7951ca53c34a2623fd7bbcfcb2787` |
+
+On mobile, the Arabic RTL homepage had no horizontal overflow at the tested viewport. The drawer opened and closed, and the gallery closed with Escape. One ordinary Edge reload observed five CSS and two Cairo font responses at 200, including four CSS responses from disk cache. This sample establishes asset delivery. Field CWV remains unmeasured. See `EDGE_MOBILE_SCREENSHOT_20261112.json` and `EDGE_MOBILE_NETWORK_20261112.json`.
 
 Search Console/GA4 were refreshed read-only on7November; business attribution, commercial query-country ranks and qualified organic trials remain unverified. Detailed metrics stay in the owner's evidence and private Notion context. Five authentic Desktop galleries remain deferred with the owner's login decision. Earned-link verification remains open; two editorial follow-ups still await specific approval. Windsor connection remains pending. The broader growth goal is not complete.
 
