@@ -8,6 +8,13 @@ export function ProductEvents() {
   const recordedPage = useRef<string | null>(null);
   const startedRegistration = useRef(false);
   useEffect(() => {
+    if (pathname !== "/auth/register") startedRegistration.current = false;
+
+    const startRegistration = () => {
+      if (!startedRegistration.current && trackProductEvent("start_registration")) {
+        startedRegistration.current = true;
+      }
+    };
     const view = () => {
       const platform = pathname.match(/^\/platforms\/([a-z-]+)$/)?.[1];
       if (platform && recordedPage.current !== pathname && trackProductEvent("view_platform", platform)) recordedPage.current = pathname;
@@ -17,11 +24,13 @@ export function ProductEvents() {
       const link = event.target.closest("a[href]");
       if (!link) return;
       const action = productLinkEvent(pathname, link.getAttribute("href") || "", location.origin, link.hasAttribute("download"));
-      if (action) trackProductEvent(action);
+      if (action === "start_registration") startRegistration();
+      else if (action) trackProductEvent(action);
     };
     const input = (event: Event) => {
-      if (pathname !== "/auth/register" || startedRegistration.current || !(event.target instanceof HTMLInputElement) || !event.target.closest("form")) return;
-      if (trackProductEvent("start_registration")) startedRegistration.current = true;
+      if (pathname === "/auth/register" && event.target instanceof HTMLInputElement && event.target.closest("form")) {
+        startRegistration();
+      }
     };
     view();
     window.addEventListener("skypro:analytics-ready", view);

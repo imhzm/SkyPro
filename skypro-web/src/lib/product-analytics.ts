@@ -28,9 +28,11 @@ export function isAnalyticsPath(pathname: string) {
 }
 
 export function productLinkEvent(pathname: string, href: string, origin: string, download = false): ProductEvent | null {
-  if (!isPublicAnalyticsPath(pathname)) return null;
   let url: URL;
   try { url = new URL(href, origin); } catch { return null; }
+  if (pathname === "/auth/register" && url.origin === origin
+    && url.pathname === "/api/auth/google" && !url.search && !url.hash) return "start_registration";
+  if (!isPublicAnalyticsPath(pathname)) return null;
   if (url.origin === origin && url.pathname === "/auth/register") return "click_trial";
   if (url.protocol === "https:" && url.hostname === "wa.me") return "click_whatsapp";
   if (url.protocol === "tel:" || url.protocol === "mailto:") return "click_contact";
