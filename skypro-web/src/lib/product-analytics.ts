@@ -10,6 +10,7 @@ export type ProductEvent =
   | "click_contact";
 
 export const ANALYTICS_CONSENT_KEY = "skypro_cookie_consent_v1";
+export const ANALYTICS_CONSENT_COOKIE = "cookie_consent";
 
 export function hasAnalyticsConsent() {
   if (typeof window === "undefined") return false;

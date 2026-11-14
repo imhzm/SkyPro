@@ -159,3 +159,6 @@ The owner approved publication for f19df6b / PR #15. Merge to a8a3560 retained t
 - Add a way to reopen existing consent preferences and stop already loaded tags when consent is withdrawn. Test private-route suppression and query/referrer sanitization; no activation until real provider/browser acceptance.
 - Keep the measurement candidate unpublished while CUA cannot initialize. Preserve concrete local checks and a draft review, not a production-completion claim.
 - Record legacy legal/security claims against code; do not silently rewrite legal text or change auth-mail behavior within analytics. Factual/legal review remains an explicit gap.
+## 14 November 2026 — Windows download click measurement
+
+Keep Google Analytics scripts and page views off the authenticated dashboard. Record the Windows installer link activation as a first-party `click_download` log event after analytics consent is present in both the browser preference and the request cookie. The standard authenticated route and existing origin and rate-limit helpers gate the event. Admin and impersonated sessions are excluded. The existing installer link works independently of the recording response. A click receipt provides a count of eligible interactions within log retention. It cannot establish a completed download, installation, unique downloader, trial, country, or traffic source.
