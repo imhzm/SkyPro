@@ -6,6 +6,9 @@ const ts=require('typescript');
 const code=ts.transpileModule(fs.readFileSync('src/lib/product-analytics.ts','utf8'),{
   compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022},
 }).outputText;
+const productEvents = ts.transpileModule(fs.readFileSync('src/components/analytics/ProductEvents.tsx', 'utf8'), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+}).outputText;
 function sandbox(consent,options={}){
   const calls=[],exports={};
   const context={exports,URL,document:{title:'SkyPro'},window:{location:{origin:'https://example.test',pathname:options.path||'/auth/register',search:'?email=private@example.test&token=secret'},
@@ -48,6 +51,60 @@ test('guide CTAs are classified, private routes and lookalike destinations are n
   assert.equal(classify('/guides','https://wa.me.evil.test/',origin),null);
   assert.equal(classify('/','https://evil.test/app.exe',origin,true),null);
   assert.equal(classify('/','javascript:alert(1)',origin),null);
+});
+
+test('only the same-origin Google CTA on the registration page starts registration', () => {
+  const { productLinkEvent } = sandbox(null).api;
+  const origin = 'https://example.test';
+  const google = '/api/auth/google';
+
+  assert.equal(productLinkEvent('/auth/register', google, origin), 'start_registration');
+  for (const path of ['/auth/login', '/dashboard', '/']) {
+    assert.equal(productLinkEvent(path, google, origin), null);
+  }
+  for (const href of [`${google}/callback`, `${google}?callbackUrl=/`, `${google}#other`, `https://other.test${google}`]) {
+    assert.equal(productLinkEvent('/auth/register', href, origin), null);
+  }
+});
+
+test('the Google click and email input share the consented start and leave navigation alone', () => {
+  for (const analytics of [true, false]) {
+    for (const first of ['click', 'input']) {
+      const { api, calls, client } = sandbox(JSON.stringify({ analytics }));
+      const handlers = new Map();
+      const exports = {};
+      class GoogleLink {
+        closest(selector) { return selector === 'a[href]' ? this : null; }
+        getAttribute() { return '/api/auth/google'; }
+        hasAttribute() { return false; }
+      }
+      class EmailInput {
+        closest(selector) { return selector === 'form' ? {} : null; }
+      }
+      vm.runInNewContext(productEvents, {
+        exports,
+        Element: GoogleLink,
+        HTMLInputElement: EmailInput,
+        location: client.location,
+        window: { addEventListener() {} },
+        document: { addEventListener: (name, handler) => handlers.set(name, handler) },
+        require(name) {
+          if (name === 'react') return { useRef: (current) => ({ current }), useEffect: (effect) => effect() };
+          if (name === 'next/navigation') return { usePathname: () => client.location.pathname };
+          return api;
+        },
+      });
+      exports.ProductEvents();
+      const activate = (type) => handlers.get(type)({
+        target: type === 'click' ? new GoogleLink() : new EmailInput(),
+        preventDefault: () => assert.fail('registration navigation was intercepted'),
+      });
+      activate(first);
+      activate('click');
+      activate('input');
+      assert.deepEqual(calls.map(([, event]) => event), analytics ? ['start_registration'] : []);
+    }
+  }
 });
 
 test('account creation and actual activation use different backend-confirmed outcomes',()=>{
