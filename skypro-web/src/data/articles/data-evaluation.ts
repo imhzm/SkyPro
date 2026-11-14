@@ -36,7 +36,7 @@ export const dataEvaluationGuides: GuideArticle[] = [
       ] }
     ], sources: [
       { id: "places-overview", title: "Google Places API: نظرة عامة", href: "https://developers.google.com/maps/documentation/places/web-service/overview" },
-      { id: "places-policy", title: "Google Places API: السياسات والإسناد", href: "https://developers.google.com/maps/documentation/places/web-service/policies" },
+      { id: "places-policy", title: "Google Places API: السياسات والإسناد", href: "https://developers.google.com/maps/documentation/places/web-service/policies?hl=ar" },
       { id: "product", title: "Google Maps في Sky Pro: الصورة المتاحة والحدود", href: "https://skypro.skywaveads.com/platforms/google-maps" }
     ], relatedSlugs: ["olx-demo-questions", "two-day-trial-checklist", "contact-list-quality-check"],
     productLinks: [{ href: "/platforms/google-maps", label: "حالة وظيفة الخرائط في Sky Pro" }],

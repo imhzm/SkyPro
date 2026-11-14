@@ -29,7 +29,7 @@ export const communicationGuides: GuideArticle[] = [
         "سجّل الحساب ونسخة المحتوى والمستلم التجريبي بمرجع داخلي والنتيجة. لو الاختبار نجح، ده يثبت المحاولة المحددة فقط. راجع موافقات المستلمين ومتطلبات المنصة والمحتوى قبل أي تواصل فعلي، ولا تستخدم الاختبار مبررًا لإرسال رسائل غير مطلوبة."
       ] }
     ], sources: [
-      { id: "wa-policy", title: "WhatsApp Business Messaging Policy", href: "https://business.whatsapp.com/policy" },
+      { id: "wa-policy", title: "WhatsApp Business Messaging Policy", href: "https://whatsappbusiness.com/policy/" },
       { id: "product", title: "أدوات واتساب المعروضة في Sky Pro", href: "https://skypro.skywaveads.com/platforms/whatsapp" }
     ], relatedSlugs: ["contact-list-quality-check", "multi-account-work-handover", "session-problem-support-brief"],
     productLinks: [{ href: "/platforms/whatsapp", label: "استعرض أدوات واتساب" }],
@@ -68,7 +68,7 @@ export const communicationGuides: GuideArticle[] = [
         "ابدأ الاختبار بمستلم مملوك أو موافق بدل استخدام القائمة لاختبار الأداة. مراجعة الملف واختبار الإرسال خطوتان مستقلتان؛ نجاح إحداهما لا يثبت نجاح الثانية أو صلاحية التواصل بكل المسجلين."
       ], sourceIds: ["wa-policy"] }
     ], sources: [
-      { id: "wa-policy", title: "سياسة واتساب: إذن التواصل وطلبات التوقف", href: "https://business.whatsapp.com/policy" },
+      { id: "wa-policy", title: "سياسة واتساب: إذن التواصل وطلبات التوقف", href: "https://whatsappbusiness.com/policy/" },
       { id: "product", title: "أدوات واتساب وإعداد جهات الاتصال", href: "https://skypro.skywaveads.com/platforms/whatsapp" }
     ], relatedSlugs: ["whatsapp-message-test", "smtp-test-message-checklist"],
     productLinks: [{ href: "/platforms/whatsapp", label: "أدوات واتساب" }, { href: "/platforms/send-emails", label: "أدوات البريد" }],
