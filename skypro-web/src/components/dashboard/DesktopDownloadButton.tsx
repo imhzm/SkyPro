@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type MouseEvent } from "react";
 import { Download, Loader2 } from "lucide-react";
+import { hasAnalyticsConsent } from "@/lib/product-analytics";
 
 const DOWNLOADS_BASE = "https://downloads.skywaveads.com/skypro";
 
@@ -21,6 +22,16 @@ export default function DesktopDownloadButton() {
       .finally(() => setLoading(false));
   }, []);
 
+  const recordDownload = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (event.defaultPrevented || !downloadUrl || !hasAnalyticsConsent()) return;
+    // Keep the installer link independent of collection or a failed request.
+    void fetch("/api/account/windows-download-click", {
+      method: "POST",
+      keepalive: true,
+      referrerPolicy: "origin",
+    }).catch(() => {});
+  };
+
   if (!loading && !downloadUrl) {
     // No version.json available yet — hide the button or show disabled
     return (
@@ -34,6 +45,10 @@ export default function DesktopDownloadButton() {
   return (
     <a
       href={downloadUrl || "#"}
+      onClick={recordDownload}
+      onAuxClick={(event) => {
+        if (event.button === 1) recordDownload(event);
+      }}
       className="inline-flex items-center gap-2 rounded-xl bg-soft border border-line px-5 py-2.5 text-sm text-muted hover:bg-soft hover:text-foreground transition-all"
     >
       {loading ? (
