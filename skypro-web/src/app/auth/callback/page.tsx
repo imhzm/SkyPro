@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { GOOGLE_CONVERSION_ENDPOINT, isGoogleConversionReturn, trackGoogleConversions } from "@/lib/product-analytics";
 
 export default function AuthCallbackPage() {
   const router = useRouter();
+  const conversionStarted = useRef(false);
 
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
@@ -12,6 +14,19 @@ export default function AuthCallbackPage() {
 
     if (error) {
       router.push(`/auth/login?error=${encodeURIComponent(error)}`);
+    } else if (isGoogleConversionReturn(window.location)) {
+      if (conversionStarted.current) return;
+      conversionStarted.current = true;
+      fetch(GOOGLE_CONVERSION_ENDPOINT, { method: "POST", cache: "no-store", signal: AbortSignal.timeout(3000) })
+        .then(async (res) => res.ok && res.status !== 204 ? res.json() : null)
+        .then(async (receipt) => {
+          if (!receipt) return router.replace("/dashboard");
+          const target = new URL(receipt.target, window.location.origin);
+          if (target.origin !== window.location.origin) return router.replace("/dashboard");
+          await trackGoogleConversions(receipt.registrationCompleted === true, receipt.trialActivated === true);
+          window.location.replace(target.href);
+        })
+        .catch(() => router.replace("/dashboard"));
     } else {
       fetch("/api/auth/me")
         .then((res) => res.json())
