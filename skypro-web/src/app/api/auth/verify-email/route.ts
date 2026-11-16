@@ -53,18 +53,31 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(errorResponse('رمز التحقق غير صالح'), { status: 400 })
     }
 
-    await prisma.$transaction([
+    const verifiedAt = new Date()
+    const [, activatedKeys, startedSubscriptions, linkedTrial] = await prisma.$transaction([
       prisma.user.update({
         where: { id: userId },
-        data: { emailVerifiedAt: new Date(), status: 'active' }
+        data: { emailVerifiedAt: verifiedAt, status: 'active' }
       }),
       prisma.activationKey.updateMany({
         where: { userId, status: 'pending' },
-        data: { status: 'active', activatedAt: new Date() }
+        data: { status: 'active', activatedAt: verifiedAt }
       }),
       prisma.subscription.updateMany({
         where: { userId, status: 'pending_email' },
-        data: { status: 'trial', startedAt: new Date() }
+        data: { status: 'trial', startedAt: verifiedAt }
+      }),
+      prisma.subscription.findFirst({
+        where: {
+          userId,
+          status: 'trial',
+          startedAt: verifiedAt,
+          trialEndsAt: { gt: verifiedAt },
+          key: {
+            is: { userId, plan: 'trial', status: 'active', activatedAt: verifiedAt, expiresAt: { gt: verifiedAt } },
+          },
+        },
+        select: { id: true },
       }),
       prisma.verificationToken.delete({ where: { token: tokenHash } }),
       prisma.auditLog.create({
@@ -75,6 +88,7 @@ export async function POST(req: NextRequest) {
         }
       })
     ])
+    const trialActivated = activatedKeys.count > 0 && startedSubscriptions.count > 0 && linkedTrial !== null
 
     // Send activation confirmation email with serial key
     try {
@@ -114,7 +128,7 @@ export async function POST(req: NextRequest) {
       // best-effort — don't block the success response
     }
 
-    return NextResponse.json({ success: true, message: 'تم تأكيد البريد الإلكتروني بنجاح' })
+    return NextResponse.json({ success: true, trialActivated, message: 'تم تأكيد البريد الإلكتروني بنجاح' })
   } catch (err) {
     console.error('Verify email error:', err)
     return NextResponse.json(errorResponse(getErrorMessage(err)), { status: 500 })

@@ -115,9 +115,15 @@ test('account creation and actual activation use different backend-confirmed out
     assert.equal(api.isCreatedRegistration(true,value),false);
   }
   assert.equal(api.isCreatedRegistration(false,created),false);
-  assert.equal(api.isConfirmedTrialActivation(true,{success:true}),true);
-  for(const payload of [null,{}, {success:false},{success:'true'}])assert.equal(api.isConfirmedTrialActivation(true,payload),false);
-  assert.equal(api.isConfirmedTrialActivation(false,{success:true}),false);
+  const activated = { success: true, trialActivated: true };
+  assert.equal(api.isConfirmedTrialActivation(true, activated), true);
+  for (const payload of [
+    null, {}, { success: true }, { success: false, trialActivated: true },
+    { success: true, trialActivated: false }, { success: true, trialActivated: 'true' },
+  ]) {
+    assert.equal(api.isConfirmedTrialActivation(true, payload), false);
+  }
+  assert.equal(api.isConfirmedTrialActivation(false, activated), false);
 });
 
 test('revoking consent disables an already loaded Google tag before denying consent',()=>{

@@ -49,8 +49,9 @@ export function isCreatedRegistration(ok: boolean, payload: unknown) {
 }
 
 export function isConfirmedTrialActivation(ok: boolean, payload: unknown) {
-  // This endpoint returns success only after the verification/activation DB transaction.
-  return ok && !!payload && typeof payload === "object" && (payload as {success?: unknown}).success === true;
+  if (!ok || !payload || typeof payload !== "object") return false;
+  const result = payload as { success?: unknown; trialActivated?: unknown };
+  return result.success === true && result.trialActivated === true;
 }
 
 export function applyGoogleAnalyticsConsent(measurementId: string, allowed: boolean) {
