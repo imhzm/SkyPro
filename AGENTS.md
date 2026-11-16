@@ -1,3 +1,7 @@
+## Google conversion candidate — 16 November 2026
+
+Code `019a1b0` records Google registration only after account creation commits and records a trial separately after its subscription commits. The short-lived receipt is scoped to the active session user and the same-origin conversion route. GA4 dispatch requires analytics consent and carries the event name and method without account identifiers. The Windows build `RilRSDC20sIyK-Szg4KCL`, 46 contracts, and local HTTPS with MariaDB and a stubbed Google provider passed. Production sign-in, GA4 delivery, and the VPS release gates remain open.
+
 ## Trial conversion candidate — 16 November 2026
 
 Code `c6ca195` derives `trial_activated` for email verification from the committed activation of a linked, unexpired trial subscription and key. Email verification and consent behavior are preserved. The local Windows build `bWqajxar-jnscDyrP6kPU`, 42 contracts, the 45-page SEO audit, and six verification scenarios with replay checks passed against the isolated MariaDB fixture. Production GA4 delivery and Google OAuth completion measurement are still open. The release configuration and rollback on the VPS require verification before deployment.
