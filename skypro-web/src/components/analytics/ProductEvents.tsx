@@ -9,6 +9,8 @@ export function ProductEvents() {
   const startedRegistration = useRef(false);
   useEffect(() => {
     if (pathname !== "/auth/register") startedRegistration.current = false;
+    // Deduplicate provider notifications within this visit while allowing a later return.
+    if (recordedPage.current !== pathname) recordedPage.current = null;
 
     const startRegistration = () => {
       if (!startedRegistration.current && trackProductEvent("start_registration")) {

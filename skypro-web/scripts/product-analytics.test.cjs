@@ -107,6 +107,59 @@ test('the Google click and email input share the consented start and leave navig
   }
 });
 
+test('a new platform visit is measured after returning from a different route', () => {
+  for (const analytics of [true, false]) {
+    const { api, calls, client } = sandbox(JSON.stringify({ analytics }));
+    const exports = {};
+    const refs = [];
+    const listeners = new Map();
+    let refIndex = 0;
+    let cleanup;
+
+    vm.runInNewContext(productEvents, {
+      exports,
+      window: {
+        addEventListener: (name, handler) => listeners.set(name, handler),
+        removeEventListener: (name) => listeners.delete(name),
+      },
+      document: { addEventListener() {}, removeEventListener() {} },
+      require(name) {
+        if (name === 'react') return {
+          useRef: (current) => (refs[refIndex++] ??= { current }),
+          useEffect: (effect) => { cleanup = effect(); },
+        };
+        if (name === 'next/navigation') return { usePathname: () => client.location.pathname };
+        return api;
+      },
+    });
+
+    const visit = (pathname) => {
+      cleanup?.();
+      client.location.pathname = pathname;
+      refIndex = 0;
+      exports.ProductEvents();
+    };
+    const platform = '/platforms/facebook';
+    const tag = client.gtag;
+    delete client.gtag;
+
+    visit(platform);
+    assert.equal(calls.length, 0, 'wait for the provider');
+    client.gtag = tag;
+    listeners.get('skypro:analytics-ready')();
+    visit(platform);
+    listeners.get('skypro:analytics-ready')();
+    assert.equal(calls.length, analytics ? 1 : 0, 'deduplicate within the same visit');
+
+    visit('/guides');
+    listeners.get('skypro:analytics-ready')();
+    visit(platform);
+    listeners.get('skypro:analytics-ready')();
+    assert.deepEqual(calls.map(([, event, payload]) => [event, payload.platform]),
+      analytics ? [['view_platform', 'facebook'], ['view_platform', 'facebook']] : []);
+  }
+});
+
 test('account creation and actual activation use different backend-confirmed outcomes',()=>{
   const api=sandbox(null).api;
   const created={success:true,data:{userId:12,pendingVerification:true}};
