@@ -1,3 +1,9 @@
+## Cairo repeat-visit cache candidate — 17 November 2026
+
+Source `d370f2193e7a36483ec56baa83926aae40e2aaf6`, web tree `888d32e062e57d59ca9158655fdcb8796d19421c`, and isolated Linux build `VNLZf6e3iSS082eDzN1uH` set a one-year immutable cache policy on the four provenance-listed Cairo paths with content fingerprints. All four responses retain their exact asset hashes, media types, and CSP. License, provenance, missing-file, session, and dashboard responses retain their existing cache behavior. The build, scoped lint, 47 contracts, and 45-page SEO audit passed.
+
+Edge ordinary homepage revisits produced three network revalidations and 4,848 transfer bytes on baseline `634db9c7173be2c55aa83379b913ee649972fca6`. The candidate served all three used Cairo resources from browser cache with zero transferred bytes. Before/after JPEG hashes match at each of the two tested viewport sizes. Latin Extended was verified over HTTP outside the homepage load. The timing of cold loads and field Core Web Vitals remain unmeasured for this candidate. The candidate is staged for review.
+
 ## Google conversion candidate — 16 November 2026
 
 Code `019a1b0` records Google registration only after account creation commits and records a trial separately after its subscription commits. The short-lived receipt is scoped to the active session user and the same-origin conversion route. GA4 dispatch requires analytics consent and carries the event name and method without account identifiers. The Windows build `RilRSDC20sIyK-Szg4KCL`, 46 contracts, and local HTTPS with MariaDB and a stubbed Google provider passed. Production sign-in, GA4 delivery, and the VPS release gates remain open.
