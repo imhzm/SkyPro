@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+
 /** @type {import('next').NextConfig} */
 const isDev = process.env.NODE_ENV !== "production";
 
@@ -70,6 +72,10 @@ const securityHeaders = [
   { key: "Server", value: "SkyPro" },
 ];
 
+const immutableAssetHeaders = [
+  { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+];
+
 const nextConfig = {
   async redirects() {
     return [
@@ -100,6 +106,9 @@ const nextConfig = {
     formats: ["image/avif", "image/webp"],
   },
   async headers() {
+    const cairo = JSON.parse(
+      await readFile(new URL("./public/fonts/cairo/provenance.json", import.meta.url), "utf8"),
+    );
     return [
       {
         // Apply to ALL routes
@@ -132,13 +141,12 @@ const nextConfig = {
       {
         // Public static assets — long cache + immutable
         source: "/images/:path*",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=31536000, immutable",
-          },
-        ],
+        headers: immutableAssetHeaders,
       },
+      ...[cairo.stylesheet, ...cairo.files].map(({ publicPath }) => ({
+        source: publicPath,
+        headers: immutableAssetHeaders,
+      })),
     ];
   },
 };
