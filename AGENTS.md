@@ -1,3 +1,9 @@
+## Platform revisit measurement candidate — 18 November 2026
+
+Source `05847f1d878cfa150403bf3b417a1213a938f51c` clears the platform-event deduplication when the pathname changes, so each later return can produce one `view_platform` after consent. Before the change, the regression test observed one event across two visits. The isolated Linux build `VeoHWoiZCAZtorxL1T1PW` passed 48 contracts, scoped lint, and the 45-page SEO audit.
+
+Edge confirmed one Facebook event after consent, a second after returning from Guides without a document reload, and a stable count after consent was withdrawn. The test used a preview measurement ID and blocked external analytics connections. Production delivery and the release configuration and rollback checks remain open.
+
 ## Cairo repeat-visit cache candidate — 17 November 2026
 
 Source `d370f2193e7a36483ec56baa83926aae40e2aaf6`, web tree `888d32e062e57d59ca9158655fdcb8796d19421c`, and isolated Linux build `VNLZf6e3iSS082eDzN1uH` set a one-year immutable cache policy on the four provenance-listed Cairo paths with content fingerprints. All four responses retain their exact asset hashes, media types, and CSP. License, provenance, missing-file, session, and dashboard responses retain their existing cache behavior. The build, scoped lint, 47 contracts, and 45-page SEO audit passed.
