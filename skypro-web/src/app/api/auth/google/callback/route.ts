@@ -4,6 +4,10 @@ import { prisma } from '@/lib/db'
 import { generateApiKey, getTrialEndDate, hashPassword, generateRandomPassword } from '@/lib/utils'
 import { sendEmail, generateWelcomeEmail, generateWelcomeEmailText } from '@/lib/email'
 import { checkRateLimit, getClientIp } from '@/lib/request-security'
+import {
+  GOOGLE_CONVERSION_COOKIE, GOOGLE_CONVERSION_TTL, googleConversionCookieOptions, issueGoogleConversionReceipt,
+} from '@/lib/google-conversion-receipt'
+import { ANALYTICS_CONSENT_COOKIE, GOOGLE_CONVERSION_RETURN, hasAnalyticsConsentCookie } from '@/lib/product-analytics'
 
 export const dynamic = 'force-dynamic'
 
@@ -150,6 +154,8 @@ export async function GET(req: NextRequest) {
   })
 
   let isNewUser = false
+  let registrationCompleted = false
+  let trialActivated = false
   let welcomeEmailData: Parameters<typeof sendWelcomeEmailSafe>[0] | null = null
 
   if (user) {
@@ -233,6 +239,8 @@ export async function GET(req: NextRequest) {
       return newUser
     })
     user = created
+    registrationCompleted = true
+    trialActivated = trialEndsAt.getTime() > Date.now()
 
     // Prepare welcome email data (will be sent after building the response)
     welcomeEmailData = {
@@ -314,6 +322,7 @@ export async function GET(req: NextRequest) {
       })
 
       isNewUser = true // treat as new for welcome experience
+      trialActivated = trialEndsAt.getTime() > Date.now()
       welcomeEmailData = {
         name: user.name || 'عميلنا الكريم',
         email: user.email,
@@ -365,7 +374,18 @@ export async function GET(req: NextRequest) {
     target = '/dashboard?welcome=1'
   }
 
-  const response = NextResponse.redirect(`${getPublicBase(req)}${target}`)
+  const conversionReceipt = user.role === 'user'
+    && hasAnalyticsConsentCookie(req.cookies.get(ANALYTICS_CONSENT_COOKIE)?.value)
+    ? await issueGoogleConversionReceipt(user.id, { registrationCompleted, trialActivated, target }, secret).catch(() => null)
+    : null
+  const response = NextResponse.redirect(`${getPublicBase(req)}${conversionReceipt ? GOOGLE_CONVERSION_RETURN : target}`)
+
+  if (conversionReceipt) {
+    response.cookies.set(GOOGLE_CONVERSION_COOKIE, conversionReceipt, {
+      ...googleConversionCookieOptions, maxAge: GOOGLE_CONVERSION_TTL,
+    })
+    response.headers.set('Cache-Control', 'no-store')
+  }
 
   response.cookies.set(SESSION_COOKIE_NAME, sessionToken, {
     httpOnly: true,

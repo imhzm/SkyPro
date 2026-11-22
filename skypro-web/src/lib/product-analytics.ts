@@ -10,6 +10,18 @@ export type ProductEvent =
   | "click_contact";
 
 export const ANALYTICS_CONSENT_KEY = "skypro_cookie_consent_v1";
+export const ANALYTICS_CONSENT_COOKIE = "cookie_consent";
+export const GOOGLE_CONVERSION_ENDPOINT = "/api/auth/google/conversion";
+export const GOOGLE_CONVERSION_RETURN = "/auth/callback?google_conversion=1";
+export const GOOGLE_CONVERSION_CONFIRMED = "skypro:google-conversion-confirmed";
+
+export function isGoogleConversionReturn(location: Pick<Location, "pathname" | "search">) {
+  return location.pathname === "/auth/callback" && location.search === "?google_conversion=1";
+}
+
+export function hasAnalyticsConsentCookie(value: string | undefined) {
+  return value === "a" || value === "am";
+}
 
 export function hasAnalyticsConsent() {
   if (typeof window === "undefined") return false;
@@ -28,9 +40,11 @@ export function isAnalyticsPath(pathname: string) {
 }
 
 export function productLinkEvent(pathname: string, href: string, origin: string, download = false): ProductEvent | null {
-  if (!isPublicAnalyticsPath(pathname)) return null;
   let url: URL;
   try { url = new URL(href, origin); } catch { return null; }
+  if (pathname === "/auth/register" && url.origin === origin
+    && url.pathname === "/api/auth/google" && !url.search && !url.hash) return "start_registration";
+  if (!isPublicAnalyticsPath(pathname)) return null;
   if (url.origin === origin && url.pathname === "/auth/register") return "click_trial";
   if (url.protocol === "https:" && url.hostname === "wa.me") return "click_whatsapp";
   if (url.protocol === "tel:" || url.protocol === "mailto:") return "click_contact";
@@ -46,8 +60,9 @@ export function isCreatedRegistration(ok: boolean, payload: unknown) {
 }
 
 export function isConfirmedTrialActivation(ok: boolean, payload: unknown) {
-  // This endpoint returns success only after the verification/activation DB transaction.
-  return ok && !!payload && typeof payload === "object" && (payload as {success?: unknown}).success === true;
+  if (!ok || !payload || typeof payload !== "object") return false;
+  const result = payload as { success?: unknown; trialActivated?: unknown };
+  return result.success === true && result.trialActivated === true;
 }
 
 export function applyGoogleAnalyticsConsent(measurementId: string, allowed: boolean) {
@@ -62,9 +77,11 @@ export function applyGoogleAnalyticsConsent(measurementId: string, allowed: bool
 }
 
 // No email, form values, tokens, query strings, device identifiers or key data.
-export function trackProductEvent(event: ProductEvent, platform?: string) {
+export function trackProductEvent(event: ProductEvent, platform?: string, onSent?: () => void) {
   if (typeof window === "undefined") return false;
-  if (!hasAnalyticsConsent() || !isAnalyticsPath(window.location.pathname)) return false;
+  const googleReturn = isGoogleConversionReturn(window.location)
+    && (event === "complete_registration" || event === "trial_activated");
+  if (!hasAnalyticsConsent() || !(isAnalyticsPath(window.location.pathname) || googleReturn)) return false;
   const client = window as Window & { gtag?: (...args: unknown[]) => void };
   if (!client.gtag) return false;
   try {
@@ -72,9 +89,44 @@ export function trackProductEvent(event: ProductEvent, platform?: string) {
       page_path: window.location.pathname,
       page_location: window.location.origin + window.location.pathname,
       ...(platform && /^[a-z-]{1,32}$/.test(platform) ? { platform } : {}),
+      ...(googleReturn ? { method: "google" } : {}),
+      ...(onSent ? { event_callback: onSent, event_timeout: 800 } : {}),
     });
     return true;
   } catch { return false; }
+}
+
+export function trackGoogleConversions(registrationCompleted: boolean, trialActivated: boolean) {
+  if (!hasAnalyticsConsent() || !isGoogleConversionReturn(window.location)) return Promise.resolve();
+  const events: ProductEvent[] = [];
+  if (registrationCompleted) events.push("complete_registration");
+  if (trialActivated) events.push("trial_activated");
+  if (!events.length) return Promise.resolve();
+
+  return new Promise<void>((resolve) => {
+    let pending = events.length;
+    let started = false;
+    const complete = () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("skypro:analytics-ready", send);
+      window.removeEventListener("skypro:consent-changed", send);
+      resolve();
+    };
+    const sent = () => { if (--pending === 0) complete(); };
+    const send = () => {
+      if (!hasAnalyticsConsent()) return complete();
+      if (started || !(window as Window & { gtag?: unknown }).gtag) return;
+      started = true;
+      for (const event of events) {
+        if (!trackProductEvent(event, undefined, sent)) sent();
+      }
+    };
+    const timer = window.setTimeout(complete, 1200);
+    window.addEventListener("skypro:analytics-ready", send);
+    window.addEventListener("skypro:consent-changed", send);
+    window.dispatchEvent(new Event(GOOGLE_CONVERSION_CONFIRMED));
+    send();
+  });
 }
 
 export function trackPageView(referrer: string) {

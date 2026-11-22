@@ -16,7 +16,7 @@ import Script from 'next/script'
 import { useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { ProductEvents } from './ProductEvents'
-import { ANALYTICS_CONSENT_KEY, applyGoogleAnalyticsConsent, hasAnalyticsConsent, isAnalyticsPath, trackPageView } from '@/lib/product-analytics'
+import { ANALYTICS_CONSENT_KEY, GOOGLE_CONVERSION_CONFIRMED, applyGoogleAnalyticsConsent, hasAnalyticsConsent, isAnalyticsPath, isGoogleConversionReturn, trackPageView } from '@/lib/product-analytics'
 
 export function Analytics() {
   const configuredId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID
@@ -31,6 +31,7 @@ export function Analytics() {
   const previousLocation = useRef('')
 
   useEffect(() => {
+    let googleConversionConfirmed = false
     const view = () => {
       if (!gaId || recordedPath.current === pathname || !hasAnalyticsConsent() || !isAnalyticsPath(pathname)) return
       if (trackPageView(previousLocation.current || document.referrer)) {
@@ -39,7 +40,7 @@ export function Analytics() {
       }
     }
     const sync = () => {
-      const allowed = hasAnalyticsConsent() && isAnalyticsPath(pathname)
+      const allowed = hasAnalyticsConsent() && (isAnalyticsPath(pathname) || (googleConversionConfirmed && isGoogleConversionReturn(window.location)))
       if (gaId) applyGoogleAnalyticsConsent(gaId, allowed)
       if (!allowed) recordedPath.current = null
       setAnalyticsAllowed(allowed)
@@ -48,6 +49,10 @@ export function Analytics() {
         // Notify product observers after the loaded tag's opt-out/consent state is updated.
         if ((window as Window & {gtag?: unknown}).gtag) window.dispatchEvent(new Event('skypro:analytics-ready'))
       }
+    }
+    const confirmGoogleConversion = () => {
+      googleConversionConfirmed = true
+      sync()
     }
     sync()
     const onStorage = (e: StorageEvent) => {
@@ -58,10 +63,12 @@ export function Analytics() {
     const onConsentChange = () => sync()
     window.addEventListener('skypro:consent-changed', onConsentChange)
     window.addEventListener('skypro:analytics-ready', view)
+    window.addEventListener(GOOGLE_CONVERSION_CONFIRMED, confirmGoogleConversion)
     return () => {
       window.removeEventListener('storage', onStorage)
       window.removeEventListener('skypro:consent-changed', onConsentChange)
       window.removeEventListener('skypro:analytics-ready', view)
+      window.removeEventListener(GOOGLE_CONVERSION_CONFIRMED, confirmGoogleConversion)
     }
   }, [gaId, pathname])
 
@@ -102,7 +109,7 @@ export function Analytics() {
                 allow_ad_personalization_signals: false,
                 cookie_flags: 'SameSite=Lax;Secure',
                 page_location: location.origin + location.pathname,
-                page_referrer: document.referrer.split('?')[0].split('#')[0],
+                page_referrer: location.pathname === '/auth/callback' ? '' : document.referrer.split('?')[0].split('#')[0],
               });
               window.dispatchEvent(new Event('skypro:analytics-ready'));
             `}

@@ -3,8 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Cookie, X, Settings2, Check } from "lucide-react";
-
-const STORAGE_KEY = "skypro_cookie_consent_v1";
+import { ANALYTICS_CONSENT_COOKIE, ANALYTICS_CONSENT_KEY } from "@/lib/product-analytics";
 
 type Preferences = {
   necessary: true; // always true
@@ -16,7 +15,7 @@ type Preferences = {
 function readConsent(): Preferences | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(ANALYTICS_CONSENT_KEY);
     return raw ? (JSON.parse(raw) as Preferences) : null;
   } catch {
     return null;
@@ -25,8 +24,8 @@ function readConsent(): Preferences | null {
 
 function writeConsent(prefs: Preferences) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
-    document.cookie = `cookie_consent=${prefs.analytics ? "a" : ""}${prefs.marketing ? "m" : ""}; max-age=${60 * 60 * 24 * 365}; path=/; samesite=lax; secure`;
+    localStorage.setItem(ANALYTICS_CONSENT_KEY, JSON.stringify(prefs));
+    document.cookie = `${ANALYTICS_CONSENT_COOKIE}=${prefs.analytics ? "a" : ""}${prefs.marketing ? "m" : ""}; max-age=${60 * 60 * 24 * 365}; path=/; samesite=lax; secure`;
     // Broadcast within the tab (storage event only fires across tabs)
     window.dispatchEvent(
       new CustomEvent("skypro:consent-changed", { detail: prefs }),

@@ -1,6 +1,26 @@
+## Platform revisit measurement candidate — 18 November 2026
+
+Source `05847f1d878cfa150403bf3b417a1213a938f51c` clears the platform-event deduplication when the pathname changes, so each later return can produce one `view_platform` after consent. Before the change, the regression test observed one event across two visits. The isolated Linux build `VeoHWoiZCAZtorxL1T1PW` passed 48 contracts, scoped lint, and the 45-page SEO audit.
+
+Edge confirmed one Facebook event after consent, a second after returning from Guides without a document reload, and a stable count after consent was withdrawn. The test used a preview measurement ID and blocked external analytics connections. Production delivery and the release configuration and rollback checks remain open.
+
+## Cairo repeat-visit cache candidate — 17 November 2026
+
+Source `d370f2193e7a36483ec56baa83926aae40e2aaf6`, web tree `888d32e062e57d59ca9158655fdcb8796d19421c`, and isolated Linux build `VNLZf6e3iSS082eDzN1uH` set a one-year immutable cache policy on the four provenance-listed Cairo paths with content fingerprints. All four responses retain their exact asset hashes, media types, and CSP. License, provenance, missing-file, session, and dashboard responses retain their existing cache behavior. The build, scoped lint, 47 contracts, and 45-page SEO audit passed.
+
+Edge ordinary homepage revisits produced three network revalidations and 4,848 transfer bytes on baseline `634db9c7173be2c55aa83379b913ee649972fca6`. The candidate served all three used Cairo resources from browser cache with zero transferred bytes. Before/after JPEG hashes match at each of the two tested viewport sizes. Latin Extended was verified over HTTP outside the homepage load. The timing of cold loads and field Core Web Vitals remain unmeasured for this candidate. The candidate is staged for review.
+
+## Google conversion candidate — 16 November 2026
+
+Code `019a1b0` records Google registration only after account creation commits and records a trial separately after its subscription commits. The short-lived receipt is scoped to the active session user and the same-origin conversion route. GA4 dispatch requires analytics consent and carries the event name and method without account identifiers. The Windows build `RilRSDC20sIyK-Szg4KCL`, 46 contracts, and local HTTPS with MariaDB and a stubbed Google provider passed. Production sign-in, GA4 delivery, and the VPS release gates remain open.
+
+## Trial conversion candidate — 16 November 2026
+
+Code `c6ca195` derives `trial_activated` for email verification from the committed activation of a linked, unexpired trial subscription and key. Email verification and consent behavior are preserved. The local Windows build `bWqajxar-jnscDyrP6kPU`, 42 contracts, the 45-page SEO audit, and six verification scenarios with replay checks passed against the isolated MariaDB fixture. Production GA4 delivery and Google OAuth completion measurement are still open. The release configuration and rollback on the VPS require verification before deployment.
+
 ## Published IndexNow release — 7 November 2026
 
-PR31/source d5a24f60a2d7a482bdeaa5f0d2bb301639c37998, web tree82c53abcf757352aad372606b58e283827f6f9fd, Linux build0cAlw9aUEbN0fuO18hTTv is live.372 source/994 compiled files match;37 preflight contracts,71routes,45SEO/51links/eightnoindex,83rasters,15restricted and four Cairo assets pass. All21 other PM2 identities remain unchanged at activation;97a0eb8 rollback retained, preview3212 closed. One16-URL IndexNow POST returned202/key validation pending; preserve the receipt and do not automatically resubmit or call this indexing proof. Pre-release Edge acceptance exists for the same web tree, but fresh post-release screenshots/interactions remain missing after bounded CUA timeouts. PR30 stays HOLD. Growth, qualified attribution, ranks, earned links and five owner-deferred Desktop galleries remain open. See docs/DEPLOYMENT_20261107.md.
+PR31/source d5a24f60a2d7a482bdeaa5f0d2bb301639c37998, web tree82c53abcf757352aad372606b58e283827f6f9fd, Linux build0cAlw9aUEbN0fuO18hTTv is live.372 source/994 compiled files match;37 preflight contracts,71routes,45SEO/51links/eightnoindex,83rasters,15restricted and four Cairo assets pass. All21 other PM2 identities remain unchanged at activation;97a0eb8 rollback retained, preview3212 closed. One16-URL IndexNow POST returned202/key validation pending; preserve the receipt and do not automatically resubmit or call this indexing proof. Post-release Edge captures are verified at 1440×900 and 390×844. Live mobile drawer and gallery interactions passed on 12 November. The original image hashes and the scoped reload results are in the deployment report. PR30 stays HOLD. Growth, qualified attribution, ranks, earned links and five owner-deferred Desktop galleries remain open. See docs/DEPLOYMENT_20261107.md.
 
 ## IndexNow browser checkpoint — 7 November 2026
 

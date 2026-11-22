@@ -1,0 +1,146 @@
+{
+  "version": 1,
+  "source": "public/images/skypro-logo.png",
+  "sourceSha256": "7a1f6b38a6f85b1e25dde46d3650c66b4575b1a5183c365c7fd08a579c7574be",
+  "sourceWidth": 576,
+  "sourceHeight": 722,
+  "sourceUnchanged": true,
+  "rendering": "SVG canvas, original embedded PNG, proportional fit, brand background #060d1b",
+  "renderer": {
+    "sharp": "0.35.5",
+    "vips": "8.18.7"
+  },
+  "maskableSafeCircleRadiusFraction": 0.4,
+  "outputs": [
+    {
+      "path": "public/favicon.png",
+      "format": "png",
+      "width": 32,
+      "height": 32,
+      "purpose": "any",
+      "bytes": 1500,
+      "sha256": "07edc55f97574cf709a1a6595a31bcbad2e6d5412b31bafd5129f4b503437510",
+      "contentBounds": {
+        "x": 4.767202216066481,
+        "y": 1.92,
+        "width": 22.465595567867037,
+        "height": 28.16
+      }
+    },
+    {
+      "path": "public/images/icon-192.png",
+      "format": "png",
+      "width": 192,
+      "height": 192,
+      "purpose": "any",
+      "bytes": 38312,
+      "sha256": "a2064e6b5fddca2576e0069054e33a6329d9d98842e4a3eb7951fb044a5bac4d",
+      "contentBounds": {
+        "x": 28.60321329639889,
+        "y": 11.519999999999996,
+        "width": 134.79357340720222,
+        "height": 168.96
+      }
+    },
+    {
+      "path": "public/images/icon-512.png",
+      "format": "png",
+      "width": 512,
+      "height": 512,
+      "purpose": "any",
+      "bytes": 238315,
+      "sha256": "8d6776b935a8c8528a81cb2e027b2ff6a29a8bf00f8e44345e6031dcb605d8f8",
+      "contentBounds": {
+        "x": 76.2752354570637,
+        "y": 30.72,
+        "width": 359.4495290858726,
+        "height": 450.56
+      }
+    },
+    {
+      "path": "public/images/icon-maskable-192.png",
+      "format": "png",
+      "width": 192,
+      "height": 192,
+      "purpose": "maskable",
+      "bytes": 19476,
+      "sha256": "d708b281bd63b8ffb6bc8236e8b5d30150b85216a46540a21d9717679b8448b3",
+      "contentBounds": {
+        "x": 50.04764542936288,
+        "y": 38.400000000000006,
+        "width": 91.90470914127424,
+        "height": 115.19999999999999
+      }
+    },
+    {
+      "path": "public/images/icon-maskable-512.png",
+      "format": "png",
+      "width": 512,
+      "height": 512,
+      "purpose": "maskable",
+      "bytes": 119376,
+      "sha256": "68f5bc07b6bdf2f12183b73770233894f9a115e8d9573be394666bbde1a2a63d",
+      "contentBounds": {
+        "x": 133.46038781163435,
+        "y": 102.4,
+        "width": 245.07922437673128,
+        "height": 307.2
+      }
+    },
+    {
+      "path": "public/images/apple-touch-icon.png",
+      "format": "png",
+      "width": 180,
+      "height": 180,
+      "purpose": "any",
+      "bytes": 33838,
+      "sha256": "301438676bcfe7c6862fefc63f4ec8f7fdbd85186ce1c133c8ba6a4432ec84b6",
+      "contentBounds": {
+        "x": 26.815512465373956,
+        "y": 10.799999999999997,
+        "width": 126.36897506925209,
+        "height": 158.4
+      }
+    },
+    {
+      "path": "src/app/icon.png",
+      "format": "png",
+      "width": 512,
+      "height": 512,
+      "purpose": "any",
+      "bytes": 238315,
+      "sha256": "8d6776b935a8c8528a81cb2e027b2ff6a29a8bf00f8e44345e6031dcb605d8f8",
+      "contentBounds": {
+        "x": 76.2752354570637,
+        "y": 30.72,
+        "width": 359.4495290858726,
+        "height": 450.56
+      }
+    },
+    {
+      "path": "src/app/apple-icon.png",
+      "format": "png",
+      "width": 180,
+      "height": 180,
+      "purpose": "any",
+      "bytes": 33838,
+      "sha256": "301438676bcfe7c6862fefc63f4ec8f7fdbd85186ce1c133c8ba6a4432ec84b6",
+      "contentBounds": {
+        "x": 26.815512465373956,
+        "y": 10.799999999999997,
+        "width": 126.36897506925209,
+        "height": 158.4
+      }
+    },
+    {
+      "path": "public/favicon.ico",
+      "format": "ico",
+      "sizes": [
+        "16x16",
+        "32x32"
+      ],
+      "bytes": 2045,
+      "sha256": "d1a1f13b20d6e7d5bb511aa700bee23e0a9aa1125fc1d7dbb49c2e64e3639838"
+    }
+  ]
+}
