@@ -11,7 +11,7 @@ PR40 is merged and its exact source is built. Production activation remains pend
 - Verification: 384 source files before/after build, 48 contracts, 45 SEO pages, 51 internal links, eight noindex routes, callback noindex and insecure-origin rejection.
 - Static media: 85 assets pass transport/decode/hash/provenance checks. Full browser media acceptance is separate; five supporting galleries remain unavailable.
 - Archive: 7,590,840 bytes; SHA256 `0500f7860b84669df58761302498f2f088668e4870c3bd704e77adb959b18214`. All 1,380 compiled archive members independently read and hashed. Production secrets and fixture configuration excluded.
-- Shared VPS build used an isolated `/var/tmp/skypro-e776f21-*` directory. Loopback 3139 is closed after verification. No named production service restarted. Desktop workflow paths were unchanged; no Actions run was returned for the merged SHA at the check.
+- The build used owner-local WSL Linux in an isolated `/var/tmp/skypro-e776f21-*` directory, with evidence written to `/mnt/d`. Its loopback 3139 listener was checked absent on the local WSL host on 23 November. No named production service restarted. Desktop workflow paths were unchanged; no Actions run was returned for the merged SHA at the check.
 
 The release includes consented registration/trial/download measurement, repeat platform visits, precise Cairo caching, product-copy corrections, brand icons and official guide references. These changes have individual browser/fixture evidence. Build and merge do not establish production behavior or GA4 receipt.
 
@@ -27,6 +27,18 @@ At 17:44 UTC, the Google token endpoint returned HTTP 401 `deleted_client` for t
 
 Do not copy the root Google pair into a new production release, restart the live service with incomplete configuration, change CRM, or restore a whole VPS backup across other projects.
 
+## Staging and independent prerequisites — 23 November 2026
+
+The exact accepted source/build is now staged at `/var/www/skypro.skywaveads.com/releases/20261122-e776f21`. Transfer hashes and all 384 source/1,380 compiled file hashes pass. Before staging, current rollback code independently matched all 372 source and 994 compiled files against the retained original manifests. Dependencies were hard-linked only after package, lockfile and Prisma schema identities matched; no installation, generation, migration or environment file was performed. The current runtime remains `d5a24f6`. All 22 PM2 identities match before and after staging.
+
+A temporary Next server at loopback3213 booted this exact staged output with an explicitly isolated environment, placeholder session secret, an unreachable fixture DB on port9, and no Google/SMTP credentials. The 45-page SEO audit, 51 links, eight noindex routes, callback noindex, guest dashboard redirect and build-manifest response pass. The child was terminated and its listener is absent; production service identities remain unchanged. This proves the new VPS can boot the compiled runtime and serve its public routes. It does not establish production credentials, real sign-in, Google callback completion, mail delivery or GA4 receipt.
+
+Existing root configuration structural checks on 22 November matched the approved site URLs and trial/device/price/currency/duration defaults and confirmed a read-only SkyPro database connection. The persisted Desktop-signature sample after this live process started returned zero eligible rows, so that check adds no proof of its signing-secret match. On 23 November, the existing root SMTP credentials authenticated to their existing Hostinger SMTP destination with TLS certificate validation. No mail was sent; delivery is unproven.
+
+At 01:41 UTC on 23 November, two loopback calls to the existing internal welcome-mail route independently checked the actual loaded NEXTAUTH_SECRET. A deliberately invalid secret returned403/Unauthorized; the existing root secret passed that guard and the empty body returned400/Missing welcome email data, before mail dispatch. No user session or email was created. Together with the independent Auth.js CSRF comparison, this resolves the loaded-secret value mismatch concern. It does not test every existing user session or replace post-configuration auth acceptance. `LOADED_SESSION_SECRET_20261123.json` preserves the sanitized result and route-source hash. Recovery can use independently verified root values and the new dedicated Google client; finding the original missing environment file itself is not a prerequisite.
+
+Evidence: `HOST_STAGING_20261123.json`, `ISOLATED_HOST_ACCEPTANCE_20261123.json`, `RUNTIME_PREREQUISITES.json` and `SMTP_CONFIGURATION_VERIFY_20261123.json` under the owner-local evidence root. The temporary stage upload is `/var/tmp/skypro-stage-e776f21-jO0aqw`; it contains reviewed source/build artifacts and sanitized manifests, not a full VPS backup or production environment. The prepared release has only its tracked `.env.example`.
+
 ## Owner credential handoff and remaining work
 
 A new-client form is prepared but unsubmitted in Edge under the owner account:
@@ -38,7 +50,7 @@ A new-client form is prepared but unsubmitted in Edge under the owner account:
 
 Browser policy requires the owner to perform creation of the new authentication credential. The owner has been asked to click Create, download the JSON securely and provide its local path only. Do not request its contents in chat. No new credential has been created by the agent.
 
-After the handoff: validate the new pair and redirect, complete the scoped runtime environment while preserving the matching session secret, restore and rehearse a runnable rollback, stage exact merged source/build, run production preflight, activate only SkyPro, and verify live source/build, roles and auth flows, consent/GA4 receipt and desktop/mobile views. No database migration or other-project mutation is authorized by this report. The full SEO growth goal remains active.
+After the handoff: validate the new pair and redirect, complete the scoped runtime environment while preserving the matching session secret, establish and rehearse a runnable rollback, run production preflight on the already staged exact source/build, activate only SkyPro, and verify live source/build, roles and auth flows, consent/GA4 receipt and desktop/mobile views. No database migration or other-project mutation is authorized by this report. The full SEO growth goal remains active; its new measurement checkpoint is in `docs/GROWTH_CHECKPOINT_20261123.md`.
 
 ## Evidence locations
 
