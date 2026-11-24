@@ -1,3 +1,11 @@
+## Resource recovery and release acceptance — 24 November 2026
+
+Keep the 1GiB deployment thresholds. After a transient post-audit resource rejection, retain the actual successful rollback record and require three consecutive passing readings during a bounded recovery wait. Do not lower the threshold or stop WhatsApp to pass. The second activation is accepted from exact source e776f21. Keep resource observations separate from persistent capacity claims and production user/GA4 conversion evidence. See DEPLOYMENT_20261124.md.
+
+## Runtime configuration and resource scope — 24 November 2026
+
+Use the action-time-approved independent Google client and independently verified existing root settings; do not change shared CRM/payment clients or project audience. The original missing env file is not required once its needed values are independently validated. Keep the resource guard and production/rollback rehearsals. The owner excludes hosting upgrades and WhatsApp interruption and asks for tuning within the current host; preserve running service and session identities. Detailed private resource observations and decisions belong in the approved Notion record. See RELEASE_CONFIGURATION_20261122.md.
+
 ## Published IndexNow release — 7 November 2026
 
 PR31/source d5a24f60a2d7a482bdeaa5f0d2bb301639c37998, web tree82c53abcf757352aad372606b58e283827f6f9fd, Linux build0cAlw9aUEbN0fuO18hTTv is live.372 source/994 compiled files match;37 preflight contracts,71routes,45SEO/51links/eightnoindex,83rasters,15restricted and four Cairo assets pass. All21 other PM2 identities remain unchanged at activation;97a0eb8 rollback retained, preview3212 closed. One16-URL IndexNow POST returned202/key validation pending; preserve the receipt and do not automatically resubmit or call this indexing proof. Post-release Edge captures are verified at 1440×900 and 390×844. Live mobile drawer and gallery interactions passed on 12 November. The original image hashes and the scoped reload results are in the deployment report. PR30 stays HOLD. Growth, qualified attribution, ranks, earned links and five owner-deferred Desktop galleries remain open. See docs/DEPLOYMENT_20261107.md.
