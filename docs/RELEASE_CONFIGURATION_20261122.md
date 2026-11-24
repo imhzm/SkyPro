@@ -1,6 +1,6 @@
 # SkyPro merged release and runtime configuration — 22 November 2026
 
-PR40 is merged and its exact source is built. Production activation remains pending because recoverable configuration and a runnable rollback are not yet established.
+PR40 is live as of24November2026. Production-configured preflight, rollback boot/restart, exact source/build, public SEO/static media and scoped browser acceptance pass. See DEPLOYMENT_20261124.md for the accepted activation, retained initial rollback and remaining limits. The dated recovery findings below document how this configuration was established.
 
 ## Accepted source and build
 
@@ -37,20 +37,26 @@ Existing root configuration structural checks on 22 November matched the approve
 
 At 01:41 UTC on 23 November, two loopback calls to the existing internal welcome-mail route independently checked the actual loaded NEXTAUTH_SECRET. A deliberately invalid secret returned403/Unauthorized; the existing root secret passed that guard and the empty body returned400/Missing welcome email data, before mail dispatch. No user session or email was created. Together with the independent Auth.js CSRF comparison, this resolves the loaded-secret value mismatch concern. It does not test every existing user session or replace post-configuration auth acceptance. `LOADED_SESSION_SECRET_20261123.json` preserves the sanitized result and route-source hash. Recovery can use independently verified root values and the new dedicated Google client; finding the original missing environment file itself is not a prerequisite.
 
-Evidence: `HOST_STAGING_20261123.json`, `ISOLATED_HOST_ACCEPTANCE_20261123.json`, `RUNTIME_PREREQUISITES.json` and `SMTP_CONFIGURATION_VERIFY_20261123.json` under the owner-local evidence root. The temporary stage upload is `/var/tmp/skypro-stage-e776f21-jO0aqw`; it contains reviewed source/build artifacts and sanitized manifests, not a full VPS backup or production environment. The prepared release has only its tracked `.env.example`.
+Evidence: `HOST_STAGING_20261123.json`, `ISOLATED_HOST_ACCEPTANCE_20261123.json`, `RUNTIME_PREREQUISITES.json` and `SMTP_CONFIGURATION_VERIFY_20261123.json` under the owner-local evidence root. The temporary stage upload is `/var/tmp/skypro-stage-e776f21-jO0aqw`; it contains reviewed source/build artifacts and sanitized manifests, not a full VPS backup or production environment. Initial isolated staging had only its tracked `.env.example`; the later approved configuration stage linked the protected runtime environment described below.
 
-## Owner credential handoff and remaining work
+## Approved client and runtime configuration — 23 November 2026
 
-A new-client form is prepared but unsubmitted in Edge under the owner account:
+After the owner's explicit action-time confirmation, the agent created the separate client in the approved Sky Wave project under skywaveads@gmail.com:
 
 - Name: SkyPro Web Production.
 - Type: Web application.
 - Authorized redirect: `https://skypro.skywaveads.com/api/auth/google/callback`.
 - No browser JavaScript origin is needed for this server-side flow. AI-agent option remains unchecked.
 
-Browser policy requires the owner to perform creation of the new authentication credential. The owner has been asked to click Create, download the JSON securely and provide its local path only. Do not request its contents in chat. No new credential has been created by the agent.
+The initial instruction requiring the owner to perform creation/download personally was unnecessary. Creation of a separate OAuth client falls under action-time confirmation for new security-sensitive access. That confirmation was received; creation and download are complete. The JSON is held in a restricted local directory outside the public repository. No secret is included in reports, Notion, screenshots or this repository. The existing CRM and payment clients and shared audience/branding are unchanged.
 
-After the handoff: validate the new pair and redirect, complete the scoped runtime environment while preserving the matching session secret, establish and rehearse a runnable rollback, run production preflight on the already staged exact source/build, activate only SkyPro, and verify live source/build, roles and auth flows, consent/GA4 receipt and desktop/mobile views. No database migration or other-project mutation is authorized by this report. The full SEO growth goal remains active; its new measurement checkpoint is in `docs/GROWTH_CHECKPOINT_20261123.md`.
+Google's official audience documentation exempts identity-only `openid email profile` requests from testing trusted-user-list and seven-day authorization restrictions: https://support.google.com/cloud/answer/15549945. These are the exact scopes in SkyPro's current custom login route; the generic creation-dialog testing notice does not require changing the shared project's audience for this flow.
+
+The new client pair returned `invalid_grant` for a deliberately invalid code; a deliberately invalid secret returned `invalid_client`. No tokens were issued. The candidate now links a new mode-600 runtime environment inside a mode-700 project directory. Re-parsing proves every original root configuration value except GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET is preserved, and an independent live CSRF comparison verifies the session secret. The original root file and current live environment link are unchanged. Activation and rollback configs are prepared outside application source. `GOOGLE_CLIENT_CREATED_20261123.json`, `GOOGLE_CLIENT_CREATED_20261123.jpg` and `RUNTIME_CONFIGURATION_ACCEPTANCE_20261123.json` retain the sanitized evidence.
+
+The first production-configured preflight stopped before starting a preview because available memory was below the unchanged 1GiB guard. Its precise observation is in `PRODUCTION_CONFIG_PREFLIGHT_20261123_ATTEMPT1.json`. No activation or unrelated-process mutation occurred. Do not lower the guard merely to pass or stop another project's processes within this task.
+
+Next: when resource guards pass, complete production-configured preflight and runnable rollback rehearsals using the prepared environment, activate only SkyPro, and verify live source/build, roles and auth flows, consent/GA4 receipt and desktop/mobile views. End-to-end Google sign-in is not established by the synthetic-code diagnostic. No database migration or other-project mutation is authorized by this report. The full SEO growth goal remains active; its measurement checkpoint is in `docs/GROWTH_CHECKPOINT_20261123.md`.
 
 ## Evidence locations
 

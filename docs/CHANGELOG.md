@@ -1,3 +1,11 @@
+## 24 November 2026 — measurement release published
+
+Published exact PR40 source e776f21/Linux buildhF3gLn7kHN_iyJxif003I. Production-configured candidate and rollback, live45SEO/51links/eightnoindex,85 static media/15 restricted checks, exact source/build hashes and scoped Edge desktop/mobile acceptance pass. Existing services and WhatsApp identities preserved; same-plan resource tuning only. The first resource-guard rollback and accepted second activation are both retained. Five galleries, actual Google-user login/GA4 receipt and broader growth evidence remain open. See DEPLOYMENT_20261124.md.
+
+## 24 November 2026 — runtime recovery and resource decision
+
+Recorded creation/secure download of the separately approved Google client, differential provider validation, protected candidate configuration and preserved session settings. Corrected the unnecessary manual-creation requirement. Recorded the owner's same-plan tuning request and exclusion of hosting upgrades and WhatsApp interruption. Production remains unchanged pending resource, runtime/rollback and live acceptance. No application-source change in this documentation update.
+
 ## 14 November 2026 — Windows download measurement candidate
 
 Added a consent-gated first-party receipt for the Windows installer link in the customer dashboard. Local Windows build `FGlk2xinjwPBFdFpeZZCT`, TypeScript, targeted lint and 40 contracts passed. The candidate awaits Edge and production verification.

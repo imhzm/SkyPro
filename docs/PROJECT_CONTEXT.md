@@ -2,6 +2,14 @@
 
 The draft candidate records consented Windows installer link clicks in the SkyPro application log. The release build, TypeScript, targeted lint and 40 contracts passed locally. Browser acceptance, deployment and live collection are pending. Count only JSON records with `event` equal to `click_download` within the retained log window. The receipt supports click counts and provides no installation, conversion or acquisition data. See [DECISIONS.md](DECISIONS.md).
 
+## Published measurement release — 24 November 2026
+
+PR40 source e776f21/buildhF3gLn7kHN_iyJxif003I is live after exact-file, production-configured candidate/rollback, public SEO/static media and scoped Edge acceptance. The first resource rejection was safely rolled back; the second passed the unchanged thresholds. All21 other PM2 identities and WhatsApp sessions remain unchanged. No hosting upgrade or session stop. Current resource observations and business metrics remain private. See DEPLOYMENT_20261124.md for evidence, rollback and remaining gaps. Earlier pending states below are historical; the full growth goal stays active.
+
+## Runtime recovery and host resources — 24 November 2026
+
+The separately approved SkyPro OAuth client is created and its protected configuration is linked only to candidate e776f21. Existing session and other root values are preserved. The old requirement for the owner to create/download the client personally is superseded. Production remains d5a24f6 pending resource/preflight/rollback/live acceptance. The owner requests same-plan host tuning and keeping WhatsApp running; hosting upgrades and session stops are excluded. Detailed resource evidence remains private. See RELEASE_CONFIGURATION_20261122.md and the existing Notion project record.
+
 ## Published IndexNow release — 7 November 2026
 
 PR31/source d5a24f60a2d7a482bdeaa5f0d2bb301639c37998, web tree82c53abcf757352aad372606b58e283827f6f9fd, Linux build0cAlw9aUEbN0fuO18hTTv is live.372 source/994 compiled files match;37 preflight contracts,71routes,45SEO/51links/eightnoindex,83rasters,15restricted and four Cairo assets pass. All21 other PM2 identities remain unchanged at activation;97a0eb8 rollback retained, preview3212 closed. One16-URL IndexNow POST returned202/key validation pending; preserve the receipt and do not automatically resubmit or call this indexing proof. Post-release Edge captures are verified at 1440×900 and 390×844. Live mobile drawer and gallery interactions passed on 12 November. The original image hashes and the scoped reload results are in the deployment report. PR30 stays HOLD. Growth, qualified attribution, ranks, earned links and five owner-deferred Desktop galleries remain open. See docs/DEPLOYMENT_20261107.md.
