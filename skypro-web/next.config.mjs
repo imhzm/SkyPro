@@ -20,8 +20,9 @@ const csp = [
   "font-src 'self' https://fonts.gstatic.com data:",
   // Images: self + data URIs (used by lucide) + blob (uploads) + https (avatars from Google etc.)
   "img-src 'self' data: blob: https:",
-  // Network connections: self + GA + Plausible (for analytics beacons) + WebSocket dev
-  `connect-src 'self' https://www.google-analytics.com https://plausible.io https://*.plausible.io https://downloads.skywaveads.com ${isDev ? "ws://localhost:* http://localhost:*" : ""}`.trim(),
+  // GA4 can choose a regional collector in either Analytics domain family.
+  // https://support.google.com/analytics/answer/12017362
+  `connect-src 'self' https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://plausible.io https://*.plausible.io https://downloads.skywaveads.com ${isDev ? "ws://localhost:* http://localhost:*" : ""}`.trim(),
   // Frames: none (no embedding allowed)
   "frame-src 'none'",
   "frame-ancestors 'none'",
